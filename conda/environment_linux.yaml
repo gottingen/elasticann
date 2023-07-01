@@ -1,0 +1,16 @@
+name: ea-dev
+channels:
+  - titan-search
+  - conda-forge
+dependencies:
+  - gcc
+  - gxx
+  - sysroot_linux-64 >=2.17 # [linux]
+  - titan-rocksdb =v8.1.2
+  - bluebird = 0.2.1
+  - brpc
+  - braft
+  - tarrow
+  - re2
+  - boost
+  - protobuf
