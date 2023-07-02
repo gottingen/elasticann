@@ -30,7 +30,7 @@ using google::protobuf::FieldDescriptor;
 using google::protobuf::Descriptor;
 using google::protobuf::Message;
 using google::protobuf::Reflection;
-using namespace baikaldb;
+using namespace EA;
 namespace bthread {
 DECLARE_int32(bthread_concurrency);
 }
@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
     google::protobuf::ArenaOptions option;
     option.start_block_size = 100 * 1000;
 
-    baikaldb::TimeCost cost;
+    EA::TimeCost cost;
     BthreadCond cond; 
     auto cal = [&]() {
         DB_WARNING("start thread");

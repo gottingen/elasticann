@@ -27,7 +27,7 @@
 #define SNAPSHOT
 
 using namespace rocksdb;
-using namespace baikaldb;
+using namespace EA;
 
 std::string kDBPath = "/tmp/rocksdb_transaction_example";
 

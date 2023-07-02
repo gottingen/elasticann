@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 namespace tdigest {
 
 TEST(test_tdigest, case_all) {
@@ -79,8 +79,8 @@ TEST(test_tdigest_internal_functions, case_all) {
         vals1.emplace_back(tmp);
     }
     ExprValue td1 = tdigest_build(vals1);
-    ASSERT_EQ(td1.type, pb::TDIGEST);
-    ASSERT_EQ(td1.str_val.size(), tdigest::td_actual_size((tdigest::td_histogram_t*)td1.str_val.data()));
+    DOCTEST_REQUIRE_EQ(td1.type, pb::TDIGEST);
+    DOCTEST_REQUIRE_EQ(td1.str_val.size(), tdigest::td_actual_size((tdigest::td_histogram_t*)td1.str_val.data()));
 
     std::vector<ExprValue> vals2;
     vals2.emplace_back(td1);
@@ -90,8 +90,8 @@ TEST(test_tdigest_internal_functions, case_all) {
         vals2.emplace_back(tmp);
     }
     ExprValue td2 = tdigest_add(vals2);
-    ASSERT_EQ(td2.type, pb::TDIGEST);
-    ASSERT_EQ(td2.str_val.size(), tdigest::td_actual_size((tdigest::td_histogram_t*)td2.str_val.data()));
+    DOCTEST_REQUIRE_EQ(td2.type, pb::TDIGEST);
+    DOCTEST_REQUIRE_EQ(td2.str_val.size(), tdigest::td_actual_size((tdigest::td_histogram_t*)td2.str_val.data()));
 
     std::vector<ExprValue> vals3;
     vals3.emplace_back(td2);
@@ -100,11 +100,11 @@ TEST(test_tdigest_internal_functions, case_all) {
     vals3.emplace_back(tmp);
     ExprValue ret1 = tdigest_percentile(vals3);
     tdigest::td_histogram_t* t = (tdigest::td_histogram_t*)td2.str_val.data();
-    ASSERT_EQ(tdigest::td_value_at(t, 0.95), ret1._u.double_val);
+    DOCTEST_REQUIRE_EQ(tdigest::td_value_at(t, 0.95), ret1._u.double_val);
 
     vals3[1]._u.double_val = 1050;
     ExprValue ret2 = tdigest_location(vals3);
-    ASSERT_EQ(tdigest::td_quantile_of(t, 1050.0), ret2._u.double_val);
+    DOCTEST_REQUIRE_EQ(tdigest::td_quantile_of(t, 1050.0), ret2._u.double_val);
 }
 }
 

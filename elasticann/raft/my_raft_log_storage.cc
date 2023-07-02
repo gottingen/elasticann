@@ -758,7 +758,7 @@ rocksdb::Slice* MyRaftLogStorage::_construct_slice_array(
             }
         }
         //DB_WARNING("region_id: %ld, configuration:%s", _region_id, meta.ShortDebugString().c_str());
-        const size_t byte_size = meta.ByteSize();
+        const size_t byte_size = meta.ByteSizeLong();
         void *meta_buf = arena.allocate(byte_size);
         if (meta_buf == NULL) {
             DB_FATAL("Fail to allocate mem, region_id: %ld", _region_id);

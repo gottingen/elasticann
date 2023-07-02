@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 
 TEST(test_compare, case_all) {
     {
@@ -69,19 +69,19 @@ TEST(test_compare, case_all) {
         SmartRecord record = SmartRecord(new TableRecord(pb_decode));
         TupleRecord tuple(data);
         tuple.decode_fields(fields, record);
-        ASSERT_EQ(pb_data.col1(), pb_decode->col1());
-        ASSERT_EQ(pb_data.col2(), pb_decode->col2());
-        ASSERT_EQ(pb_data.col3(), pb_decode->col3());
-        ASSERT_EQ(pb_data.col4(), pb_decode->col4());
-        ASSERT_EQ(pb_data.col5(), pb_decode->col5());
-        ASSERT_EQ(pb_data.col6(), pb_decode->col6());
-        ASSERT_EQ(pb_data.col7(), pb_decode->col7());
-        ASSERT_EQ(pb_data.col8(), pb_decode->col8());
-        ASSERT_EQ(pb_data.col9(), pb_decode->col9());
-        ASSERT_EQ(pb_data.col10(), pb_decode->col10());
-        ASSERT_EQ(pb_data.col11(), pb_decode->col11());
-        ASSERT_EQ(pb_data.col12(), pb_decode->col12());
-        ASSERT_EQ(pb_data.col13(), pb_decode->col13());
+        DOCTEST_REQUIRE_EQ(pb_data.col1(), pb_decode->col1());
+        DOCTEST_REQUIRE_EQ(pb_data.col2(), pb_decode->col2());
+        DOCTEST_REQUIRE_EQ(pb_data.col3(), pb_decode->col3());
+        DOCTEST_REQUIRE_EQ(pb_data.col4(), pb_decode->col4());
+        DOCTEST_REQUIRE_EQ(pb_data.col5(), pb_decode->col5());
+        DOCTEST_REQUIRE_EQ(pb_data.col6(), pb_decode->col6());
+        DOCTEST_REQUIRE_EQ(pb_data.col7(), pb_decode->col7());
+        DOCTEST_REQUIRE_EQ(pb_data.col8(), pb_decode->col8());
+        DOCTEST_REQUIRE_EQ(pb_data.col9(), pb_decode->col9());
+        DOCTEST_REQUIRE_EQ(pb_data.col10(), pb_decode->col10());
+        DOCTEST_REQUIRE_EQ(pb_data.col11(), pb_decode->col11());
+        DOCTEST_REQUIRE_EQ(pb_data.col12(), pb_decode->col12());
+        DOCTEST_REQUIRE_EQ(pb_data.col13(), pb_decode->col13());
         ASSERT_STREQ(pb_data.col14().c_str(), pb_decode->col14().c_str());
         DB_NOTICE("%s", record->debug_string().c_str());
     }

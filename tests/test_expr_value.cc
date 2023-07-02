@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 TEST(test_proto, case_all) {
     /*
     std::ofstream fp;

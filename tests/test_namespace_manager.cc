@@ -18,7 +18,7 @@
 #include "elasticann/meta_server/query_namespace_manager.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include <gflags/gflags.h>
-namespace baikaldb {
+namespace EA {
     DECLARE_string(db_path);
 }
 class NamespaceManagerTest : public testing::Test {
@@ -26,7 +26,7 @@ public:
     ~NamespaceManagerTest() {}
 protected:
     virtual void SetUp() {
-        _rocksdb = baikaldb::MetaRocksdb::get_instance();
+        _rocksdb = EA::MetaRocksdb::get_instance();
         if (!_rocksdb) {
             DB_FATAL("create rocksdb handler failed");
             return;
@@ -36,94 +36,94 @@ protected:
             DB_FATAL("rocksdb init failed: code:%d", ret);
             return;
         }
-        _namespace_manager = baikaldb::NamespaceManager::get_instance();
-        _query_namespace_manager = baikaldb::QueryNamespaceManager::get_instance();
-        _schema_manager = baikaldb::SchemaManager::get_instance();
+        _namespace_manager = EA::NamespaceManager::get_instance();
+        _query_namespace_manager = EA::QueryNamespaceManager::get_instance();
+        _schema_manager = EA::SchemaManager::get_instance();
     }
     virtual void TearDown() {}
-    baikaldb::NamespaceManager* _namespace_manager;
-    baikaldb::QueryNamespaceManager* _query_namespace_manager;
-    baikaldb::SchemaManager* _schema_manager;
-    baikaldb::MetaRocksdb*  _rocksdb;
+    EA::NamespaceManager* _namespace_manager;
+    EA::QueryNamespaceManager* _query_namespace_manager;
+    EA::SchemaManager* _schema_manager;
+    EA::MetaRocksdb*  _rocksdb;
 };
 // add_logic add_physical add_instance
 TEST_F(NamespaceManagerTest, test_create_drop_modify) {
     //测试点：增加命名空间“FengChao”
-    baikaldb::pb::MetaManagerRequest request_add_namespace_fc;
-    request_add_namespace_fc.set_op_type(baikaldb::pb::OP_CREATE_NAMESPACE);
+    EA::proto::MetaManagerRequest request_add_namespace_fc;
+    request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
     request_add_namespace_fc.mutable_namespace_info()->set_quota(1024*1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
     
     //测试点：增加命名空间Feed
-    baikaldb::pb::MetaManagerRequest request_add_namespace_feed;
-    request_add_namespace_feed.set_op_type(baikaldb::pb::OP_CREATE_NAMESPACE);
+    EA::proto::MetaManagerRequest request_add_namespace_feed;
+    request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_add_namespace_feed.mutable_namespace_info()->set_quota(2014*1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
     //验证正确性
-    ASSERT_EQ(2, _namespace_manager->_max_namespace_id);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
-    ASSERT_EQ(0, _namespace_manager->_database_ids[1].size());
-    ASSERT_EQ(0, _namespace_manager->_database_ids[2].size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map[1].version());
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map[2].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
-    ASSERT_EQ(2, _namespace_manager->_max_namespace_id);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
-    ASSERT_EQ(0, _namespace_manager->_database_ids[1].size());
-    ASSERT_EQ(0, _namespace_manager->_database_ids[2].size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map[1].version());
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map[2].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
 
     //测试点：修改namespace quota
-    baikaldb::pb::MetaManagerRequest request_modify_namespace_feed;
-    request_modify_namespace_feed.set_op_type(baikaldb::pb::OP_MODIFY_NAMESPACE);
+    EA::proto::MetaManagerRequest request_modify_namespace_feed;
+    request_modify_namespace_feed.set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
     request_modify_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_modify_namespace_feed.mutable_namespace_info()->set_quota(2048*1024);
     _namespace_manager->modify_namespace(request_modify_namespace_feed, NULL);
-    ASSERT_EQ(2, _namespace_manager->_max_namespace_id);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
-    ASSERT_EQ(0, _namespace_manager->_database_ids[1].size());
-    ASSERT_EQ(0, _namespace_manager->_database_ids[2].size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map[1].version());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map[2].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
     _schema_manager->load_snapshot();
-    ASSERT_EQ(2, _namespace_manager->_max_namespace_id);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
-    ASSERT_EQ(0, _namespace_manager->_database_ids[1].size());
-    ASSERT_EQ(0, _namespace_manager->_database_ids[2].size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map.size());
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map[1].version());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map[2].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map.size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
     //test_point: query_namespace_manager
-    baikaldb::pb::QueryRequest query_request;
-    baikaldb::pb::QueryResponse response;
-    query_request.set_op_type(baikaldb::pb::QUERY_NAMESPACE);
+    EA::proto::QueryRequest query_request;
+    EA::proto::QueryResponse response;
+    query_request.set_op_type(EA::proto::QUERY_NAMESPACE);
     query_request.set_namespace_name("Feed");
     _query_namespace_manager->get_namespace_info(&query_request, &response);
     DB_WARNING("response: %s", response.DebugString().c_str());
@@ -134,51 +134,51 @@ TEST_F(NamespaceManagerTest, test_create_drop_modify) {
     DB_WARNING("response: %s", response.DebugString().c_str());
     
     int64_t max_namespace_id = _namespace_manager->get_max_namespace_id();
-    ASSERT_EQ(2, max_namespace_id); 
+    DOCTEST_REQUIRE_EQ(2, max_namespace_id);
 
     _namespace_manager->add_database_id(1, 1);
-    ASSERT_EQ(1, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[1].size());
 
     _namespace_manager->add_database_id(1, 2);
-    ASSERT_EQ(2, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids[1].size());
     
     _namespace_manager->delete_database_id(1, 1);
-    ASSERT_EQ(1, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[1].size());
     
     _namespace_manager->delete_database_id(1, 2);
-    ASSERT_EQ(0, _namespace_manager->_database_ids[1].size());
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[1].size());
 
     int64_t namespace_id = _namespace_manager->get_namespace_id("FengChao");
-    ASSERT_EQ(1, namespace_id);
+    DOCTEST_REQUIRE_EQ(1, namespace_id);
     
     namespace_id = _namespace_manager->get_namespace_id("Feed");
-    ASSERT_EQ(2, namespace_id);
+    DOCTEST_REQUIRE_EQ(2, namespace_id);
     
-    baikaldb::pb::MetaManagerRequest request_drop_namespace;
-    request_drop_namespace.set_op_type(baikaldb::pb::OP_DROP_NAMESPACE);
+    EA::proto::MetaManagerRequest request_drop_namespace;
+    request_drop_namespace.set_op_type(EA::proto::OP_DROP_NAMESPACE);
     request_drop_namespace.mutable_namespace_info()->set_namespace_name("FengChao");
     _namespace_manager->drop_namespace(request_drop_namespace, NULL);    
-    ASSERT_EQ(2, _namespace_manager->_max_namespace_id);
-    ASSERT_EQ(1, _namespace_manager->_namespace_id_map.size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
-    ASSERT_EQ(1, _namespace_manager->_namespace_info_map.size());
-    ASSERT_EQ(0, _namespace_manager->_database_ids[2].size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map[2].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map.size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map.size());
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
     _schema_manager->load_snapshot();
-    ASSERT_EQ(2, _namespace_manager->_max_namespace_id);
-    ASSERT_EQ(1, _namespace_manager->_namespace_id_map.size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
-    ASSERT_EQ(0, _namespace_manager->_database_ids[2].size());
-    ASSERT_EQ(2, _namespace_manager->_namespace_info_map[2].version());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
+    DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map.size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map["Feed"]);
+    DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
+    DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
 } // TEST_F
 int main(int argc, char** argv) {
-    baikaldb::FLAGS_db_path = "namespace_manager_db";
+    EA::FLAGS_db_path = "namespace_manager_db";
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

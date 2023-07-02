@@ -21,7 +21,7 @@
 #include "region.h"
 #include "rocks_wrapper.h"
 
-namespace baikaldb{
+namespace EA{
 
 int main(int argc, char* argv[]) {
     /*
@@ -99,10 +99,10 @@ int main(int argc, char* argv[]) {
     DB_NOTICE("reload_schema cost: %lu", cost.get_time());
     cost.reset();
 
-    auto _rocksdb = baikaldb::RocksWrapper::get_instance();
+    auto _rocksdb = EA::RocksWrapper::get_instance();
     _rocksdb->init("/tmp/rocksdb/");
 
-    auto region = new baikaldb::Region();
+    auto region = new EA::Region();
     region->init();
 
     std::vector<SmartRecord> rows_vec;
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     pk_record->set_int32(1, val);
     std::cout << "input: " << rows_vec[rand_idx]->to_string() << std::endl;
 
-    std::vector<baikaldb::SmartTableRecord> out_records;
+    std::vector<EA::SmartTableRecord> out_records;
 
     rocksdb::ReadOptions roptions;
     roptions.prefix_same_as_start = true;

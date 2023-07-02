@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 
 TEST(test_is_bigendian, case_all) {
     EXPECT_EQ(false, KeyEncoder::is_big_endian());

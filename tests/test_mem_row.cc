@@ -18,18 +18,18 @@
 #include <vector>
 
 int main(int argc, char* argv[]) {
-    baikaldb::MemRowDescriptor* desc = new baikaldb::MemRowDescriptor;
+    EA::MemRowDescriptor* desc = new EA::MemRowDescriptor;
 
-    std::vector<baikaldb::pb::TupleDescriptor> tuple_desc;
+    std::vector<EA::proto::TupleDescriptor> tuple_desc;
     for (int idx = 0; idx < 10; idx++) {
-        baikaldb::pb::TupleDescriptor tuple;
+        EA::proto::TupleDescriptor tuple;
         tuple.set_tuple_id(idx);
         tuple.set_table_id(idx);
 
         for (int jdx = 1; jdx <= 8; ++jdx) {
-            baikaldb::pb::SlotDescriptor* slot = tuple.add_slots();
+            EA::proto::SlotDescriptor* slot = tuple.add_slots();
             slot->set_slot_id(jdx);
-            slot->set_slot_type(baikaldb::pb::UINT16);
+            slot->set_slot_type(EA::proto::UINT16);
             slot->set_tuple_id(idx);         
         }
         tuple_desc.push_back(tuple);

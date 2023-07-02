@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 namespace hll {
 
 TEST(test_hll, case_all) {

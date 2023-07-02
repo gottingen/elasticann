@@ -35,13 +35,13 @@ TEST(test_parser, case_load_data) {
              " escaped by '\' lines terminated by 'hahaha' ignore 1 lines (userid, username, app_id) set app_id=app_id+1;";
         parser.parse(sql_load);
         std::cout << parser.syntax_err_str << std::endl;
-        ASSERT_EQ(0, parser.error);
-        ASSERT_EQ(1, parser.result.size());
+        DOCTEST_REQUIRE_EQ(0, parser.error);
+        DOCTEST_REQUIRE_EQ(1, parser.result.size());
         ASSERT_TRUE(typeid(*(parser.result[0])) == typeid(parser::LoadDataStmt));
         parser::LoadDataStmt* load_stmt = (parser::LoadDataStmt*)parser.result[0];
         std::cout << load_stmt->to_string() << std::endl;
-        ASSERT_EQ(3, load_stmt->columns.size());
-        ASSERT_EQ(1, load_stmt->set_list.size());
+        DOCTEST_REQUIRE_EQ(3, load_stmt->columns.size());
+        DOCTEST_REQUIRE_EQ(1, load_stmt->set_list.size());
     }
     {
         parser::SqlParser parser;
@@ -49,8 +49,8 @@ TEST(test_parser, case_load_data) {
                     "lines terminated by '\n' ignore 1 lines;";
         parser.parse(sql_load);
         std::cout << parser.syntax_err_str << std::endl;
-        ASSERT_EQ(0, parser.error);
-        ASSERT_EQ(1, parser.result.size());
+        DOCTEST_REQUIRE_EQ(0, parser.error);
+        DOCTEST_REQUIRE_EQ(1, parser.result.size());
         ASSERT_TRUE(typeid(*(parser.result[0])) == typeid(parser::LoadDataStmt));
         parser::LoadDataStmt* load_stmt = (parser::LoadDataStmt*)parser.result[0];
         std::cout << load_stmt->to_string() << std::endl;

@@ -62,3 +62,72 @@ carbin_cc_test(
         ${USER_CXX_FLAGS}
         "-fno-access-control"
 )
+
+carbin_cc_test(
+        NAME
+        test_cluster_manager
+        SOURCES
+        test_cluster_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_cmsketch
+        SOURCES
+        test_cmsketch.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_column_families
+        SOURCES
+        test_column_families.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+carbin_cc_test(
+        NAME
+        test_common
+        SOURCES
+        test_common.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_database_manager
+        SOURCES
+        test_database_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)

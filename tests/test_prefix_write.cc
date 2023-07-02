@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     uint32_t size = 1000;
     srand((unsigned)time(NULL));
     std::cout << RAND_MAX << std::endl;
-    baikaldb::TimeCost cost;
+    EA::TimeCost cost;
     for (uint64_t idx = 0; idx < 10000000; idx++) {
         // uint64_t key1 = rand();
         // uint64_t key2 = rand();
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
         // std::string prefix = std::string("longlonglonglonglonglonglongprefix") 
         //   + std::to_string(idx % size) + std::to_string(key);
 
-        baikaldb::MutTableKey key;
+        EA::MutTableKey key;
         //key.append_string("prefix_");
         key.append_i32(idx / 50000);
         key.append_u64(idx);
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     //assert(s.ok());
     //DB_NOTICE("put cost: %lu", cost.get_time());
 
-    baikaldb::MutTableKey key1;
+    EA::MutTableKey key1;
     key1.append_i32(5000000 / 50000);
     key1.append_u64(5000000);
 
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     read_options.prefix_same_as_start = true;
     read_options.total_order_seek = false;
     auto iter = db->NewIterator(read_options, cf_handle);
-    baikaldb::MutTableKey key2;
+    EA::MutTableKey key2;
     key2.append_i32(5000000 / 50000);
     iter->Seek(key2.data());
     DB_NOTICE("seek cost: %lu", cost.get_time());
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
     rocksdb::WriteOptions write_options;
     int64_t prefix = 630152;
     for (int idx = 0; idx < 10000000; ++idx) {
-        baikaldb::MutTableKey key;
+        EA::MutTableKey key;
         key.append_i64(idx/1000000).append_i64(idx);
         s = db->Put(write_options, cf_handle, key.data(), key.data());
         assert(s.ok());
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
     read_options.total_order_seek = false;
     auto iter = db->NewIterator(read_options, cf_handle);
 
-    baikaldb::TimeCost cost;
+    EA::TimeCost cost;
     iter->SeekToFirst();
     DB_NOTICE("SeekToFirst cost: %ld", cost.get_time());
     cost.reset();
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
     read_options.total_order_seek = false;
     iter = db->NewIterator(read_options, cf_handle);
 
-    baikaldb::MutTableKey key1;
+    EA::MutTableKey key1;
     key1.append_i64(5).append_i64(5000000);
     cost.reset();
     iter->Seek(key1.data());
@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
     read_options.total_order_seek = false;
     iter = db->NewIterator(read_options, cf_handle);
 
-    baikaldb::MutTableKey key2;
+    EA::MutTableKey key2;
     key2.append_i64(5).append_i64(5999999);
     cost.reset();
     iter->SeekForPrev(key2.data());

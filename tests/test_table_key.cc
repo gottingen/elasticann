@@ -23,7 +23,7 @@
 #include <ctime>
 #include <algorithm>
 
-namespace baikaldb {
+namespace EA {
 
 int main(int argc, char* argv[])
 {

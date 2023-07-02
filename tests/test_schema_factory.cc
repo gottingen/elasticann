@@ -21,8 +21,8 @@
 #include "region.h"
 
 int main(int argc, char* argv[]) {
-    auto val_encoder = baikaldb::SchemaFactory::get_instance();
-    baikaldb::pb::SchemaInfo info;
+    auto val_encoder = EA::SchemaFactory::get_instance();
+    EA::proto::SchemaInfo info;
     info.set_namespace_name("test_namespace");
     info.set_database("test_database");
     info.set_table_name("test_table_name");
@@ -37,24 +37,24 @@ int main(int argc, char* argv[]) {
     }
 
     for (int idx = 1; idx < col_cnt; idx++) {
-        baikaldb::pb::FieldInfo *field_string = info.add_fields();
+        EA::proto::FieldInfo *field_string = info.add_fields();
         field_string->set_field_name("column" + std::to_string(idx));
         field_string->set_field_id(idx);
         if (idx % 5 == 0) {
-            field_string->set_mysql_type(baikaldb::pb::INT32);
+            field_string->set_mysql_type(EA::proto::INT32);
         } else if (idx % 5 == 1) {
-            field_string->set_mysql_type(baikaldb::pb::UINT32);
+            field_string->set_mysql_type(EA::proto::UINT32);
         } else if (idx % 5 == 2) {
-            field_string->set_mysql_type(baikaldb::pb::INT64);
+            field_string->set_mysql_type(EA::proto::INT64);
         } else if (idx % 5 == 3) {
-            field_string->set_mysql_type(baikaldb::pb::UINT64);
+            field_string->set_mysql_type(EA::proto::UINT64);
         } else if (idx % 5 == 4) {
-            field_string->set_mysql_type(baikaldb::pb::STRING);
+            field_string->set_mysql_type(EA::proto::STRING);
         }
     }
 
-    baikaldb::pb::IndexInfo *index_pk = info.add_indexs();
-    index_pk->set_index_type(baikaldb::pb::I_PRIMARY);
+    EA::proto::IndexInfo *index_pk = info.add_indexs();
+    index_pk->set_index_type(EA::proto::I_PRIMARY);
     index_pk->set_index_name("pk_index");
     index_pk->add_field_ids(1);
     index_pk->set_index_id(1);
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 
     val_encoder->init();
 
-    baikaldb::TimeCost cost;
+    EA::TimeCost cost;
     val_encoder->update_table(info);
     DB_NOTICE("update_table cost: %lu", cost.get_time());
     cost.reset();
@@ -72,36 +72,36 @@ int main(int argc, char* argv[]) {
     auto record = val_encoder->new_record(1);
     //assert(record != NULL);
     sleep(1);
-    baikaldb::TimeCost cost1; 
-    baikaldb::BthreadCond cond; 
+    EA::TimeCost cost1;
+    EA::BthreadCond cond;
     auto cal = [&]() {
-        baikaldb::SmartRecord record_template = baikaldb::TableRecord::new_record(1);
+        EA::SmartRecord record_template = EA::TableRecord::new_record(1);
         for (int i = 0; i < 1000000; i++) {
-            baikaldb::SmartRecord record = record_template->clone(false);
+            EA::SmartRecord record = record_template->clone(false);
         }
         cond.decrease_signal();
     };
     for (int i = 0; i < 40; i++) {
-        baikaldb::Bthread bth(&BTHREAD_ATTR_SMALL);
+        EA::Bthread bth(&BTHREAD_ATTR_SMALL);
         cond.increase();
         bth.run(cal);
     }
     cond.wait();
     DB_WARNING("cost:%ld", cost1.get_time());
     sleep(1);
-    baikaldb::TimeCost cost2; 
+    EA::TimeCost cost2;
 
     auto cal2 = [&]() {
-        baikaldb::TableInfo info2 = val_encoder->get_table_info(1);
+        EA::TableInfo info2 = val_encoder->get_table_info(1);
         const Message *message = info2.factory->GetPrototype(info2.tbl_desc);
         for (int i = 0; i < 1000000; i++) {
-            //baikaldb::SmartRecord record(new baikaldb::TableRecord(message->New()));
-            baikaldb::SmartRecord record_template = baikaldb::TableRecord::new_record(1);
+            //EA::SmartRecord record(new EA::TableRecord(message->New()));
+            EA::SmartRecord record_template = EA::TableRecord::new_record(1);
         }
         cond.decrease_signal();
     };
     for (int i = 0; i < 40; i++) {
-        baikaldb::Bthread bth(&BTHREAD_ATTR_SMALL);
+        EA::Bthread bth(&BTHREAD_ATTR_SMALL);
         cond.increase();
         bth.run(cal2);
     }

@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 
 TEST(test_covent_pattern, case_all) {
     LikePredicate pred;
@@ -39,18 +39,18 @@ TEST(test_covent_pattern, case_all) {
     EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("abc", "%"));
     EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("axxx", "a%x%x"));
     EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("axxx", "a%x%x"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ÖÐÎÄtestbd_vidÖÐÎÄtest", "ÖÐÎÄtestbd_vidÖÐÎÄtest"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ÖÐÎÄtestbd_vidÖÐÎÄtest", "%testbd_vidÖÐÎÄtes%"));
-    //¼Á GBK Âëµã£º BCC1
-    //»¼ÁË GBKÂëµã£ºBBBC C1CB
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("»¼ÁË", "%¼Á%"));
-    EXPECT_EQ(true,  *pred.like<LikePredicate::Binary>("»¼ÁË", "%¼Á%"));
-    EXPECT_EQ(true,  *pred.like<LikePredicate::GBKCharset>("ÖÐ%ÎÄ", "ÖÐ\\%ÎÄ"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ÖÐ²âÊÔÎÄ", "ÖÐ\\%ÎÄ"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ÖÐfÎÄ", "ÖÐ\\_ÎÄ"));
-    EXPECT_EQ(true,  *pred.like<LikePredicate::GBKCharset>("ÖÐfÎÄ", "ÖÐ_ÎÄ"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ÖÐ%ÎÄ", "ÖÐ²âÊÔÎÄ"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ÖÐaaaÎÄ", "ÖÐ%ÎÄ"));
+    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½ï¿½ï¿½testbd_vidï¿½ï¿½ï¿½ï¿½test", "ï¿½ï¿½ï¿½ï¿½testbd_vidï¿½ï¿½ï¿½ï¿½test"));
+    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½ï¿½ï¿½testbd_vidï¿½ï¿½ï¿½ï¿½test", "%testbd_vidï¿½ï¿½ï¿½ï¿½tes%"));
+    //ï¿½ï¿½ GBK ï¿½ï¿½ã£º BCC1
+    //ï¿½ï¿½ï¿½ï¿½ GBKï¿½ï¿½ã£ºBBBC C1CB
+    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½ï¿½ï¿½", "%ï¿½ï¿½%"));
+    EXPECT_EQ(true,  *pred.like<LikePredicate::Binary>("ï¿½ï¿½ï¿½ï¿½", "%ï¿½ï¿½%"));
+    EXPECT_EQ(true,  *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½%ï¿½ï¿½", "ï¿½ï¿½\\%ï¿½ï¿½"));
+    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½\\%ï¿½ï¿½"));
+    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½fï¿½ï¿½", "ï¿½ï¿½\\_ï¿½ï¿½"));
+    EXPECT_EQ(true,  *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½fï¿½ï¿½", "ï¿½ï¿½_ï¿½ï¿½"));
+    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½%ï¿½ï¿½", "ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½"));
+    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½aaaï¿½ï¿½", "ï¿½ï¿½%ï¿½ï¿½"));
     EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("", ""));
     EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "te%st"));
     EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("test", "te%st"));

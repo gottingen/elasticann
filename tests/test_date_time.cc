@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     return RUN_ALL_TESTS();
 }
 
-namespace baikaldb {
+namespace EA {
 
 //extern std::string timestamp_to_str(time_t timestamp);
 //extern time_t str_to_timestamp(const char* str_time);

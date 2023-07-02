@@ -31,4 +31,14 @@ endif ()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USER_CXX_FLAGS}")
 
 ###################
-list(APPEND USER_CXX_FLAGS "-Wno-unused-parameter" "-Wno-strict-aliasing" "-Wno-parentheses" "-fno-omit-frame-pointer")
+list(APPEND USER_CXX_FLAGS "-Wno-unused-parameter"
+        "-Wno-strict-aliasing"
+        "-Wno-parentheses"
+        "-fno-omit-frame-pointer"
+        "-Wno-unused-variable"
+        "-Wno-deprecated-copy"
+        "-Wno-unused-but-set-variable"
+        "-Wno-reorder"
+        "-Wno-deprecated-declarations"
+        "-Wno-missing-field-initializers"
+        "-Wno-unused-but-set-parameter")

@@ -18,8 +18,8 @@
 #include <baidu/rpc/server.h>
 
 void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
-    baikaldb::TimeCost cost;
-    baikaldb::BthreadCond cond;
+    EA::TimeCost cost;
+    EA::BthreadCond cond;
     for (int i = 0; i < num_thread; ++i) {
         auto parse_sqls = [&sqls, &cond, i, loop] () {
             mem_pool_t* pool = mp_init(1024 * 1024 * 10);
@@ -44,7 +44,7 @@ void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
             cond.decrease_signal();
         };
         cond.increase();
-        baikaldb::Bthread bth;
+        EA::Bthread bth;
         bth.run(parse_sqls);
     }
     cond.wait();
@@ -52,8 +52,8 @@ void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
 }
 
 void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
-    baikaldb::TimeCost cost;
-    baikaldb::BthreadCond cond;
+    EA::TimeCost cost;
+    EA::BthreadCond cond;
     for (int i = 0; i < num_thread; ++i) {
         auto parse_sqls = [&sqls, &cond, i, loop] () {
             for (int j = 0; j < loop; ++j) {
@@ -75,7 +75,7 @@ void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
             return;
         };
         cond.increase();
-        baikaldb::Bthread bth;
+        EA::Bthread bth;
         bth.run(parse_sqls);
     }
     cond.wait();

@@ -21,9 +21,9 @@
 #include "schema_factory.h"
 #include "region.h"
 int main(int argc, char* argv[]) {
-    auto val_encoder = baikaldb::RecordEncoder::get_instance();
+    auto val_encoder = EA::RecordEncoder::get_instance();
 
-    baikaldb::pb::SchemaInfo info;
+    EA::proto::SchemaInfo info;
     info.set_namespace_("test_namespace");
     info.set_database("test_database");
     info.set_table_name("test_table_name");
@@ -41,24 +41,24 @@ int main(int argc, char* argv[]) {
     }
 
     for (int idx = 1; idx < col_cnt; idx++) {
-        baikaldb::pb::Field *field_string = info.add_fields();
+        EA::proto::Field *field_string = info.add_fields();
         field_string->set_field_name("column" + std::to_string(idx));
         field_string->set_field_id(idx);
         if (idx % 5 == 0) {
-            field_string->set_mysql_type(baikaldb::pb::INT32);
+            field_string->set_mysql_type(EA::proto::INT32);
         } else if (idx % 5 == 1) {
-            field_string->set_mysql_type(baikaldb::pb::UINT32);
+            field_string->set_mysql_type(EA::proto::UINT32);
         } else if (idx % 5 == 2) {
-            field_string->set_mysql_type(baikaldb::pb::INT64);
+            field_string->set_mysql_type(EA::proto::INT64);
         } else if (idx % 5 == 3) {
-            field_string->set_mysql_type(baikaldb::pb::UINT64);
+            field_string->set_mysql_type(EA::proto::UINT64);
         } else if (idx % 5 == 4) {
-            field_string->set_mysql_type(baikaldb::pb::DOUBLE);
+            field_string->set_mysql_type(EA::proto::DOUBLE);
         }
     }
 
-    baikaldb::pb::Index *index_pk = info.add_indexs();
-    index_pk->set_index_type(baikaldb::pb::I_PRIMARY);
+    EA::proto::Index *index_pk = info.add_indexs();
+    index_pk->set_index_type(EA::proto::I_PRIMARY);
     index_pk->set_index_name("pk_index");
     index_pk->add_field_ids(1);
     index_pk->add_field_ids(3);
@@ -69,18 +69,18 @@ int main(int argc, char* argv[]) {
     comcfg::ConfigUnit conf;
     val_encoder->init(conf);
 
-    baikaldb::TimeCost cost;
+    EA::TimeCost cost;
     //val_encoder->reload_schema_test(info, row_cnt);
     DB_NOTICE("reload_schema cost: %lu", cost.get_time());
     cost.reset();
 
     return 0;
-    //std::vector<baikaldb::TableRecord*> rows_vec;
+    //std::vector<EA::TableRecord*> rows_vec;
     //rows_vec.reserve(row_cnt);
     //sleep(10);
     for (int row_idx = 0; row_idx < row_cnt; ++row_idx) {
         auto message = val_encoder->_get_table_message(1);
-        auto record = new (std::nothrow)baikaldb::TableRecord(message);
+        auto record = new (std::nothrow)EA::TableRecord(message);
         assert(record != NULL);
 
         srand((unsigned)time(NULL));
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
     DB_NOTICE("set_field cost: %lu", cost.get_time());
     cost.reset();
 
-    std::vector<baikaldb::FieldInfo> infos;
+    std::vector<EA::FieldInfo> infos;
     auto res = val_encoder->get_index_fields(1, infos);
     if (res == -1) {
         DB_WARNING("get pk fields failed: %lu", 1);
