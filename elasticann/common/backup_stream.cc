@@ -133,4 +133,4 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
     return 0;
 }
 
-}  // baikaldb
+}  // EA

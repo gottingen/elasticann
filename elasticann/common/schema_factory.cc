@@ -2439,7 +2439,7 @@ namespace EA {
     }
 
 // Get a list of new regions given a list of old regions
-// used for transaction recovery after baikaldb crash
+// used for transaction recovery after EA crash
     int SchemaFactory::get_region_by_key(
             const RepeatedPtrField<proto::RegionInfo> &input_regions,
             std::map<int64_t, proto::RegionInfo> &output_regions) {

@@ -244,7 +244,7 @@ namespace EA {
         request.set_need_binlog_heartbeat(true);
         for (const auto &info: _table_infos) {
             std::string db_table_name = info.second.table_name;
-            std::vector<std::string> split_vec = turbo::StrSplit(db_table_name, '.',turbo::SkipEmpty());
+            std::vector<std::string> split_vec = turbo::StrSplit(db_table_name, '.', turbo::SkipEmpty());
             if (split_vec.size() != 2) {
                 DB_FATAL("get table_name[%s] fail", db_table_name.c_str());
                 continue;
@@ -363,7 +363,7 @@ namespace EA {
         for (const auto &info: _table_infos) {
             std::string db_table_name = info.second.table_name;
             if (db_table_name.find("*") != db_table_name.npos) {
-                std::vector<std::string> vec = turbo::StrSplit(db_table_name, '.',turbo::SkipEmpty());
+                std::vector<std::string> vec = turbo::StrSplit(db_table_name, '.', turbo::SkipEmpty());
                 if (vec.size() != 2 || vec[1] != "*") {
                     DB_FATAL("get star table[%s.%s] fail", _namespace.c_str(), db_table_name.c_str());
                     continue;

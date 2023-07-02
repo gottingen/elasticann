@@ -611,4 +611,4 @@ int64_t timestamp_to_ts(uint32_t  timestamp) {
     return (((int64_t)timestamp) * 1000 - tso::base_timestamp_ms) << 18;
 }
 
-}  // baikaldb
+}  // EA

@@ -710,4 +710,4 @@ void parse_sample_sql(const std::string& sample_sql, std::string& database, std:
     DB_WARNING("sample_sql: %s, database: %s, table: %s, sql: %s", sample_sql.c_str(), database.c_str(), table.c_str(), sql.c_str());
 }
 
-}  // baikaldb
+}  // EA
