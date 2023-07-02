@@ -66,9 +66,9 @@ namespace EA {
 
     extern int64_t timestamp_to_ts(uint32_t timestamp);
 
-// inline functions
-// DATE: 17 bits year*13+month  (year 0-9999, month 1-12)
-//        5 bits day            (1-31)
+    // inline functions
+    // DATE: 17 bits year*13+month  (year 0-9999, month 1-12)
+    //        5 bits day            (1-31)
     inline uint32_t datetime_to_date(uint64_t datetime) {
         return ((datetime >> 41) & 0x3FFFFF);
     }

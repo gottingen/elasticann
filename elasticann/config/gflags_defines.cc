@@ -1,6 +1,4 @@
-
 // Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "elasticann/config/gflags_defines.h"
+#include "gflags/gflags.h"
 
-
-#include <gflags/gflags.h>
-
-namespace EA {
-    DEFINE_string(default_logical_room, "default", "default_logical_room");
-    DEFINE_string(default_physical_room, "default", "default_physical_room");
-}
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+DEFINE_bool(ea_console_log, true, "console or file log");
+DEFINE_string(ea_log_root, "./logs", "ea flags log root");
+DEFINE_int32(ea_rotation_hour, 2, "rotation hour");
+DEFINE_int32(ea_rotation_minute, 30, "rotation minutes");
+DEFINE_string(ea_log_base_name, "ea_log.txt", "base name for EA");
+DEFINE_int32(ea_log_save_days, 7, "ea log save days");

@@ -44,6 +44,7 @@
 #include "elasticann/common/log.h"
 #include "elasticann/proto/common.pb.h"
 #include "elasticann/proto/meta.interface.pb.h"
+#include "elasticann/common/tlog.h"
 
 
 namespace EA {
