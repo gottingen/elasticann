@@ -118,4 +118,3 @@ void Sorter::shiftdown(size_t index) {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

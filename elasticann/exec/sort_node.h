@@ -127,4 +127,3 @@ private:
     bool _monotonic = true; //是否单调(全部升序或降序)
 };
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

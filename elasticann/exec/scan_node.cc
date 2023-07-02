@@ -805,4 +805,3 @@ int ScanNode::create_fulltext_index_tree() {
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

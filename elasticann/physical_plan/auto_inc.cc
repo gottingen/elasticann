@@ -113,4 +113,3 @@ int AutoInc::update_auto_inc(SmartTable table_info_ptr,
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

@@ -410,4 +410,3 @@ int ExecNode::push_cmd_to_cache(RuntimeState* state,
 }
 
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

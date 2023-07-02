@@ -144,4 +144,3 @@ void TransactionNode::transfer_pb(int64_t region_id, proto::PlanNode* pb_node) {
     }
 }
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

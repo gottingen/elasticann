@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <type_traits>
 #include <iomanip>
@@ -912,4 +912,3 @@ namespace EA {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

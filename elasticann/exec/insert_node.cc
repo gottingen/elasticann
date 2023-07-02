@@ -280,4 +280,3 @@ void InsertNode::find_place_holder(std::map<int, ExprNode*>& placeholders) {
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

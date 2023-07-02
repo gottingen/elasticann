@@ -679,4 +679,3 @@ void AccessPath::show_cost(std::map<std::string, std::string>* cost_info, std::m
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

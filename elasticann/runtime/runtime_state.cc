@@ -287,4 +287,3 @@ uint64_t RuntimeState::tuple_descs_to_sign() {
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

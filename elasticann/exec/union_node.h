@@ -80,4 +80,3 @@ private:
     std::vector<std::vector<ExprNode*>>  _select_projections;
 };
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

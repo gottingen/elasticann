@@ -57,4 +57,3 @@ private:
     int64_t            _txn_lock_timeout = -1;
 };
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

@@ -32,6 +32,7 @@ namespace EA {
             logger->set_level(turbo::tlog::level::debug);
             turbo::tlog::set_default_logger(logger);
         }
+        return true;
     }
 }
 #endif  // ELASTICANN_COMMON_TLOG_H_

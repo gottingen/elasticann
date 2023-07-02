@@ -96,4 +96,3 @@ int Cache<ItemKey, ItemType>::del(const ItemKey& key) {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

@@ -193,4 +193,3 @@ public:
 typedef std::shared_ptr<AccessPath> SmartPath;
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

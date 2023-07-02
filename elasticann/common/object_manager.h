@@ -52,4 +52,3 @@ protected:
     std::unordered_map<std::string, T> _objects;
 };
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

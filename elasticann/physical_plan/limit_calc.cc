@@ -81,4 +81,3 @@ void LimitCalc::_analyze_limit(QueryContext* ctx, ExecNode* node, int64_t limit)
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

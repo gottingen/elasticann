@@ -605,4 +605,3 @@ void OnRPCDone::select_valid_peers(const std::string& resource_tag,
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

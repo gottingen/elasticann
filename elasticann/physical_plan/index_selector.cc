@@ -687,4 +687,3 @@ int IndexSelector::select_partition(SmartTable& table_info, ScanNode* scan_node,
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

@@ -281,4 +281,3 @@ boost::optional<bool> LikePredicate::like(const std::string& target, const std::
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

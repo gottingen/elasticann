@@ -2264,4 +2264,3 @@ ExprValue cast_to_double(const std::vector<ExprValue>& input) {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

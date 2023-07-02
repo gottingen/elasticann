@@ -535,4 +535,3 @@ inline bool has_merged_type(std::vector<proto::PrimitiveType>& types, proto::Pri
     return true;
 }
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

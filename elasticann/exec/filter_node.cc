@@ -728,4 +728,3 @@ void FilterNode::show_explain(std::vector<std::map<std::string, std::string>>& o
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

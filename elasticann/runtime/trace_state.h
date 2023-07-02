@@ -205,4 +205,3 @@ TraceLocalNode TRACE_LOCAL_NODE_NAME (__FUNCTION__, trace, vec, type, callback)
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

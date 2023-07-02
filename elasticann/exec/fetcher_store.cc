@@ -1360,4 +1360,3 @@ int FetcherStore::run_not_set_state(RuntimeState* state,
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

@@ -287,4 +287,3 @@ inline int init_log(const char* bin_name) {
 
 } //namespace EA
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

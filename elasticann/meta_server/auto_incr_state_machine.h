@@ -21,37 +21,42 @@
 #include "elasticann/meta_server/common_state_machine.h"
 
 namespace EA {
-class AutoIncrStateMachine : public EA::CommonStateMachine {
-public:
+    class AutoIncrStateMachine : public EA::CommonStateMachine {
+    public:
 
-    AutoIncrStateMachine(const braft::PeerId& peerId):
+        AutoIncrStateMachine(const braft::PeerId &peerId) :
                 CommonStateMachine(1, "auto_incr_raft", "/auto_incr", peerId) {}
-    
-    virtual ~AutoIncrStateMachine() {}
 
-    // state machine method
-    virtual void on_apply(braft::Iterator& iter);
-    
-    void add_table_id(const proto::MetaManagerRequest& request, braft::Closure* done);
-    void drop_table_id(const proto::MetaManagerRequest& request, braft::Closure* done);
-    void gen_id(const proto::MetaManagerRequest& request, braft::Closure* done);
-    void update(const proto::MetaManagerRequest& request, braft::Closure* done);
+        virtual ~AutoIncrStateMachine() {}
 
-    virtual void on_snapshot_save(braft::SnapshotWriter* writer, braft::Closure* done);
+        // state machine method
+        virtual void on_apply(braft::Iterator &iter);
 
-    virtual int on_snapshot_load(braft::SnapshotReader* reader);
-private:
-    void save_auto_increment(std::string& max_id_string);
-    void save_snapshot(braft::Closure* done, 
-                        braft::SnapshotWriter* writer,
-                        std::string max_id_string);
+        void add_table_id(const proto::MetaManagerRequest &request, braft::Closure *done);
 
-    int load_auto_increment(const std::string& max_id_file);
-    int parse_json_string(const std::string& json_string);
+        void drop_table_id(const proto::MetaManagerRequest &request, braft::Closure *done);
 
-    std::unordered_map<int64_t, uint64_t>               _auto_increment_map;
-};
+        void gen_id(const proto::MetaManagerRequest &request, braft::Closure *done);
+
+        void update(const proto::MetaManagerRequest &request, braft::Closure *done);
+
+        virtual void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done);
+
+        virtual int on_snapshot_load(braft::SnapshotReader *reader);
+
+    private:
+        void save_auto_increment(std::string &max_id_string);
+
+        void save_snapshot(braft::Closure *done,
+                           braft::SnapshotWriter *writer,
+                           std::string max_id_string);
+
+        int load_auto_increment(const std::string &max_id_file);
+
+        int parse_json_string(const std::string &json_string);
+
+        std::unordered_map<int64_t, uint64_t> _auto_increment_map;
+    };
 
 } //namespace EA
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
