@@ -16,7 +16,7 @@
 #include "ea_client_mysql_async.h"
 #include "ea_client_define.h"
 #include "ea_client_epoll.h"
-namespace baikal {
+namespace EA {
 namespace client {
 int bthread_wait_event(Connection *connection, int status, 
         bool* is_timeout, std::ostringstream* os = NULL) {

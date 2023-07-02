@@ -27,7 +27,7 @@
 #include "ea_client_define.h"
 using std::string;
 
-namespace baikal {
+namespace EA {
 namespace client {
 MysqlRow::MysqlRow(MYSQL_RES* res):
                 _res(res),

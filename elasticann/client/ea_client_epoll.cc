@@ -18,7 +18,7 @@
 
 #include "ea_client_epoll.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 
 EpollServer::EpollServer(): 
@@ -176,4 +176,4 @@ void EpollServer::start_server() {
     return;
 }
 }
-} // namespace baikal
+} // namespace EA

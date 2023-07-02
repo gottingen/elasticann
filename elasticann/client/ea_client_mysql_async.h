@@ -36,7 +36,7 @@
 #endif
 #include "errmsg.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 class Connection;
 // non-blocking implementation

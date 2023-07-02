@@ -1,17 +1,18 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+//
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -22,17 +23,17 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/options.h"
 #include "rocksdb/slice_transform.h"
-#include "common.h"
-#include "mut_table_key.h"
+#include "elasticann/common/common.h"
+#include "elasticann/common/mut_table_key.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 
     std::string db_path = "/tmp/rocksdb_prefix_write_example";
 
     // open DB
     rocksdb::Options options;
     options.create_if_missing = true;
-    rocksdb::DB* db;
+    rocksdb::DB *db;
     rocksdb::Status s = rocksdb::DB::Open(options, db_path, &db);
     assert(s.ok());
 
@@ -102,14 +103,14 @@ int main(int argc, char** argv) {
             rocksdb::NewFixedPrefixTransform(8));
     cf_option.OptimizeLevelStyleCompaction();
 
-    rocksdb::ColumnFamilyHandle* cf_handle;
+    rocksdb::ColumnFamilyHandle *cf_handle;
     s = db->CreateColumnFamily(cf_option, "test_cf", &cf_handle);
 
     rocksdb::WriteOptions write_options;
     int64_t prefix = 630152;
     for (int idx = 0; idx < 10000000; ++idx) {
         EA::MutTableKey key;
-        key.append_i64(idx/1000000).append_i64(idx);
+        key.append_i64(idx / 1000000).append_i64(idx);
         s = db->Put(write_options, cf_handle, key.data(), key.data());
         assert(s.ok());
     }

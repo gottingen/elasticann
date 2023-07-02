@@ -28,7 +28,7 @@
 using std::string;
 using std::vector;
 
-namespace baikal {
+namespace EA {
 namespace client {
 const int32_t Weight::RECV_QUEUE_SIZE;
 const int64_t Weight::DEFAULT_QPS;

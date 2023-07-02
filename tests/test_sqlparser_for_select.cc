@@ -1,18 +1,22 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
 
-#include <gtest/gtest.h>
+#include "tests/doctest/doctest.h"
 #include <climits>
 #include <iostream>
 #include <fstream>
@@ -20,7 +24,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <boost/algorithm/string.hpp>
-#include "parser.h"
+#include "elasticann/sqlparser/parser.h"
 #include "turbo/strings/str_split.h"
 
 int main(int argc, char* argv[])
@@ -30,7 +34,7 @@ int main(int argc, char* argv[])
 }
 
 namespace parser {
-TEST(test_parser, case_encode) {
+DOCTEST_TEST_CASE("test_parser, case_encode) {
     // gbk
     {
         std::ifstream f("conf/data_gbk");
@@ -73,7 +77,7 @@ TEST(test_parser, case_encode) {
     }
 }
 
-TEST(test_parser, case_option) {
+DOCTEST_TEST_CASE("test_parser, case_option) {
     //select
     {
         parser::SqlParser parser;
@@ -489,7 +493,7 @@ TEST(test_parser, case_option) {
     }
 }
 
-TEST(test_parser, case_field) {
+DOCTEST_TEST_CASE("test_parser, case_field) {
     // test select_fields
     {
         parser::SqlParser parser;
@@ -677,7 +681,7 @@ TEST(test_parser, case_field) {
     }
 }
 
-TEST(test_parser, case_orderby) {
+DOCTEST_TEST_CASE("test_parser, case_orderby) {
     // test select_orderby
     {
         parser::SqlParser parser;
@@ -773,7 +777,7 @@ TEST(test_parser, case_orderby) {
         ASSERT_TRUE(by_item_1->is_desc == true);
     } 
 }
-TEST(test_parser, case_limit) {
+DOCTEST_TEST_CASE("test_parser, case_limit) {
     {
         parser::SqlParser parser;
         std::string sql_limit0 = "select *, tablea.*, field_a, field_a as alias_1, {OJ field_a + 3}"
@@ -854,7 +858,7 @@ TEST(test_parser, case_limit) {
     }
 }
 
-TEST(test_parser, case_lock) {
+DOCTEST_TEST_CASE("test_parser, case_lock) {
     //test select_lock
     {
         parser::SqlParser parser;
@@ -935,7 +939,7 @@ TEST(test_parser, case_lock) {
     }
 }
 
-TEST(test_parser, case_dual) {
+DOCTEST_TEST_CASE("test_parser, case_dual) {
     //test select_from_dual
     {
         parser::SqlParser parser;
@@ -953,7 +957,7 @@ TEST(test_parser, case_dual) {
         ASSERT_TRUE(select_stmt->lock == parser::SL_IN_SHARE);
     }
 }
-TEST(test_parser, case_where) {
+DOCTEST_TEST_CASE("test_parser, case_where) {
     // test selec_from where
     {
         parser::SqlParser parser;
@@ -986,7 +990,7 @@ TEST(test_parser, case_where) {
         std::cout << select_stmt->to_string() << std::endl;
     }
 }
-TEST(test_parser, case_group) {
+DOCTEST_TEST_CASE("test_parser, case_group) {
     {
         parser::SqlParser parser;
         //test select_group 
@@ -1020,7 +1024,7 @@ TEST(test_parser, case_group) {
         ASSERT_TRUE(select_stmt->having == nullptr);
     }
 }
-TEST(test_parser, case_having) {
+DOCTEST_TEST_CASE("test_parser, case_having) {
     {
         parser::SqlParser parser;
         //test select_having
@@ -1056,7 +1060,7 @@ TEST(test_parser, case_having) {
         ASSERT_FALSE(select_stmt->is_complex_node());
     }
 }
-TEST(test_parser, case_table_refs) {
+DOCTEST_TEST_CASE("test_parser, case_table_refs) {
 // test select_from
     {
         parser::SqlParser parser;
@@ -2653,7 +2657,7 @@ TEST(test_parser, case_table_refs) {
     }
 }
 
-TEST(test_parser, case_union) {
+DOCTEST_TEST_CASE("test_parser, case_union) {
     //test union clause
     {
         parser::SqlParser parser;
@@ -2785,7 +2789,7 @@ TEST(test_parser, case_union) {
     }
 }
 
-TEST(test_parser, case_from_subselect) {
+DOCTEST_TEST_CASE("test_parser, case_from_subselect) {
     //test union clause
     {
         parser::SqlParser parser;
@@ -2810,7 +2814,7 @@ TEST(test_parser, case_from_subselect) {
     }
 }
 
-TEST(test_parser, case_select_field_subselect) {
+DOCTEST_TEST_CASE("test_parser, case_select_field_subselect) {
     //test union clause
     {
         parser::SqlParser parser;
@@ -2835,7 +2839,7 @@ TEST(test_parser, case_select_field_subselect) {
     }
 }
 
-TEST(test_parser, case_exists_subselect) {
+DOCTEST_TEST_CASE("test_parser, case_exists_subselect) {
     //test exists subquery clause
     {
         parser::SqlParser parser;
@@ -2879,7 +2883,7 @@ TEST(test_parser, case_exists_subselect) {
     }
 }
 
-TEST(test_parser, case_anyorall_subselect) {
+DOCTEST_TEST_CASE("test_parser, case_anyorall_subselect) {
     //test anyorall subquery clause
     {
         parser::SqlParser parser;
@@ -2936,7 +2940,7 @@ TEST(test_parser, case_anyorall_subselect) {
     }
 }
 
-TEST(test_parser, case_in_subselect) {
+DOCTEST_TEST_CASE("test_parser, case_in_subselect) {
     //test in subquery clause
     {
         parser::SqlParser parser;
@@ -2975,4 +2979,4 @@ TEST(test_parser, case_in_subselect) {
         ASSERT_TRUE(select_stmt->is_complex_node());
     }
 }
-}  // namespace baikal
+}  // namespace EA

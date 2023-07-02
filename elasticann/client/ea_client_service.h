@@ -35,7 +35,7 @@
 #include "ea_client_logic_db.h"
 #include "ea_client_bns_connection_pool.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 //MysqlService 类，对应每个物理库
 class Service {

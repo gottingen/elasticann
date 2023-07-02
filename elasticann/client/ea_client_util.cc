@@ -30,7 +30,7 @@ using std::string;
 using std::vector;
 using std::map;
 
-namespace baikal {
+namespace EA {
     namespace client {
 
         int32_t divide_ceil(int32_t dividend, int32_t dividor, bool *is_legal) {

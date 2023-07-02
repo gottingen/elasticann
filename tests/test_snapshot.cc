@@ -1,17 +1,18 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+//
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -23,14 +24,14 @@
 #include "rocksdb/options.h"
 #include "rocksdb/slice_transform.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 
     std::string db_path = "rocksdb_snapshot_example";
 
     // open DB
     rocksdb::Options options;
     options.create_if_missing = true;
-    rocksdb::DB* db;
+    rocksdb::DB *db;
     rocksdb::Status s = rocksdb::DB::Open(options, db_path, &db);
     assert(s.ok());
 
@@ -38,7 +39,7 @@ int main(int argc, char** argv) {
     cf_option.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(3));
     cf_option.OptimizeLevelStyleCompaction();
 
-    rocksdb::ColumnFamilyHandle* cf_handle;
+    rocksdb::ColumnFamilyHandle *cf_handle;
     s = db->CreateColumnFamily(cf_option, "test_cf1", &cf_handle);
 
     rocksdb::WriteOptions write_options;
@@ -50,7 +51,7 @@ int main(int argc, char** argv) {
     s = db->Put(write_options, cf_handle, rocksdb::Slice("keyzzz"), rocksdb::Slice("value6"));
 
     rocksdb::SstFileWriter sst_file_writer(rocksdb::EnvOptions(), options, cf_handle);
-    
+
     // Path to where we will write the SST file
     std::string file_path = "snap.sst";
 
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
     s = sst_file_writer.Open(file_path);
     if (!s.ok()) {
         printf("Error while opening file %s, Error: %s\n", file_path.c_str(),
-           s.ToString().c_str());
+               s.ToString().c_str());
         return 1;
     }
 
@@ -81,7 +82,7 @@ int main(int argc, char** argv) {
     s = sst_file_writer.Finish();
     if (!s.ok()) {
         printf("Error while finishing file %s, Error: %s\n", file_path.c_str(),
-           s.ToString().c_str());
+               s.ToString().c_str());
         return 1;
     }
 
@@ -97,9 +98,9 @@ int main(int argc, char** argv) {
     // Ingest the 2 passed SST files into the DB
     s = db->IngestExternalFile(cf_handle, {file_path}, ifo);
     if (!s.ok()) {
-      printf("Error while adding file %s, Error %s\n",
-             file_path.c_str(), s.ToString().c_str());
-      return 1;
+        printf("Error while adding file %s, Error %s\n",
+               file_path.c_str(), s.ToString().c_str());
+        return 1;
     }
 
     iter = db->NewIterator(read_options, cf_handle);

@@ -23,7 +23,7 @@ using std::string;
 using std::map;
 using std::vector;
 
-namespace baikal {
+namespace EA {
 namespace client {
 const int Service::fetch_conn_times;
 

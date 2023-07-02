@@ -30,7 +30,7 @@
 #include "ea_client_row.h"
 #include "ea_client_mysql_async.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 /**
  * @brief MySQcL查询结果集封装

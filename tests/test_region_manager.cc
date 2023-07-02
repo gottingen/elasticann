@@ -1,18 +1,23 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 
-#include "gtest/gtest.h"
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
+
+#include "tests/doctest/doctest.h"
 #include <gflags/gflags.h>
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/table_manager.h"
@@ -20,14 +25,13 @@
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
+
 namespace EA {
     DECLARE_string(db_path);
 }
-class TestManagerTest : public testing::Test {
+class TestManagerTest {
 public:
-    ~TestManagerTest() {}
-protected:
-    virtual void SetUp() {
+    TestManagerTest() {
         _rocksdb = EA::MetaRocksdb::get_instance();
         if (!_rocksdb) {
             DB_FATAL("create rocksdb handler failed");
@@ -44,28 +48,32 @@ protected:
         _table_manager = EA::TableManager::get_instance();
         _region_manager = EA::RegionManager::get_instance();
     }
-    virtual void TearDown() {}
-    EA::RegionManager* _region_manager;
-    EA::TableManager* _table_manager;
-    EA::NamespaceManager* _namespace_manager;
-    EA::DatabaseManager* _database_manager;
-    EA::SchemaManager* _schema_manager;
-    EA::MetaRocksdb*  _rocksdb;
+
+    ~TestManagerTest() {}
+
+protected:
+
+    EA::RegionManager *_region_manager;
+    EA::TableManager *_table_manager;
+    EA::NamespaceManager *_namespace_manager;
+    EA::DatabaseManager *_database_manager;
+    EA::SchemaManager *_schema_manager;
+    EA::MetaRocksdb *_rocksdb;
 };
 // add_logic add_physical add_instance
-TEST_F(TestManagerTest, test_create_drop_modify) {
+DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     //测试点：增加命名空间"FengChao"
     EA::proto::MetaManagerRequest request_add_namespace_fc;
     request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
-    request_add_namespace_fc.mutable_namespace_info()->set_quota(1024*1024);
+    request_add_namespace_fc.mutable_namespace_info()->set_quota(1024 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
-    
+
     //测试点：增加命名空间Feed
     EA::proto::MetaManagerRequest request_add_namespace_feed;
     request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
-    request_add_namespace_feed.mutable_namespace_info()->set_quota(2014*1024);
+    request_add_namespace_feed.mutable_namespace_info()->set_quota(2014 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
     //验证正确性
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
@@ -77,7 +85,7 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map.size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
-    for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
+    for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
     //做snapshot, 验证snapshot的正确性
@@ -91,7 +99,7 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map.size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
-    for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
+    for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
 
@@ -100,10 +108,10 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
 
     int64_t namespace_id = _namespace_manager->get_namespace_id("FengChao");
     DOCTEST_REQUIRE_EQ(1, namespace_id);
-    
+
     namespace_id = _namespace_manager->get_namespace_id("Feed");
     DOCTEST_REQUIRE_EQ(2, namespace_id);
-    
+
     //测试点：创建database
     EA::proto::MetaManagerRequest request_add_database_fc;
     request_add_database_fc.set_op_type(EA::proto::OP_CREATE_DATABASE);
@@ -111,7 +119,7 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     request_add_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_add_database_fc.mutable_database_info()->set_quota(10 * 1024);
     _database_manager->create_database(request_add_database_fc, NULL);
-    
+
     request_add_database_fc.mutable_database_info()->set_database("FC_Segment");
     request_add_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_add_database_fc.mutable_database_info()->set_quota(100 * 1024);
@@ -134,10 +142,10 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids[1].size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
-    for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
+    for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
-    for (auto& ns_id: _namespace_manager->_namespace_id_map) {
+    for (auto &ns_id: _namespace_manager->_namespace_id_map) {
         DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
@@ -148,15 +156,15 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_info_map.size());
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
-    for (auto& db_mem : _database_manager->_database_info_map) {
+    for (auto &db_mem: _database_manager->_database_info_map) {
         DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
     }
-    for (auto& db_id: _database_manager->_database_id_map) {
+    for (auto &db_id: _database_manager->_database_id_map) {
         DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
-    
+
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_id_map.size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_id_map["FengChao"]);
@@ -165,10 +173,10 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids[1].size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
-    for (auto& ns_mem : _namespace_manager->_namespace_info_map) {
+    for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
         DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
     }
-    for (auto& ns_id: _namespace_manager->_namespace_id_map) {
+    for (auto &ns_id: _namespace_manager->_namespace_id_map) {
         DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
@@ -179,10 +187,10 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_info_map.size());
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
-    for (auto& db_mem : _database_manager->_database_info_map) {
+    for (auto &db_mem: _database_manager->_database_info_map) {
         DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
     }
-    for (auto& db_id: _database_manager->_database_id_map) {
+    for (auto &db_id: _database_manager->_database_id_map) {
         DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
     }
 
@@ -193,7 +201,7 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     request_create_table_fc.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc.mutable_table_info()->set_namespace_name("FengChao");
     request_create_table_fc.mutable_table_info()->add_init_store("127.0.0.1:8010");
-    EA::proto::FieldInfo* field = request_create_table_fc.mutable_table_info()->add_fields();
+    EA::proto::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("userid");
     field->set_mysql_type(EA::proto::INT64);
     field = request_create_table_fc.mutable_table_info()->add_fields();
@@ -205,7 +213,7 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("user_type");
     field->set_mysql_type(EA::proto::STRING);
-    EA::proto::IndexInfo* index = request_create_table_fc.mutable_table_info()->add_indexs();
+    EA::proto::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
     index->set_index_type(EA::proto::I_PRIMARY);
     index->add_field_names("userid");
@@ -215,7 +223,7 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     index->add_field_names("username");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc, 1, NULL);
-    
+
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(2, _table_manager->_max_table_id);
@@ -238,22 +246,23 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
 
     DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map.size());
-    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") +  "\001" + "FC_Word" + "\001" + "userinfo"]);
+    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") + "\001" + "FC_Word" + "\001" +
+                                                        "userinfo"]);
     DOCTEST_REQUIRE_EQ(1, _table_manager->_table_info_map.size());
-    
-    for (auto& table_mem : _table_manager->_table_info_map) {
+
+    for (auto &table_mem: _table_manager->_table_info_map) {
         DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
-        for (auto& partition_region : table_mem.second.partition_regions) {
+        for (auto &partition_region: table_mem.second.partition_regions) {
             DB_WARNING("partition_id: %ld", partition_region.first);
-            for (auto region_id : partition_region.second) {
+            for (auto region_id: partition_region.second) {
                 DB_WARNING("region_id: %ld", region_id);
             }
         }
-        for (auto& field : table_mem.second.field_id_map) {
+        for (auto &field: table_mem.second.field_id_map) {
             DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
         }
-        for (auto& index : table_mem.second.index_id_map) {
+        for (auto &index: table_mem.second.index_id_map) {
             DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
         }
     }
@@ -280,24 +289,25 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
 
     DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map.size());
-    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") +  "\001" + "FC_Word" + "\001" + "userinfo"]);
+    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") + "\001" + "FC_Word" + "\001" +
+                                                        "userinfo"]);
     DOCTEST_REQUIRE_EQ(1, _table_manager->_table_info_map.size());
-    
-    for (auto& table_mem : _table_manager->_table_info_map) {
+
+    for (auto &table_mem: _table_manager->_table_info_map) {
         DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
-        for (auto& field : table_mem.second.field_id_map) {
+        for (auto &field: table_mem.second.field_id_map) {
             DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
         }
-        for (auto& index : table_mem.second.index_id_map) {
+        for (auto &index: table_mem.second.index_id_map) {
             DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
         }
-        for (auto& partition_region : table_mem.second.partition_regions) {
+        for (auto &partition_region: table_mem.second.partition_regions) {
             DB_WARNING("partition_id: %ld", partition_region.first);
-            for (auto region_id : partition_region.second) {
+            for (auto region_id: partition_region.second) {
                 DB_WARNING("region_id: %ld", region_id);
-            }   
-        } 
+            }
+        }
     }
 
     //测试点：创建层次表
@@ -353,25 +363,27 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
 
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_id_map.size());
-    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") +  "\001" + "FC_Word" + "\001" + "userinfo"]);
-    DOCTEST_REQUIRE_EQ(3, _table_manager->_table_id_map[std::string("FengChao") +  "\001" + "FC_Word" + "\001" + "planinfo"]);
+    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") + "\001" + "FC_Word" + "\001" +
+                                                        "userinfo"]);
+    DOCTEST_REQUIRE_EQ(3, _table_manager->_table_id_map[std::string("FengChao") + "\001" + "FC_Word" + "\001" +
+                                                        "planinfo"]);
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map.size());
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map[1].schema_pb.version());
-    for (auto& table_mem : _table_manager->_table_info_map) {
+    for (auto &table_mem: _table_manager->_table_info_map) {
         DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
-        for (auto& field : table_mem.second.field_id_map) {
+        for (auto &field: table_mem.second.field_id_map) {
             DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
         }
-        for (auto& index : table_mem.second.index_id_map) {
+        for (auto &index: table_mem.second.index_id_map) {
             DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
         }
-        for (auto& partition_region : table_mem.second.partition_regions) {
+        for (auto &partition_region: table_mem.second.partition_regions) {
             DB_WARNING("partition_id: %ld", partition_region.first);
-            for (auto region_id : partition_region.second) {
+            for (auto region_id: partition_region.second) {
                 DB_WARNING("region_id: %ld", region_id);
-            }   
-        } 
+            }
+        }
     }
     _schema_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
@@ -396,26 +408,28 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
 
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_id_map.size());
-    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") +  "\001" + "FC_Word" + "\001" + "userinfo"]);
-    DOCTEST_REQUIRE_EQ(3, _table_manager->_table_id_map[std::string("FengChao") +  "\001" + "FC_Word" + "\001" + "planinfo"]);
+    DOCTEST_REQUIRE_EQ(1, _table_manager->_table_id_map[std::string("FengChao") + "\001" + "FC_Word" + "\001" +
+                                                        "userinfo"]);
+    DOCTEST_REQUIRE_EQ(3, _table_manager->_table_id_map[std::string("FengChao") + "\001" + "FC_Word" + "\001" +
+                                                        "planinfo"]);
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map.size());
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map[1].schema_pb.version());
-    
-    for (auto& table_mem : _table_manager->_table_info_map) {
+
+    for (auto &table_mem: _table_manager->_table_info_map) {
         DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
-        for (auto& field : table_mem.second.field_id_map) {
+        for (auto &field: table_mem.second.field_id_map) {
             DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
         }
-        for (auto& index : table_mem.second.index_id_map) {
+        for (auto &index: table_mem.second.index_id_map) {
             DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
         }
-        for (auto& partition_region : table_mem.second.partition_regions) {
+        for (auto &partition_region: table_mem.second.partition_regions) {
             DB_WARNING("partition_id: %ld", partition_region.first);
-            for (auto region_id : partition_region.second) {
+            for (auto region_id: partition_region.second) {
                 DB_WARNING("region_id: %ld", region_id);
-            }   
-        } 
+            }
+        }
     }
 
     //add region
@@ -475,20 +489,20 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     //    DB_WARNING("region_id: %ld", region_info.first, region_info.second->ShortDebugString().c_str());
     //}
     _schema_manager->load_snapshot();
-    for (auto& table_mem : _table_manager->_table_info_map) {
+    for (auto &table_mem: _table_manager->_table_info_map) {
         DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
-        for (auto& field : table_mem.second.field_id_map) {
+        for (auto &field: table_mem.second.field_id_map) {
             DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
         }
-        for (auto& index : table_mem.second.index_id_map) {
+        for (auto &index: table_mem.second.index_id_map) {
             DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
         }
-        for (auto& partition_region : table_mem.second.partition_regions) {
+        for (auto &partition_region: table_mem.second.partition_regions) {
             DB_WARNING("partition_id: %ld", partition_region.first);
-            for (auto region_id : partition_region.second) {
+            for (auto region_id: partition_region.second) {
                 DB_WARNING("region_id: %ld", region_id);
-            }   
+            }
         }
     }
     //for (auto& region_info : _region_manager->_region_info_map) {
@@ -513,29 +527,23 @@ TEST_F(TestManagerTest, test_create_drop_modify) {
     DOCTEST_REQUIRE_EQ(0, _region_manager->_instance_region_map.size());
     DOCTEST_REQUIRE_EQ(0, _table_manager->_table_info_map[1].partition_regions[0].size());
     _schema_manager->load_snapshot();
-    for (auto& table_mem : _table_manager->_table_info_map) {
+    for (auto &table_mem: _table_manager->_table_info_map) {
         DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
-        for (auto& field : table_mem.second.field_id_map) {
+        for (auto &field: table_mem.second.field_id_map) {
             DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
         }
-        for (auto& index : table_mem.second.index_id_map) {
+        for (auto &index: table_mem.second.index_id_map) {
             DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
         }
-        for (auto& partition_region : table_mem.second.partition_regions) {
+        for (auto &partition_region: table_mem.second.partition_regions) {
             DB_WARNING("partition_id: %ld", partition_region.first);
-            for (auto region_id : partition_region.second) {
+            for (auto region_id: partition_region.second) {
                 DB_WARNING("region_id: %ld", region_id);
-            }   
+            }
         }
     }
     //for (auto& region_info : _region_manager->_region_info_map) {
     //    DB_WARNING("region_id: %ld", region_info.first, region_info.second->ShortDebugString().c_str());
     //}
-} // TEST_F
-int main(int argc, char** argv) {
-    EA::FLAGS_db_path = "region_manager_db";
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

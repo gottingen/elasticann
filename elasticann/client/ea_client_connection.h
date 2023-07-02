@@ -30,7 +30,7 @@
 #include "boost/atomic.hpp"
 #include "ea_client_result_set.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 class Instance;
 class BnsConnectionPool;

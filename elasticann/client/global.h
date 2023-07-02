@@ -25,7 +25,7 @@
 
 #include <string>
 
-namespace baikal {
+namespace EA {
 namespace client {
 extern char* INSTANCE_STATUS_CSTR[5];
 extern int DEFAULT_READ_TIMEOUT;

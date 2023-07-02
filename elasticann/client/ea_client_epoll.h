@@ -26,7 +26,7 @@
 #include "ea_client_util.h"
 #include "ea_client_mysql_connection.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 
 class MysqlConnection;
@@ -66,6 +66,6 @@ private:
     bool                _shutdown;
 };
 }
-} // namespace baikal
+} // namespace EA
 
 #endif

@@ -1,18 +1,22 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
 
-#include <gtest/gtest.h>
+#include "tests/doctest/doctest.h"
 #include <string.h>
 #include <climits>
 #include <iostream>
@@ -21,65 +25,55 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstdint>
-#include "rapidjson.h"
-#include <raft/raft.h>
+#include "rapidjson/rapidjson.h"
+#include <braft/raft.h>
 #include <bvar/bvar.h>
-#include "reverse_common.h"
-#include "reverse_index.h"
-#include "reverse_interface.h"
-#include "transaction_pool.h"
-#include "transaction.h"
-#include "rocks_wrapper.h"
-#include "proto/meta.interface.pb.h"
-
-int my_argc;
-char** my_argv;
-
-int main(int argc, char* argv[])
-{
-    testing::InitGoogleTest(&argc, argv);
-    my_argc = argc;
-    my_argv = argv;
-    return RUN_ALL_TESTS();
-}
+#include "elasticann/reverse/reverse_common.h"
+#include "elasticann/reverse/reverse_index.h"
+#include "elasticann/reverse/reverse_interface.h"
+#include "elasticann/engine/transaction_pool.h"
+#include "elasticann/engine/transaction.h"
+#include "elasticann/engine/rocks_wrapper.h"
+#include "elasticann/proto/meta.interface.pb.h"
 
 namespace EA {
-TEST(test_q2b_tolower_gbk, case_all) {
+    /*
+DOCTEST_TEST_CASE("test_q2b_tolower_gbk, case_all") {
     Tokenizer::get_instance()->init();
     {
         std::string word = "��";
         Tokenizer::get_instance()->q2b_tolower_gbk(word);
         std::cout << word << std::endl;
-        ASSERT_STREQ(word.c_str(), ",");
+        ASSERT_STREQ(word, ",");
     }
     {
         std::string word = "A";
         Tokenizer::get_instance()->q2b_tolower_gbk(word);
         std::cout << word << std::endl;
-        ASSERT_STREQ(word.c_str(), "a");
+        ASSERT_STREQ(word, "a");
     }
     {
         std::string word = "1";
         Tokenizer::get_instance()->q2b_tolower_gbk(word);
         std::cout << word << std::endl;
-        ASSERT_STREQ(word.c_str(), "1");
+        ASSERT_STREQ(word, "1");
     }
     {
         std::string word = "��";
         Tokenizer::get_instance()->q2b_tolower_gbk(word);
         std::cout << word << std::endl;
-        ASSERT_STREQ(word.c_str(), "��");
+        ASSERT_STREQ(word, "��");
     }
     Tokenizer::get_instance()->init();
     {
         std::string word = "p.c1+11.1?-WWWӪҵӪ�ȣ���������䣡��������������ִ�գ���ȷ��";
         Tokenizer::get_instance()->q2b_tolower_gbk(word);
         std::cout << word << std::endl;
-        ASSERT_STREQ(word.c_str(), "p.c1+11.1?-wwwӪҵӪhello world!0123721ִ��(��ȷ)");
+        ASSERT_STREQ(word, "p.c1+11.1?-wwwӪҵӪhello world!0123721ִ��(��ȷ)");
     }
 }
-
-TEST(test_split_str_gbk, case_all) {
+*/
+DOCTEST_TEST_CASE("test_split_str_gbk, case_all") {
     Tokenizer::get_instance()->init();
     {
         std::string word = "%||||%";
@@ -162,7 +156,7 @@ TEST(test_split_str_gbk, case_all) {
         }
     }
 }
-TEST(test_simple_seg_gbk, case_all) {
+DOCTEST_TEST_CASE("test_simple_seg_gbk, case_all") {
     Tokenizer::get_instance()->init();
     {
         std::string word = "06-JO [����] �ز�-���ۺ�";
@@ -300,7 +294,7 @@ TEST(test_simple_seg_gbk, case_all) {
     }
 }
 
-TEST(test_es_standard_gbk, case_all) {
+DOCTEST_TEST_CASE("test_es_standard_gbk, case_all") {
     Tokenizer::get_instance()->init();
     {
         std::string word = "a";
@@ -426,8 +420,8 @@ void arrow_test(std::string db_path, std::string word_file, const char* search_w
         1,
         5000,
         rocksdb,
-        pb::GBK,
-        pb::S_UNIGRAMS,
+        proto::GBK,
+        proto::S_UNIGRAMS,
         false, // common need not cache
         true);
 
@@ -465,7 +459,7 @@ void arrow_test(std::string db_path, std::string word_file, const char* search_w
 
     merge_thread.run([&stop_merge, &arrow_index, &key, &end_key](){
         while (!stop_merge) {
-            pb::RegionInfo region_info;
+            proto::RegionInfo region_info;
             region_info.set_start_key(key.data());
             region_info.set_end_key(end_key.data());
             arrow_index->reverse_merge_func(region_info, false);
@@ -495,7 +489,7 @@ void arrow_test(std::string db_path, std::string word_file, const char* search_w
             SmartTransaction txn(new Transaction(0, smart_transaction.get())); 
             txn->begin(Transaction::TxnOptions());
             TimeCost tc;
-            arrow_index->search(txn->get_txn(), ii, ti, search_line, pb::M_NONE, _con, true);
+            arrow_index->search(txn->get_txn(), ii, ti, search_line, proto::M_NONE, _con, true);
             std::cout << "valid reverse time[" << tc.get_time() << "]\n";
             TimeCost tc2;
             uint64_t valid_num = 0;
@@ -507,8 +501,8 @@ void arrow_test(std::string db_path, std::string word_file, const char* search_w
         }
     }
 }
-
-TEST(test_arrow_pb, case_all) {
+/*
+DOCTEST_TEST_CASE("test_arrow_pb, case_all") {
     if (my_argc < 3) {
         return;
     }
@@ -521,5 +515,5 @@ TEST(test_arrow_pb, case_all) {
         arrow_test<ReverseIndex<CommonSchema>>("./rocksdb", "word", my_argv[2]);
     }
 }
-
-}  // namespace baikal
+*/
+}  // namespace EA

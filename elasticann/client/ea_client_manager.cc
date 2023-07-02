@@ -30,7 +30,7 @@ using std::string;
 using std::map;
 using std::vector;
 
-namespace baikal {
+namespace EA {
 namespace client {
 void* healthy_check_thread(void* pd) {
     CLIENT_WARNING("healthy check thread start");

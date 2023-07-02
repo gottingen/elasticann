@@ -1,18 +1,22 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
 
-#include <gtest/gtest.h>
+#include "tests/doctest/doctest.h"
 #include <climits>
 #include <iostream>
 #include <fstream>
@@ -20,8 +24,8 @@
 #include <cstdlib>
 #include <ctime>
 #include "ea_client.h"
-#include "common.h"
-#include "parser.h"
+#include "elasticann/common/common.h"
+#include "elasticann/sqlparser/parser.h"
 
 int main(int argc, char* argv[])
 {
@@ -31,7 +35,7 @@ int main(int argc, char* argv[])
 #include "uconv.h"
 namespace parser {
 
-TEST(test_parser, case_all) {
+DOCTEST_TEST_CASE("test_parser, case_all") {
     parser::SqlParser parser;
     std::string sql = "insert into t1() values (1,'aaa'),('3',4+2)";
     //std::string sql2 = "insert \n \n in to t1 (a,b) values (1,1),(now(), (1+((2+3))));";
@@ -66,7 +70,7 @@ TEST(test_parser, case_all) {
     }
 }
 
-TEST(test_parser, case_create_table) {
+DOCTEST_TEST_CASE("test_parser, case_create_table) {
     parser::SqlParser parser;
     
     std::string sql = "create table score_diary_book ("
@@ -85,18 +89,18 @@ TEST(test_parser, case_create_table) {
     ") ENGINE=Rocksdb DEFAULT CHARSET=gbk AVG_ROW_LENGTH=500 COMMENT='{\"comment\":"", \"resource_tag\":\"e0-nj\", \"namespace\":\"FENGCHAO\"}'";
 
     parser.parse(sql);
-    //EXPECT_EQ(parser::SUCC, parser.error);
+    //DOCTEST_CHECK_EQ(parser::SUCC, parser.error);
     printf("errormsg: %d, %s\n", parser.error, parser.syntax_err_str.c_str());
 
-    EXPECT_EQ(1, parser.result.size());
+    DOCTEST_CHECK_EQ(1, parser.result.size());
 
     if (parser.result.size() != 1) {
         return;
     }
-    EXPECT_EQ(parser::NT_CREATE_TABLE, parser.result[0]->node_type);
+    DOCTEST_CHECK_EQ(parser::NT_CREATE_TABLE, parser.result[0]->node_type);
     CreateTableStmt* stmt = (CreateTableStmt*)parser.result[0];
-    EXPECT_EQ(parser::NT_CREATE_TABLE, stmt->node_type);
-    EXPECT_FALSE(stmt->if_not_exist);
+    DOCTEST_CHECK_EQ(parser::NT_CREATE_TABLE, stmt->node_type);
+    DOCTEST_CHECK_FALSE(stmt->if_not_exist);
 
     printf("stmt->table_name: %p", stmt->table_name);
 
@@ -112,7 +116,7 @@ TEST(test_parser, case_create_table) {
     }
 }
 
-TEST(test_parser, case_create_table_hll) {
+DOCTEST_TEST_CASE("test_parser, case_create_table_hll) {
     parser::SqlParser parser;
     
     std::string sql = "create table score_diary_book ("
@@ -132,18 +136,18 @@ TEST(test_parser, case_create_table_hll) {
     ") ENGINE=Rocksdb DEFAULT CHARSET=gbk AVG_ROW_LENGTH=500 COMMENT='{\"comment\":"", \"resource_tag\":\"e0-nj\", \"namespace\":\"FENGCHAO\"}'";
 
     parser.parse(sql);
-    //EXPECT_EQ(parser::SUCC, parser.error);
+    //DOCTEST_CHECK_EQ(parser::SUCC, parser.error);
     printf("errormsg: %d, %s\n", parser.error, parser.syntax_err_str.c_str());
 
-    EXPECT_EQ(1, parser.result.size());
+    DOCTEST_CHECK_EQ(1, parser.result.size());
 
     if (parser.result.size() != 1) {
         return;
     }
-    EXPECT_EQ(parser::NT_CREATE_TABLE, parser.result[0]->node_type);
+    DOCTEST_CHECK_EQ(parser::NT_CREATE_TABLE, parser.result[0]->node_type);
     CreateTableStmt* stmt = (CreateTableStmt*)parser.result[0];
-    EXPECT_EQ(parser::NT_CREATE_TABLE, stmt->node_type);
-    EXPECT_FALSE(stmt->if_not_exist);
+    DOCTEST_CHECK_EQ(parser::NT_CREATE_TABLE, stmt->node_type);
+    DOCTEST_CHECK_FALSE(stmt->if_not_exist);
 
     printf("stmt->table_name: %p", stmt->table_name);
 
@@ -159,7 +163,7 @@ TEST(test_parser, case_create_table_hll) {
     }
 }
 
-TEST(test_parser, begin_txn) {
+DOCTEST_TEST_CASE("test_parser, begin_txn) {
     parser::SqlParser parser;
     std::string sql = "BEGIN;";
     parser.parse(sql);
@@ -168,7 +172,7 @@ TEST(test_parser, begin_txn) {
         return;
     }
     StmtNode* stmt = (StmtNode*)parser.result[0];
-    EXPECT_EQ(stmt->node_type, parser::NT_START_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_START_TRANSACTION);
 
     //////////////////////
     parser::SqlParser parser2;
@@ -179,7 +183,7 @@ TEST(test_parser, begin_txn) {
         return;
     }
     StmtNode* stmt2 = (StmtNode*)parser2.result[0];
-    EXPECT_EQ(stmt2->node_type, parser::NT_START_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt2->node_type, parser::NT_START_TRANSACTION);
 
     //////////////////////
     parser::SqlParser parser3;
@@ -190,10 +194,10 @@ TEST(test_parser, begin_txn) {
         return;
     }
     StmtNode* stmt3 = (StmtNode*)parser3.result[0];
-    EXPECT_EQ(stmt3->node_type, parser::NT_START_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt3->node_type, parser::NT_START_TRANSACTION);
 }
 
-TEST(test_parser, commit_txn) {
+DOCTEST_TEST_CASE("test_parser, commit_txn) {
     parser::SqlParser parser;
     std::string sql = "COMMIT;";
     parser.parse(sql);
@@ -202,7 +206,7 @@ TEST(test_parser, commit_txn) {
         return;
     }
     StmtNode* stmt = (StmtNode*)parser.result[0];
-    EXPECT_EQ(stmt->node_type, parser::NT_COMMIT_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_COMMIT_TRANSACTION);
 
     //////////////////////
     parser::SqlParser parser2;
@@ -213,10 +217,10 @@ TEST(test_parser, commit_txn) {
         return;
     }
     StmtNode* stmt2 = (StmtNode*)parser2.result[0];
-    EXPECT_EQ(stmt2->node_type, parser::NT_COMMIT_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt2->node_type, parser::NT_COMMIT_TRANSACTION);
 }
 
-TEST(test_parser, rollback_txn) {
+DOCTEST_TEST_CASE("test_parser, rollback_txn) {
     parser::SqlParser parser;
     std::string sql = "rollback;";
     parser.parse(sql);
@@ -225,7 +229,7 @@ TEST(test_parser, rollback_txn) {
         return;
     }
     StmtNode* stmt = (StmtNode*)parser.result[0];
-    EXPECT_EQ(stmt->node_type, parser::NT_ROLLBACK_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_ROLLBACK_TRANSACTION);
 
     //////////////////////
     parser::SqlParser parser2;
@@ -236,10 +240,10 @@ TEST(test_parser, rollback_txn) {
         return;
     }
     StmtNode* stmt2 = (StmtNode*)parser2.result[0];
-    EXPECT_EQ(stmt2->node_type, parser::NT_ROLLBACK_TRANSACTION);
+    DOCTEST_CHECK_EQ(stmt2->node_type, parser::NT_ROLLBACK_TRANSACTION);
 }
 
-TEST(test_parser, autocommit1) {
+DOCTEST_TEST_CASE("test_parser, autocommit1) {
     parser::SqlParser parser;
     std::string sql = "set autocommit=1;";
     parser.parse(sql);
@@ -248,27 +252,27 @@ TEST(test_parser, autocommit1) {
         return;
     }
     StmtNode* stmt = (StmtNode*)parser.result[0];
-    EXPECT_EQ(stmt->node_type, parser::NT_SET_CMD);
+    DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_SET_CMD);
     if (stmt->node_type != parser::NT_SET_CMD) {
         return;
     }
     SetStmt* set = (SetStmt*)stmt;
-    EXPECT_EQ(set->var_list.size(), 1);
+    DOCTEST_CHECK_EQ(set->var_list.size(), 1);
     if (set->var_list.size() != 1) {
         return;
     }
     VarAssign* assign = set->var_list[0];
-    EXPECT_EQ(strcmp(assign->key.value, "autocommit"), 0);
-    EXPECT_EQ(assign->value->expr_type, ET_LITETAL);
+    DOCTEST_CHECK_EQ(strcmp(assign->key.value, "autocommit"), 0);
+    DOCTEST_CHECK_EQ(assign->value->expr_type, ET_LITETAL);
 
     if (assign->value->expr_type != ET_LITETAL) {
         return;
     }
     LiteralExpr* literal = (LiteralExpr*)(assign->value);
-    EXPECT_EQ(literal->_u.int64_val, 1);
+    DOCTEST_CHECK_EQ(literal->_u.int64_val, 1);
 }
 
-TEST(test_parser, autocommit0) {
+DOCTEST_TEST_CASE("test_parser, autocommit0) {
     parser::SqlParser parser;
     std::string sql = "set autocommit=0;";
     parser.parse(sql);
@@ -277,27 +281,27 @@ TEST(test_parser, autocommit0) {
         return;
     }
     StmtNode* stmt = (StmtNode*)parser.result[0];
-    EXPECT_EQ(stmt->node_type, parser::NT_SET_CMD);
+    DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_SET_CMD);
     if (stmt->node_type != parser::NT_SET_CMD) {
         return;
     }
     SetStmt* set = (SetStmt*)stmt;
-    EXPECT_EQ(set->var_list.size(), 1);
+    DOCTEST_CHECK_EQ(set->var_list.size(), 1);
     if (set->var_list.size() != 1) {
         return;
     }
     VarAssign* assign = set->var_list[0];
-    EXPECT_EQ(strcmp(assign->key.value, "autocommit"), 0);
-    EXPECT_EQ(assign->value->expr_type, ET_LITETAL);
+    DOCTEST_CHECK_EQ(strcmp(assign->key.value, "autocommit"), 0);
+    DOCTEST_CHECK_EQ(assign->value->expr_type, ET_LITETAL);
 
     if (assign->value->expr_type != ET_LITETAL) {
         return;
     }
     LiteralExpr* literal = (LiteralExpr*)(assign->value);
-    EXPECT_EQ(literal->_u.int64_val, 0);
+    DOCTEST_CHECK_EQ(literal->_u.int64_val, 0);
 }
 
-TEST(test_parser, set_kv) {
+DOCTEST_TEST_CASE("test_parser, set_kv) {
     {
         parser::SqlParser parser;
         std::string sql = "set key1=val1, key2=val2;";
@@ -307,34 +311,34 @@ TEST(test_parser, set_kv) {
             return;
         }
         StmtNode* stmt = (StmtNode*)parser.result[0];
-        EXPECT_EQ(stmt->node_type, parser::NT_SET_CMD);
+        DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_SET_CMD);
         if (stmt->node_type != parser::NT_SET_CMD) {
             return;
         }
         SetStmt* set = (SetStmt*)stmt;
-        EXPECT_EQ(set->var_list.size(), 2);
+        DOCTEST_CHECK_EQ(set->var_list.size(), 2);
         if (set->var_list.size() != 2) {
             return;
         }
         VarAssign* assign0 = set->var_list[0];
-        EXPECT_EQ(strcmp(assign0->key.value, "key1"), 0);
-        EXPECT_EQ(assign0->value->expr_type, ET_COLUMN);
+        DOCTEST_CHECK_EQ(strcmp(assign0->key.value, "key1"), 0);
+        DOCTEST_CHECK_EQ(assign0->value->expr_type, ET_COLUMN);
 
         if (assign0->value->expr_type != ET_COLUMN) {
             return;
         }
         ColumnName* name = (ColumnName*)(assign0->value);
-        EXPECT_EQ(strcmp(name->name.value, "val1"), 0);
+        DOCTEST_CHECK_EQ(strcmp(name->name.value, "val1"), 0);
 
         VarAssign* assign1 = set->var_list[1];
-        EXPECT_EQ(strcmp(assign1->key.value, "key2"), 0);
-        EXPECT_EQ(assign1->value->expr_type, ET_COLUMN);
+        DOCTEST_CHECK_EQ(strcmp(assign1->key.value, "key2"), 0);
+        DOCTEST_CHECK_EQ(assign1->value->expr_type, ET_COLUMN);
 
         if (assign1->value->expr_type != ET_COLUMN) {
             return;
         }
         name = (ColumnName*)(assign1->value);
-        EXPECT_EQ(strcmp(name->name.value, "val2"), 0);
+        DOCTEST_CHECK_EQ(strcmp(name->name.value, "val2"), 0);
     }
     // test system variable with identifier prefix
     {
@@ -346,50 +350,50 @@ TEST(test_parser, set_kv) {
             return;
         }
         StmtNode* stmt = (StmtNode*)parser.result[0];
-        EXPECT_EQ(stmt->node_type, parser::NT_SET_CMD);
+        DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_SET_CMD);
         if (stmt->node_type != parser::NT_SET_CMD) {
             return;
         }
         SetStmt* set = (SetStmt*)stmt;
-        EXPECT_EQ(set->var_list.size(), 4);
+        DOCTEST_CHECK_EQ(set->var_list.size(), 4);
         if (set->var_list.size() != 4) {
             return;
         }
         VarAssign* assign0 = set->var_list[0];
-        EXPECT_EQ(strcmp(assign0->key.value, "@@session.autocommit"), 0);
-        EXPECT_EQ(assign0->value->expr_type, ET_LITETAL);
+        DOCTEST_CHECK_EQ(strcmp(assign0->key.value, "@@session.autocommit"), 0);
+        DOCTEST_CHECK_EQ(assign0->value->expr_type, ET_LITETAL);
         if (assign0->value->expr_type != ET_LITETAL) {
             return;
         }
         LiteralExpr* lit = (LiteralExpr*)(assign0->value);
-        EXPECT_EQ(lit->_u.int64_val, 1);
+        DOCTEST_CHECK_EQ(lit->_u.int64_val, 1);
 
         VarAssign* assign1 = set->var_list[1];
-        EXPECT_EQ(strcmp(assign1->key.value, "@@local.autocommit"), 0);
-        EXPECT_EQ(assign1->value->expr_type, ET_LITETAL);
+        DOCTEST_CHECK_EQ(strcmp(assign1->key.value, "@@local.autocommit"), 0);
+        DOCTEST_CHECK_EQ(assign1->value->expr_type, ET_LITETAL);
         if (assign1->value->expr_type != ET_LITETAL) {
             return;
         }
         lit = (LiteralExpr*)(assign1->value);
-        EXPECT_EQ(lit->_u.int64_val, 1);
+        DOCTEST_CHECK_EQ(lit->_u.int64_val, 1);
 
         VarAssign* assign2 = set->var_list[2];
-        EXPECT_EQ(strcmp(assign2->key.value, "@@autocommit"), 0);
-        EXPECT_EQ(assign2->value->expr_type, ET_LITETAL);
+        DOCTEST_CHECK_EQ(strcmp(assign2->key.value, "@@autocommit"), 0);
+        DOCTEST_CHECK_EQ(assign2->value->expr_type, ET_LITETAL);
         if (assign2->value->expr_type != ET_LITETAL) {
             return;
         }
         lit = (LiteralExpr*)(assign2->value);
-        EXPECT_EQ(lit->_u.int64_val, 0);
+        DOCTEST_CHECK_EQ(lit->_u.int64_val, 0);
 
         VarAssign* assign3 = set->var_list[3];
-        EXPECT_EQ(strcmp(assign3->key.value, "@@global.autocommit"), 0);
-        EXPECT_EQ(assign3->value->expr_type, ET_LITETAL);
+        DOCTEST_CHECK_EQ(strcmp(assign3->key.value, "@@global.autocommit"), 0);
+        DOCTEST_CHECK_EQ(assign3->value->expr_type, ET_LITETAL);
         if (assign3->value->expr_type != ET_LITETAL) {
             return;
         }
         lit = (LiteralExpr*)(assign3->value);
-        EXPECT_EQ(lit->_u.int64_val, 0);
+        DOCTEST_CHECK_EQ(lit->_u.int64_val, 0);
     }
     // test user variable
     {
@@ -401,23 +405,23 @@ TEST(test_parser, set_kv) {
             return;
         }
         StmtNode* stmt = (StmtNode*)parser.result[0];
-        EXPECT_EQ(stmt->node_type, parser::NT_SET_CMD);
+        DOCTEST_CHECK_EQ(stmt->node_type, parser::NT_SET_CMD);
         if (stmt->node_type != parser::NT_SET_CMD) {
             return;
         }
         SetStmt* set = (SetStmt*)stmt;
-        EXPECT_EQ(set->var_list.size(), 1);
+        DOCTEST_CHECK_EQ(set->var_list.size(), 1);
         if (set->var_list.size() != 1) {
             return;
         }
         VarAssign* assign0 = set->var_list[0];
-        EXPECT_EQ(strcmp(assign0->key.value, "@user_key"), 0);
-        EXPECT_EQ(assign0->value->expr_type, ET_COLUMN);
+        DOCTEST_CHECK_EQ(strcmp(assign0->key.value, "@user_key"), 0);
+        DOCTEST_CHECK_EQ(assign0->value->expr_type, ET_COLUMN);
         if (assign0->value->expr_type != ET_COLUMN) {
             return;
         }
         ColumnName* name = (ColumnName*)(assign0->value);
-        EXPECT_EQ(strcmp(name->name.value, "userval"), 0);
+        DOCTEST_CHECK_EQ(strcmp(name->name.value, "userval"), 0);
     }
 }
-}  // namespace baikal
+}  // namespace EA

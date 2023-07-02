@@ -1,15 +1,18 @@
 // 
-#include <gtest/gtest.h>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
+
+#include "tests/doctest/doctest.h"
 #include <climits>
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include "expr_value.h"
-#include "fn_manager.h"
-#include "proto/expr.pb.h"
-#include "parser.h"
+#include "elasticann/common/expr_value.h"
+#include "elasticann/expr/fn_manager.h"
+#include "elasticann/proto/expr.pb.h"
+#include "elasticann/sqlparser/parser.h"
 #include "qos.h"
 #include <vector>
 #include "ea_client.h"

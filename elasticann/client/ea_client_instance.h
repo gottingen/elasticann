@@ -42,7 +42,7 @@
 #include "ea_client_bns_connection_pool.h"
 #include "ea_client_mysql_connection.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 class BnsConnectionPool;
 struct TimeInfo {

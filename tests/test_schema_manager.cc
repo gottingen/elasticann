@@ -1,29 +1,34 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
 
-#include "gtest/gtest.h"
+#include "tests/doctest/doctest.h"
+
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/cluster_manager.h"
+#include "elasticann/engine/rocks_wrapper.h"
+
 namespace EA {
     DECLARE_string(db_path);
 }
 
-class SchemaManagerTest : public testing::Test {
+class SchemaManagerTest  {
 public:
-    ~SchemaManagerTest() {}
-protected:
-    virtual void SetUp() {
+    SchemaManagerTest() {
         EA::RocksWrapper* rocksdb = EA::RocksWrapper::get_instance();
         if (!rocksdb) {
             DB_FATAL("create rocksdb handler failed");
@@ -31,13 +36,18 @@ protected:
         }
         int ret = rocksdb->init("./rocks_db");
         if (ret != 0) {
-        DB_FATAL("rocksdb init failed: code:%d", ret);
+            DB_FATAL("rocksdb init failed: code:%d", ret);
             DB_FATAL("rocksdb init failed: code:%d", ret);
             return;
         }
-        _cluster_manager = new EA::ClusterManager(NULL);
-        _schema_manager = new EA::SchemaManager(NULL);
-        _schema_manager->set_cluster_manager(_cluster_manager);
+        _cluster_manager = new EA::ClusterManager();
+        _schema_manager = new EA::SchemaManager();
+        _schema_manager->;
+    }
+    ~SchemaManagerTest() {}
+protected:
+    virtual void SetUp() {
+
     }
     virtual void TearDown() {
         delete _cluster_manager;

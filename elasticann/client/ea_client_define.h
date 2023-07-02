@@ -40,7 +40,7 @@ namespace butil = base;
 #endif
 
 
-namespace baikal {
+namespace EA {
 namespace client {
 
 //从bns服务同步得到的每个实例信息

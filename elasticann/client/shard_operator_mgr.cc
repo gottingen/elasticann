@@ -26,7 +26,7 @@
 #include "com_log.h"
 #endif
 
-namespace baikal {
+namespace EA {
 namespace client {
 boost::mutex ShardOperatorMgr::_s_singleton_lock;
 ShardOperatorMgr* ShardOperatorMgr::_s_instance = NULL;
@@ -223,6 +223,6 @@ int ShardOperatorMgr::_compute(std::stack<uint32_t> &data, std::stack<std::strin
     return SUCCESS;
 }
 } // namespace baseop
-} // namespace baikal 
+} // namespace EA
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

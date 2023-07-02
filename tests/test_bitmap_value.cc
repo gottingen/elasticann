@@ -105,4 +105,4 @@ DOCTEST_TEST_CASE("test_bitmap") {
     DOCTEST_REQUIRE_EQ(true, requal._u.bool_val);
 }
 
-}  // namespace baikal
+}  // namespace EA

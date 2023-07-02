@@ -37,7 +37,7 @@
 #include "shard_operator_mgr.h"
 #include "ea_client_util.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 // @brief 健康检查线程
 void* healthy_check_thread(void*);

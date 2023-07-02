@@ -27,7 +27,7 @@
 #include <string>
 #include "ea_client_define.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 class Row {
 public:

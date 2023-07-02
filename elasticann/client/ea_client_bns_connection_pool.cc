@@ -38,7 +38,7 @@ using std::string;
 using std::map;
 using std::vector;
 
-namespace baikal {
+namespace EA {
 namespace client {
 BnsConnectionPool::BnsConnectionPool(
             const string& bns_name,

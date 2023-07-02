@@ -38,7 +38,7 @@
 using std::string;
 using std::vector;
 
-namespace baikal {
+namespace EA {
 namespace client {    
 ScopeProcWeight::ScopeProcWeight(Connection* connection) {
     _connection = connection;
@@ -239,6 +239,6 @@ void Connection::_instance_to_faulty() {
 }
 
 } //namespace client
-} //namespace baikal
+} //namespace EA
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

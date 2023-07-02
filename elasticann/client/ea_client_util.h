@@ -32,7 +32,7 @@
 #include "naming.pb.h"
 #endif
 
-namespace baikal {
+namespace EA {
 namespace client {
 // @brief 通过bns提供的服务得到bns上的实例信息
 #ifdef BAIDU_INTERNAL

@@ -39,7 +39,7 @@
 using std::string;
 using std::vector;
 
-namespace baikal {
+namespace EA {
     namespace client {
 
         MysqlConnection::MysqlConnection(

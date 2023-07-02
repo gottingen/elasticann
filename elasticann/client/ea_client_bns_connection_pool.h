@@ -32,7 +32,7 @@
 #include "ea_client_instance.h"
 #include "shard_operator_mgr.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 class BnsConnectionPool {
 public:

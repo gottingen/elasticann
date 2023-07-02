@@ -26,7 +26,7 @@
 
 using std::string;
 
-namespace baikal {
+namespace EA {
 namespace client {
 ResultSet::ResultSet():
         _type(NONE),
@@ -327,6 +327,6 @@ void ResultSet::_wrap(MYSQL* mysql, MYSQL_RES* res, bool store) {
     _fetch_row->init_type();
 }
 } // namespace client
-} // namespace baikal
+} // namespace EA
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

@@ -21,7 +21,7 @@
  **/
 #include "global.h"
 
-namespace baikal {
+namespace EA {
 namespace client {
 
 char* INSTANCE_STATUS_CSTR[] = {

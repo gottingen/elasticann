@@ -30,7 +30,7 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/unordered_map.hpp"
 
-namespace baikal {
+namespace EA {
 
 namespace client {
 

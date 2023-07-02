@@ -28,7 +28,7 @@
 using std::vector;
 using std::string;
 
-namespace baikal {
+namespace EA {
 namespace client {
 LogicDB::LogicDB(const string& logic_db_name) :
         _name(logic_db_name) {}
