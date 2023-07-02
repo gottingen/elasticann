@@ -36,7 +36,7 @@ DECLARE_int32(meta_replica_number);
 }
 
 int main(int argc, char **argv) {
-    google::SetCommandLineOption("flagfile", "conf/gflags.conf");
+    google::SetCommandLineOption("flagfile", "conf/meta_gflags.conf");
     google::ParseCommandLineFlags(&argc, &argv, true);
     turbo::filesystem::path remove_path("init.success");
     turbo::filesystem::remove_all(remove_path);
