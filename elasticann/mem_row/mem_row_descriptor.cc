@@ -89,7 +89,7 @@ google::protobuf::Message* MemRowDescriptor::new_tuple_message(int32_t tuple_id)
         return nullptr;
     }
     if (iter->second == nullptr) {
-        DB_WARNING("message is NULL: %d", tuple_id);
+        DB_WARNING("message is nullptr: %d", tuple_id);
         return nullptr;
     }
     return iter->second->New();

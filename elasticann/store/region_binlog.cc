@@ -53,7 +53,7 @@ void print_oldest_ts(std::ostream& os, void*) {
     os << std::to_string(oldest_ts) << "(" << ts_to_datetime_str(oldest_ts) << ")";
 }
 static bvar::PassiveStatus<std::string> binlog_oldest_ts(
-        "binlog_oldest_ts", print_oldest_ts, NULL);
+        "binlog_oldest_ts", print_oldest_ts, nullptr);
 
 //该函数联调时测试 TODO by YUZHENGQUAN
 int Region::get_primary_region_info(int64_t primary_region_id, proto::RegionInfo& region_info) {

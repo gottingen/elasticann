@@ -104,7 +104,7 @@ public:
     }
 private:
     NamespaceManager(): _max_namespace_id(0) {
-        bthread_mutex_init(&_namespace_mutex, NULL);
+        bthread_mutex_init(&_namespace_mutex, nullptr);
     }
     
     std::string construct_namespace_key(int64_t namespace_id) {

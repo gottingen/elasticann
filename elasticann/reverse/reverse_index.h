@@ -122,7 +122,7 @@ public:
     }
     
     virtual bool valid() {
-        if (_exe != NULL) {
+        if (_exe != nullptr) {
             while (true) {
                 _cur_node = (const ReverseNode*)(_exe->next());
                 if (_cur_node) {
@@ -164,8 +164,8 @@ public:
 
 protected:
     int32_t _idx = 0;
-    BooleanExecutorBase<PostingNodeT>* _exe = NULL;
-    const ReverseNode* _cur_node = NULL;
+    BooleanExecutorBase<PostingNodeT>* _exe = nullptr;
+    const ReverseNode* _cur_node = nullptr;
     ReverseIndexBase *_reverse;
     myrocksdb::Transaction *_txn;//读取时用的transaction，由调用者释放
     KeyRange _key_range;
@@ -386,7 +386,7 @@ private:
     static BthreadLocal* bthread_local_schema() {
         void* data = SchemaLocalKey::get_instance()->get_specific();
         if (data == nullptr) {
-            DB_FATAL("reverse bthread local schema is NULL");
+            DB_FATAL("reverse bthread local schema is nullptr");
             return nullptr;
         }
 
@@ -459,7 +459,7 @@ public:
     int init_term_executor(const proto::FulltextIndex& fulltext_index_info, BooleanExecutor<Schema>*& exe);
 
     bool valid() {
-        if (_exe != NULL) {
+        if (_exe != nullptr) {
             while (true) {
                 _cur_node = (const ReverseNode*)(_exe->next());
                 if (_cur_node) {
@@ -519,7 +519,7 @@ public:
     }
 private:
     OperatorBooleanExecutor<Schema>* _exe = nullptr;
-    const ReverseNode* _cur_node = NULL;
+    const ReverseNode* _cur_node = nullptr;
     IndexInfo _index_info;
     TableInfo _table_info;
     std::vector<BooleanExecutorBase<typename Schema::PostingNodeT>*> _son_exe_vec;

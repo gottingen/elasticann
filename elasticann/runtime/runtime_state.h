@@ -75,7 +75,7 @@ class RuntimeState {
 
 public:
     RuntimeState() {
-        bthread_mutex_init(&_mem_lock, NULL);
+        bthread_mutex_init(&_mem_lock, nullptr);
     }
     ~RuntimeState() {
         memory_limit_release_all();

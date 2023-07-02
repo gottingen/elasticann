@@ -19,7 +19,6 @@
 #include "elasticann/logical_plan/union_planner.h"
 #include "elasticann/exec/dual_scan_node.h"
 #include "elasticann/session/network_socket.h"
-#include <boost/algorithm/string.hpp>
 #include "elasticann/expr/row_expr.h"
 #include "elasticann/expr/slot_ref.h"
 #include "elasticann/expr/scalar_fn_call.h"

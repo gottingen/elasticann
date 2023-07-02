@@ -142,7 +142,7 @@ inline size_t Tokenizer::get_utf8_bom_len(const std::string& word) {
 template<class T>
 class AtomicManager {
 public:
-    AtomicManager():_atomic(NULL) {}
+    AtomicManager():_atomic(nullptr) {}
     ~AtomicManager() {
         if (_atomic) {
             (*_atomic)--;
@@ -188,8 +188,8 @@ public:
                        const KeyRange& key_range,
                        const std::string& merge_term,
                        bool del = false, 
-                       RocksWrapper* rocksdb = NULL,
-                       myrocksdb::Transaction* txn = NULL) : 
+                       RocksWrapper* rocksdb = nullptr,
+                       myrocksdb::Transaction* txn = nullptr) :
                            _iter(iter),
                            _merge_term(merge_term),
                            _first(true),

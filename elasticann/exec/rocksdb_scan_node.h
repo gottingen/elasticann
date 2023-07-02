@@ -181,7 +181,7 @@ private:
     std::vector<int32_t> _trivial_field_ids;
     std::vector<int32_t> _field_slot;
     MemRowDescriptor* _mem_row_desc;
-    ExecNode* _related_manager_node = NULL;
+    ExecNode* _related_manager_node = nullptr;
     SchemaFactory* _factory = nullptr;
     int64_t _index_id = -1;
     int64_t _region_id;

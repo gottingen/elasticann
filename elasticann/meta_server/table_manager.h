@@ -437,7 +437,7 @@ namespace EA {
             _table_tombstone_map[table_id] = _table_info_map[table_id];
             _table_tombstone_map[table_id].schema_pb.set_deleted(true);
             // tombstone靠这个time来gc
-            _table_tombstone_map[table_id].schema_pb.set_timestamp(time(NULL));
+            _table_tombstone_map[table_id].schema_pb.set_timestamp(time(nullptr));
             // region相关信息清理，只保留表元信息
             _table_tombstone_map[table_id].clear_regions();
             _table_id_map.erase(table_name);
@@ -1158,8 +1158,8 @@ namespace EA {
 
     private:
         TableManager() : _max_table_id(0) {
-            bthread_mutex_init(&_table_mutex, NULL);
-            bthread_mutex_init(&_load_virtual_to_memory_mutex, NULL);
+            bthread_mutex_init(&_table_mutex, nullptr);
+            bthread_mutex_init(&_load_virtual_to_memory_mutex, nullptr);
             _table_timer.init(3600 * 1000); // 1h
         }
 
@@ -1218,7 +1218,7 @@ namespace EA {
             region_info->set_can_add_peer(false);
             region_info->set_parent(0);
 
-            region_info->set_timestamp(time(NULL));
+            region_info->set_timestamp(time(nullptr));
         }
 
         std::string construct_table_key(int64_t table_id) {

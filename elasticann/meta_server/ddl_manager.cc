@@ -1320,7 +1320,7 @@ void DDLManager::delete_ddlwork(const proto::MetaManagerRequest& request, braft:
 }
 
 int DDLManager::apply_raft(const proto::MetaManagerRequest& request) {
-    SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL, NULL);
+    SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
     return 0;
 }
 

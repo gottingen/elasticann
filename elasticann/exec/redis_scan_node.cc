@@ -100,7 +100,7 @@ int RedisScanNode::get_by_key(SmartRecord record) {
     brpc::RedisResponse response;
     brpc::Controller cntl;
     request.AddCommand("GET %s", key.c_str());
-    _redis_channel.CallMethod(NULL, &cntl, &request, &response, NULL);
+    _redis_channel.CallMethod(nullptr, &cntl, &request, &response, nullptr);
     if (cntl.Failed()) {
         DB_WARNING("Fail to access redis-server, %s", cntl.ErrorText().c_str());
         return -1;

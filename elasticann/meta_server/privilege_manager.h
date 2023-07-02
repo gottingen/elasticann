@@ -55,7 +55,7 @@ public:
     }
 private:
     PrivilegeManager() {
-        bthread_mutex_init(&_user_mutex, NULL);
+        bthread_mutex_init(&_user_mutex, nullptr);
     }
     std::string construct_privilege_key(const std::string& username) {
         return MetaServer::PRIVILEGE_IDENTIFY + username;

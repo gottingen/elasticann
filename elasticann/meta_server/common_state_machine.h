@@ -137,7 +137,7 @@ public:
         return _node.leader_id().addr;                                                    
     }
     virtual void shutdown_raft()  {
-        _node.shutdown(NULL);
+        _node.shutdown(nullptr);
         DB_WARNING("raft node was shutdown"); 
         _node.join();
         DB_WARNING("raft node join completely");

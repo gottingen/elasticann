@@ -327,7 +327,7 @@ bool DataBuffer::network_queue_send_append(
         int packet_id,
         int append_data_later) {
     if (len <= 0 || (data == nullptr && append_data_later == 0)) {
-        DB_FATAL("send_buf==NULL||len=%zu<= 0 ||(data == null&& append_data_later=%d == 0)",
+        DB_FATAL("send_buf==nullptr||len=%zu<= 0 ||(data == null&& append_data_later=%d == 0)",
             len, append_data_later);
         return false;
     }

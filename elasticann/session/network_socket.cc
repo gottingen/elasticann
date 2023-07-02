@@ -28,7 +28,7 @@ bvar::Adder<int64_t> NetworkSocket::bvar_prepare_count{"bvar_prepare_count"};
 NetworkSocket::NetworkSocket() {
     send_buf = new DataBuffer;
     self_buf = new DataBuffer;
-    if (send_buf == NULL || self_buf == NULL) {
+    if (send_buf == nullptr || self_buf == nullptr) {
         DB_FATAL("New send_buf and self_buf have not enough memory."
                     "send_buf_size:[%u],self_buf_size:[%d]",
                     SEND_BUF_DEFAULT_SIZE, SELF_BUF_DEFAULT_SIZE);

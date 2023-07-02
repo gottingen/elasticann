@@ -181,7 +181,7 @@ void Joiner::do_plan_router(RuntimeState* state, std::vector<ExecNode*>& scan_no
                                         scan_node, 
                                         filter_node,
                                         sort_node,
-                                        NULL,
+                                        nullptr,
                                         &index_has_null, field_range_type, "");
         if (!_is_explain && !index_has_null) {
             //路由选择,
@@ -397,14 +397,14 @@ int Joiner::construct_result_batch(RowBatch* batch,
                                       bool& matched) {
     std::unique_ptr<MemRow> row = _mem_row_desc->fetch_mem_row();
     int ret = 0;
-    if (outer_mem_row != NULL) {
+    if (outer_mem_row != nullptr) {
         ret = row->copy_from(_outer_tuple_ids, outer_mem_row);
         if (ret < 0) {
             DB_WARNING("copy from left row fail");
             return -1;
         }
     }
-    if (inner_mem_row != NULL) {
+    if (inner_mem_row != nullptr) {
         ret = row->copy_from(_inner_tuple_ids, inner_mem_row);
         if (ret < 0) {
             DB_WARNING("copy from  row fail");
@@ -449,7 +449,7 @@ int Joiner::construct_result_batch(RowBatch* batch,
 int Joiner::construct_null_result_batch(RowBatch* batch, MemRow* outer_mem_row) {
     std::unique_ptr<MemRow> row = _mem_row_desc->fetch_mem_row();
     int ret = 0;
-    if (outer_mem_row != NULL) {
+    if (outer_mem_row != nullptr) {
         ret = row->copy_from(_outer_tuple_ids, outer_mem_row);
         if (ret < 0) {
             DB_WARNING("copy from left row fail");

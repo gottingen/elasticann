@@ -25,7 +25,7 @@ namespace EA {
 template<typename Schema>
 int CommRindexNodeParser<Schema>::init(const std::string& term) {
     auto* exist_parser = this->_schema->get_term(term);
-    if (exist_parser != NULL) {
+    if (exist_parser != nullptr) {
         *this = *exist_parser;
         return 0;
     }
@@ -284,7 +284,7 @@ int NewSchema<Node, List>::create_executor(const std::string& search_data,
     ExecutorNode<ThisType>* parent = nullptr;
     ExecutorNode<ThisType>* root = &logical_query._root;
     if (or_search.size() == 0) {
-        _exe = NULL;
+        _exe = nullptr;
         return 0;
     } else if (or_search.size() == 1) {
         // 兼容mysql ngram Parser，自然语言是or，boolean是and

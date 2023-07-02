@@ -307,7 +307,7 @@ public:
                     instance_info->set_address(peer_pair.first);
                     instance_info->set_resource_tag(resource_tag);
                     instance_info->set_status(proto::FAULTY);
-                    ClusterManager::get_instance()->process_cluster_info(NULL, &request, NULL, NULL);
+                    ClusterManager::get_instance()->process_cluster_info(nullptr, &request, nullptr, nullptr);
                 }
             };
             Bthread bth;
@@ -504,10 +504,10 @@ private:
     RegionManager(): _max_region_id(0) {
         _doing_recovery = false;
         _last_opt_times = butil::gettimeofday_us();
-        bthread_mutex_init(&_instance_region_mutex, NULL);
-        bthread_mutex_init(&_instance_learner_mutex, NULL);
-        bthread_mutex_init(&_count_mutex, NULL);
-        bthread_mutex_init(&_doing_mutex, NULL);
+        bthread_mutex_init(&_instance_region_mutex, nullptr);
+        bthread_mutex_init(&_instance_learner_mutex, nullptr);
+        bthread_mutex_init(&_count_mutex, nullptr);
+        bthread_mutex_init(&_doing_mutex, nullptr);
     }
 private:
     int64_t                                             _max_region_id;

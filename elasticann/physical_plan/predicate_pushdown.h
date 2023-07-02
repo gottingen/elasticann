@@ -31,7 +31,7 @@ public:
         //目前只要有join节点的话才做谓词下推
         JoinNode* join = static_cast<JoinNode*>(plan->get_node(proto::JOIN_NODE));
         ApplyNode* apply = static_cast<ApplyNode*>(plan->get_node(proto::APPLY_NODE));
-        if (join == NULL && apply == NULL) {
+        if (join == nullptr && apply == nullptr) {
             //DB_WARNING("has no join, not predicate")
             return 0;
         }

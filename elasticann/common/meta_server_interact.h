@@ -63,7 +63,7 @@ public:
         const ::google::protobuf::ServiceDescriptor* service_desc = proto::MetaService::descriptor();
         const ::google::protobuf::MethodDescriptor* method = 
                     service_desc->FindMethodByName(service_name);
-        if (method == NULL) {
+        if (method == nullptr) {
             DB_FATAL("service name not exist, service:%s", service_name.c_str());
             return -1;
         }
@@ -92,9 +92,9 @@ public:
                     ++retry_time;
                     continue;
                 }
-                short_channel.CallMethod(method, &cntl, &request, &response, NULL);
+                short_channel.CallMethod(method, &cntl, &request, &response, nullptr);
             } else {
-                _bns_channel.CallMethod(method, &cntl, &request, &response, NULL);
+                _bns_channel.CallMethod(method, &cntl, &request, &response, nullptr);
                 if (!cntl.Failed() && response.errcode() == proto::SUCCESS) {
                     _set_leader_address(cntl.remote_side());
                     DB_WARNING("connet with meta server success by bns name, leader:%s",

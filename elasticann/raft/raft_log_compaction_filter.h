@@ -93,7 +93,7 @@ namespace EA {
 
     private:
         RaftLogCompactionFilter() {
-            bthread_mutex_init(&_mutex, NULL);
+            bthread_mutex_init(&_mutex, nullptr);
         }
 
         // key:region_id, value: first_log_index

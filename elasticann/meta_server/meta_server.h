@@ -126,9 +126,9 @@ private:
     MetaServer() {}
     bthread::Mutex _meta_interact_mutex;
     std::map<std::string, MetaServerInteract*> _meta_interact_map;
-    MetaStateMachine* _meta_state_machine = NULL;
-    AutoIncrStateMachine* _auto_incr_state_machine = NULL;
-    TSOStateMachine*      _tso_state_machine = NULL;
+    MetaStateMachine* _meta_state_machine = nullptr;
+    AutoIncrStateMachine* _auto_incr_state_machine = nullptr;
+    TSOStateMachine*      _tso_state_machine = nullptr;
     Bthread _flush_bth;
     //region区间修改等信息应用raft
     Bthread _apply_region_bth;

@@ -157,14 +157,14 @@ namespace EA {
         std::map<std::string, std::string> explain_info = {
                 {"id",            "1"},
                 {"select_type",   "SIMPLE"},
-                {"table",         "NULL"},
-                {"partitions",    "NULL"},
-                {"type",          "NULL"},
-                {"possible_keys", "NULL"},
-                {"key",           "NULL"},
-                {"key_len",       "NULL"},
-                {"ref",           "NULL"},
-                {"rows",          "NULL"},
+                {"table",         "nullptr"},
+                {"partitions",    "nullptr"},
+                {"type",          "nullptr"},
+                {"possible_keys", "nullptr"},
+                {"key",           "nullptr"},
+                {"key_len",       "nullptr"},
+                {"ref",           "nullptr"},
+                {"rows",          "nullptr"},
                 {"Extra",         ""},
                 {"sort_index",    "0"}
         };

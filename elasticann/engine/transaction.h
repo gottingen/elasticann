@@ -124,7 +124,7 @@ public:
                             std::set<int32_t>* update_fields);
 
     // UNIQUE INDEX format: <region_id + index_id + null_flag + index_fields, primary_key>
-    // NON-UNIQUE INDEX format: <region_id + index_id + null_flag + index_fields + primary_key, NULL>
+    // NON-UNIQUE INDEX format: <region_id + index_id + null_flag + index_fields + primary_key, nullptr>
     int put_secondary(int64_t region, IndexInfo& index, SmartRecord record);
     int put_meta_info(const std::string& key, const std::string& value);
     

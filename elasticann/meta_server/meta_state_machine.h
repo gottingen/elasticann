@@ -30,7 +30,7 @@ public:
                 _healthy_check_start(false),
                 _baikal_heart_beat("baikal_heart_beat"),
                 _store_heart_beat("store_heart_beat") {
-        bthread_mutex_init(&_param_mutex, NULL);        
+        bthread_mutex_init(&_param_mutex, nullptr);
     }
     
     virtual ~MetaStateMachine() {

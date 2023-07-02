@@ -142,7 +142,7 @@ MINUTE_SECOND { un_reserved_keyword(yylval, yyscanner, parser); return MINUTE_SE
 MOD { un_reserved_keyword(yylval, yyscanner, parser); return MOD; }
 NOT { return NOT; }
 NO_WRITE_TO_BINLOG { return NO_WRITE_TO_BINLOG; }
-NULL { return NULLX; }
+nullptr { return NULLX; }
 NUMERIC { return NUMERIC; }
 NVARCHAR { return NVARCHAR; }
 ON { return ON; }

@@ -26,7 +26,7 @@ namespace EA {
 class TSOStateMachine;
 class TsoTimer : public braft::RepeatedTimerTask {
 public:
-    TsoTimer() : _node(NULL) {}
+    TsoTimer() : _node(nullptr) {}
     virtual ~TsoTimer() {}
     int init(TSOStateMachine* node, int timeout_ms);
     virtual void run();

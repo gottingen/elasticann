@@ -19,7 +19,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/algorithm/string.hpp>
 #include "elasticann/common/common.h"
 #include "turbo/strings/str_split.h"
 
@@ -73,7 +72,7 @@ namespace EA {
     do {\
         DB_FATAL("request op_type:%d, %s ,log_id:%lu",\
                 op_type, err_message, log_id);\
-        if (response != NULL) {\
+        if (response != nullptr) {\
             response->set_errcode(errcode);\
             response->set_errmsg(err_message);\
             response->set_op_type(op_type);\
@@ -84,7 +83,7 @@ namespace EA {
     do {\
         DB_WARNING("request op_type:%d, %s ,log_id:%lu",\
                 op_type, err_message, log_id);\
-        if (response != NULL) {\
+        if (response != nullptr) {\
             response->set_errcode(errcode);\
             response->set_errmsg(err_message);\
             response->set_op_type(op_type);\

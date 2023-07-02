@@ -37,7 +37,7 @@ public:
         if (_objects.count(name) == 1) {
             return _objects[name];
         } 
-        return NULL;
+        return nullptr;
     }
 
     int register_object(const std::string& name, T object) {

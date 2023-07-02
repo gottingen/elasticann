@@ -95,9 +95,9 @@ public:
     bool operator()(
             BooleanExecutor<Schema>* exe1,
             BooleanExecutor<Schema>* exe2) {
-        if (exe1->current_id() == NULL) {
+        if (exe1->current_id() == nullptr) {
             return false;
-        } else if (exe2->current_id() == NULL) {
+        } else if (exe2->current_id() == nullptr) {
             return true;
         } else {
             int res = Schema::compare_id_func(*exe1->current_id(), *exe2->current_id());

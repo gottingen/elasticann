@@ -99,9 +99,9 @@ struct QueryStat {
         sql_length          = 0;
         txn_alive_time      = 0;
         hit_cache           = false;
-        gettimeofday(&(start_stamp), NULL);
-        gettimeofday(&(send_stamp), NULL);
-        gettimeofday(&(end_stamp), NULL);
+        gettimeofday(&(start_stamp), nullptr);
+        gettimeofday(&(send_stamp), nullptr);
+        gettimeofday(&(end_stamp), nullptr);
         //traceid.clear();
         family.clear();
         table.clear();

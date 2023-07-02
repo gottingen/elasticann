@@ -1952,14 +1952,14 @@ namespace EA {
                 if (iter != table_info_mapping.end()) {
                     value += "." + iter->second->name;
                 } else {
-                    value += ".NULL.NULL";
+                    value += ".nullptr.nullptr";
                 }
                 std::string learner_tags;
                 for (const std::string &tag: table.second->learner_resource_tags) {
                     learner_tags += tag + ",";
                 }
                 if (learner_tags.empty()) {
-                    learner_tags = "NULL";
+                    learner_tags = "nullptr";
                 } else {
                     learner_tags.pop_back();
                 }

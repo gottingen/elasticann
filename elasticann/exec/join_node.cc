@@ -38,7 +38,7 @@ int JoinNode::init(const proto::PlanNode& node) {
     _join_type = join_node.join_type();
     
     for (auto& expr : join_node.conditions()) {
-        ExprNode* condition = NULL;
+        ExprNode* condition = nullptr;
         ret = ExprNode::create_tree(expr, &condition);
         if (ret < 0) {
             //如何释放资源
@@ -443,7 +443,7 @@ int JoinNode::get_next_for_hash_outer_join(RuntimeState* state, RowBatch* batch,
         MutTableKey outer_key;
         encode_hash_key(*_outer_iter, _outer_equal_slot, outer_key);
         auto inner_mem_rows = _hash_map.seek(outer_key.data());
-        if (inner_mem_rows != NULL) {
+        if (inner_mem_rows != nullptr) {
             for (; _result_row_index < inner_mem_rows->size(); ++_result_row_index) {
                 if (reached_limit()) {
                     DB_WARNING("when join, reach limit size:%lu, time_cost:%ld", 
@@ -474,7 +474,7 @@ int JoinNode::get_next_for_hash_outer_join(RuntimeState* state, RowBatch* batch,
                 //DB_WARNING("when join, batch is full, time_cost:%ld", get_next_time.get_time());
                 return 0;
             }
-            //fill NULL
+            //fill nullptr
             int ret = construct_null_result_batch(batch, *_outer_iter);
             if (ret < 0) {
                 DB_WARNING("construct result batch fail");
@@ -511,7 +511,7 @@ int JoinNode::get_next_for_hash_inner_join(RuntimeState* state, RowBatch* batch,
         MutTableKey inner_key;
         encode_hash_key(inner_mem_row.get(), _inner_equal_slot, inner_key);
         auto outer_mem_rows = _hash_map.seek(inner_key.data());
-        if (outer_mem_rows != NULL) {
+        if (outer_mem_rows != nullptr) {
             for (; _result_row_index < outer_mem_rows->size(); ++_result_row_index) {
                 if (reached_limit()) {
                     DB_WARNING("when join, reach limit size:%lu, time_cost:%ld", 
@@ -589,7 +589,7 @@ int JoinNode::get_next_for_loop_hash_inner_join(RuntimeState* state, RowBatch* b
         MutTableKey outer_key;
         encode_hash_key(*_outer_iter, _outer_equal_slot, outer_key);
         auto inner_mem_rows = _hash_map.seek(outer_key.data());
-        if (inner_mem_rows != NULL) {
+        if (inner_mem_rows != nullptr) {
             for (; _result_row_index < inner_mem_rows->size(); ++_result_row_index) {
                 if (reached_limit()) {
                     DB_WARNING("when join, reach limit size:%lu, time_cost:%ld", 

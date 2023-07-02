@@ -368,7 +368,7 @@ bool RocksdbScanNode::need_pushdown(ExprNode* expr) {
 
 int RocksdbScanNode::index_condition_pushdown() {
     //DB_WARNING("node:%ld is pushdown", this);
-    if (_parent == NULL) {
+    if (_parent == nullptr) {
         //DB_WARNING("parent is null");
         return 0;
     }

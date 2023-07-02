@@ -37,9 +37,9 @@ TermBooleanExecutor<Schema>::TermBooleanExecutor(
 
 template <typename Schema>
 TermBooleanExecutor<Schema>::~TermBooleanExecutor() {
-    if (_posting_list != NULL) {
+    if (_posting_list != nullptr) {
         delete _posting_list;
-        _posting_list = NULL;
+        _posting_list = nullptr;
     }
     delete this->_arg;
 }
@@ -156,7 +156,7 @@ AndBooleanExecutor<Schema>::~AndBooleanExecutor() {
 template <typename Schema>
 const typename Schema::PostingNodeT* AndBooleanExecutor<Schema>::current_node() {
     if (this->_is_null_flag) {
-        return NULL;
+        return nullptr;
     }
     return this->_curr_node_ptr;
 }
@@ -164,7 +164,7 @@ const typename Schema::PostingNodeT* AndBooleanExecutor<Schema>::current_node() 
 template <typename Schema>
 const typename Schema::PrimaryIdT* AndBooleanExecutor<Schema>::current_id() {
     if (this->_is_null_flag) {
-        return NULL;
+        return nullptr;
     }
     return this->_curr_id_ptr;
 }
@@ -173,14 +173,14 @@ template <typename Schema>
 const typename Schema::PostingNodeT* AndBooleanExecutor<Schema>::next() {
     if (this->_sub_clauses.size() == 0 || this->_is_null_flag) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_init_flag) {
         this->_init_flag = false;
         for (auto sub : this->_sub_clauses) {
-            if (sub->next() == NULL) {
+            if (sub->next() == nullptr) {
                 this->_is_null_flag = true;
-                return NULL;
+                return nullptr;
             }
         }
     } else {
@@ -194,14 +194,14 @@ const typename Schema::PostingNodeT* AndBooleanExecutor<Schema>::advance(
         const PrimaryIdT& target_id) {
     if (this->_sub_clauses.size() == 0 || this->_is_null_flag) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_init_flag) {
         this->_init_flag = false;
         for (auto sub : this->_sub_clauses) {
-            if (sub->advance(target_id) == NULL) {
+            if (sub->advance(target_id) == nullptr) {
                 this->_is_null_flag = true;
-                return NULL;
+                return nullptr;
             }
         }
     } else if (target_id.compare(*this->current_id()) <= 0) {
@@ -217,15 +217,15 @@ const typename Schema::PostingNodeT* AndBooleanExecutor<Schema>::find_next() {
     uint32_t forward_idx = 0;
     uint32_t pivot_idx = this->_sub_clauses.size() - 1;
     const PostingNodeT* tmp = this->_sub_clauses[pivot_idx]->current_node();
-    if (tmp == NULL) {
+    if (tmp == nullptr) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     this->_curr_id_ptr = this->_sub_clauses[pivot_idx]->current_id();
     while(1) {
         BooleanExecutor<Schema>*& forward_exec = this->_sub_clauses[forward_idx];
         if (forward_idx != pivot_idx
-                && (NULL != forward_exec->advance(*this->_curr_id_ptr))) {
+                && (nullptr != forward_exec->advance(*this->_curr_id_ptr))) {
             if (*forward_exec->current_id() != *this->_curr_id_ptr) {
                 this->_curr_id_ptr = forward_exec->current_id();
                 pivot_idx = forward_idx;
@@ -235,11 +235,11 @@ const typename Schema::PostingNodeT* AndBooleanExecutor<Schema>::find_next() {
             continue;
         }
 
-        if (forward_exec->current_id() == NULL) {
+        if (forward_exec->current_id() == nullptr) {
             this->_is_null_flag = true;
         }
         if (this->_is_null_flag) {
-            return NULL;
+            return nullptr;
         }
         //merge
         if (this->_type == NODE_COPY) {
@@ -280,7 +280,7 @@ OrBooleanExecutor<Schema>::~OrBooleanExecutor() {
 template <typename Schema>
 const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::current_node() {
     if (this->_is_null_flag) {
-        return NULL;
+        return nullptr;
     }
     return this->_curr_node_ptr;
 }
@@ -288,7 +288,7 @@ const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::current_node() {
 template <typename Schema>
 const typename Schema::PrimaryIdT* OrBooleanExecutor<Schema>::current_id() {
     if (this->_is_null_flag) {
-        return NULL;
+        return nullptr;
     }
     return this->_curr_id_ptr;
 }
@@ -298,7 +298,7 @@ const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::next() {
     std::vector<BooleanExecutor<Schema>*>& clauses = this->_sub_clauses;
     if (clauses.size() == 0 || this->_is_null_flag) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_init_flag) {
         for (auto sub : clauses) {
@@ -318,7 +318,7 @@ const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::advance(
     std::vector<BooleanExecutor<Schema>*>& clauses = this->_sub_clauses;
     if (clauses.size() == 0 || this->_is_null_flag) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_init_flag) {
         this->_init_flag = false;
@@ -339,9 +339,9 @@ const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::find_next() {
     IteratorT min_iter = std::min_element(clauses.begin(), clauses.end(), CompareAsc<Schema>());
 
     const PrimaryIdT* min_id = (*min_iter)->current_id();
-    if (NULL == min_id) {
+    if (nullptr == min_id) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_type == NODE_COPY) {
         this->_curr_node = *(*min_iter)->current_node();
@@ -358,7 +358,7 @@ const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::find_next() {
         if (sub == min_iter) {
             continue;
         }
-        if ((*sub)->current_id() != NULL) {
+        if ((*sub)->current_id() != nullptr) {
             if (Schema::compare_id_func(*((*sub)->current_id()), *this->_curr_id_ptr) == 0) {
                 this->_merge_func(*this->_curr_node_ptr, *(*sub)->current_node(), this->_arg);
                 (*sub)->next();
@@ -372,7 +372,7 @@ const typename Schema::PostingNodeT* OrBooleanExecutor<Schema>::find_next() {
 // ------------------
 template <typename Schema>
 WeightedBooleanExecutor<Schema>::WeightedBooleanExecutor(bool_executor_type type, BoolArg* arg) : 
-        _op_executor(NULL) {
+        _op_executor(nullptr) {
     this->_is_null_flag = false;
     this->set_merge_func(Schema::merge_weight);
     this->_type = type;
@@ -390,7 +390,7 @@ WeightedBooleanExecutor<Schema>::~WeightedBooleanExecutor() {
 template <typename Schema>
 const typename Schema::PostingNodeT* WeightedBooleanExecutor<Schema>::current_node() {
     if (this->_is_null_flag) {
-        return NULL;
+        return nullptr;
     }
     return this->_curr_node_ptr;
 }
@@ -398,21 +398,21 @@ const typename Schema::PostingNodeT* WeightedBooleanExecutor<Schema>::current_no
 template <typename Schema>
 const typename Schema::PrimaryIdT* WeightedBooleanExecutor<Schema>::current_id() {
     if (this->_is_null_flag) {
-        return NULL;
+        return nullptr;
     }
     return this->_curr_id_ptr;
 }
 
 template <typename Schema>
 const typename Schema::PostingNodeT* WeightedBooleanExecutor<Schema>::next() {
-    if (_op_executor == NULL || this->_is_null_flag) {
+    if (_op_executor == nullptr || this->_is_null_flag) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     const PostingNodeT* tmp = _op_executor->next();
-    if (tmp == NULL) {
+    if (tmp == nullptr) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_type == NODE_COPY) {
         this->_curr_node = *_op_executor->current_node();
@@ -429,14 +429,14 @@ const typename Schema::PostingNodeT* WeightedBooleanExecutor<Schema>::next() {
 template <typename Schema>
 const typename Schema::PostingNodeT* WeightedBooleanExecutor<Schema>::advance(
         const PrimaryIdT& target_id) {
-    if (_op_executor == NULL || this->_is_null_flag) {
+    if (_op_executor == nullptr || this->_is_null_flag) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     const PostingNodeT* tmp = _op_executor->advance(target_id);
-    if (tmp == NULL) {
+    if (tmp == nullptr) {
         this->_is_null_flag = true;
-        return NULL;
+        return nullptr;
     }
     if (this->_type == NODE_COPY) {
         this->_curr_node = *_op_executor->current_node();
@@ -468,7 +468,7 @@ void WeightedBooleanExecutor<Schema>::add_weight() {
     std::vector<BooleanExecutor<Schema>*>& sub_clauses = this->_sub_clauses;
     for (uint32_t i = 0; i < sub_clauses.size(); i++) {
         const PrimaryIdT* id_tmp = sub_clauses[i]->current_id();
-        if (id_tmp == NULL) {
+        if (id_tmp == nullptr) {
             continue;
         } 
         int cmp_res = Schema::compare_id_func(*id_tmp, *this->_curr_id_ptr);
@@ -479,7 +479,7 @@ void WeightedBooleanExecutor<Schema>::add_weight() {
         } else { 
             sub_clauses[i]->advance(*this->_curr_id_ptr);
             id_tmp = sub_clauses[i]->current_id();
-            if (id_tmp == NULL) {
+            if (id_tmp == nullptr) {
                 continue;
             }
             if (Schema::compare_id_func(*(sub_clauses[i]->current_id()), *this->_curr_id_ptr) == 0) {

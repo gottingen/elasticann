@@ -166,7 +166,7 @@ namespace EA {
     struct CMsketch {
     public:
         CMsketch(int depth, int width) : _depth(depth), _width(width) {
-            bthread_mutex_init(&_mutex, NULL);
+            bthread_mutex_init(&_mutex, nullptr);
         }
 
         ~CMsketch() {

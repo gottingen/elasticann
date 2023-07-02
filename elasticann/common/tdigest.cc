@@ -71,15 +71,15 @@ size_t td_actual_size(td_histogram_t *h) {
     return sizeof(td_histogram_t) + ((h->merged_nodes + h->unmerged_nodes) * sizeof(node_t));
 }
 // td_init will initialize a td_histogram_t inside buf which is buf_size bytes.
-// If buf_size is too small (smaller than compression + 1) or buf is NULL,
-// the returned pointer will be NULL.
+// If buf_size is too small (smaller than compression + 1) or buf is nullptr,
+// the returned pointer will be nullptr.
 //
 // In general use td_required_buf_size to figure out what size buffer to
 // pass.
 td_histogram_t* td_init(double compression, uint8_t *buf, size_t buf_size) {
     td_histogram_t *h = (td_histogram_t *)(buf);
     if (!h) {
-        return NULL;
+        return nullptr;
     }
     bzero((void *)(h), buf_size);
     h->magic[0] = 'T';
@@ -122,7 +122,7 @@ double td_total_count(td_histogram_t *h) {
     return h->merged_count + h->unmerged_count;
 }
 double td_total_sum(td_histogram_t *h) {
-    node_t *n = NULL;
+    node_t *n = nullptr;
     double sum = 0;
     int total_nodes = h->merged_nodes + h->unmerged_nodes;
     for (int i = 0; i < total_nodes; i++) {
@@ -138,7 +138,7 @@ double td_quantile_of(td_histogram_t *h, double val) {
     }
     double k = 0;
     int i = 0;
-    node_t *n = NULL;
+    node_t *n = nullptr;
     for (i = 0; i < h->merged_nodes; i++) {
         n = &h->nodes[i];
         if (n->mean >= val) {
@@ -179,7 +179,7 @@ double td_value_at(td_histogram_t *h, double q) {
     double goal = q * h->merged_count;
     double k = 0;
     int i = 0;
-    node_t *n = NULL;
+    node_t *n = nullptr;
     for (i = 0; i < h->merged_nodes; i++) {
         n = &h->nodes[i];
         if (k + n->count > goal) {

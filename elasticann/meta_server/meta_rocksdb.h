@@ -42,8 +42,8 @@ public:
 private:
     MetaRocksdb() {}
     
-    RocksWrapper* _rocksdb = NULL;
-    rocksdb::ColumnFamilyHandle* _handle = NULL;
+    RocksWrapper* _rocksdb = nullptr;
+    rocksdb::ColumnFamilyHandle* _handle = nullptr;
 }; //class
 
 }//namespace EA

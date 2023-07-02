@@ -73,12 +73,12 @@ int parse_term_info(
     int len = term_info.length();
     term = term_info.substr(0, pos);
     std::string score_source_str = term_info.substr(pos + 1, len - pos - 1);
-    char *next = NULL;
+    char *next = nullptr;
     score = strtof(score_source_str.c_str(), &next);
     if (*next != delim_score) {
         return -1;
     }
-    uint64_t tags = strtoul(next + 1, NULL, 10);
+    uint64_t tags = strtoul(next + 1, nullptr, 10);
     uint64_t tag = 1;
     uint64_t tmp = UINT64_MAX;//判断后续位是否还有1的标志
     for (uint32_t i = 1; i <= 64; ++i) {

@@ -247,7 +247,7 @@ int PacketNode::handle_trace2(RuntimeState* state) {
         std::vector<std::string> row;
         for (auto& name : names) {
             if (sub_info.count(name) == 0) {
-                row.push_back("NULL");
+                row.push_back("nullptr");
             } else {
                 row.push_back(sub_info[name]);
             }
@@ -265,7 +265,7 @@ int PacketNode::handle_trace2(RuntimeState* state) {
         } else if (name == "where_filter") {
             row.push_back(std::to_string(total_where_filter));
         } else {
-            row.push_back("NULL");
+            row.push_back("nullptr");
         }
     }
     rows.push_back(row);
@@ -848,9 +848,9 @@ int PacketNode::pack_binary_row(MemRow* row) {
         field_idx++;
     }
     // std::string null_map_str((char*)null_map.get(), null_bitmap_len);
-    // DB_WARNING("NULL-Bitmap: %s", str_to_hex(null_map_str).c_str());
+    // DB_WARNING("nullptr-Bitmap: %s", str_to_hex(null_map_str).c_str());
 
-    // fill the real values of NULL-Bitmap
+    // fill the real values of nullptr-Bitmap
     for (int idx = 0; idx < null_bitmap_len; ++idx) {
         _send_buf->_data[null_map_pos + idx] = null_map[idx];
     }

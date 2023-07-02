@@ -386,7 +386,7 @@ namespace EA {
                     if (field_id == 5) {
                         binlog_table_name = expr->children(1)->get_value(nullptr).get_string();
                     } else if (field_id == 2) {
-                        input_partition_id = strtoll(expr->children(1)->get_value(nullptr).get_string().c_str(), NULL,
+                        input_partition_id = strtoll(expr->children(1)->get_value(nullptr).get_string().c_str(), nullptr,
                                                      10);
                     }
                 }
@@ -405,9 +405,9 @@ namespace EA {
                 if (result_row.size() != 10) {
                     return records;
                 }
-                int64_t current_table_id = strtoll(result_row[0].c_str(), NULL, 10);
-                int64_t current_partition_id = strtoll(result_row[1].c_str(), NULL, 10);
-                int64_t current_region_id = strtoll(result_row[2].c_str(), NULL, 10);
+                int64_t current_table_id = strtoll(result_row[0].c_str(), nullptr, 10);
+                int64_t current_partition_id = strtoll(result_row[1].c_str(), nullptr, 10);
+                int64_t current_region_id = strtoll(result_row[2].c_str(), nullptr, 10);
                 auto record = SchemaFactory::get_instance()->new_record(table_id);
                 record->set_int64(record->get_field_by_name("table_id"), current_table_id);
                 record->set_int64(record->get_field_by_name("partition_id"), current_partition_id);
@@ -462,7 +462,7 @@ namespace EA {
                             req.set_region_version(version);
                             req.set_region_id(region_id);
                             req.set_op_type(proto::OP_QUERY_BINLOG);
-                            proto::StoreService_Stub(&channel).query_binlog(&cntl, &req, &res, NULL);
+                            proto::StoreService_Stub(&channel).query_binlog(&cntl, &req, &res, nullptr);
                             if (!cntl.Failed()) {
                                 BAIDU_SCOPED_LOCK(mutex_query_info);
                                 auto binlog_info = res.mutable_binlog_info();
@@ -520,8 +520,8 @@ namespace EA {
                       const std::string str_prefix_a = a[0] + a[2];
                       const std::string str_prefix_b = b[0] + b[2];
                       errno = 0;
-                      int64_t value_prefix_a = strtoll(str_prefix_a.c_str(), NULL, 10);
-                      int64_t value_prefix_b = strtoll(str_prefix_b.c_str(), NULL, 10);
+                      int64_t value_prefix_a = strtoll(str_prefix_a.c_str(), nullptr, 10);
+                      int64_t value_prefix_b = strtoll(str_prefix_b.c_str(), nullptr, 10);
                       return value_prefix_a < value_prefix_b;
                   });
     }

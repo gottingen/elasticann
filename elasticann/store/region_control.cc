@@ -260,7 +260,7 @@ void RegionControl::raft_control(google::protobuf::RpcController* controller,
     }
     if (!_region->is_leader() && !request->force()) {
         DB_WARNING("node is not leader when add_peer, region_id: %ld", _region_id);
-        if (response != NULL) {
+        if (response != nullptr) {
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_leader(butil::endpoint2str(_region->get_leader()).c_str());
@@ -285,7 +285,7 @@ void RegionControl::add_peer(const proto::AddPeer& add_peer, SmartRegion region,
     std::string new_instance = add_peer.new_peers(add_peer.new_peers_size() - 1);
     // 先校验，减少doing状态
     // 该方法会多次check
-    if (legal_for_add_peer(add_peer, NULL) != 0) {
+    if (legal_for_add_peer(add_peer, nullptr) != 0) {
         return;
     }
     //在leader_send_init_region将状态置为doing, 在add_peer结束时将region状态置回来
@@ -296,7 +296,7 @@ void RegionControl::add_peer(const proto::AddPeer& add_peer, SmartRegion region,
     TimeCost cost;
     DB_WARNING("region status to doing becase of add peer of heartbeat response, "
             "region_id: %ld new_instance: %s", _region_id, new_instance.c_str());
-    if (legal_for_add_peer(add_peer, NULL) != 0) {
+    if (legal_for_add_peer(add_peer, nullptr) != 0) {
         reset_region_status();
         return;
     }
@@ -314,22 +314,22 @@ void RegionControl::add_peer(const proto::AddPeer& add_peer, SmartRegion region,
             control.reset_region_status();
             return;
         }
-        if (control.legal_for_add_peer(add_peer, NULL) != 0) {
+        if (control.legal_for_add_peer(add_peer, nullptr) != 0) {
             control.reset_region_status();
             return;
         }
         proto::InitRegion init_request;
         control.construct_init_region_request(init_request);
-        if (control.init_region_to_store(new_instance, init_request, NULL) != 0) {
+        if (control.init_region_to_store(new_instance, init_request, nullptr) != 0) {
             control.reset_region_status();
             return;
         }
-        if (control.legal_for_add_peer(add_peer, NULL) != 0) {
+        if (control.legal_for_add_peer(add_peer, nullptr) != 0) {
             control.reset_region_status();
             region->start_thread_to_remove_region(region->get_region_id(), new_instance);
             return;
         }
-        control.node_add_peer(add_peer, new_instance, NULL, NULL);
+        control.node_add_peer(add_peer, new_instance, nullptr, nullptr);
     };
     queue.run(init_and_add_peer);
 }
@@ -447,7 +447,7 @@ int RegionControl::init_region_to_store(const std::string instance_address,
     if (response.errcode() == proto::CONNECT_FAIL) {
         DB_FATAL("add peer fail when connect new instance, region_id: %ld, instance:%s",
                   _region_id, instance_address.c_str());
-        if (store_response != NULL) {
+        if (store_response != nullptr) {
             store_response->set_errcode(proto::CONNECT_FAIL);
             store_response->set_errmsg("connet with " + instance_address + " fail");
         }
@@ -458,13 +458,13 @@ int RegionControl::init_region_to_store(const std::string instance_address,
         DB_WARNING("add peer fail when init region,"
                    " region_id: %ld, instance:%s, cntl.Failed",
                    region_id, instance_address.c_str());
-        if (store_response != NULL) {
+        if (store_response != nullptr) {
              store_response->set_errcode(proto::EXEC_FAIL);
              store_response->set_errmsg("exec fail");
         }
         return -1;
     }
-    if (store_response != NULL) {
+    if (store_response != nullptr) {
         store_response->set_errcode(response.errcode());
         store_response->set_errmsg(response.errmsg());
     }
@@ -499,7 +499,7 @@ int RegionControl::legal_for_add_peer(const proto::AddPeer& add_peer, proto::Sto
     //判断收到请求的合法性，包括该peer是否是leader，list_peer值跟add_peer的old_peer是否相等，该peer的状态是否是IDEL
     if (!_region->is_leader()) {
         DB_WARNING("node is not leader when add_peer, region_id: %ld", _region_id);
-        if (response != NULL) {
+        if (response != nullptr) {
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_leader(butil::endpoint2str(_region->get_leader()).c_str());
@@ -508,7 +508,7 @@ int RegionControl::legal_for_add_peer(const proto::AddPeer& add_peer, proto::Sto
     }
     if (_region->_shutdown) {
         DB_WARNING("node is shutdown when add_peer, region_id: %ld", _region_id);
-        if (response != NULL) {
+        if (response != nullptr) {
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
         }
@@ -517,7 +517,7 @@ int RegionControl::legal_for_add_peer(const proto::AddPeer& add_peer, proto::Sto
     if (!_region->_region_info.can_add_peer() || (!add_peer.is_split() && _region->_region_info.version() < 1)) {
         DB_WARNING("region_id: %ld can not add peer, can_add_peer:%d, region_version:%ld",
                   _region_id, _region->_region_info.can_add_peer(), _region->_region_info.version());
-        if (response != NULL) {
+        if (response != nullptr) {
             response->set_errcode(proto::CANNOT_ADD_PEER);
             response->set_errmsg("can not add peer");
         }
@@ -527,7 +527,7 @@ int RegionControl::legal_for_add_peer(const proto::AddPeer& add_peer, proto::Sto
     std::vector<std::string> str_peers;
     if (!_region->_node.list_peers(&peers).ok()) {
         DB_WARNING("node list peer fail when add_peer, region_id: %ld", _region_id);
-        if (response != NULL) {
+        if (response != nullptr) {
             response->set_errcode(proto::PEER_NOT_EQUAL);
             response->set_errmsg("list peer fail");
         }
@@ -535,7 +535,7 @@ int RegionControl::legal_for_add_peer(const proto::AddPeer& add_peer, proto::Sto
     }
     if ((int)peers.size() != add_peer.old_peers_size()) {
         DB_WARNING("peer size is not equal when add peer, region_id: %ld", _region_id);
-        if (response != NULL) {
+        if (response != nullptr) {
             response->set_errcode(proto::PEER_NOT_EQUAL);
             response->set_errmsg("peer size not equal");
         }
@@ -550,7 +550,7 @@ int RegionControl::legal_for_add_peer(const proto::AddPeer& add_peer, proto::Sto
         if (iter == str_peers.end()) {
             DB_FATAL("old_peer not equal to list peers, region_id: %ld, old_peer:%s",
                      _region_id, pb2json(add_peer).c_str());
-            if (response != NULL) {
+            if (response != nullptr) {
                 response->set_errcode(proto::PEER_NOT_EQUAL);
                 response->set_errmsg("peer not equal");
             }

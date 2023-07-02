@@ -241,7 +241,7 @@ protected:
 
     int create_alias_node(const parser::ColumnName* term, proto::Expr& expr);
 
-    //TODO: primitive len for STRING, BOOL and NULL
+    //TODO: primitive len for STRING, BOOL and nullptr
     int create_term_literal_node(const parser::LiteralExpr* term, proto::Expr& expr);
     // (a,b)
     int create_row_expr_node(const parser::RowExpr* term, proto::Expr& expr, const CreateExprOptions& options);

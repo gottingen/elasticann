@@ -1068,7 +1068,7 @@ ErrorType FetcherStore::write_binlog(RuntimeState* state,
 
         client_conn->insert_callid(addr, region_id, cntl.call_id());
 
-        proto::StoreService_Stub(&channel).query_binlog(&cntl, &req, &res, NULL);
+        proto::StoreService_Stub(&channel).query_binlog(&cntl, &req, &res, nullptr);
         if (cntl.Failed()) {
             DB_WARNING("binlog call failed  errcode:%d, error:%s, region_id:%ld log_id:%lu",
                 cntl.ErrorCode(), cntl.ErrorText().c_str(), region_id, log_id);

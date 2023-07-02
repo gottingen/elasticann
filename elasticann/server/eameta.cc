@@ -17,7 +17,6 @@
 
 #include <string>
 #include <fstream>
-#include <boost/algorithm/string.hpp>
 #include <brpc/server.h>
 #include <gflags/gflags.h>
 #include "elasticann/raft/my_raft_log.h"
@@ -83,7 +82,7 @@ int main(int argc, char **argv) {
         return -1;
     }
     //启动端口
-    if (server.Start(addr, NULL) != 0) {
+    if (server.Start(addr, nullptr) != 0) {
         TLOG_ERROR("Fail to start server");
         return -1;
     }

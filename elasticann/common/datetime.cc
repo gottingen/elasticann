@@ -295,7 +295,7 @@ int32_t datetime_to_time(uint64_t datetime) {
 }
 uint64_t time_to_datetime(int32_t time) {
     ExprValue tmp(proto::TIMESTAMP);
-    time_t now = ::time(NULL);
+    time_t now = ::time(nullptr);
     now = ((now + 28800) / 86400) * 86400; // 去除时分秒 考虑时区UTC+8
 
     bool minus = false;
@@ -372,21 +372,21 @@ int32_t str_to_time(const char* str_time) {
         if (idx >= 4) {
             idx -= 2;
             std::string sec_str(str_time + idx, 2);
-            second = strtod(sec_str.c_str(), NULL);
+            second = strtod(sec_str.c_str(), nullptr);
             idx -= 2;
             std::string min_str(str_time + idx, 2);
-            minute = strtod(min_str.c_str(), NULL);
+            minute = strtod(min_str.c_str(), nullptr);
             std::string hour_str(str_time, idx);
-            hour = strtod(hour_str.c_str(), NULL);
+            hour = strtod(hour_str.c_str(), nullptr);
         } else if (idx >= 2) {
             idx -= 2;
             std::string sec_str(str_time + idx, 2);
-            second = strtod(sec_str.c_str(), NULL);
+            second = strtod(sec_str.c_str(), nullptr);
             std::string min_str(str_time, idx);
-            minute = strtod(min_str.c_str(), NULL);
+            minute = strtod(min_str.c_str(), nullptr);
         } else {
             std::string sec_str(str_time, idx);
-            second = strtod(sec_str.c_str(), NULL);
+            second = strtod(sec_str.c_str(), nullptr);
         }
     }
     if (day < 0 || hour < 0 || minute < 0 || minute > 59 || second < 0 || second > 59) {

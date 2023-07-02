@@ -113,7 +113,7 @@ public:
             proto::BaikalHeartBeatResponse* response);
 private:
     DatabaseManager(): _max_database_id(0) {
-        bthread_mutex_init(&_database_mutex, NULL);
+        bthread_mutex_init(&_database_mutex, nullptr);
     }
     std::string construct_database_key(int64_t database_id) {
         std::string database_key = MetaServer::SCHEMA_IDENTIFY 

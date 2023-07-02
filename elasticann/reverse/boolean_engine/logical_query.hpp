@@ -34,7 +34,7 @@ BooleanExecutor<Schema>* LogicalQuery<Schema>::parse_executor_node(
             return parse_op_node(executor_node);
         default     :
             DB_WARNING("boolean executor type (%d) is invalid", executor_node._type);
-            return NULL;
+            return nullptr;
     }
 }
 
@@ -51,9 +51,9 @@ BooleanExecutor<Schema>* LogicalQuery<Schema>::parse_op_node(
         const ExecutorNode<Schema>& node) {
     if (node._sub_nodes.size() == 0) {
         DB_WARNING("sub clauses of OperatorBooleanExecutor[%d] is empty", node._type);
-        return NULL;
+        return nullptr;
     } else {
-        OperatorBooleanExecutor<Schema>* result = NULL;
+        OperatorBooleanExecutor<Schema>* result = nullptr;
         switch (node._type) {
             case AND : {
                 result = new AndBooleanExecutor<Schema>(_schema->executor_type, node._arg);
@@ -75,7 +75,7 @@ BooleanExecutor<Schema>* LogicalQuery<Schema>::parse_op_node(
             }
             default : {
                 DB_WARNING("Executor type[%d] error", node._type);
-                return NULL;
+                return nullptr;
             }
         }
         return result;

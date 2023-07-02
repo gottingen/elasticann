@@ -48,7 +48,7 @@ namespace EA {
                 continue;
             }
             ExecNode *parent_node_ptr = scan_node_ptr->get_parent();
-            if (parent_node_ptr == NULL) {
+            if (parent_node_ptr == nullptr) {
                 continue;
             }
 
@@ -61,11 +61,11 @@ namespace EA {
             int ret = 0;
             std::map<int32_t, int> field_range_type;
             bool index_has_null = false;
-            if (join_node != NULL || agg_node != NULL) {
+            if (join_node != nullptr || agg_node != nullptr) {
                 ret = index_selector(ctx->tuple_descs(),
                                      static_cast<ScanNode *>(scan_node_ptr),
                                      filter_node,
-                                     NULL,
+                                     nullptr,
                                      join_node,
                                      &index_has_null,
                                      field_range_type,

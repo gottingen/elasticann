@@ -26,6 +26,8 @@
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/meta_server/ddl_manager.h"
+#include "turbo/strings/str_trim.h"
+#include "turbo/strings/match.h"
 
 namespace EA {
     DECLARE_int32(concurrency_num);
@@ -48,7 +50,7 @@ namespace EA {
             request.set_op_type(proto::OP_DROP_INDEX);
             request.mutable_table_info()->CopyFrom(schema);
             DB_NOTICE("DDL_LOG drop_index_request req[%s]", request.ShortDebugString().c_str());
-            SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL, NULL);
+            SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
         }
         for (auto &schema: clear_schemas) {
             proto::MetaManagerRequest request;
@@ -65,7 +67,7 @@ namespace EA {
             request.mutable_ddlwork_info()->CopyFrom(ddl_work);
             request.mutable_table_info()->CopyFrom(schema);
             DB_NOTICE("DDL_LOG clear local_index_request req[%s]", request.ShortDebugString().c_str());
-            SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL, NULL);
+            SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
         }
     }
 
@@ -82,7 +84,7 @@ namespace EA {
         request.set_op_type(proto::OP_UPDATE_INDEX_STATUS);
         request.mutable_ddlwork_info()->CopyFrom(ddl_work);
         request.mutable_table_info()->CopyFrom(_table_info_map[table_id].schema_pb);
-        SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL, NULL);
+        SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
     }
 
     void TableManager::drop_index_request(const proto::DdlWorkInfo &ddl_work) {
@@ -108,7 +110,7 @@ namespace EA {
         auto index_to_drop_iter = request.mutable_table_info()->add_indexs();
         index_to_drop_iter->set_index_name(index_name);
         DB_DEBUG("DDL_LOG drop_index_request req[%s]", request.ShortDebugString().c_str());
-        SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL, NULL);
+        SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
     }
 
     int64_t TableManager::get_row_count(int64_t table_id) {
@@ -178,7 +180,7 @@ namespace EA {
     void TableManager::create_table(const proto::MetaManagerRequest &request, const int64_t apply_index,
                                     braft::Closure *done) {
         auto &table_info = const_cast<proto::SchemaInfo &>(request.table_info());
-        table_info.set_timestamp(time(NULL));
+        table_info.set_timestamp(time(nullptr));
         table_info.set_version(1);
 
         std::string namespace_name = table_info.namespace_name();
@@ -481,7 +483,7 @@ namespace EA {
         std::vector<std::string> write_rocksdb_values;
         proto::SchemaInfo schema_info = _table_info_map[drop_table_id].schema_pb;
         schema_info.set_deleted(true);
-        schema_info.set_timestamp(time(NULL));
+        schema_info.set_timestamp(time(nullptr));
         std::string drop_table_value;
         if (!schema_info.SerializeToString(&drop_table_value)) {
             DB_WARNING("request serializeToArray fail, request:%s",
@@ -1376,7 +1378,7 @@ namespace EA {
                         mem_field.set_mysql_type(field.mysql_type());
                     }
                     if (field.has_can_null()) {
-                        // TODO NULL VALUE CHECK
+                        // TODO nullptr VALUE CHECK
                         mem_field.set_can_null(field.can_null());
                     }
                     if (field.auto_increment() != mem_field.auto_increment()) {
@@ -3020,7 +3022,7 @@ namespace EA {
         }
 
         for (auto &request: requests) {
-            SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL, NULL);
+            SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
         }
 
     }
@@ -3052,7 +3054,7 @@ namespace EA {
         BthreadCond apply_raft_cond(-40);
         for (auto &request: requests) {
             apply_raft_cond.increase_wait();
-            SchemaManager::get_instance()->process_schema_info(NULL, &request, NULL,
+            SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr,
                                                                (new ApplyraftClosure(apply_raft_cond)));
         }
         apply_raft_cond.wait(-40);
@@ -3100,8 +3102,8 @@ namespace EA {
         auto index_to_del = std::find_if(std::begin(schema_info.indexs()), std::end(schema_info.indexs()),
                                          [&index_req](const proto::IndexInfo &info) {
                                              // 忽略大小写
-                                             return boost::algorithm::iequals(info.index_name(),
-                                                                              index_req.index_name()) &&
+                                             return turbo::EqualsIgnoreCase(info.index_name(),
+                                                                            index_req.index_name()) &&
                                                     (info.index_type() == proto::I_UNIQ ||
                                                      info.index_type() == proto::I_KEY ||
                                                      info.index_type() == proto::I_FULLTEXT);
@@ -3290,7 +3292,7 @@ namespace EA {
         std::vector<std::string> init_store;
         init_store.reserve(4);
         std::string resource_tag = table_mem.schema_pb.resource_tag();
-        boost::trim(resource_tag);
+        turbo::Trim(&resource_tag);
         for (auto i = 0; i < table_mem.schema_pb.partition_num(); ++i) {
             std::string instance;
             int ret = ClusterManager::get_instance()->select_instance_rolling(
@@ -3738,8 +3740,8 @@ namespace EA {
                                           auto index_iter = mem_schema_pb.mutable_indexs()->begin();
                                           for (; index_iter != mem_schema_pb.mutable_indexs()->end(); index_iter++) {
                                               // 索引匹配不区分大小写
-                                              if (boost::algorithm::iequals(index_iter->index_name(),
-                                                                            index_info.index_name()) &&
+                                              if (turbo::EqualsIgnoreCase(index_iter->index_name(),
+                                                                          index_info.index_name()) &&
                                                   index_iter->index_type() != proto::I_PRIMARY) {
                                                   if (index_iter->hint_status() == proto::IHS_VIRTUAL) {
                                                       continue;

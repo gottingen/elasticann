@@ -44,7 +44,7 @@ struct WaitTxnWorkInfo {
 class StatusChangePolicy {
 public:
     StatusChangePolicy() {
-        bthread_mutex_init(&_mutex, NULL);
+        bthread_mutex_init(&_mutex, nullptr);
     }
 
     ~StatusChangePolicy() {
@@ -69,8 +69,8 @@ public:
     using TaskId = std::string;
 
     DBManager() {
-        bthread_mutex_init(&_broadcast_mutex, NULL);
-        bthread_mutex_init(&_address_instance_mutex, NULL);
+        bthread_mutex_init(&_broadcast_mutex, nullptr);
+        bthread_mutex_init(&_address_instance_mutex, nullptr);
     }
 
     ~DBManager() {
@@ -216,9 +216,9 @@ class DDLManager : public Singleton<DDLManager> {
 public:
 
     DDLManager() {
-        bthread_mutex_init(&_txn_mutex, NULL);
-        bthread_mutex_init(&_table_mutex, NULL);
-        bthread_mutex_init(&_region_mutex, NULL);
+        bthread_mutex_init(&_txn_mutex, nullptr);
+        bthread_mutex_init(&_table_mutex, nullptr);
+        bthread_mutex_init(&_region_mutex, nullptr);
     }
 
     ~DDLManager() {

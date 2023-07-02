@@ -54,7 +54,7 @@ void sigsegv_handler(int signum, siginfo_t* info, void* ptr) {
     int nptrs = backtrace(buffer, 1000);
     DB_FATAL("segment fault, backtrace() returned %d addresses", nptrs);
     strings = backtrace_symbols(buffer, nptrs);
-    if (strings != NULL) {
+    if (strings != nullptr) {
         for (int j = 0; j < nptrs; j++) {
             int status = 0;
             char* name = abi::__cxa_demangle(strings[j], nullptr, nullptr, &status);
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 #endif
     google::SetCommandLineOption("flagfile", "conf/gflags.conf");
     google::ParseCommandLineFlags(&argc, &argv, true);
-    srand((unsigned)time(NULL));
+    srand((unsigned)time(nullptr));
     turbo::filesystem::path remove_path("init.success");
     turbo::filesystem::remove_all(remove_path);
     // Initail log
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
         sigemptyset(&act.sa_mask);
         act.sa_sigaction = sigsegv_handler;
         act.sa_flags = SA_SIGINFO;
-        if (sigaction(sig, &act, NULL) < 0) {
+        if (sigaction(sig, &act, nullptr) < 0) {
             DB_FATAL("sigaction fail, %m");
             exit(1);
         }
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
         DB_FATAL("Fail to Add StoreService");
         return -1;
     }
-    if (server.Start(addr, NULL) != 0) {
+    if (server.Start(addr, nullptr) != 0) {
         DB_FATAL("Fail to start server");
         return -1;
     }

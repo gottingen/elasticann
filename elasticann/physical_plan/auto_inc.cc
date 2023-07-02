@@ -31,7 +31,7 @@ int AutoInc::analyze(QueryContext* ctx) {
     }
     InsertNode* insert_node = static_cast<InsertNode*>(plan->get_node(proto::INSERT_NODE));
     int64_t table_id = -1;
-    if (insert_node != NULL) {
+    if (insert_node != nullptr) {
         table_id = insert_node->table_id();
     }
     SchemaFactory* schema_factory = SchemaFactory::get_instance();

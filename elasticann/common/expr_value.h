@@ -356,9 +356,9 @@ namespace EA {
                     return _u.double_val;
                 case proto::STRING:
                     if (std::is_integral<T>::value) {
-                        return strtoull(str_val.c_str(), NULL, 10);
+                        return strtoull(str_val.c_str(), nullptr, 10);
                     } else if (std::is_floating_point<T>::value) {
-                        return strtod(str_val.c_str(), NULL);
+                        return strtod(str_val.c_str(), nullptr);
                     } else {
                         return 0;
                     }
@@ -838,11 +838,11 @@ namespace EA {
 
         static ExprValue Now(int precision = 6) {
             ExprValue tmp(proto::TIMESTAMP);
-            tmp._u.uint32_val = time(NULL);
+            tmp._u.uint32_val = time(nullptr);
             tmp.cast_to(proto::DATETIME);
             if (precision == 6) {
                 timeval tv;
-                gettimeofday(&tv, NULL);
+                gettimeofday(&tv, nullptr);
                 tmp._u.uint64_val |= tv.tv_usec;
             }
             return tmp;
@@ -871,10 +871,10 @@ namespace EA {
             long offset = timeinfo.tm_gmtoff;
 
             ExprValue tmp(proto::TIMESTAMP);
-            tmp._u.uint32_val = time(NULL) - offset;
+            tmp._u.uint32_val = time(nullptr) - offset;
             tmp.cast_to(proto::DATETIME);
             timeval tv;
-            gettimeofday(&tv, NULL);
+            gettimeofday(&tv, nullptr);
             tmp._u.uint64_val |= tv.tv_usec;
             return tmp;
         }

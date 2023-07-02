@@ -1124,7 +1124,7 @@ public:
 private:
     SchemaFactory() {
         _is_inited = false;
-        bthread_mutex_init(&_update_show_db_mutex, NULL);
+        bthread_mutex_init(&_update_show_db_mutex, nullptr);
         butil::EndPoint addr;
         addr.ip = butil::my_ip();
         addr.port = 0;

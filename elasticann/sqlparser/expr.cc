@@ -51,7 +51,7 @@ static std::unordered_map<int, std::string> FUNC_STR_MAP = {
     {FT_LOGIC_OR, " || "},
     {FT_LOGIC_XOR, " XOR "},
     // is like in null ture
-    {FT_IS_NULL, "IS NULL"},
+    {FT_IS_NULL, "IS nullptr"},
     {FT_IS_TRUE, "IS TRUE"},
     {FT_IS_UNKNOWN, "IS UNKNOWN"},
     {FT_IN, "IN"},
@@ -215,7 +215,7 @@ void FuncExpr::to_stream(std::ostream& os) const {
             os << children[0] << FUNC_STR_MAP[func_type] << children[1];
             break;
         case FT_IS_NULL:
-            os << children[0] << " IS" << not_str[is_not] << " NULL";
+            os << children[0] << " IS" << not_str[is_not] << " nullptr";
             break;
         case FT_IS_TRUE:
             os << children[0] << " IS " << true_str[is_not];
@@ -327,7 +327,7 @@ void LiteralExpr::to_stream(std::ostream& os) const {
             os << true_str[_u.bool_val];
             break;
         case LT_NULL:
-            os << "NULL";
+            os << "nullptr";
             break;
         case LT_PLACE_HOLDER:
             os << "?";
@@ -361,7 +361,7 @@ std::string LiteralExpr::to_string() const {
             os << true_str[_u.bool_val];
             break;
         case LT_NULL:
-            os << "NULL";
+            os << "nullptr";
             break;
         case LT_PLACE_HOLDER:
             os << "?";
