@@ -17,7 +17,6 @@
 
 #include "elasticann/common/schema_factory.h"
 #include <unordered_set>
-#include <boost/algorithm/string.hpp>
 #include <gflags/gflags.h>
 #include "elasticann/common/table_key.h"
 #include "elasticann/common/mut_table_key.h"
@@ -25,7 +24,7 @@
 #include "elasticann/common/password.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/common/information_schema.h"
-#include "turbo/strings/str_split.h"
+#include "turbo/strings/utility.h"
 
 using google::protobuf::FileDescriptor;
 namespace EA {
@@ -362,7 +361,8 @@ namespace EA {
 
             if (tbl_info.schema_conf.has_sign_blacklist() && tbl_info.schema_conf.sign_blacklist() != "") {
                 DB_DEBUG("sign_blacklist: %s", tbl_info.schema_conf.sign_blacklist().c_str());
-                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_blacklist(), ',', turbo::SkipEmpty());
+                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_blacklist(), ',',
+                                                               turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
                     uint64_t sign_num = strtoull(sign_str.c_str(), nullptr, 10);
                     tbl_info.sign_blacklist.emplace(sign_num);
@@ -371,7 +371,8 @@ namespace EA {
             }
             if (tbl_info.schema_conf.has_sign_forcelearner() && tbl_info.schema_conf.sign_forcelearner() != "") {
                 DB_DEBUG("sign_forcelearner: %s", tbl_info.schema_conf.sign_forcelearner().c_str());
-                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forcelearner(), ',', turbo::SkipEmpty());
+                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forcelearner(), ',',
+                                                               turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
                     uint64_t sign_num = strtoull(sign_str.c_str(), nullptr, 10);
                     tbl_info.sign_forcelearner.emplace(sign_num);
@@ -380,7 +381,8 @@ namespace EA {
             }
             if (tbl_info.schema_conf.has_sign_forceindex() && tbl_info.schema_conf.sign_forceindex() != "") {
                 DB_DEBUG("sign_forceindex: %s", tbl_info.schema_conf.sign_forceindex().c_str());
-                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forceindex(), ',', turbo::SkipEmpty());
+                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forceindex(), ',',
+                                                               turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
                     tbl_info.sign_forceindex.emplace(sign_str);
                     DB_DEBUG("sign_str: %s", sign_str.c_str());
@@ -389,7 +391,8 @@ namespace EA {
             if (tbl_info.schema_conf.has_sign_forceindex() && tbl_info.schema_conf.sign_forceindex() != "") {
                 DB_DEBUG("sign_forceindex: %s",
                          tbl_info.schema_conf.sign_forceindex().c_str());
-                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forceindex(),',', turbo::SkipEmpty());
+                std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forceindex(), ',',
+                                                               turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
                     tbl_info.sign_forceindex.emplace(sign_str);
                     DB_DEBUG("sign_str: %s", sign_str.c_str());
@@ -530,7 +533,7 @@ namespace EA {
             field_info.auto_inc = field.auto_increment();
             field_info.deleted = field.deleted();
             field_info.comment = field.comment();
-            field_info.noskip = boost::algorithm::icontains(field_info.comment, "noskip");
+            field_info.noskip = turbo::StrIgnoreCaseContains(field_info.comment, "noskip");
             field_info.default_value = field.default_value();
             field_info.on_update_value = field.on_update_value();
             if (field.has_default_value()) {
@@ -1262,14 +1265,14 @@ namespace EA {
         user_info->need_auth_addr = user.need_auth_addr();
         if (user_info->need_auth_addr) {
             for (auto ip: user.ip()) {
-                boost::trim(ip);
+                turbo::Trim(&ip);
                 user_info->auth_ip_set.insert(ip);
             }
             bool bns_error = false;
             for (auto bns: user.bns()) {
                 std::vector<std::string> instances;
                 int ret = 0;
-                boost::trim(bns);
+                turbo::Trim(&bns);
                 int ret2 = get_instance_from_bns(&ret, bns, instances, false, true);
                 if (ret2 != 0) {
                     DB_WARNING("bns error:%s", bns.c_str());
@@ -2388,7 +2391,7 @@ namespace EA {
                 auto region_iter = map.upper_bound(start_sentinel.data());
 
                 while (left_open && region_iter != map.end() &&
-                       boost::starts_with(region_iter->first, start.data())) {
+                       turbo::StartsWith(region_iter->first, start.data())) {
                     region_iter++;
                 }
                 if (region_iter != map.begin()) {
@@ -2396,7 +2399,7 @@ namespace EA {
                 }
                 while (region_iter != map.end()) {
                     if (end.data().empty() || region_iter->first <= end.data() ||
-                        (!right_open && boost::starts_with(region_iter->first, end.data()))) {
+                        (!right_open && turbo::StartsWith(region_iter->first, end.data()))) {
                         int64_t region_id = region_iter->second;
                         frontground->get_region_info(region_id, region_infos[region_id]);
                         // 只有in/多个范围才拆分primary

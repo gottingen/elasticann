@@ -28,14 +28,11 @@
 #include <brpc/controller.h>
 #include <butil/file_util.h>
 #include "rocksdb/slice.h"
-#include <boost/algorithm/string.hpp>
 #include <google/protobuf/descriptor.pb.h>
 #include "rocksdb/slice.h"
 #include "elasticann/common/expr_value.h"
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"
-
-#include <boost/algorithm/string.hpp>
 
 using google::protobuf::FieldDescriptorProto;
 

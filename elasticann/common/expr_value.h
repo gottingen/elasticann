@@ -22,7 +22,6 @@
 #include <type_traits>
 #include <iomanip>
 #include <sstream>
-#include <boost/lexical_cast.hpp>
 #include "elasticann/proto/common.pb.h"
 #include "elasticann/common/common.h"
 #include "elasticann/common/tdigest.h"

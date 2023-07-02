@@ -34,8 +34,6 @@
 #include "elasticann/common/statistics.h"
 #include "elasticann/expr/expr_node.h"
 #include "elasticann/expr/literal.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/join.hpp>
 
 using google::protobuf::FileDescriptorProto;
 using google::protobuf::DescriptorProto;
