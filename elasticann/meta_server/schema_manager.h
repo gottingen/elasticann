@@ -22,69 +22,85 @@
 #include "elasticann/meta_server/meta_state_machine.h"
 
 namespace EA {
-typedef std::shared_ptr<proto::RegionInfo> SmartRegionInfo;
-DECLARE_int32(balance_periodicity);
-class SchemaManager {
-public:
-    static const std::string MAX_NAMESPACE_ID_KEY;
-    static const std::string MAX_DATABASE_ID_KEY;
-    static const std::string MAX_TABLE_ID_KEY;
-    static const std::string MAX_REGION_ID_KEY;
-    static SchemaManager* get_instance() {
-        static SchemaManager instance;
-        return &instance;
-    }
-    ~SchemaManager() {}
-    void process_schema_info(google::protobuf::RpcController* controller,
-                  const proto::MetaManagerRequest* request,
-                  proto::MetaManagerResponse* response,
-                  google::protobuf::Closure* done); 
-    
-    void process_schema_heartbeat_for_store(const proto::StoreHeartBeatRequest* request,
-                                            proto::StoreHeartBeatResponse* response);
-    void process_peer_heartbeat_for_store(const proto::StoreHeartBeatRequest* request,
-                                            proto::StoreHeartBeatResponse* response,
-                                            uint64_t log_id);
-    void process_leader_heartbeat_for_store(const proto::StoreHeartBeatRequest* request,
-                                            proto::StoreHeartBeatResponse* response,
-                                            uint64_t log_id);
-    void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest* request,
-                                proto::BaikalHeartBeatResponse* response,
+    typedef std::shared_ptr<proto::RegionInfo> SmartRegionInfo;
+    DECLARE_int32(balance_periodicity);
+
+    class SchemaManager {
+    public:
+        static const std::string MAX_NAMESPACE_ID_KEY;
+        static const std::string MAX_DATABASE_ID_KEY;
+        static const std::string MAX_TABLE_ID_KEY;
+        static const std::string MAX_REGION_ID_KEY;
+
+        static SchemaManager *get_instance() {
+            static SchemaManager instance;
+            return &instance;
+        }
+
+        ~SchemaManager() {}
+
+        void process_schema_info(google::protobuf::RpcController *controller,
+                                 const proto::MetaManagerRequest *request,
+                                 proto::MetaManagerResponse *response,
+                                 google::protobuf::Closure *done);
+
+        void process_schema_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
+                                                proto::StoreHeartBeatResponse *response);
+
+        void process_peer_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
+                                              proto::StoreHeartBeatResponse *response,
+                                              uint64_t log_id);
+
+        void process_leader_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
+                                                proto::StoreHeartBeatResponse *response,
+                                                uint64_t log_id);
+
+        void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
+                                      proto::BaikalHeartBeatResponse *response,
+                                      uint64_t log_id);
+
+        //为权限操作类接口提供输入参数检查和id获取功能
+        int check_and_get_for_privilege(proto::UserPrivilege &user_privilege);
+
+        int load_snapshot();
+
+        void set_meta_state_machine(MetaStateMachine *meta_state_machine) {
+            _meta_state_machine = meta_state_machine;
+        }
+
+        bool get_unsafe_decision() {
+            return _meta_state_machine->get_unsafe_decision();
+        }
+
+    private:
+        SchemaManager() {}
+
+        int pre_process_for_create_table(const proto::MetaManagerRequest *request,
+                                         proto::MetaManagerResponse *response,
+                                         uint64_t log_id);
+
+        int pre_process_for_merge_region(const proto::MetaManagerRequest *request,
+                                         proto::MetaManagerResponse *response,
+                                         uint64_t log_id);
+
+        int pre_process_for_split_region(const proto::MetaManagerRequest *request,
+                                         proto::MetaManagerResponse *response,
+                                         uint64_t log_id);
+
+        int load_max_id_snapshot(const std::string &max_id_prefix,
+                                 const std::string &key,
+                                 const std::string &value);
+
+        int whether_dists_legal(proto::MetaManagerRequest *request,
+                                proto::MetaManagerResponse *response,
+                                std::string &candidate_logical_room,
                                 uint64_t log_id);
-    //为权限操作类接口提供输入参数检查和id获取功能
-    int check_and_get_for_privilege(proto::UserPrivilege& user_privilege);
 
-    int load_snapshot();
-    void set_meta_state_machine(MetaStateMachine* meta_state_machine) {
-        _meta_state_machine = meta_state_machine;
-    }
-    bool get_unsafe_decision() {
-        return _meta_state_machine->get_unsafe_decision();
-    }
-private:
-    SchemaManager() {}
-    int pre_process_for_create_table(const proto::MetaManagerRequest* request,
-                                    proto::MetaManagerResponse* response,
-                                    uint64_t log_id);
-    int pre_process_for_merge_region(const proto::MetaManagerRequest* request,
-                                    proto::MetaManagerResponse* response,
-                                    uint64_t log_id);
-    int pre_process_for_split_region(const proto::MetaManagerRequest* request,
-                                    proto::MetaManagerResponse* response,
-                                    uint64_t log_id);
-    int load_max_id_snapshot(const std::string& max_id_prefix, 
-                              const std::string& key, 
-                              const std::string& value);
-    int whether_dists_legal(proto::MetaManagerRequest* request,
-                            proto::MetaManagerResponse* response,
-                            std::string& candidate_logical_room,
-                            uint64_t log_id);
-    int whether_main_logical_room_legal(proto::MetaManagerRequest* request,
-                            proto::MetaManagerResponse* response,
-                            uint64_t log_id);
-    MetaStateMachine*                                   _meta_state_machine;
-}; //class
+        int whether_main_logical_room_legal(proto::MetaManagerRequest *request,
+                                            proto::MetaManagerResponse *response,
+                                            uint64_t log_id);
 
-}//namespace
+        MetaStateMachine *_meta_state_machine;
+    }; //class
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+}  // namespace EA

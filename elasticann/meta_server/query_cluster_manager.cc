@@ -374,5 +374,4 @@ namespace EA {
         logical_instance_infos[logical_room] = physical_instance_infos;
     }
 
-}//namespace
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+}  // namespace Ea

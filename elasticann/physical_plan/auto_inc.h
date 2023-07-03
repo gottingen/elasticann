@@ -19,19 +19,21 @@
 
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/common/meta_server_interact.h"
-namespace EA {
-DECLARE_string(meta_server_bns);
-class AutoInc {
-public:
-    /* 
-     * 计算自增id
-     */
-    int analyze(QueryContext* ctx);
 
-    int update_auto_inc(SmartTable table_info_ptr,
-                               NetworkSocket* client_conn,
-                               bool use_backup,
-                               std::vector<SmartRecord>& insert_records);
-};
+namespace EA {
+    DECLARE_string(meta_server_bns);
+
+    class AutoInc {
+    public:
+        /*
+         * 计算自增id
+         */
+        int analyze(QueryContext *ctx);
+
+        int update_auto_inc(SmartTable table_info_ptr,
+                            NetworkSocket *client_conn,
+                            bool use_backup,
+                            std::vector<SmartRecord> &insert_records);
+    };
 }
 

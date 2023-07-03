@@ -71,8 +71,7 @@ namespace EA {
         brpc::ClosureGuard done_guard(done);
         uint64_t log_id = 0;
         if (controller != nullptr) {
-            brpc::Controller *cntl =
-                    static_cast<brpc::Controller *>(controller);
+            auto *cntl = static_cast<brpc::Controller *>(controller);
             if (cntl->has_log_id()) {
                 log_id = cntl->log_id();
             }
@@ -1953,5 +1952,4 @@ namespace EA {
         return 0;
     }
 
-}//namespace
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+}  // namespace EA

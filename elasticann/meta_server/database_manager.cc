@@ -21,200 +21,199 @@
 #include "elasticann/meta_server/namespace_manager.h"
 
 namespace EA {
-void DatabaseManager::create_database(const proto::MetaManagerRequest& request, braft::Closure* done) {
-    //校验合法性
-    auto& database_info = const_cast<proto::DataBaseInfo&>(request.database_info());
-    std::string namespace_name = database_info.namespace_name();
-    std::string database_name = namespace_name + "\001" + database_info.database();
-    int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
-    if (namespace_id == 0) {
-        DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
-        return;
-    }
-    if (_database_id_map.find(database_name) != _database_id_map.end()) {
-        DB_WARNING("request database:%s already exist", database_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database already exist");
-        return;
+    void DatabaseManager::create_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
+        //校验合法性
+        auto &database_info = const_cast<proto::DataBaseInfo &>(request.database_info());
+        std::string namespace_name = database_info.namespace_name();
+        std::string database_name = namespace_name + "\001" + database_info.database();
+        int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
+        if (namespace_id == 0) {
+            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            return;
+        }
+        if (_database_id_map.find(database_name) != _database_id_map.end()) {
+            DB_WARNING("request database:%s already exist", database_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database already exist");
+            return;
+        }
+
+        std::vector<std::string> rocksdb_keys;
+        std::vector<std::string> rocksdb_values;
+
+        //准备database_info信息
+        int64_t tmp_database_id = _max_database_id + 1;
+        database_info.set_database_id(tmp_database_id);
+        database_info.set_namespace_id(namespace_id);
+
+        proto::NameSpaceInfo namespace_info;
+        if (NamespaceManager::get_instance()->get_namespace_info(namespace_id, namespace_info) == 0) {
+            if (!database_info.has_resource_tag() && namespace_info.resource_tag() != "") {
+                database_info.set_resource_tag(namespace_info.resource_tag());
+            }
+            if (!database_info.has_engine() && namespace_info.has_engine()) {
+                database_info.set_engine(namespace_info.engine());
+            }
+            if (!database_info.has_charset() && namespace_info.has_charset()) {
+                database_info.set_charset(namespace_info.charset());
+            }
+            if (!database_info.has_byte_size_per_record() && namespace_info.has_byte_size_per_record()) {
+                database_info.set_byte_size_per_record(namespace_info.byte_size_per_record());
+            }
+            if (!database_info.has_replica_num() && namespace_info.has_replica_num()) {
+                database_info.set_replica_num(namespace_info.replica_num());
+            }
+            if (!database_info.has_region_split_lines() && namespace_info.has_region_split_lines()) {
+                database_info.set_region_split_lines(namespace_info.region_split_lines());
+            }
+        }
+        database_info.set_version(1);
+
+        std::string database_value;
+        if (!database_info.SerializeToString(&database_value)) {
+            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            return;
+        }
+        rocksdb_keys.push_back(construct_database_key(tmp_database_id));
+        rocksdb_values.push_back(database_value);
+
+        //持久化分配出去database_id
+        std::string max_database_id_value;
+        max_database_id_value.append((char *) &tmp_database_id, sizeof(int64_t));
+        rocksdb_keys.push_back(construct_max_database_id_key());
+        rocksdb_values.push_back(max_database_id_value);
+
+        int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values);
+        if (ret < 0) {
+            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            return;
+        }
+        //更新内存值
+        set_database_info(database_info);
+        set_max_database_id(tmp_database_id);
+        NamespaceManager::get_instance()->add_database_id(namespace_id, tmp_database_id);
+        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        DB_NOTICE("create database success, request:%s", request.ShortDebugString().c_str());
     }
 
-    std::vector<std::string> rocksdb_keys;
-    std::vector<std::string> rocksdb_values;
-    
-    //准备database_info信息 
-    int64_t tmp_database_id = _max_database_id + 1;
-    database_info.set_database_id(tmp_database_id);
-    database_info.set_namespace_id(namespace_id);
-    
-    proto::NameSpaceInfo namespace_info;
-    if (NamespaceManager::get_instance()->get_namespace_info(namespace_id, namespace_info) == 0) {
-        if (!database_info.has_resource_tag() && namespace_info.resource_tag() != "") {
-            database_info.set_resource_tag(namespace_info.resource_tag());
+    void DatabaseManager::drop_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
+        //合法性检查
+        auto &database_info = request.database_info();
+        std::string namespace_name = database_info.namespace_name();
+        std::string database_name = namespace_name + "\001" + database_info.database();
+        int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
+        if (namespace_id == 0) {
+            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            return;
         }
-        if (!database_info.has_engine() && namespace_info.has_engine()) {
-            database_info.set_engine(namespace_info.engine());
-        } 
-        if (!database_info.has_charset() && namespace_info.has_charset()) {
-            database_info.set_charset(namespace_info.charset());
+        if (_database_id_map.find(database_name) == _database_id_map.end()) {
+            DB_WARNING("request database:%s not exist", database_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
+            return;
         }
-        if (!database_info.has_byte_size_per_record() && namespace_info.has_byte_size_per_record()) {
-            database_info.set_byte_size_per_record(namespace_info.byte_size_per_record());
+        int64_t database_id = _database_id_map[database_name];
+        if (!_table_ids[database_id].empty()) {
+            DB_WARNING("request database:%s has tables", database_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database has table");
+            return;
         }
-        if (!database_info.has_replica_num() && namespace_info.has_replica_num()) {
-            database_info.set_replica_num(namespace_info.replica_num());
-        }  
-        if (!database_info.has_region_split_lines() && namespace_info.has_region_split_lines()) {
-            database_info.set_region_split_lines(namespace_info.region_split_lines());
-        } 
-    }
-    database_info.set_version(1);
-    
-    std::string database_value;
-    if (!database_info.SerializeToString(&database_value)) {
-        DB_WARNING("request serializeToArray fail, request:%s",request.ShortDebugString().c_str());
-        IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
-        return;
-    }
-    rocksdb_keys.push_back(construct_database_key(tmp_database_id));
-    rocksdb_values.push_back(database_value);
-
-    //持久化分配出去database_id
-    std::string max_database_id_value;
-    max_database_id_value.append((char*)&tmp_database_id, sizeof(int64_t));
-    rocksdb_keys.push_back(construct_max_database_id_key());
-    rocksdb_values.push_back(max_database_id_value);
-    
-    int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values); 
-    if (ret < 0) {  
-        IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
-        return;
-    }
-    //更新内存值
-    set_database_info(database_info);
-    set_max_database_id(tmp_database_id);
-    NamespaceManager::get_instance()->add_database_id(namespace_id, tmp_database_id);
-    IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-    DB_NOTICE("create database success, request:%s", request.ShortDebugString().c_str());
-}
-
-void DatabaseManager::drop_database(const proto::MetaManagerRequest& request, braft::Closure* done) {
-    //合法性检查
-    auto& database_info = request.database_info();
-    std::string namespace_name = database_info.namespace_name();
-    std::string database_name = namespace_name + "\001" + database_info.database();
-    int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
-    if (namespace_id == 0) {
-        DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
-        return;
-    }
-    if (_database_id_map.find(database_name) == _database_id_map.end()) {
-        DB_WARNING("request database:%s not exist", database_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
-        return;
-    }
-    int64_t database_id = _database_id_map[database_name];
-    if (!_table_ids[database_id].empty()) {
-        DB_WARNING("request database:%s has tables", database_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database has table");
-        return;
-    }
-    //持久化数据
-    int ret = MetaRocksdb::get_instance()->delete_meta_info(
+        //持久化数据
+        int ret = MetaRocksdb::get_instance()->delete_meta_info(
                 std::vector<std::string>{construct_database_key(database_id)});
-    if (ret < 0) {
-        DB_WARNING("drop datbase:%s to rocksdb fail", database_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
-        return;
+        if (ret < 0) {
+            DB_WARNING("drop datbase:%s to rocksdb fail", database_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            return;
+        }
+        //更新内存中database信息
+        erase_database_info(database_name);
+        //更新内存中namespace信息
+        NamespaceManager::get_instance()->delete_database_id(namespace_id, database_id);
+        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        DB_NOTICE("drop database success, request:%s", request.ShortDebugString().c_str());
     }
-    //更新内存中database信息
-    erase_database_info(database_name);
-    //更新内存中namespace信息
-    NamespaceManager::get_instance()->delete_database_id(namespace_id, database_id);
-    IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-    DB_NOTICE("drop database success, request:%s", request.ShortDebugString().c_str());
-}
 
-void DatabaseManager::modify_database(const proto::MetaManagerRequest& request, braft::Closure* done) {
-    auto& database_info = request.database_info();
-    std::string namespace_name = database_info.namespace_name();
-    std::string database_name = namespace_name + "\001" + database_info.database();
-    int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
-    if (namespace_id == 0) {
-        DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
-        return;
-    }
-    if (_database_id_map.find(database_name) == _database_id_map.end()) {
-        DB_WARNING("request database:%s not exist", database_name.c_str());
-        IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
-        return;
-    }
-    int64_t database_id = _database_id_map[database_name];
-    
-    proto::DataBaseInfo tmp_database_info = _database_info_map[database_id];
-    tmp_database_info.set_version(tmp_database_info.version() + 1);
-    if (database_info.has_quota()) {
-        tmp_database_info.set_quota(database_info.quota());
-    }
-    if (database_info.has_resource_tag()) {
-        tmp_database_info.set_resource_tag(database_info.resource_tag());
-    }
-    if (database_info.has_engine()) {
-        tmp_database_info.set_engine(database_info.engine());
-    }
-    if (database_info.has_charset()) {
-        tmp_database_info.set_charset(database_info.charset());
-    }
-    if (database_info.has_byte_size_per_record()) {
-        tmp_database_info.set_byte_size_per_record(database_info.byte_size_per_record());
-    }
-    if (database_info.has_replica_num()) {
-        tmp_database_info.set_replica_num(database_info.replica_num());
-    }
-    if (database_info.has_region_split_lines()) {
-        tmp_database_info.set_region_split_lines(database_info.region_split_lines());
-    }
-    std::string database_value;
-    if (!tmp_database_info.SerializeToString(&database_value)) {
-        DB_WARNING("request serializeToArray fail, request:%s",request.ShortDebugString().c_str());
-        IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
-        return;
-    }
-    int ret = MetaRocksdb::get_instance()->put_meta_info(construct_database_key(database_id), database_value);
-    if (ret < 0) { 
-        IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
-        return;
-    }
-    //更新内存值
-    set_database_info(tmp_database_info);
-    IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-    DB_NOTICE("modify database success, request:%s", request.ShortDebugString().c_str());
-}
+    void DatabaseManager::modify_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
+        auto &database_info = request.database_info();
+        std::string namespace_name = database_info.namespace_name();
+        std::string database_name = namespace_name + "\001" + database_info.database();
+        int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
+        if (namespace_id == 0) {
+            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            return;
+        }
+        if (_database_id_map.find(database_name) == _database_id_map.end()) {
+            DB_WARNING("request database:%s not exist", database_name.c_str());
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
+            return;
+        }
+        int64_t database_id = _database_id_map[database_name];
 
-int DatabaseManager::load_database_snapshot(const std::string& value) {
-    proto::DataBaseInfo database_pb;
-    if (!database_pb.ParseFromString(value)) {
-        DB_FATAL("parse from pb fail when load database snapshot, key:%s", value.c_str());
-        return -1;
+        proto::DataBaseInfo tmp_database_info = _database_info_map[database_id];
+        tmp_database_info.set_version(tmp_database_info.version() + 1);
+        if (database_info.has_quota()) {
+            tmp_database_info.set_quota(database_info.quota());
+        }
+        if (database_info.has_resource_tag()) {
+            tmp_database_info.set_resource_tag(database_info.resource_tag());
+        }
+        if (database_info.has_engine()) {
+            tmp_database_info.set_engine(database_info.engine());
+        }
+        if (database_info.has_charset()) {
+            tmp_database_info.set_charset(database_info.charset());
+        }
+        if (database_info.has_byte_size_per_record()) {
+            tmp_database_info.set_byte_size_per_record(database_info.byte_size_per_record());
+        }
+        if (database_info.has_replica_num()) {
+            tmp_database_info.set_replica_num(database_info.replica_num());
+        }
+        if (database_info.has_region_split_lines()) {
+            tmp_database_info.set_region_split_lines(database_info.region_split_lines());
+        }
+        std::string database_value;
+        if (!tmp_database_info.SerializeToString(&database_value)) {
+            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            return;
+        }
+        int ret = MetaRocksdb::get_instance()->put_meta_info(construct_database_key(database_id), database_value);
+        if (ret < 0) {
+            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            return;
+        }
+        //更新内存值
+        set_database_info(tmp_database_info);
+        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        DB_NOTICE("modify database success, request:%s", request.ShortDebugString().c_str());
     }
-    DB_WARNING("database snapshot:%s", database_pb.ShortDebugString().c_str());
-    set_database_info(database_pb);
-    //更新内存中namespace的值
-    NamespaceManager::get_instance()->add_database_id(
-                database_pb.namespace_id(), 
+
+    int DatabaseManager::load_database_snapshot(const std::string &value) {
+        proto::DataBaseInfo database_pb;
+        if (!database_pb.ParseFromString(value)) {
+            DB_FATAL("parse from pb fail when load database snapshot, key:%s", value.c_str());
+            return -1;
+        }
+        DB_WARNING("database snapshot:%s", database_pb.ShortDebugString().c_str());
+        set_database_info(database_pb);
+        //更新内存中namespace的值
+        NamespaceManager::get_instance()->add_database_id(
+                database_pb.namespace_id(),
                 database_pb.database_id());
-    return 0;
-}
-void DatabaseManager::process_baikal_heartbeat(const proto::BaikalHeartBeatRequest* request,
-                                               proto::BaikalHeartBeatResponse* response) {
-    BAIDU_SCOPED_LOCK(_database_mutex);
-    for (auto& db_info : _database_info_map) {
-        auto db = response->add_db_info();    
-        *db = db_info.second;
+        return 0;
     }
-}
 
-}//namespace 
+    void DatabaseManager::process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
+                                                   proto::BaikalHeartBeatResponse *response) {
+        BAIDU_SCOPED_LOCK(_database_mutex);
+        for (auto &db_info: _database_info_map) {
+            auto db = response->add_db_info();
+            *db = db_info.second;
+        }
+    }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+}  //  namespace EA
