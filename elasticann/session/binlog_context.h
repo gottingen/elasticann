@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #pragma once
+
 #include "elasticann/proto/binlog.pb.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/common/expr_value.h"
@@ -27,100 +28,103 @@
 
 namespace EA {
 
-DECLARE_string(meta_server_bns);
-class TsoFetcher {
-public:
-    static int64_t get_tso();
-};
+    DECLARE_string(meta_server_bns);
 
-class BinlogContext {
-public:
-    BinlogContext() {
-        _factory = SchemaFactory::get_instance();
+    class TsoFetcher {
+    public:
+        static int64_t get_tso();
     };
-    ~BinlogContext() { };
 
-    int get_binlog_regions(uint64_t log_id);
+    class BinlogContext {
+    public:
+        BinlogContext() {
+            _factory = SchemaFactory::get_instance();
+        };
 
-    proto::PrewriteValue* mutable_binlog_value() {
-        return &_binlog_value;
-    }
-    const proto::PrewriteValue& binlog_value() const {
-        return _binlog_value;
-    }
+        ~BinlogContext() {};
 
-    int64_t start_ts() const {
-        return _start_ts;
-    }
+        int get_binlog_regions(uint64_t log_id);
 
-    void set_start_ts(int64_t start_ts) {
-        _start_ts = start_ts;
-    }
+        proto::PrewriteValue *mutable_binlog_value() {
+            return &_binlog_value;
+        }
 
-    int64_t commit_ts() const {
-        return _commit_ts;
-    }
+        const proto::PrewriteValue &binlog_value() const {
+            return _binlog_value;
+        }
 
-    void set_commit_ts(int64_t commit_ts) {
-        _commit_ts = commit_ts;
-    }
-    
-    proto::RegionInfo& binglog_region() {
-        return _binlog_region;
-    }
+        int64_t start_ts() const {
+            return _start_ts;
+        }
 
-    void set_partition_record(SmartRecord partition_record) {
-        _partition_record = partition_record;
-    }
+        void set_start_ts(int64_t start_ts) {
+            _start_ts = start_ts;
+        }
 
-    bool has_data_changed() {
-        return _partition_record != nullptr;
-    }
+        int64_t commit_ts() const {
+            return _commit_ts;
+        }
 
-    void set_table_info(SmartTable table_info) {
-        _table_info = table_info;
-    }
+        void set_commit_ts(int64_t commit_ts) {
+            _commit_ts = commit_ts;
+        }
 
-    uint64_t get_partition_key() const {
-        return _partition_key;
-    }
+        proto::RegionInfo &binglog_region() {
+            return _binlog_region;
+        }
 
-    void calc_binlog_row_cnt() {
-         _binlog_row_cnt = 0;
-         for (const auto& mutation : _binlog_value.mutations()) {
-             _binlog_row_cnt += mutation.insert_rows_size();
-             _binlog_row_cnt += mutation.update_rows_size();
-             _binlog_row_cnt += mutation.deleted_rows_size();
-         }
-    }
+        void set_partition_record(SmartRecord partition_record) {
+            _partition_record = partition_record;
+        }
 
-    int64_t get_binlog_row_cnt() const { return _binlog_row_cnt; }
+        bool has_data_changed() {
+            return _partition_record != nullptr;
+        }
 
-    void add_sql_info(const std::string& db, const std::string& table, const uint64_t sign) {
-        _db_tables.insert(db + "." + table);
-        _signs.insert(sign);
-    }
+        void set_table_info(SmartTable table_info) {
+            _table_info = table_info;
+        }
 
-    std::set<std::string>& get_db_tables() {
-        return _db_tables;
-    } 
+        uint64_t get_partition_key() const {
+            return _partition_key;
+        }
 
-    std::set<uint64_t>& get_signs() {  
-        return _signs;
-    }
+        void calc_binlog_row_cnt() {
+            _binlog_row_cnt = 0;
+            for (const auto &mutation: _binlog_value.mutations()) {
+                _binlog_row_cnt += mutation.insert_rows_size();
+                _binlog_row_cnt += mutation.update_rows_size();
+                _binlog_row_cnt += mutation.deleted_rows_size();
+            }
+        }
 
-private:
-    SmartTable            _table_info = nullptr;
-    int64_t               _start_ts = -1;
-    int64_t               _commit_ts = -1;
-    proto::PrewriteValue     _binlog_value;
-    SmartRecord           _partition_record;
-    proto::RegionInfo        _binlog_region;
-    SchemaFactory*        _factory = nullptr;
-    uint64_t              _partition_key = 0;
-    int64_t               _binlog_row_cnt = 0;
-    std::set<std::string> _db_tables;
-    std::set<uint64_t>    _signs;
-};
+        int64_t get_binlog_row_cnt() const { return _binlog_row_cnt; }
+
+        void add_sql_info(const std::string &db, const std::string &table, const uint64_t sign) {
+            _db_tables.insert(db + "." + table);
+            _signs.insert(sign);
+        }
+
+        std::set<std::string> &get_db_tables() {
+            return _db_tables;
+        }
+
+        std::set<uint64_t> &get_signs() {
+            return _signs;
+        }
+
+    private:
+        SmartTable _table_info = nullptr;
+        int64_t _start_ts = -1;
+        int64_t _commit_ts = -1;
+        proto::PrewriteValue _binlog_value;
+        SmartRecord _partition_record;
+        proto::RegionInfo _binlog_region;
+        SchemaFactory *_factory = nullptr;
+        uint64_t _partition_key = 0;
+        int64_t _binlog_row_cnt = 0;
+        std::set<std::string> _db_tables;
+        std::set<uint64_t> _signs;
+    };
 
 } // namespace EA

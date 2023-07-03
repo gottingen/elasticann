@@ -85,13 +85,16 @@ set(PROTO_FILES
         elasticann/proto/expr.proto
         elasticann/proto/fc.proto
         elasticann/proto/meta.interface.proto
+        elasticann/proto/meta.struct.proto
         elasticann/proto/optype.proto
         elasticann/proto/plan.proto
         elasticann/proto/raft.proto
         elasticann/proto/reverse.proto
         elasticann/proto/statistics.proto
         elasticann/proto/store.interface.proto
+        elasticann/proto/store.struct.proto
         elasticann/proto/test_decode.proto
+        elasticann/proto/router.interface.proto
         )
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/output/include/elasticann)
 set(PROTOC_FLAGS ${PROTOC_FLAGS} -I${PROTOBUF_INCLUDE_DIR} -I${PROJECT_SOURCE_DIR})
