@@ -38,7 +38,7 @@ namespace EA {
                 response->set_errcode(proto::NOT_LEADER);
                 response->set_leader(butil::endpoint2str(common_state_machine->get_leader()).c_str());
             }
-            DB_FATAL("meta server closure fail, error_code:%d, error_mas:%s",
+            TLOG_ERROR("meta server closure fail, error_code:{}, error_mas:{}",
                      status().error_code(), status().error_cstr());
         }
         total_time_cost = time_cost.get_time();
@@ -48,12 +48,12 @@ namespace EA {
         }
 
         if (response != nullptr && response->op_type() != proto::OP_GEN_ID_FOR_AUTO_INCREMENT) {
-            DB_NOTICE("request:%s, response:%s, raft_time_cost:[%ld], total_time_cost:[%ld], remote_side:[%s]",
-                      request.c_str(),
-                      response->ShortDebugString().c_str(),
+            TLOG_INFO("request:{}, response:{}, raft_time_cost:[{}], total_time_cost:[{}], remote_side:[{}]",
+                      request,
+                      response->ShortDebugString(),
                       raft_time_cost,
                       total_time_cost,
-                      remote_side.c_str());
+                      remote_side);
         }
         if (response != nullptr && response->op_type() == proto::OP_CREATE_TABLE) {
             if (!whether_level_table && create_table_ret == 0) {
@@ -61,12 +61,12 @@ namespace EA {
                 if (init_regions->size() <= FLAGS_pre_split_threashold) {
                     if (TableManager::get_instance()->do_create_table_sync_req(
                             create_table_schema_pb, init_regions, has_auto_increment, start_region_id, response) != 0) {
-                        DB_FATAL("fail to create table : %s", table_name.c_str());
+                        TLOG_ERROR("fail to create table : {}", table_name);
                     } else {
-                        DB_NOTICE("create table:%s completely", table_name.c_str());
+                        TLOG_INFO("create table:{} completely", table_name);
                     }
                 } else {
-                    DB_NOTICE("create table:%s async completely", table_name.c_str());
+                    TLOG_INFO("create table:{} async completely", table_name);
                 }
             }
         }
@@ -82,7 +82,7 @@ namespace EA {
                 response->set_errcode(proto::NOT_LEADER);
                 response->set_leader(butil::endpoint2str(common_state_machine->get_leader()).c_str());
             }
-            DB_FATAL("meta server closure fail, error_code:%d, error_mas:%s",
+            TLOG_ERROR("meta server closure fail, error_code:{}, error_mas:{}",
                      status().error_code(), status().error_cstr());
         }
         if (sync_cond) {
@@ -106,10 +106,10 @@ namespace EA {
         options.snapshot_uri = FLAGS_snapshot_uri + _file_path;
         int ret = _node.init(options);
         if (ret < 0) {
-            DB_FATAL("raft node init fail");
+            TLOG_ERROR("raft node init fail");
             return ret;
         }
-        DB_WARNING("raft init success, meat state machine init success");
+        TLOG_INFO("raft init success, meat state machine init success");
         return 0;
     }
 
@@ -124,7 +124,7 @@ namespace EA {
                 response->set_errmsg("not leader");
                 response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
             }
-            DB_WARNING("state machine not leader, request: %s", request->ShortDebugString().c_str());
+            TLOG_WARN("state machine not leader, request: {}", request->ShortDebugString());
             return;
         }
         brpc::Controller *cntl =
@@ -166,7 +166,7 @@ namespace EA {
     }
 
     void BaseStateMachine::on_leader_start(int64_t term) {
-        DB_WARNING("leader start at term:%ld", term);
+        TLOG_INFO("leader start at term: {}", term);
         on_leader_start();
     }
 
@@ -175,20 +175,20 @@ namespace EA {
         if (_check_start) {
             _check_migrate.join();
             _check_start = false;
-            DB_WARNING("check migrate thread join");
+            TLOG_INFO("check migrate thread join");
         }
-        DB_WARNING("leader stop");
+        TLOG_INFO("leader stop");
     }
 
     void BaseStateMachine::on_leader_stop(const butil::Status &status) {
-        DB_WARNING("leader stop, error_code:%d, error_des:%s",
+        TLOG_INFO("leader stop, error_code:%d, error_des:{}",
                    status.error_code(), status.error_cstr());
         on_leader_stop();
     }
 
     void BaseStateMachine::on_error(const ::braft::Error &e) {
-        DB_FATAL("meta state machine error, error_type:%d, error_code:%d, error_des:%s",
-                 e.type(), e.status().error_code(), e.status().error_cstr());
+        TLOG_ERROR("meta state machine error, error_type:{}, error_code:{}, error_des:{}",
+                 static_cast<int>(e.type()), e.status().error_code(), e.status().error_cstr());
     }
 
     void BaseStateMachine::on_configuration_committed(const ::braft::Configuration &conf) {
@@ -196,11 +196,11 @@ namespace EA {
         for (auto iter = conf.begin(); iter != conf.end(); ++iter) {
             new_peer += iter->to_string() + ",";
         }
-        DB_WARNING("new conf committed, new peer:%s", new_peer.c_str());
+        TLOG_INFO("new conf committed, new peer: {}", new_peer.c_str());
     }
 
     void BaseStateMachine::start_check_migrate() {
-        DB_WARNING("start check migrate");
+        TLOG_INFO("start check migrate");
         static int64_t count = 0;
         int64_t sleep_time_count = FLAGS_check_migrate_interval_us / (1000 * 1000LL); //以S为单位
         while (_node.is_leader()) {
@@ -212,7 +212,7 @@ namespace EA {
                 bthread_usleep(1000 * 1000LL);
                 ++time;
             }
-            SELF_TRACE("start check migrate, count: %ld", count);
+            TLOG_TRACE("start check migrate, count: {}", count);
             ++count;
             check_migrate();
         }
@@ -226,7 +226,7 @@ namespace EA {
         int ret = 0;
         if (get_instance_from_bns(&ret, FLAGS_meta_server_bns, instances, false) != 0 ||
             (int32_t) instances.size() != FLAGS_meta_replica_number) {
-            DB_WARNING("get instance from bns fail, bns:%s, ret:%d, instance.size:%lu",
+            TLOG_WARN("get instance from bns fail, bns:%s, ret:{}, instance.size:{}",
                        FLAGS_meta_server_bns.c_str(), ret, instances.size());
             return;
         }
@@ -237,7 +237,7 @@ namespace EA {
         std::set<std::string> peers_in_server;
         std::vector<braft::PeerId> peers;
         if (!_node.list_peers(&peers).ok()) {
-            DB_WARNING("node list peer fail");
+            TLOG_WARN("node list peer fail");
             return;
         }
         for (auto &peer: peers) {
@@ -249,14 +249,14 @@ namespace EA {
         for (auto &peer: peers_in_server) {
             if (instance_set.find(peer) == instance_set.end()) {
                 remove_peer = peer;
-                DB_WARNING("remove peer: %s", remove_peer.c_str());
+                TLOG_INFO("remove peer: {}", remove_peer);
                 break;
             }
         }
         for (auto &peer: instance_set) {
             if (peers_in_server.find(peer) == peers_in_server.end()) {
                 add_peer = peer;
-                DB_WARNING("add peer: %s", add_peer.c_str());
+                TLOG_INFO("add peer: {}", add_peer);
                 break;
             }
         }
@@ -273,7 +273,7 @@ namespace EA {
     int BaseStateMachine::send_set_peer_request(bool remove_peer, const std::string &change_peer) {
         MetaServerInteract meta_server_interact;
         if (meta_server_interact.init() != 0) {
-            DB_FATAL("meta server interact init fail when set peer");
+            TLOG_ERROR("meta server interact init fail when set peer");
             return -1;
         }
         proto::RaftControlRequest request;
@@ -282,7 +282,7 @@ namespace EA {
         std::set<std::string> peers_in_server;
         std::vector<braft::PeerId> peers;
         if (!_node.list_peers(&peers).ok()) {
-            DB_WARNING("node list peer fail");
+            TLOG_WARN("node list peer fail");
             return -1;
         }
         for (auto &peer: peers) {
@@ -297,8 +297,8 @@ namespace EA {
         proto::RaftControlResponse response;
         int ret = meta_server_interact.send_request("raft_control", request, response);
         if (ret != 0) {
-            DB_WARNING("set peer when meta server migrate fail, request:%s, response:%s",
-                       request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+            TLOG_WARN("set peer when meta server migrate fail, request:{}, response:{}",
+                       request.ShortDebugString(), response.ShortDebugString());
         }
         return ret;
     }

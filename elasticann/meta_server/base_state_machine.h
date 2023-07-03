@@ -98,7 +98,7 @@ namespace EA {
                                   google::protobuf::Closure *done) {
             brpc::ClosureGuard done_guard(done);
             if (!is_leader() && !request->force()) {
-                DB_WARNING("node is not leader when raft control, region_id: %ld", request->region_id());
+                TLOG_INFO("node is not leader when raft control, region_id: {}", request->region_id());
                 response->set_errcode(proto::NOT_LEADER);
                 response->set_region_id(request->region_id());
                 response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
@@ -121,7 +121,7 @@ namespace EA {
         virtual void on_apply(braft::Iterator &iter) = 0;
 
         virtual void on_shutdown() {
-            DB_WARNING("raft is shut down");
+            TLOG_INFO("raft is shut down");
         };
 
         virtual void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) = 0;
@@ -146,9 +146,9 @@ namespace EA {
 
         virtual void shutdown_raft() {
             _node.shutdown(nullptr);
-            DB_WARNING("raft node was shutdown");
+            TLOG_INFO("raft node was shutdown");
             _node.join();
-            DB_WARNING("raft node join completely");
+            TLOG_INFO("raft node join completely");
         }
 
         void start_check_bns();
