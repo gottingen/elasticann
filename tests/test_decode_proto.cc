@@ -211,10 +211,10 @@ int main(int argc, char **argv) {
     DB_WARNING("thread num:%d", bthread::FLAGS_bthread_concurrency);
     sleep(10);
 
-    int batch_cnt = std::stoi(argv[1]);
-    int test_cnt = std::stoi(argv[2]);
-    int use_arena = std::stoi(argv[3]);
-    int th_cnt = std::stoi(argv[4]);
+    int batch_cnt = 20;//std::stoi(argv[1]);
+    int test_cnt = 100;//std::stoi(argv[2]);
+    int use_arena = 4;//std::stoi(argv[3]);
+    int th_cnt = 2; //std::stoi(argv[4]);
     DB_WARNING("batch_cnt: %d, test_cnt: %d, %d", batch_cnt, test_cnt, use_arena);
 
     srand((unsigned) time(NULL));

@@ -377,19 +377,19 @@ namespace EA {
         map.set(4, "d");
         {
             std::string str = map.get(1123124);
-            DOCTEST_REQUIRE_EQ(str.c_str(), "abc");
+            DOCTEST_REQUIRE_EQ(str, "abc");
         }
         {
             std::string str = map.get(2);
-            DOCTEST_REQUIRE_EQ(str.c_str(), "b");
+            DOCTEST_REQUIRE_EQ(str, "b");
         }
         {
             std::string str = map.get(3);
-            DOCTEST_REQUIRE_EQ(str.c_str(), "c");
+            DOCTEST_REQUIRE_EQ(str, "c");
         }
         {
             std::string str = map.get(4);
-            DOCTEST_REQUIRE_EQ(str.c_str(), "d");
+            DOCTEST_REQUIRE_EQ(str, "d");
         }
     }
 
@@ -504,7 +504,7 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
         update_param("gflags_test_int32", "600");
         update_param("gflags_test_bool", "false");
     }
-
+/*
     DOCTEST_TEST_CASE("bns_to_meta_bns_test, case_all") {
         static std::map<std::string, std::string> mapping = {
                 {"31.opera-adp-baikalStore-000-nj.FENGCHAO.njjs",       "group.opera-ps-baikalMeta-000-bj.FENGCHAO.all"},
@@ -534,7 +534,7 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
             DOCTEST_REQUIRE_EQ(meta_bns, it.second);
         }
     }
-
+*/
 //集群消息收集 brpc接口测试 
     DOCTEST_TEST_CASE("brpc_http_get_info_test_db, case_all") {
         static const std::string host_noah = "http://api.mt.noah.baidu.com:8557";

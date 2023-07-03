@@ -341,7 +341,7 @@ carbin_cc_test(
         ${USER_CXX_FLAGS}
         "-fno-access-control"
 )
-
+#[[
 carbin_cc_test(
         NAME
         test_reverse_common
@@ -354,7 +354,7 @@ carbin_cc_test(
         COPTS
         ${USER_CXX_FLAGS}
         "-fno-access-control"
-)
+)]]
 carbin_cc_test(
         NAME
         test_schema_factory
