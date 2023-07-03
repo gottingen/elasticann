@@ -20,6 +20,9 @@
 
 int main(int argc, char** argv) {
     const std::string rocks_path = "rocks_raft_log";
+    if(turbo::filesystem::exists(rocks_path)) {
+        turbo::filesystem::remove_all(rocks_path);
+    }
     EA::RocksWrapper* rocksdb_instance =
         EA::RocksWrapper::get_instance();
     int ret = rocksdb_instance->init(rocks_path);
