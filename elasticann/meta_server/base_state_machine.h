@@ -24,13 +24,13 @@
 #include "elasticann/proto/store.interface.pb.h"
 
 namespace EA {
-    class CommonStateMachine;
+    class BaseStateMachine;
 
     struct MetaServerClosure : public braft::Closure {
         virtual void Run();
 
         brpc::Controller *cntl;
-        CommonStateMachine *common_state_machine;
+        BaseStateMachine *common_state_machine;
         google::protobuf::Closure *done;
         proto::MetaManagerResponse *response;
         std::string request;
@@ -54,7 +54,7 @@ namespace EA {
         virtual void Run();
 
         brpc::Controller *cntl;
-        CommonStateMachine *common_state_machine;
+        BaseStateMachine *common_state_machine;
         google::protobuf::Closure *done;
         proto::TsoResponse *response;
         int64_t raft_time_cost;
@@ -75,10 +75,10 @@ namespace EA {
         BthreadCond &cond;
     };
 
-    class CommonStateMachine : public braft::StateMachine {
+    class BaseStateMachine : public braft::StateMachine {
     public:
 
-        CommonStateMachine(int64_t dummy_region_id,
+        BaseStateMachine(int64_t dummy_region_id,
                            const std::string &identify,
                            const std::string &file_path,
                            const braft::PeerId &peerId) :
@@ -88,7 +88,7 @@ namespace EA {
                 _file_path(file_path),
                 _check_migrate(&BTHREAD_ATTR_SMALL) {}
 
-        virtual ~CommonStateMachine() {}
+        virtual ~BaseStateMachine() {}
 
         virtual int init(const std::vector<braft::PeerId> &peers);
 

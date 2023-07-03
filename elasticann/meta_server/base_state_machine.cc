@@ -94,7 +94,7 @@ namespace EA {
         delete this;
     }
 
-    int CommonStateMachine::init(const std::vector<braft::PeerId> &peers) {
+    int BaseStateMachine::init(const std::vector<braft::PeerId> &peers) {
         braft::NodeOptions options;
         options.election_timeout_ms = FLAGS_election_timeout_ms;
         options.fsm = this;
@@ -113,7 +113,7 @@ namespace EA {
         return 0;
     }
 
-    void CommonStateMachine::process(google::protobuf::RpcController *controller,
+    void BaseStateMachine::process(google::protobuf::RpcController *controller,
                                      const proto::MetaManagerRequest *request,
                                      proto::MetaManagerResponse *response,
                                      google::protobuf::Closure *done) {
@@ -147,7 +147,7 @@ namespace EA {
         _node.apply(task);
     }
 
-    void CommonStateMachine::start_check_bns() {
+    void BaseStateMachine::start_check_bns() {
         //bns ，自动探测是否迁移
         if (FLAGS_meta_server_bns.find(":") == std::string::npos) {
             if (!_check_start) {
@@ -160,17 +160,17 @@ namespace EA {
         }
     }
 
-    void CommonStateMachine::on_leader_start() {
+    void BaseStateMachine::on_leader_start() {
         start_check_bns();
         _is_leader.store(true);
     }
 
-    void CommonStateMachine::on_leader_start(int64_t term) {
+    void BaseStateMachine::on_leader_start(int64_t term) {
         DB_WARNING("leader start at term:%ld", term);
         on_leader_start();
     }
 
-    void CommonStateMachine::on_leader_stop() {
+    void BaseStateMachine::on_leader_stop() {
         _is_leader.store(false);
         if (_check_start) {
             _check_migrate.join();
@@ -180,18 +180,18 @@ namespace EA {
         DB_WARNING("leader stop");
     }
 
-    void CommonStateMachine::on_leader_stop(const butil::Status &status) {
+    void BaseStateMachine::on_leader_stop(const butil::Status &status) {
         DB_WARNING("leader stop, error_code:%d, error_des:%s",
                    status.error_code(), status.error_cstr());
         on_leader_stop();
     }
 
-    void CommonStateMachine::on_error(const ::braft::Error &e) {
+    void BaseStateMachine::on_error(const ::braft::Error &e) {
         DB_FATAL("meta state machine error, error_type:%d, error_code:%d, error_des:%s",
                  e.type(), e.status().error_code(), e.status().error_cstr());
     }
 
-    void CommonStateMachine::on_configuration_committed(const ::braft::Configuration &conf) {
+    void BaseStateMachine::on_configuration_committed(const ::braft::Configuration &conf) {
         std::string new_peer;
         for (auto iter = conf.begin(); iter != conf.end(); ++iter) {
             new_peer += iter->to_string() + ",";
@@ -199,7 +199,7 @@ namespace EA {
         DB_WARNING("new conf committed, new peer:%s", new_peer.c_str());
     }
 
-    void CommonStateMachine::start_check_migrate() {
+    void BaseStateMachine::start_check_migrate() {
         DB_WARNING("start check migrate");
         static int64_t count = 0;
         int64_t sleep_time_count = FLAGS_check_migrate_interval_us / (1000 * 1000LL); //以S为单位
@@ -218,7 +218,7 @@ namespace EA {
         }
     }
 
-    void CommonStateMachine::check_migrate() {
+    void BaseStateMachine::check_migrate() {
         //判断meta_server是否需要做迁移
         std::vector<std::string> instances;
         std::string remove_peer;
@@ -270,7 +270,7 @@ namespace EA {
         }
     }
 
-    int CommonStateMachine::send_set_peer_request(bool remove_peer, const std::string &change_peer) {
+    int BaseStateMachine::send_set_peer_request(bool remove_peer, const std::string &change_peer) {
         MetaServerInteract meta_server_interact;
         if (meta_server_interact.init() != 0) {
             DB_FATAL("meta server interact init fail when set peer");

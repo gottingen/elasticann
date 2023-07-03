@@ -21,11 +21,11 @@
 #include "elasticann/meta_server/base_state_machine.h"
 
 namespace EA {
-    class AutoIncrStateMachine : public EA::CommonStateMachine {
+    class AutoIncrStateMachine : public EA::BaseStateMachine {
     public:
 
         AutoIncrStateMachine(const braft::PeerId &peerId) :
-                CommonStateMachine(1, "auto_incr_raft", "/auto_incr", peerId) {}
+                BaseStateMachine(1, "auto_incr_raft", "/auto_incr", peerId) {}
 
         virtual ~AutoIncrStateMachine() {}
 

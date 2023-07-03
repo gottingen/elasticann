@@ -46,10 +46,10 @@ namespace EA {
         int64_t last_save_physical;
     };
 
-    class TSOStateMachine : public EA::CommonStateMachine {
+    class TSOStateMachine : public EA::BaseStateMachine {
     public:
         TSOStateMachine(const braft::PeerId &peerId) :
-                CommonStateMachine(2, "tso_raft", "/tso", peerId) {
+                BaseStateMachine(2, "tso_raft", "/tso", peerId) {
             bthread_mutex_init(&_tso_mutex, nullptr);
         }
 

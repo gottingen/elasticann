@@ -53,7 +53,7 @@ namespace EA {
         _tso_obj.current_timestamp.set_physical(0);
         _tso_obj.current_timestamp.set_logical(0);
         _tso_obj.last_save_physical = 0;
-        //int ret = CommonStateMachine::init(peers);
+        //int ret = BaseStateMachine::init(peers);
         braft::NodeOptions options;
         options.election_timeout_ms = FLAGS_election_timeout_ms;
         options.fsm = this;
@@ -395,7 +395,7 @@ namespace EA {
     void TSOStateMachine::on_leader_stop() {
         _tso_update_timer.stop();
         DB_WARNING("leader stop");
-        CommonStateMachine::on_leader_stop();
+        BaseStateMachine::on_leader_stop();
     }
 
     void TSOStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {

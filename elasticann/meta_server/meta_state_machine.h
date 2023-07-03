@@ -22,10 +22,10 @@
 #include "elasticann/proto/meta.interface.pb.h"
 
 namespace EA {
-    class MetaStateMachine : public CommonStateMachine {
+    class MetaStateMachine : public BaseStateMachine {
     public:
         MetaStateMachine(const braft::PeerId &peerId) :
-                CommonStateMachine(0, "meta_raft", "/meta_server", peerId),
+                BaseStateMachine(0, "meta_raft", "/meta_server", peerId),
                 _bth(&BTHREAD_ATTR_SMALL),
                 _healthy_check_start(false),
                 _baikal_heart_beat("baikal_heart_beat"),

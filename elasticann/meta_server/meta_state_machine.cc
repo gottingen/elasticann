@@ -645,7 +645,7 @@ namespace EA {
         } else {
             DB_FATAL("store check thread has already started");
         }
-        CommonStateMachine::on_leader_start();
+        BaseStateMachine::on_leader_start();
         DDLManager::get_instance()->on_leader_start();
         TableManager::get_instance()->on_leader_start();
         _is_leader.store(true);
@@ -690,7 +690,7 @@ namespace EA {
         RegionManager::get_instance()->clear_region_peer_state_map();
         RegionManager::get_instance()->clear_region_learner_peer_state_map();
         DB_WARNING("leader stop");
-        CommonStateMachine::on_leader_stop();
+        BaseStateMachine::on_leader_stop();
         DBManager::get_instance()->clear_all_tasks();
         DDLManager::get_instance()->clear_txn_info();
         TableManager::get_instance()->on_leader_stop();

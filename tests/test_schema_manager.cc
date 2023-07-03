@@ -20,6 +20,7 @@
 
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/cluster_manager.h"
+#include "elasticann/meta_server/region_manager.h"
 #include "elasticann/engine/rocks_wrapper.h"
 
 namespace EA {
@@ -42,7 +43,7 @@ public:
         }
         _cluster_manager = new EA::ClusterManager();
         _schema_manager = new EA::SchemaManager();
-        _schema_manager->;
+        _region_manager = new EA::RegionManager();
     }
     ~SchemaManagerTest() {}
 protected:
@@ -55,9 +56,10 @@ protected:
     }
     EA::ClusterManager* _cluster_manager;
     EA::SchemaManager* _schema_manager;
+    EA::RegionManager* _region_manager;
 };
 // add_logic add_physical add_instance
-TEST_F(SchemaManagerTest, test_create_drop_modify) {
+DOCTEST_TEST_CASE_FIXTURE(SchemaManagerTest, "test_create_drop_modify") {
     //测试点：添加region
     EA::proto::MetaManagerRequest request_update_region_fc;
     request_update_region_fc.set_op_type(EA::proto::OP_UPDATE_REGION);
@@ -72,21 +74,21 @@ TEST_F(SchemaManagerTest, test_create_drop_modify) {
     request_update_region_fc.mutable_region_info()->set_status(EA::proto::IDLE);
     request_update_region_fc.mutable_region_info()->set_used_size(1024);
     request_update_region_fc.mutable_region_info()->set_log_index(1);
-    _schema_manager->update_region(request_update_region_fc, 1, NULL);
+    _region_manager->update_region(request_update_region_fc, 1, NULL);
     //for (auto& region_info : _schema_manager->_region_info_map) {
     //    DB_WARNING("region_id:%ld, region_info:%s", 
     //            region_info.first, region_info.second.ShortDebugString().c_str());
     //}
-    for (auto& instance  : _schema_manager->_instance_region_map) {
+    for (auto& instance  : _region_manager->_instance_region_map) {
         DB_WARNING("instance:%s", instance.first.c_str());
         for (auto& region_id : instance.second) {
             DB_WARNING("region_id:%ld", region_id);
         }
     }
-    for (auto& table_id : _schema_manager->_table_id_map) {
+    for (auto& table_id : _region_manager->_table_id_map) {
         DB_WARNING("table_id:%ld, name:%s", table_id.second, table_id.first.c_str());
     }
-    for (auto& table_mem : _schema_manager->_table_info_map) {
+    for (auto& table_mem : _region_manager->_table_info_map) {
         DB_WARNING("whether_levle_table:%d", table_mem.second.whether_level_table);
         DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
         for (auto& field : table_mem.second.field_id_map) {
@@ -123,8 +125,8 @@ TEST_F(SchemaManagerTest, test_create_drop_modify) {
     //测试点：region 分离，分配一个新的region-id
     EA::proto::MetaManagerRequest request_split_region_fc;
     request_split_region_fc.mutable_region_split()->set_region_id(1);
-    _schema_manager->split_region(request_split_region_fc, NULL);
-    DOCTEST_REQUIRE_EQ(2, _schema_manager->_max_region_id);
+    _region_manager->split_region(request_split_region_fc, NULL);
+    DOCTEST_REQUIRE_EQ(2, _region_manager->_max_region_id);
     for (auto& table_id : _schema_manager->_table_id_map) {
         DB_WARNING("table_id:%ld, name:%s", table_id.second, table_id.first.c_str());
     }
