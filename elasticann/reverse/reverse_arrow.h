@@ -42,7 +42,7 @@
 #include "elasticann/proto/reverse.pb.h"
 #include "turbo/platform/port.h"
 
-TURBO_DISABLE_GCC_WARNING(-Wdeprecated - declarations)
+TURBO_DISABLE_GCC_WARNING(-Wdeprecated-declarations)
 namespace EA {
 
     using ArrowReverseNode = proto::CommonReverseNode;

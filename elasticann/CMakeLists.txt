@@ -127,6 +127,22 @@ carbin_cc_binary(
         PUBLIC
 )
 
+file(GLOB ROUTER router/*.cc)
+carbin_cc_binary(
+        NAMESPACE elasticann
+        NAME earouter
+        SOURCES
+        ${ROUTER}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-Wno-strict-aliasing"
+        DEPS
+        ${CARBIN_DEPS_LINK}
+        elasticann::common
+        elasticann::proto-object
+        PUBLIC
+)
+
 file(GLOB ROUTER_SERVER raft_dummy/*.cc)
 carbin_cc_binary(
         NAMESPACE elasticann
