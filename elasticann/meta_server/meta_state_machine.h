@@ -18,7 +18,7 @@
 #pragma once
 
 #include <rocksdb/db.h>
-#include "elasticann/meta_server/common_state_machine.h"
+#include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/proto/meta.interface.pb.h"
 
 namespace EA {

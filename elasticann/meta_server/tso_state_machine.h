@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "elasticann/meta_server/common_state_machine.h"
+#include "elasticann/meta_server/base_state_machine.h"
 #include <braft/repeated_timer_task.h>
 #include <time.h>
 

@@ -15,7 +15,7 @@
 //
 
 
-#include "elasticann/meta_server/common_state_machine.h"
+#include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/common/meta_server_interact.h"
 #include "elasticann/common/store_interact.h"
 #include "elasticann/meta_server/meta_util.h"

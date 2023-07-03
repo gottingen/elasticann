@@ -18,7 +18,7 @@
 #pragma once
 
 #include <unordered_map>
-#include "elasticann/meta_server/common_state_machine.h"
+#include "elasticann/meta_server/base_state_machine.h"
 
 namespace EA {
     class AutoIncrStateMachine : public EA::CommonStateMachine {

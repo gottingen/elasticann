@@ -46,8 +46,6 @@ namespace EA {
         TimeCost tc;
     };
 
-    typedef std::shared_ptr<RegionStateInfo> SmartRegionStateInfo;
-
     class RegionManager {
     public:
         ~RegionManager() {
@@ -226,7 +224,7 @@ namespace EA {
             _max_region_id = max_region_id;
         }
 
-        int64_t get_max_region_id() {
+        [[nodiscard]] int64_t get_max_region_id() const {
             return _max_region_id;
         }
 
