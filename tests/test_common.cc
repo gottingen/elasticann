@@ -219,21 +219,21 @@ namespace EA {
         std::cout << "orgin:" << str << std::endl;
         stripslashes(str, true);
         std::cout << "new:" << str << std::endl;
-        DOCTEST_CHECK_EQ(str.c_str(), "\\%a\t");
+        DOCTEST_CHECK_EQ(str, "\\%a\t");
 
         std::string str2 = "abc";
         std::cout << "orgin:" << str2 << std::endl;
         stripslashes(str2, true);
         std::cout << "new:" << str2 << std::endl;
-        DOCTEST_CHECK_EQ(str2.c_str(), "abc");
+        DOCTEST_CHECK_EQ(str2, "abc");
     }
 
-// DOCTEST_TEST_CASE("test_pb2json, pb2json) {
-//     std::cout << sizeof(proto::RegionInfo) << " " << sizeof(rapidjson::StringBuffer)
-//     << " " << sizeof(Pb2JsonOptions) << " " << sizeof(TableInfo) << " " << sizeof(proto::SchemaInfo) << "\n";
-//     std::cout << sizeof(raft::NodeOptions) << " " << sizeof(std::string) << " " << sizeof(size_t) << " "
-//     << sizeof(raft::PeerId) << sizeof(butil::EndPoint) << "\n"; 
-// }
+    // DOCTEST_TEST_CASE("test_pb2json, pb2json) {
+    //     std::cout << sizeof(proto::RegionInfo) << " " << sizeof(rapidjson::StringBuffer)
+    //     << " " << sizeof(Pb2JsonOptions) << " " << sizeof(TableInfo) << " " << sizeof(proto::SchemaInfo) << "\n";
+    //     std::cout << sizeof(raft::NodeOptions) << " " << sizeof(std::string) << " " << sizeof(size_t) << " "
+    //     << sizeof(raft::PeerId) << sizeof(butil::EndPoint) << "\n";
+    // }
     DOCTEST_TEST_CASE("test_bthread_timer, timer") {
 
         for (int i = 0; i < 10; i++) {

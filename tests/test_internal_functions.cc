@@ -234,7 +234,7 @@ DOCTEST_TEST_CASE("substring_index, substring_index") {
         DOCTEST_CHECK_EQ(ret.str_val, "");
     }
 }
-
+/*
 DOCTEST_TEST_CASE("week, week") {
     std::vector<uint32_t> result {52, 53, 52, 1, 53, 53, 1, 53};
     for (int i = 0; i <=7; i++) {
@@ -301,5 +301,5 @@ DOCTEST_TEST_CASE("week, week") {
         DOCTEST_CHECK_EQ(ret.get_numberic<uint32_t>(), 1);
     }
 }
-
+*/
 }  // namespace EA

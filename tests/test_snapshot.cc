@@ -23,16 +23,21 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/options.h"
 #include "rocksdb/slice_transform.h"
+#include "turbo/files/filesystem.h"
+#include "elasticann/common/log.h"
 
 int main(int argc, char **argv) {
 
     std::string db_path = "rocksdb_snapshot_example";
-
+    if(turbo::filesystem::exists(db_path)) {
+        turbo::filesystem::remove_all(db_path);
+    }
     // open DB
     rocksdb::Options options;
     options.create_if_missing = true;
     rocksdb::DB *db;
     rocksdb::Status s = rocksdb::DB::Open(options, db_path, &db);
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
     assert(s.ok());
 
     rocksdb::ColumnFamilyOptions cf_option;
@@ -41,14 +46,28 @@ int main(int argc, char **argv) {
 
     rocksdb::ColumnFamilyHandle *cf_handle;
     s = db->CreateColumnFamily(cf_option, "test_cf1", &cf_handle);
-
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
     rocksdb::WriteOptions write_options;
     s = db->Put(write_options, cf_handle, rocksdb::Slice("key1"), rocksdb::Slice("value1"));
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
     s = db->Put(write_options, cf_handle, rocksdb::Slice("keyt2"), rocksdb::Slice("value2"));
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
     s = db->Put(write_options, cf_handle, rocksdb::Slice("keytt3"), rocksdb::Slice("value3"));
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
     s = db->Put(write_options, cf_handle, rocksdb::Slice("keyttt4"), rocksdb::Slice("value4"));
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
     s = db->Put(write_options, cf_handle, rocksdb::Slice("keytzz"), rocksdb::Slice("value5"));
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
     s = db->Put(write_options, cf_handle, rocksdb::Slice("keyzzz"), rocksdb::Slice("value6"));
+    TLOG_ERROR_IF(!s.ok(),"{}", s.ToString());
+    assert(s.ok());
 
     rocksdb::SstFileWriter sst_file_writer(rocksdb::EnvOptions(), options, cf_handle);
 
@@ -70,7 +89,7 @@ int main(int argc, char **argv) {
 
     // Insert rows into the SST file, note that inserted keys must be 
     // strictly increasing (based on options.comparator)
-    for (iter->Seek(key); iter->Valid(); iter->Next()) {
+    for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
         auto s = sst_file_writer.Add(iter->key(), iter->value());
         if (!s.ok()) {
             printf("Error while adding Key: %s, Error: %s\n", iter->key().ToString().c_str(),
