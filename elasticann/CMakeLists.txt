@@ -143,6 +143,22 @@ carbin_cc_binary(
         PUBLIC
 )
 
+file(GLOB CLIENT_SRC client/*.cc)
+carbin_cc_binary(
+        NAMESPACE elasticann
+        NAME eacli
+        SOURCES
+        ${CLIENT_SRC}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-Wno-strict-aliasing"
+        DEPS
+        ${CARBIN_DEPS_LINK}
+        elasticann::proto-object
+        PUBLIC
+)
+
+
 file(GLOB ROUTER_SERVER raft_dummy/*.cc)
 carbin_cc_binary(
         NAMESPACE elasticann
