@@ -62,9 +62,10 @@ namespace EA::client {
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
             TLOG_ERROR(rs.ToString());
+            return;
         }
         TLOG_INFO("rpc success to server:{}", OptionContext::get_instance()->server);
-        TLOG_INFO("server response:{}", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        TLOG_INFO("server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
     }
     void run_ns_remove_cmd() {
         TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
