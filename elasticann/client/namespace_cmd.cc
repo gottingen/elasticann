@@ -17,6 +17,7 @@
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
 #include "elasticann/proto/router.interface.pb.h"
+#include "elasticann/client/proto_builder.h"
 #include "turbo/format/print.h"
 
 namespace EA::client {
@@ -54,12 +55,10 @@ namespace EA::client {
     }
 
     void run_ns_create_cmd() {
-        TLOG_INFO("start to create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        EA::proto::NameSpaceInfo *ns_req = request.mutable_namespace_info();
-        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        ProtoBuilder::make_namespace_create(&request, OptionContext::get_instance()->namespace_name, OptionContext::get_instance()->namespace_quota);
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
             turbo::Println(turbo::color::golden_rod, "rpc to server error");
@@ -69,10 +68,30 @@ namespace EA::client {
         turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
     }
     void run_ns_remove_cmd() {
-        TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        ProtoBuilder::make_namespace_remove(&request, OptionContext::get_instance()->namespace_name);
+        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            return;
+        }
+        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
+        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
     }
     void run_ns_modify_cmd() {
-        TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        ProtoBuilder::make_namespace_create(&request, OptionContext::get_instance()->namespace_name, OptionContext::get_instance()->namespace_quota);
+        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            return;
+        }
+        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
+        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
     }
 
 }  // namespace EA::client

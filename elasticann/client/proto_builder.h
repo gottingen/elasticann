@@ -13,28 +13,24 @@
 // limitations under the License.
 //
 
-#ifndef ELASTICANN_CLIENT_OPTION_CONTEXT_H_
-#define ELASTICANN_CLIENT_OPTION_CONTEXT_H_
+#ifndef ELASTICANN_CLIENT_PROTO_BUILDER_H_
+#define ELASTICANN_CLIENT_PROTO_BUILDER_H_
 
+#include "elasticann/proto/router.interface.pb.h"
 #include <string>
+#include <cstddef>
 #include <cstdint>
 
 namespace EA::client {
 
-    struct OptionContext {
-        static OptionContext *get_instance() {
-            static OptionContext ins;
-            return &ins;
-        }
-        std::string server{"127.0.0.0:8050"};
-        std::string namespace_name;
-        int64_t namespace_quota{0};
-        std::string load_balancer{"rr"};
-        int32_t  timeout_ms{2000};
-        int32_t  connect_timeout_ms{100};
-        int32_t  max_retry{3};
-        int32_t time_between_meta_connect_error_ms{1000};
+    class ProtoBuilder {
+    public:
+        static void
+        make_namespace_create(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota = 0);
+
+        static void
+        make_namespace_remove(EA::proto::MetaManagerRequest *req, const std::string &ns_name);
     };
 }  // namespace EA::client
 
-#endif  // ELASTICANN_CLIENT_OPTION_CONTEXT_H_
+#endif  // ELASTICANN_CLIENT_PROTO_BUILDER_H_
