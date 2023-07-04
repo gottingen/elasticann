@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef ELASTICANN_CLIENT_NAMESPACE_CMD_H_
+#define ELASTICANN_CLIENT_NAMESPACE_CMD_H_
 
 #include "turbo/flags/flags.h"
 #include <string>
 
-namespace EA::schema {
-    /// Collection of all options of namespace cmd.
-    struct NamespaceCmdAOptions {
-        std::string name;
-        size_t quota;
-    };
+namespace EA::client {
 
     // We could manually make a few variables and use shared pointers for each; this
     // is just done this way to be nicely organized
@@ -30,8 +26,13 @@ namespace EA::schema {
     // Function declarations.
     void setup_namespace_cmd(turbo::App &app);
 
-    void run_namespace_cmd(turbo::App* app);
-    void run_ns_create_cmd(const NamespaceCmdAOptions &option);
-    void run_ns_remove_cmd(const NamespaceCmdAOptions &option);
-    void run_ns_modify_cmd(const NamespaceCmdAOptions &option);
-}  // namespace EA::schema
+    void run_namespace_cmd(turbo::App *app);
+
+    void run_ns_create_cmd();
+
+    void run_ns_remove_cmd();
+
+    void run_ns_modify_cmd();
+}  // namespace EA::client
+
+#endif  // ELASTICANN_CLIENT_NAMESPACE_CMD_H_

@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     // Call the setup functions for the subcommands.
     // They are kept alive by a shared pointer in the
     // lambda function
-    EA::schema::setup_schema_cmd(app);
+    EA::client::setup_schema_cmd(app);
     // More setup if needed, i.e., other subcommands etc.
 
     TURBO_FLAGS_PARSE(app, argc, argv);

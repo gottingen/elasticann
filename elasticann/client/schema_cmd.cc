@@ -14,22 +14,23 @@
 //
 #include "elasticann/client/schema_cmd.h"
 #include "elasticann/client/namespace_cmd.h"
+#include "elasticann/client/option_context.h"
 #include <iostream>
 #include <memory>
 
-namespace EA::schema {
+namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
     /// You could return the shared pointer if you wanted to access the values in main.
     void setup_schema_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = std::make_shared<SchemaCmdAOptions>();
+        auto opt = OptionContext::get_instance();
         auto *sub = app.add_subcommand("schema", "schema operations");
 
         // Add options to sub, binding them to opt.
         sub->add_option("-s,--server", opt->server, "server address")->required();
-        EA::schema::setup_namespace_cmd(*sub);
+        EA::client::setup_namespace_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_schema_cmd(*sub); });
         //sub->require_subcommand();
@@ -44,4 +45,4 @@ namespace EA::schema {
             std::cout<<app.help()<<std::endl;
         }
     }
-}  // namespace EA::schema
+}  // namespace EA::client

@@ -13,30 +13,32 @@
 // limitations under the License.
 //
 #include "elasticann/client/namespace_cmd.h"
-#include <iostream>
-#include <memory>
+#include "elasticann/client/option_context.h"
+#include "elasticann/common/tlog.h"
+#include "elasticann/client/router_interact.h"
+#include "elasticann/proto/router.interface.pb.h"
 
-namespace EA::schema {
+namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
     /// You could return the shared pointer if you wanted to access the values in main.
     void setup_namespace_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = std::make_shared<NamespaceCmdAOptions>();
+        auto opt = OptionContext::get_instance();
         auto *ns = app.add_subcommand("namespace", "namespace operations");
-        ns->add_option("-n,--name", opt->name, "namespace name")->required();
+        ns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
         ns->callback([ns]() { run_namespace_cmd(ns); });
         // Add options to sub, binding them to opt.
         //ns->require_subcommand();
         // add sub cmd
         auto cns = ns->add_subcommand("create", " create namespace");
-        cns->callback([opt]() { run_ns_create_cmd(*opt); });
+        cns->callback([]() { run_ns_create_cmd(); });
         auto rns = ns->add_subcommand("remove", " remove namespace");
-        rns->callback([opt]() { run_ns_remove_cmd(*opt); });
+        rns->callback([]() { run_ns_remove_cmd(); });
         auto mns = ns->add_subcommand("modify", " modify namespace");
-        mns->add_option("-q, --quota", opt->quota, "new namespace quota")->required();
-        mns->callback([opt]() { run_ns_modify_cmd(*opt); });
+        mns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota")->required();
+        mns->callback([]() { run_ns_modify_cmd(); });
 
     }
 
@@ -50,14 +52,25 @@ namespace EA::schema {
         }
     }
 
-    void run_ns_create_cmd(const NamespaceCmdAOptions &option) {
-        std::cout<<"create namespace: "<< option.name<<std::endl;
+    void run_ns_create_cmd() {
+        TLOG_INFO("start to create namespace: {}", OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        EA::proto::NameSpaceInfo *ns_req = request.mutable_namespace_info();
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            TLOG_ERROR(rs.ToString());
+        }
+        TLOG_INFO("rpc success to server:{}", OptionContext::get_instance()->server);
+        TLOG_INFO("server response:{}", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
     }
-    void run_ns_remove_cmd(const NamespaceCmdAOptions &option) {
-        std::cout<<"remove namespace: "<< option.name<<std::endl;
+    void run_ns_remove_cmd() {
+        TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
     }
-    void run_ns_modify_cmd(const NamespaceCmdAOptions &option) {
-        std::cout<<"modify namespace: "<< option.name<<std::endl;
+    void run_ns_modify_cmd() {
+        TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
     }
 
-}  // namespace EA::schema
+}  // namespace EA::client

@@ -12,16 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef ELASTICANN_CLIENT_SCHEMA_CMD_H_
-#define ELASTICANN_CLIENT_SCHEMA_CMD_H_
 
-#include "turbo/flags/flags.h"
+#ifndef ELASTICANN_CLIENT_OPTION_CONTEXT_H_
+#define ELASTICANN_CLIENT_OPTION_CONTEXT_H_
+
 #include <string>
+#include <cstdint>
 
 namespace EA::client {
-    /// Collection of all options of namespace cmd.
-    void setup_schema_cmd(turbo::App &app);
 
-    void run_schema_cmd(turbo::App &app);
+    struct OptionContext {
+        static OptionContext *get_instance() {
+            static OptionContext ins;
+            return &ins;
+        }
+        std::string server{"127.0.0.0:8050"};
+        std::string namespace_name;
+        size_t namespace_quota{0};
+        std::string load_balancer{"rr"};
+        int32_t  timeout_ms{2000};
+        int32_t  connect_timeout_ms{100};
+        int32_t  max_retry{3};
+        int32_t time_between_meta_connect_error_ms{1000};
+    };
 }  // namespace EA::client
-#endif  // ELASTICANN_CLIENT_SCHEMA_CMD_H_
+
+#endif  // ELASTICANN_CLIENT_OPTION_CONTEXT_H_

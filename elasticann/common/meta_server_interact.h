@@ -134,7 +134,7 @@ namespace EA {
                     continue;
                 }
                 if (response.errcode() != proto::SUCCESS) {
-                    TLOG_WARN("send meta server fail, log_id:%lu, response:{}", cntl.log_id(),
+                    TLOG_WARN("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
                               response.ShortDebugString());
                     return -1;
                 } else {
