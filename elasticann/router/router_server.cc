@@ -13,7 +13,18 @@
 // limitations under the License.
 
 #include "elasticann/router/router_service.h"
+#include <gflags/gflags.h>
+#include "elasticann/common/tlog.h"
 
 int main(int argc, char**argv) {
+    google::SetCommandLineOption("flagfile", "conf/meta_gflags.conf");
+    google::ParseCommandLineFlags(&argc, &argv, true);
+
+    if (!EA::init_tlog()) {
+        fprintf(stderr, "log init failed.");
+        return -1;
+    }
+    TLOG_INFO("log file load success");
+
     return 0;
 }
