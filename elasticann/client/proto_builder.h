@@ -33,6 +33,9 @@ namespace EA::client {
 
         static void
         make_namespace_modify(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota);
+
+        static void
+        make_namespace_query(EA::proto::QueryRequest *req, const std::string &ns_name);
     };
 }  // namespace EA::client
 

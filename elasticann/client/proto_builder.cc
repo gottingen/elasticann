@@ -37,4 +37,11 @@ namespace EA::client {
         ns_req->set_quota(quota);
         req->set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
     }
+
+    void ProtoBuilder::make_namespace_query(EA::proto::QueryRequest *req, const std::string &ns_name) {
+        if(!ns_name.empty()) {
+            req->set_namespace_name(ns_name);
+        }
+        req->set_op_type(EA::proto::QUERY_NAMESPACE);
+    }
 }

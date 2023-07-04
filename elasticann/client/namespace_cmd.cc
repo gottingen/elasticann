@@ -29,18 +29,31 @@ namespace EA::client {
         // Create the option and subcommand objects.
         auto opt = OptionContext::get_instance();
         auto *ns = app.add_subcommand("namespace", "namespace operations");
-        ns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
         ns->callback([ns]() { run_namespace_cmd(ns); });
         // Add options to sub, binding them to opt.
         //ns->require_subcommand();
         // add sub cmd
         auto cns = ns->add_subcommand("create", " create namespace");
+        cns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        cns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         cns->callback([]() { run_ns_create_cmd(); });
+
         auto rns = ns->add_subcommand("remove", " remove namespace");
+        rns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        rns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         rns->callback([]() { run_ns_remove_cmd(); });
+
         auto mns = ns->add_subcommand("modify", " modify namespace");
-        mns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota")->required();
+        mns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        mns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         mns->callback([]() { run_ns_modify_cmd(); });
+
+        auto lns = ns->add_subcommand("list", " list namespaces");
+        lns->callback([]() { run_ns_list_cmd(); });
+
+        auto ins = ns->add_subcommand("info", " get namespace info");
+        ins->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        ins->callback([]() { run_ns_info_cmd(); });
 
     }
 
@@ -92,6 +105,36 @@ namespace EA::client {
         }
         turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
         turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+    }
+
+    void run_ns_list_cmd() {
+        turbo::Println(turbo::color::green, "start to get namespace list");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        ProtoBuilder::make_namespace_query(&request, "");
+        auto rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            return;
+        }
+        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
+        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        turbo::Println(turbo::color::golden_rod, "response:\n{}", response.ShortDebugString());
+    }
+
+    void run_ns_info_cmd() {
+        turbo::Println(turbo::color::green, "start to get namespace list");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        ProtoBuilder::make_namespace_query(&request, OptionContext::get_instance()->namespace_name);
+        auto rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            return;
+        }
+        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
+        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        turbo::Println(turbo::color::golden_rod, "response:\n{}", response.ShortDebugString());
     }
 
 }  // namespace EA::client
