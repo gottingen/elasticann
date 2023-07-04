@@ -20,7 +20,7 @@ execute_process(
         COMMAND bash ${CMAKE_SOURCE_DIR}/elasticann/sqlparser/gen_source.sh ${CMAKE_SOURCE_DIR} opensource ${PROJECT_BINARY_DIR}/elasticann/sqlparser
         RESULT_VARIABLE CMD_RET
 )
-
+file(COPY ${PROJECT_SOURCE_DIR}/conf DESTINATION ${PROJECT_BINARY_DIR})
 file(GLOB ENGINE engine/*.cc)
 file(GLOB EXEC exec/*.cc)
 file(GLOB EXPR expr/*.cc)

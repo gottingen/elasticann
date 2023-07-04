@@ -21,8 +21,8 @@ namespace EA {
 
     class RouterServiceImpl : public EA::proto::RouterService {
     public:
-        RouterServiceImpl();
-        ~RouterServiceImpl();
+        RouterServiceImpl() {}
+        ~RouterServiceImpl() {}
 
         void meta_manager(::google::protobuf::RpcController* controller,
                                   const ::EA::proto::MetaManagerRequest* request,
