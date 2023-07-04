@@ -17,8 +17,8 @@
 
 #include "elasticann/raft/my_raft_meta_storage.h"
 #include <sstream>
-#include <boost/lexical_cast.hpp>
 #include "elasticann/common/mut_table_key.h"
+#include "turbo/strings/numbers.h"
 
 namespace EA {
 //DEFINE_string(old_stable_path, "/home/work/shared/data/raft_data/stable", "old stable path");
@@ -43,25 +43,30 @@ namespace EA {
 
     RaftMetaStorage *MyRaftMetaStorage::new_instance(const std::string &uri) const {
         RocksWrapper *rocksdb = RocksWrapper::get_instance();
-        if (rocksdb == NULL) {
+        if (rocksdb == nullptr) {
             DB_FATAL("rocksdb is not set");
-            return NULL;
+            return nullptr;
         }
         std::string string_region_id;
         int ret = parse_my_raft_meta_uri(uri, string_region_id);
         if (ret != 0) {
             DB_FATAL("parse uri fail, uri:%s", uri.c_str());
-            return NULL;
+            return nullptr;
         }
-        int64_t region_id = boost::lexical_cast<int64_t>(string_region_id);
+        auto pr = turbo::Atoi<int64_t >(string_region_id);
+        if(!pr.ok()) {
+            DB_FATAL("parse region_idri fail, uri:%s", string_region_id.c_str());
+            return nullptr;
+        }
+        int64_t region_id = pr.value();
         rocksdb::ColumnFamilyHandle *handle = rocksdb->get_raft_log_handle();
-        if (handle == NULL) {
+        if (handle == nullptr) {
             DB_FATAL("get raft log handle from rocksdb fail,uri:%s, region_id: %ld",
                      uri.c_str(), region_id);
-            return NULL;
+            return nullptr;
         }
         RaftMetaStorage *instance = new(std::nothrow) MyRaftMetaStorage(region_id, rocksdb, handle);
-        if (instance == NULL) {
+        if (instance == nullptr) {
             DB_FATAL("new raft_meta_storage instance fail, region_id: %ld",
                      region_id);
         }

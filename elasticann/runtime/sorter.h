@@ -17,39 +17,45 @@
 
 #pragma once
 
-#include <algorithm> 
+#include <algorithm>
 #include <vector>
 #include "elasticann/common/common.h"
 #include "elasticann/runtime/row_batch.h"
 #include "elasticann/mem_row/mem_row_compare.h"
 
 namespace EA {
-//对每个batch并行的做sort后，再用heap做归并
-class Sorter {
-public:
-    Sorter(MemRowCompare* comp) : _comp(comp), _idx(0) {
-    }
-    void add_batch(std::shared_ptr<RowBatch>& batch) {
-        batch->reset();
-        _min_heap.push_back(batch);
-    }
-    void sort();
-    void merge_sort();
-    int get_next(RowBatch* batch, bool* eos);
+    //对每个batch并行的做sort后，再用heap做归并
+    class Sorter {
+    public:
+        Sorter(MemRowCompare *comp) : _comp(comp), _idx(0) {
+        }
 
-    size_t batch_size() {
-        return _min_heap.size();
-    }
-private:
-    void multi_sort();
-    void make_heap();
-    void shiftdown(size_t index);
+        void add_batch(std::shared_ptr<RowBatch> &batch) {
+            batch->reset();
+            _min_heap.push_back(batch);
+        }
 
-private:
-    MemRowCompare* _comp;
-    std::vector<std::shared_ptr<RowBatch>> _min_heap;
-    size_t _idx;
-};
-}
+        void sort();
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */
+        void merge_sort();
+
+        int get_next(RowBatch *batch, bool *eos);
+
+        size_t batch_size() {
+            return _min_heap.size();
+        }
+
+    private:
+        void multi_sort();
+
+        void make_heap();
+
+        void shiftdown(size_t index);
+
+    private:
+        MemRowCompare *_comp;
+        std::vector<std::shared_ptr<RowBatch>> _min_heap;
+        size_t _idx;
+    };
+}  // namespace EA
+

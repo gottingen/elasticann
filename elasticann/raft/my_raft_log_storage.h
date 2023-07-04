@@ -66,8 +66,8 @@ public:
     static const uint8_t LOG_DATA_IDENTIFY = 0x02;    
     const static size_t LOG_HEAD_SIZE = sizeof(int64_t) + sizeof(int);
     ~MyRaftLogStorage();
-    MyRaftLogStorage():_db(NULL), _raftlog_handle(NULL), _binlog_handle(NULL) {
-        bthread_mutex_init(&_mutex, NULL);
+    MyRaftLogStorage():_db(nullptr), _raftlog_handle(nullptr), _binlog_handle(nullptr) {
+        bthread_mutex_init(&_mutex, nullptr);
     }
     // init logstorage, check consistency and integrity
     int init(braft::ConfigurationManager* configuration_manager) override;
@@ -107,7 +107,7 @@ public:
 
     // Create an instance of this kind of LogStorage with the parameters encoded 
     // in |uri|
-    // Return the address referenced to the instance on success, NULL otherwise.
+    // Return the address referenced to the instance on success, nullptr otherwise.
     LogStorage* new_instance(const std::string& uri) const override;
 
 private:

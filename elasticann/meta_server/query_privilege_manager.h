@@ -19,25 +19,28 @@
 
 #include "elasticann/meta_server/privilege_manager.h"
 
-namespace EA{
-class QueryPrivilegeManager {
-public:
-    static QueryPrivilegeManager* get_instance() {
-        static QueryPrivilegeManager instance;
-        return &instance;
-    }
-    ~QueryPrivilegeManager() {}
-    
-    void get_user_info(const proto::QueryRequest* request,
-                       proto::QueryResponse* response);
-    void get_flatten_privilege(const proto::QueryRequest* request, proto::QueryResponse* response);
-    void process_console_heartbeat(const proto::ConsoleHeartBeatRequest* request,
-                                 proto::ConsoleHeartBeatResponse* response);
-private:
-    QueryPrivilegeManager() {}
-    void construct_query_response_for_privilege(const proto::UserPrivilege& user_privilege,
-            std::map<std::string, std::multimap<std::string, proto::QueryUserPrivilege>>& namespace_privileges);
-};
-} //namespace
+namespace EA {
+    class QueryPrivilegeManager {
+    public:
+        static QueryPrivilegeManager *get_instance() {
+            static QueryPrivilegeManager instance;
+            return &instance;
+        }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+        ~QueryPrivilegeManager() {}
+
+        void get_user_info(const proto::QueryRequest *request,
+                           proto::QueryResponse *response);
+
+        void get_flatten_privilege(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+        void process_console_heartbeat(const proto::ConsoleHeartBeatRequest *request,
+                                       proto::ConsoleHeartBeatResponse *response);
+
+    private:
+        QueryPrivilegeManager() {}
+
+        void construct_query_response_for_privilege(const proto::UserPrivilege &user_privilege,
+                                                    std::map<std::string, std::multimap<std::string, proto::QueryUserPrivilege>> &namespace_privileges);
+    };
+}  // namespace EA

@@ -48,7 +48,7 @@ int ScalarFnCall::type_inferer() {
     if (ret < 0) {
         return ret;
     }
-    if (_fn_call != NULL) {
+    if (_fn_call != nullptr) {
         // 避免重复执行后续逻辑
         return ret;
     }
@@ -183,7 +183,7 @@ int ScalarFnCall::open() {
     }*/
     FunctionManager* fn_manager = FunctionManager::instance();
     _fn_call = fn_manager->get_object(_fn.name());
-    if (node_type() == proto::FUNCTION_CALL && _fn_call == NULL) {
+    if (node_type() == proto::FUNCTION_CALL && _fn_call == nullptr) {
         DB_WARNING("fn call is null, name:%s", _fn.name().c_str());
     }
     return 0;
@@ -208,7 +208,7 @@ ExprValue ScalarFnCall::get_value(MemRow* row) {
                 return ExprValue::Null();
         }
     }
-    if (_fn_call == NULL) {
+    if (_fn_call == nullptr) {
         return ExprValue::Null();
     }
     std::vector<ExprValue> args;
@@ -226,7 +226,7 @@ ExprValue ScalarFnCall::get_value(const ExprValue& value) {
     if (_is_row_expr) {
         return ExprValue::Null();
     }
-    if (_fn_call == NULL) {
+    if (_fn_call == nullptr) {
         return ExprValue::Null();
     }
     std::vector<ExprValue> args;
@@ -241,4 +241,3 @@ ExprValue ScalarFnCall::get_value(const ExprValue& value) {
 }
 
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

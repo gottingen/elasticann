@@ -1,18 +1,22 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
 
-#include <gtest/gtest.h>
+#include "tests/doctest/doctest.h"
 #include <climits>
 #include <iostream>
 #include <cstdio>
@@ -20,26 +24,20 @@
 #include <ctime>
 #include <vector>
 #include <json2pb/pb_to_json.h>
-#include <proto/meta.interface.pb.h>
-#include "rapidjson.h"
-#include <raft/raft.h>
-#include "common.h"
-#include "hll_common.h"
-#include "schema_factory.h"
+#include <elasticann/proto/meta.interface.pb.h>
+#include "rapidjson/rapidjson.h"
+#include <braft/raft.h>
+#include "elasticann/common/common.h"
+#include "elasticann/common/hll_common.h"
+#include "elasticann/common/schema_factory.h"
 
 int cnt = 0;
 
-int main(int argc, char* argv[])
-{
-    testing::InitGoogleTest(&argc, argv);
-    //cnt = std::stoi(argv[1]);
-    return RUN_ALL_TESTS();
-}
 
-namespace baikaldb {
+namespace EA {
 namespace hll {
 
-TEST(test_hll, case_all) {
+DOCTEST_TEST_CASE("test_hll, case_all") {
     ExprValue hll = hll_init();
     int cnts[] = {50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000, 50000000};
     double max = 0.0;
@@ -48,7 +46,7 @@ TEST(test_hll, case_all) {
     int64_t hll_cnt = 0;
     for (int cnt = 50; cnt < 1000000; cnt++) {
         for (int i = last; i < cnt; ++i) {
-            ExprValue tmp(pb::INT64);
+            ExprValue tmp(proto::INT64);
             tmp._u.int64_val = i;
             hll_add(hll, tmp.hash());
         }
@@ -68,12 +66,12 @@ TEST(test_hll, case_all) {
     std::cout << "max:" << max << std::endl;
 }
 
-TEST(test_hll_performace, case_all) {
+DOCTEST_TEST_CASE("test_hll_performace, case_all") {
     std::vector<ExprValue> vec;
     for (int i = 0; i < 5; i++) {
         ExprValue hll = hll_init();
         for (int cnt = 0; cnt < 1000; cnt++) {
-            ExprValue tmp(pb::INT64);
+            ExprValue tmp(proto::INT64);
             tmp._u.int64_val = butil::fast_rand();
             hll_add(hll, tmp.hash());
         }
@@ -112,4 +110,4 @@ TEST(test_hll_performace, case_all) {
 }
 
 }
-}  // namespace baikal
+}  // namespace EA

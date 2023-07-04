@@ -59,4 +59,3 @@ void SqlParser::parse(const std::string& sql_) {
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

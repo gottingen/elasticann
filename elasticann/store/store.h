@@ -210,7 +210,7 @@ public:
         return SmartRegion();
     }
     void set_region(SmartRegion& region) {
-        if (region == NULL) {
+        if (region == nullptr) {
             return;
         }
         auto call = [](std::unordered_map<int64_t, SmartRegion>& map, const SmartRegion& region) {
@@ -316,7 +316,7 @@ private:
              select_time_cost("select_time_cost", 60),
              peer_delay_latency("peer_delay_latency", 60),
              heart_beat_count("heart_beat_count") {
-        bthread_mutex_init(&_param_mutex, NULL);
+        bthread_mutex_init(&_param_mutex, nullptr);
     }
 
     class TimePeriodChecker {
@@ -325,7 +325,7 @@ private:
 
         bool now_in_interval_period() {
             struct tm ptm;
-            time_t timep = time(NULL);
+            time_t timep = time(nullptr);
             localtime_r(&timep, &ptm);
             int now = ptm.tm_hour;
             // 跨夜

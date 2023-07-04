@@ -23,108 +23,125 @@
 #include "elasticann/mem_row/mem_row_compare.h"
 
 namespace EA {
-class RowBatch {
-public:
-    RowBatch() : _idx(0) {
-        _rows.reserve(_capacity);
-    }
-    void set_capacity(size_t capacity) {
-        _capacity = capacity;
-    }
-    size_t capacity() {
-        return _capacity;
-    }
-    size_t size() {
-        return _rows.size();
-    }
-    void reset() {
-        _idx = 0;
-    }
-    void clear() {
-        _rows.clear();
-        _idx = 0;
-    }
-    bool is_full() {
-        return size() >= _capacity;
-    }
-    bool is_traverse_over() {
-        return _idx >= size();
-    }
-    void skip_rows(int num_skip_rows) {
-        if (num_skip_rows <= 0) {
-            return;
+    class RowBatch {
+    public:
+        RowBatch() : _idx(0) {
+            _rows.reserve(_capacity);
         }
-        if (num_skip_rows >= (int)size()) {
+
+        void set_capacity(size_t capacity) {
+            _capacity = capacity;
+        }
+
+        size_t capacity() {
+            return _capacity;
+        }
+
+        size_t size() {
+            return _rows.size();
+        }
+
+        void reset() {
+            _idx = 0;
+        }
+
+        void clear() {
             _rows.clear();
-            return;
+            _idx = 0;
         }
-        std::vector<std::unique_ptr<MemRow>> tmp(
-                std::make_move_iterator(_rows.begin() + num_skip_rows),
-                std::make_move_iterator(_rows.end())
-                );
-        _rows.swap(tmp);
-        _idx = 0;
-    }
-    void keep_first_rows(int num_keep_rows) {
-        if (num_keep_rows >= (int)size()) {
-            return;
+
+        bool is_full() {
+            return size() >= _capacity;
         }
-        if (num_keep_rows <= 0) {
-            _rows.clear();
-            return;
+
+        bool is_traverse_over() {
+            return _idx >= size();
         }
-        _rows.resize(num_keep_rows);
-    }
-    //move_row会转移所有权
-    void move_row(std::unique_ptr<MemRow> row) {
-        _rows.emplace_back(std::move(row));
-    }
-    // 使用者保证idx < size()
-    void replace_row(std::unique_ptr<MemRow> row, size_t idx) {
-        if (size() == 0) {
+
+        void skip_rows(int num_skip_rows) {
+            if (num_skip_rows <= 0) {
+                return;
+            }
+            if (num_skip_rows >= (int) size()) {
+                _rows.clear();
+                return;
+            }
+            std::vector<std::unique_ptr<MemRow>> tmp(
+                    std::make_move_iterator(_rows.begin() + num_skip_rows),
+                    std::make_move_iterator(_rows.end())
+            );
+            _rows.swap(tmp);
+            _idx = 0;
+        }
+
+        void keep_first_rows(int num_keep_rows) {
+            if (num_keep_rows >= (int) size()) {
+                return;
+            }
+            if (num_keep_rows <= 0) {
+                _rows.clear();
+                return;
+            }
+            _rows.resize(num_keep_rows);
+        }
+
+        //move_row会转移所有权
+        void move_row(std::unique_ptr<MemRow> row) {
             _rows.emplace_back(std::move(row));
-        } else {
-            _rows[idx] = std::move(row);
         }
-    }
-    std::unique_ptr<MemRow>& get_row() {
-        return _rows[_idx];
-    }
-    std::unique_ptr<MemRow>& get_row(size_t i) {
-        return _rows[i];
-    }
-    std::unique_ptr<MemRow>& back() {
-        return _rows.back();
-    }
-    void next() {
-        _idx++;
-    }
-    void sort(MemRowCompare* comp) {
-        std::sort(_rows.begin(), _rows.end(), 
-                comp->get_less_func());
-    }
-    void swap(RowBatch& batch) {
-        _rows.swap(batch._rows);
-    }
 
-    int64_t used_bytes_size() {
-        int64_t used_size = 0;
-        for (size_t i = 0; i < size(); i++) {
-            used_size += _rows[i]->used_size();
+        // 使用者保证idx < size()
+        void replace_row(std::unique_ptr<MemRow> row, size_t idx) {
+            if (size() == 0) {
+                _rows.emplace_back(std::move(row));
+            } else {
+                _rows[idx] = std::move(row);
+            }
         }
-        return used_size;
-    }
 
-    size_t index() {
-        return _idx;
-    }
-private:
-    //采用unique_ptr来维护内存，减少内存占用
-    //后续考虑直接用MemRow，因为MemRow内部也只有几个指针
-    std::vector<std::unique_ptr<MemRow> > _rows;
-    size_t _idx;
-    size_t _capacity = ROW_BATCH_CAPACITY;
-};
+        std::unique_ptr<MemRow> &get_row() {
+            return _rows[_idx];
+        }
+
+        std::unique_ptr<MemRow> &get_row(size_t i) {
+            return _rows[i];
+        }
+
+        std::unique_ptr<MemRow> &back() {
+            return _rows.back();
+        }
+
+        void next() {
+            _idx++;
+        }
+
+        void sort(MemRowCompare *comp) {
+            std::sort(_rows.begin(), _rows.end(),
+                      comp->get_less_func());
+        }
+
+        void swap(RowBatch &batch) {
+            _rows.swap(batch._rows);
+        }
+
+        int64_t used_bytes_size() {
+            int64_t used_size = 0;
+            for (size_t i = 0; i < size(); i++) {
+                used_size += _rows[i]->used_size();
+            }
+            return used_size;
+        }
+
+        size_t index() {
+            return _idx;
+        }
+
+    private:
+        //采用unique_ptr来维护内存，减少内存占用
+        //后续考虑直接用MemRow，因为MemRow内部也只有几个指针
+        std::vector<std::unique_ptr<MemRow> > _rows;
+        size_t _idx;
+        size_t _capacity = ROW_BATCH_CAPACITY;
+    };
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

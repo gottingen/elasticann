@@ -50,7 +50,7 @@ void QueryContext::update_ctx_stat_info(RuntimeState* state, int64_t query_total
 }
 
 int64_t QueryContext::get_ctx_total_time() {
-    gettimeofday(&(stat_info.end_stamp), NULL);
+    gettimeofday(&(stat_info.end_stamp), nullptr);
     stat_info.total_time = timestamp_diff(stat_info.start_stamp, stat_info.end_stamp);
     return stat_info.total_time;
 }

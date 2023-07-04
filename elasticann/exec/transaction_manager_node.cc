@@ -80,4 +80,3 @@ int TransactionManagerNode::exec_rollback_node(RuntimeState* state, ExecNode* ro
     return 0;
 }
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

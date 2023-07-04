@@ -1,17 +1,18 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+//
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -21,21 +22,25 @@
 #include "rocksdb/db.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/options.h"
-#include "common.h"
+#include "elasticann/common/common.h"
+#include "turbo/files/filesystem.h"
 
 using namespace rocksdb;
 
-int main(int argc, char** argv) {
-  
+int main(int argc, char **argv) {
+
     std::string db_path = "/tmp/rocksdb_column_families_example";
 
+    if(turbo::filesystem::exists(db_path)) {
+        turbo::filesystem::remove_all(db_path);
+    }
     // open DB
     Options options;
     options.create_if_missing = true;
-    DB* db = NULL;
+    DB *db = NULL;
     Status s = DB::Open(options, db_path, &db);
     assert(s.ok());
-    
+
     uint32_t family_count = 1000;
     if (argc >= 2) {
         family_count = atoi(argv[1]);
@@ -43,7 +48,7 @@ int main(int argc, char** argv) {
     DB_NOTICE("family count: %u", family_count);
 
     // create column family
-    std::vector<ColumnFamilyHandle*> cf_vec;
+    std::vector<ColumnFamilyHandle *> cf_vec;
     std::vector<std::string> family_names;
     for (uint32_t idx = 0; idx < family_count; ++idx) {
         family_names.push_back("new_cf_" + std::to_string(idx));
@@ -71,24 +76,25 @@ int main(int argc, char** argv) {
     for (int idx = 0; idx < family_names.size(); ++idx) {
         column_families.push_back(ColumnFamilyDescriptor(family_names[idx], option));
     }
-    std::vector<ColumnFamilyHandle*> handles;
+    std::vector<ColumnFamilyHandle *> handles;
     s = DB::Open(DBOptions(), db_path, column_families, &handles, &db);
     assert(s.ok());
 
     // put and get from non-default column family
     uint32_t size = handles.size();
-    srand((unsigned)time(NULL));
+    srand((unsigned) time(NULL));
     std::cout << RAND_MAX << std::endl;
-    baikaldb::TimeCost cost;
+    EA::TimeCost cost;
     for (uint64_t idx = 0; idx < 1000; idx++) {
         uint64_t key1 = rand();
         uint64_t key2 = rand();
         uint64_t key = ((key1 << 32) | key2);
-        s = db->Put(WriteOptions(), handles[idx%size], Slice(std::to_string(key)), Slice(std::to_string(idx) + "value"));
+        s = db->Put(WriteOptions(), handles[idx % size], Slice(std::to_string(key)),
+                    Slice(std::to_string(idx) + "value"));
         assert(s.ok());
     }
 
-    for (auto handle : handles) {
+    for (auto handle: handles) {
         s = db->CompactRange(CompactRangeOptions(), handle, nullptr, nullptr);
     }
     assert(s.ok());
@@ -100,7 +106,7 @@ int main(int argc, char** argv) {
     // s = db->CompactRange(CompactRangeOptions(), nullptr, nullptr);
 
     // close db
-    for (auto handle : handles) {
+    for (auto handle: handles) {
         delete handle;
     }
     delete db;

@@ -22,24 +22,22 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-class DeCorrelate {
-public:
-    /* 相关子查询去相关
-     */
-    int analyze(QueryContext* ctx) {
-        ExecNode* plan = ctx->root;
-        std::vector<ExecNode*> apply_nodes;
-        plan->get_node(proto::APPLY_NODE, apply_nodes);
-        if (apply_nodes.size() == 0) {
+    class DeCorrelate {
+    public:
+        /* 相关子查询去相关
+         */
+        int analyze(QueryContext *ctx) {
+            ExecNode *plan = ctx->root;
+            std::vector<ExecNode *> apply_nodes;
+            plan->get_node(proto::APPLY_NODE, apply_nodes);
+            if (apply_nodes.size() == 0) {
+                return 0;
+            }
+            for (auto &apply_node: apply_nodes) {
+                ApplyNode *apply = static_cast<ApplyNode *>(apply_node);
+                apply->decorrelate();
+            }
             return 0;
         }
-        for (auto& apply_node : apply_nodes) {
-            ApplyNode* apply = static_cast<ApplyNode*>(apply_node);
-            apply->decorrelate();
-        }
-        return 0;
-    }
-};
+    };
 }
-
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

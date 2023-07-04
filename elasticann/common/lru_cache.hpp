@@ -62,7 +62,7 @@ int Cache<ItemKey, ItemType>::find(const ItemKey& key, ItemType* value) {
 template <typename ItemKey, typename ItemType>
 int Cache<ItemKey, ItemType>::add(const ItemKey& key, const ItemType& value) {
     std::lock_guard<std::mutex> lock(_mutex);
-    LruNode<ItemKey, ItemType>* node = NULL;
+    LruNode<ItemKey, ItemType>* node = nullptr;
     if (_lru_map.count(key) == 1) {
         node = _lru_map[key];
         node->RemoveFromList();
@@ -85,7 +85,7 @@ int Cache<ItemKey, ItemType>::add(const ItemKey& key, const ItemType& value) {
 template <typename ItemKey, typename ItemType>
 int Cache<ItemKey, ItemType>::del(const ItemKey& key) {
     std::lock_guard<std::mutex> lock(_mutex);
-    LruNode<ItemKey, ItemType>* node = NULL;
+    LruNode<ItemKey, ItemType>* node = nullptr;
     if (_lru_map.count(key) == 1) {
         node = _lru_map[key];
         node->RemoveFromList();
@@ -96,4 +96,3 @@ int Cache<ItemKey, ItemType>::del(const ItemKey& key) {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

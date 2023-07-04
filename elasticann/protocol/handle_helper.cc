@@ -19,6 +19,7 @@
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/common/store_interact.h"
 #include "turbo/strings/str_split.h"
+#include "turbo/strings/match.h"
 
 namespace EA {
     void HandleHelper::init() {
@@ -103,7 +104,7 @@ namespace EA {
         }
 
         std::vector<std::string> split_vec = turbo::StrSplit(client->query_ctx->sql,
-                     turbo::ByAnyChar(" \t\n\r"), turbo::SkipEmpty());
+                                                             turbo::ByAnyChar(" \t\n\r"), turbo::SkipEmpty());
         if (split_vec.size() < 2) {
             _wrapper->make_simple_ok_packet(client);
             client->state = STATE_READ_QUERY_RESULT;
@@ -340,9 +341,9 @@ namespace EA {
         bool permission = false;
         if (split_vec.size() == 4) {
             db = split_vec[2];
-            if (boost::iequals(split_vec[3], "READ")) {
+            if (turbo::EqualsIgnoreCase(split_vec[3], "READ")) {
                 rw = proto::READ;
-            } else if (boost::iequals(split_vec[3], "true")) {
+            } else if (turbo::EqualsIgnoreCase(split_vec[3], "true")) {
                 permission = true;
             }
             resource_tag = split_vec[3];
@@ -552,7 +553,7 @@ namespace EA {
         request.set_op_type(proto::OP_DROP_REGION);
         auto info = request.mutable_drop_region_ids();
         for (size_t i = 2; i < split_vec.size(); ++i) {
-            int64_t region_id = strtoll(split_vec[i].c_str(), NULL, 10);
+            int64_t region_id = strtoll(split_vec[i].c_str(), nullptr, 10);
             info->Add(region_id);
         }
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
@@ -577,7 +578,7 @@ namespace EA {
         info->set_table_name(split_vec[2]);
         info->set_database(client->current_db);
         info->set_namespace_name(client->user_info->namespace_);
-        int64_t split_lines = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t split_lines = strtoll(split_vec[3].c_str(), nullptr, 10);
         info->set_region_split_lines(split_lines);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
         DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
@@ -601,7 +602,7 @@ namespace EA {
         info->set_table_name(split_vec[2]);
         info->set_database(client->current_db);
         info->set_namespace_name(client->user_info->namespace_);
-        int64_t ttl = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t ttl = strtoll(split_vec[3].c_str(), nullptr, 10);
         if (ttl <= 0) {
             return false;
         }
@@ -624,8 +625,8 @@ namespace EA {
         int64_t table_id = 0;
         int64_t region_id = 0;
         if (split_vec.size() == 4) {
-            table_id = strtoll(split_vec[2].c_str(), NULL, 10);
-            region_id = strtoll(split_vec[3].c_str(), NULL, 10);
+            table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
+            region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
         } else {
             DB_FATAL("param invalid");
             client->state = STATE_ERROR;
@@ -773,8 +774,8 @@ namespace EA {
         }
 
         bool delete_global_ddl = false;
-        if (split_vec.size() == 4 && boost::iequals(split_vec[1], "delete_ddl") &&
-            boost::iequals(split_vec[3], "global")) {
+        if (split_vec.size() == 4 && turbo::EqualsIgnoreCase(split_vec[1], "delete_ddl") &&
+            turbo::EqualsIgnoreCase(split_vec[3], "global")) {
             delete_global_ddl = true;
         } else if (split_vec.size() != 3) {
             DB_FATAL("param invalid");
@@ -794,7 +795,7 @@ namespace EA {
         proto::MetaManagerRequest request;
         proto::MetaManagerResponse response;
         request.set_op_type(opt_map[split_vec[1]]);
-        if (boost::iequals(split_vec[1], "delete_ddl")) {
+        if (turbo::EqualsIgnoreCase(split_vec[1], "delete_ddl")) {
             auto info = request.mutable_ddlwork_info();
             info->set_table_id(table_id);
             info->set_global(delete_global_ddl);
@@ -845,7 +846,7 @@ namespace EA {
         if (table_info.has_main_logical_room()) {
             bool find_main_logical_room = false;
             for (auto dist: table_info.dists()) {
-                if (boost::equals(dist.logical_room(), table_info.main_logical_room())) {
+                if (dist.logical_room() == table_info.main_logical_room()) {
                     find_main_logical_room = true;
                     break;
                 }
@@ -886,7 +887,7 @@ namespace EA {
             return false;
         }
         std::string store_addr = split_vec[2];
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
 
         bool delay = true, force = false;
         if (client->query_ctx->sql.find("no_delay") != std::string::npos) {
@@ -920,8 +921,8 @@ namespace EA {
             DB_FATAL("param invalid");
             return false;
         }
-        int64_t table_id = strtoll(split_vec[2].c_str(), NULL, 10);
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
         std::string new_peer = split_vec[4];
 
         proto::AddPeer req;
@@ -997,15 +998,15 @@ namespace EA {
             return false;
         }
         bool is_force = false;
-        if (split_vec.size() == 6 && boost::iequals(split_vec[5], "force")) {
+        if (split_vec.size() == 6 && turbo::EqualsIgnoreCase(split_vec[5], "force")) {
             is_force = true;
         } else if (split_vec.size() != 5) {
             DB_FATAL("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
-        int64_t table_id = strtoll(split_vec[2].c_str(), NULL, 10);
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
         std::string delete_peer = split_vec[4];
         int peers_count = 0;
         bool found_delete_peer = false;
@@ -1050,7 +1051,7 @@ namespace EA {
             return false;
         }
         bool is_force = false;
-        if (split_vec.size() == 6 && boost::iequals(split_vec[5], "force")) {
+        if (split_vec.size() == 6 && turbo::EqualsIgnoreCase(split_vec[5], "force")) {
             is_force = true;
         } else if (split_vec.size() != 5) {
             DB_FATAL("param invalid");
@@ -1058,8 +1059,8 @@ namespace EA {
             return false;
         }
 
-        int64_t table_id = strtoll(split_vec[2].c_str(), NULL, 10);
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
         const std::string &only_one_peer = split_vec[4];
         bool found_only_one_peer = false;
 
@@ -1116,8 +1117,8 @@ namespace EA {
             return false;
         }
 
-        int64_t table_id = strtoll(split_vec[2].c_str(), NULL, 10);
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
+        int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
         const std::string &new_leader = split_vec[4];
         bool found_new_leader = false;
 
@@ -1278,9 +1279,9 @@ namespace EA {
         const std::string &binlog_table_name = split_vec[5];
         proto::MetaManagerRequest request;
         proto::MetaManagerResponse response;
-        if (boost::iequals(split_vec[1], SQL_HANDLE_LINK_BINLOG)) {
+        if (turbo::EqualsIgnoreCase(split_vec[1], SQL_HANDLE_LINK_BINLOG)) {
             request.set_op_type(proto::OP_LINK_BINLOG);
-        } else if (boost::iequals(split_vec[1], SQL_HANDLE_UNLINK_BINLOG)) {
+        } else if (turbo::EqualsIgnoreCase(split_vec[1], SQL_HANDLE_UNLINK_BINLOG)) {
             request.set_op_type(proto::OP_UNLINK_BINLOG);
         } else {
             DB_FATAL("json param invalid");
@@ -1411,7 +1412,7 @@ namespace EA {
         table_name = split_vec[2];
         key = split_vec[3];
         bool is_open = true;
-        if (boost::iequals(split_vec[4], "false")) {
+        if (turbo::EqualsIgnoreCase(split_vec[4], "false")) {
             is_open = false;
         }
         // 拿到table_id并检测是否存在改表
@@ -1441,13 +1442,13 @@ namespace EA {
         } else if (key == "select_index_by_cost") {
             schema_conf->set_select_index_by_cost(is_open);
         } else if (key == "pk_prefix_balance") {
-            int32_t pk_prefix_balance = strtol(split_vec[4].c_str(), NULL, 10);
+            int32_t pk_prefix_balance = strtol(split_vec[4].c_str(), nullptr, 10);
             schema_conf->set_pk_prefix_balance(pk_prefix_balance);
         } else if (key == "tail_split_num") {
-            int32_t tail_split_num = strtol(split_vec[4].c_str(), NULL, 10);
+            int32_t tail_split_num = strtol(split_vec[4].c_str(), nullptr, 10);
             schema_conf->set_tail_split_num(tail_split_num);
         } else if (key == "tail_split_step") {
-            int32_t tail_split_step = strtol(split_vec[4].c_str(), NULL, 10);
+            int32_t tail_split_step = strtol(split_vec[4].c_str(), nullptr, 10);
             schema_conf->set_tail_split_step(tail_split_step);
         } else if (key == "backup_table") {
             int32_t number = proto::BackupTable_descriptor()->FindValueByName(split_vec[4])->number();
@@ -1565,7 +1566,7 @@ namespace EA {
 
         int64_t region_id = -1;
         if (split_vec.size() == 5) {
-            region_id = strtoll(split_vec[4].c_str(), NULL, 10);
+            region_id = strtoll(split_vec[4].c_str(), nullptr, 10);
         } else if (split_vec.size() != 4) {
             DB_FATAL("param invalid");
             client->state = STATE_ERROR;
@@ -1606,8 +1607,8 @@ namespace EA {
         }
 
         const std::string &store_addr = split_vec[2];
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
-        int64_t txn_id = strtoll(split_vec[4].c_str(), NULL, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
+        int64_t txn_id = strtoll(split_vec[4].c_str(), nullptr, 10);
         proto::StoreReq req;
         req.set_op_type(proto::OP_TXN_COMPLETE);
         req.set_region_id(region_id);
@@ -1638,10 +1639,10 @@ namespace EA {
             return false;
         }
 
-        int64_t table_id = strtoll(split_vec[2].c_str(), NULL, 10);
-        int64_t region_id = strtoll(split_vec[3].c_str(), NULL, 10);
-        int64_t start_region_id = strtoll(split_vec[4].c_str(), NULL, 10);
-        int64_t end_region_id = strtoll(split_vec[5].c_str(), NULL, 10);
+        int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
+        int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
+        int64_t start_region_id = strtoll(split_vec[4].c_str(), nullptr, 10);
+        int64_t end_region_id = strtoll(split_vec[5].c_str(), nullptr, 10);
 
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
@@ -1727,7 +1728,7 @@ namespace EA {
             std::vector<ResultField> &fields,
             std::vector<std::vector<std::string> > &rows) {
         if (!sock || !sock->send_buf) {
-            DB_FATAL("sock == NULL.");
+            DB_FATAL("sock == nullptr.");
             return RET_ERROR;
         }
         if (fields.size() == 0) {

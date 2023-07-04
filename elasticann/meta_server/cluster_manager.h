@@ -19,7 +19,6 @@
 
 #include <unordered_map>
 #include <bthread/mutex.h>
-#include <boost/algorithm/string.hpp>
 #include <bitset>
 #include "elasticann/proto/meta.interface.pb.h"
 #include "elasticann/meta_server/meta_server.h"
@@ -611,7 +610,7 @@ namespace EA {
             ip = address.substr(0, position);
             std::vector<std::string> split_num = turbo::StrSplit(ip, '.',turbo::SkipEmpty());
             for (auto &num_str: split_num) {
-                int64_t num = strtoll(num_str.c_str(), NULL, 10);
+                int64_t num = strtoll(num_str.c_str(), nullptr, 10);
                 std::bitset<8> num_bitset = num;
                 ip_set += num_bitset.to_string();
             }
@@ -620,9 +619,9 @@ namespace EA {
 
     private:
         ClusterManager() {
-            bthread_mutex_init(&_physical_mutex, NULL);
-            bthread_mutex_init(&_instance_mutex, NULL);
-            bthread_mutex_init(&_instance_param_mutex, NULL);
+            bthread_mutex_init(&_physical_mutex, nullptr);
+            bthread_mutex_init(&_instance_mutex, nullptr);
+            bthread_mutex_init(&_instance_param_mutex, nullptr);
             {
                 BAIDU_SCOPED_LOCK(_physical_mutex);
                 _physical_info[FLAGS_default_physical_room] =
@@ -689,7 +688,7 @@ namespace EA {
             }
             for (auto &param: iter->second.params()) {
                 if (param.is_meta_param() && param.key() == key) {
-                    *value = strtoll(param.value().c_str(), NULL, 10);
+                    *value = strtoll(param.value().c_str(), nullptr, 10);
                     return 0;
                 }
             }
@@ -723,7 +722,7 @@ namespace EA {
         // 调度相关的信息（leader balance, peer balance, pk_prefix balance)
         DoubleBufferedSchedulingInfo _scheduling_info;
 
-        MetaStateMachine *_meta_state_machine = NULL;
+        MetaStateMachine *_meta_state_machine = nullptr;
 
         // resource tag -> network_segment prefix
         std::unordered_map<std::string, int> _resource_tag_network_prefix;

@@ -17,80 +17,90 @@
 
 #pragma once
 
-#include "elasticann/meta_server/common_state_machine.h"
+#include "elasticann/meta_server/base_state_machine.h"
 #include <braft/repeated_timer_task.h>
 #include <time.h>
 
 namespace EA {
 
-class TSOStateMachine;
-class TsoTimer : public braft::RepeatedTimerTask {
-public:
-    TsoTimer() : _node(NULL) {}
-    virtual ~TsoTimer() {}
-    int init(TSOStateMachine* node, int timeout_ms);
-    virtual void run();
-protected:
-    virtual void on_destroy() {}
-    TSOStateMachine* _node;
-};
+    class TSOStateMachine;
 
-struct TsoObj {
-    proto::TsoTimestamp current_timestamp;
-    int64_t last_save_physical;
-};
+    class TsoTimer : public braft::RepeatedTimerTask {
+    public:
+        TsoTimer() : _node(nullptr) {}
 
-class TSOStateMachine : public EA::CommonStateMachine {
-public:
-    TSOStateMachine(const braft::PeerId& peerId):
-                CommonStateMachine(2, "tso_raft", "/tso", peerId) {
-        bthread_mutex_init(&_tso_mutex, nullptr);
-    }
-    
-    virtual ~TSOStateMachine() {
-        _tso_update_timer.stop();
-        _tso_update_timer.destroy();
-        bthread_mutex_destroy(&_tso_mutex);
-    }
+        virtual ~TsoTimer() {}
 
-    virtual int init(const std::vector<braft::PeerId>& peers);
+        int init(TSOStateMachine *node, int timeout_ms);
 
-    // state machine method
-    virtual void on_apply(braft::Iterator& iter);
-    void process(google::protobuf::RpcController* controller,
-                               const proto::TsoRequest* request,
-                               proto::TsoResponse* response,
-                               google::protobuf::Closure* done);
-    
-    void gen_tso(const proto::TsoRequest* request, proto::TsoResponse* response);
-    void reset_tso(const proto::TsoRequest& request, braft::Closure* done);
-    void update_tso(const proto::TsoRequest& request, braft::Closure* done);
+        virtual void run();
 
-    int load_tso(const std::string& tso_file);
-    int sync_timestamp(const proto::TsoTimestamp& current_timestamp, int64_t save_physical);
-    void update_timestamp();
+    protected:
+        virtual void on_destroy() {}
 
-    virtual void on_snapshot_save(braft::SnapshotWriter* writer, braft::Closure* done);
-    void save_snapshot(braft::Closure* done,
-                       braft::SnapshotWriter* writer,
-                       std::string sto_str);
+        TSOStateMachine *_node;
+    };
 
-    virtual int on_snapshot_load(braft::SnapshotReader* reader);
+    struct TsoObj {
+        proto::TsoTimestamp current_timestamp;
+        int64_t last_save_physical;
+    };
 
-    virtual void on_leader_start();
+    class TSOStateMachine : public EA::BaseStateMachine {
+    public:
+        TSOStateMachine(const braft::PeerId &peerId) :
+                BaseStateMachine(2, "tso_raft", "/tso", peerId) {
+            bthread_mutex_init(&_tso_mutex, nullptr);
+        }
 
-    virtual void on_leader_stop();
+        virtual ~TSOStateMachine() {
+            _tso_update_timer.stop();
+            _tso_update_timer.destroy();
+            bthread_mutex_destroy(&_tso_mutex);
+        }
 
-    static const  std::string SNAPSHOT_TSO_FILE;;
-    static const  std::string SNAPSHOT_TSO_FILE_WITH_SLASH;
+        virtual int init(const std::vector<braft::PeerId> &peers);
 
-private:
-    TsoTimer  _tso_update_timer;
-    TsoObj    _tso_obj;
-    bthread_mutex_t _tso_mutex;  // 保护_tso_obj，C++20 atomic<std::shared_ptr<U>>
-    bool    _is_healty = true;
-};
+        // state machine method
+        virtual void on_apply(braft::Iterator &iter);
 
-} //namespace EA
+        void process(google::protobuf::RpcController *controller,
+                     const proto::TsoRequest *request,
+                     proto::TsoResponse *response,
+                     google::protobuf::Closure *done);
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+        void gen_tso(const proto::TsoRequest *request, proto::TsoResponse *response);
+
+        void reset_tso(const proto::TsoRequest &request, braft::Closure *done);
+
+        void update_tso(const proto::TsoRequest &request, braft::Closure *done);
+
+        int load_tso(const std::string &tso_file);
+
+        int sync_timestamp(const proto::TsoTimestamp &current_timestamp, int64_t save_physical);
+
+        void update_timestamp();
+
+        virtual void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done);
+
+        void save_snapshot(braft::Closure *done,
+                           braft::SnapshotWriter *writer,
+                           std::string sto_str);
+
+        virtual int on_snapshot_load(braft::SnapshotReader *reader);
+
+        virtual void on_leader_start();
+
+        virtual void on_leader_stop();
+
+        static const std::string SNAPSHOT_TSO_FILE;;
+        static const std::string SNAPSHOT_TSO_FILE_WITH_SLASH;
+
+    private:
+        TsoTimer _tso_update_timer;
+        TsoObj _tso_obj;
+        bthread_mutex_t _tso_mutex;  // 保护_tso_obj，C++20 atomic<std::shared_ptr<U>>
+        bool _is_healty = true;
+    };
+
+}  // namespace EA

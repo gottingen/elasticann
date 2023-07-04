@@ -32,7 +32,7 @@ public:
         return 0;
     }
     virtual ExprValue get_value(MemRow* row) {
-        if (row == NULL) {
+        if (row == nullptr) {
             return ExprValue::Null();
         }
         return row->get_value(_tuple_id, _slot_id).cast_to(_col_type);
@@ -73,4 +73,3 @@ private:
 };
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

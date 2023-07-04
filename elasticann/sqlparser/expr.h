@@ -249,7 +249,7 @@ struct LiteralExpr : public ExprNode {
                 std::cout << _u.bool_val;
                 break;
             case LT_NULL:
-                std::cout << "NULL";
+                std::cout << "nullptr";
                 break;
             case LT_PLACE_HOLDER:
                 std::cout << "?(" << _u.int64_val << ")";
@@ -262,14 +262,14 @@ struct LiteralExpr : public ExprNode {
     static LiteralExpr* make_int(const char* str, butil::Arena& arena) {
         LiteralExpr* lit = new(arena.allocate(sizeof(LiteralExpr))) LiteralExpr();
         lit->literal_type = LT_INT;
-        lit->_u.int64_val = strtoull(str, NULL, 10);
+        lit->_u.int64_val = strtoull(str, nullptr, 10);
         return lit;
     }
 
     static LiteralExpr* make_double(const char* str, butil::Arena& arena) {
         LiteralExpr* lit = new(arena.allocate(sizeof(LiteralExpr))) LiteralExpr();
         lit->literal_type = LT_DOUBLE;
-        lit->_u.double_val = strtod(str, NULL);
+        lit->_u.double_val = strtod(str, nullptr);
         return lit;
     }
 
@@ -377,4 +377,3 @@ struct RowExpr : public ExprNode {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

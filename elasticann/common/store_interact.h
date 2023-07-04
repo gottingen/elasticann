@@ -69,7 +69,7 @@ public:
         const ::google::protobuf::ServiceDescriptor* service_desc = proto::StoreService::descriptor();
         const ::google::protobuf::MethodDescriptor* method = 
                     service_desc->FindMethodByName(service_name);
-        if (method == NULL) {
+        if (method == nullptr) {
             DB_FATAL("service name not exist, service:%s", service_name.c_str());
             response.set_errcode(proto::CONNECT_FAIL);
             return -1;
@@ -79,7 +79,7 @@ public:
         if (attachment_data != nullptr) {
             cntl.request_attachment().append(*attachment_data);
         }
-        store_channel.CallMethod(method, &cntl, &request, &response, NULL);
+        store_channel.CallMethod(method, &cntl, &request, &response, nullptr);
         if (cntl.Failed()) {
             DB_WARNING("connect with store fail. send request fail, error:%s, log_id:%lu",
                         cntl.ErrorText().c_str(), cntl.log_id());

@@ -16,45 +16,47 @@
 
 
 #pragma once
- 
+
 #include <unordered_map>
 #include "elasticann/common/common.h"
 #include "elasticann/runtime/runtime_state.h"
 
 namespace EA {
-//class Region;
+    //class Region;
 
-// TODO: remove locking for thread-safe codes
-class RuntimeStatePool {
-public:
-    virtual ~RuntimeStatePool() {}
+    // TODO: remove locking for thread-safe codes
+    class RuntimeStatePool {
+    public:
+        virtual ~RuntimeStatePool() {}
 
-    RuntimeStatePool() {}
+        RuntimeStatePool() {}
 
-    void remove(uint64_t db_conn_id) {
-        std::unique_lock<std::mutex> lock(_map_mutex);
-        _state_map.erase(db_conn_id);
-    }
-
-    SmartState get(uint64_t db_conn_id) {
-        std::unique_lock<std::mutex> lock(_map_mutex);
-        if (_state_map.count(db_conn_id) == 0) {
-            return nullptr;
+        void remove(uint64_t db_conn_id) {
+            std::unique_lock<std::mutex> lock(_map_mutex);
+            _state_map.erase(db_conn_id);
         }
-        return _state_map[db_conn_id];
-    }
-    void set(uint64_t db_conn_id, SmartState state) {
-        std::unique_lock<std::mutex> lock(_map_mutex);
-        _state_map[db_conn_id] = state;
-        state->set_pool(this);
-    }
-    std::unordered_map<uint64_t, SmartState> get_state_map() {
-        std::unique_lock<std::mutex> lock(_map_mutex);
-        return _state_map;
-    }
 
-private:
-    std::unordered_map<uint64_t, SmartState>  _state_map;
-    std::mutex _map_mutex;
-};
-}
+        SmartState get(uint64_t db_conn_id) {
+            std::unique_lock<std::mutex> lock(_map_mutex);
+            if (_state_map.count(db_conn_id) == 0) {
+                return nullptr;
+            }
+            return _state_map[db_conn_id];
+        }
+
+        void set(uint64_t db_conn_id, SmartState state) {
+            std::unique_lock<std::mutex> lock(_map_mutex);
+            _state_map[db_conn_id] = state;
+            state->set_pool(this);
+        }
+
+        std::unordered_map<uint64_t, SmartState> get_state_map() {
+            std::unique_lock<std::mutex> lock(_map_mutex);
+            return _state_map;
+        }
+
+    private:
+        std::unordered_map<uint64_t, SmartState> _state_map;
+        std::mutex _map_mutex;
+    };
+}  // namespace EA

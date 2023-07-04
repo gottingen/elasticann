@@ -62,3 +62,406 @@ carbin_cc_test(
         ${USER_CXX_FLAGS}
         "-fno-access-control"
 )
+
+carbin_cc_test(
+        NAME
+        test_cluster_manager
+        SOURCES
+        test_cluster_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_cmsketch
+        SOURCES
+        test_cmsketch.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_column_families
+        SOURCES
+        test_column_families.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+carbin_cc_test(
+        NAME
+        test_common
+        SOURCES
+        test_common.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_database_manager
+        SOURCES
+        test_database_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_date_time
+        SOURCES
+        test_date_time.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_decode_proto
+        SOURCES
+        test_decode_proto.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+#[[
+carbin_cc_test(
+        NAME
+        test_dynamic_schema
+        SOURCES
+        test_dynamic_schema.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)]]
+
+carbin_cc_test(
+        NAME
+        test_expr_value
+        SOURCES
+        test_expr_value.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_hll_common
+        SOURCES
+        test_hll_common.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_internal_functions
+        SOURCES
+        test_internal_functions.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_key_encoder
+        SOURCES
+        test_key_encoder.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_mem_row
+        SOURCES
+        test_mem_row.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_meta_writer
+        SOURCES
+        test_meta_writer.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_my_raft_log_storage
+        SOURCES
+        test_my_raft_log_storage.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_namespace_manager
+        SOURCES
+        test_namespace_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_predicate
+        SOURCES
+        test_predicate.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_prefix_write
+        SOURCES
+        test_prefix_write.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_privilege_manager
+        SOURCES
+        test_privilege_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_region_manager
+        SOURCES
+        test_region_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+#[[
+carbin_cc_test(
+        NAME
+        test_reverse_common
+        SOURCES
+        test_reverse_common.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)]]
+carbin_cc_test(
+        NAME
+        test_schema_factory
+        SOURCES
+        test_schema_factory.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+#[[
+carbin_cc_test(
+        NAME
+        test_schema_manager
+        SOURCES
+        test_schema_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)]]
+
+carbin_cc_test(
+        NAME
+        test_snapshot
+        SOURCES
+        test_snapshot.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+#[[
+carbin_cc_test(
+        NAME
+        test_sqlparser
+        SOURCES
+        test_sqlparser.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)]]
+
+carbin_cc_test(
+        NAME
+        test_table_key
+        SOURCES
+        test_table_key.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_table_manager
+        SOURCES
+        test_table_manager.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+carbin_cc_test(
+        NAME
+        test_tdigest
+        SOURCES
+        test_tdigest.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+carbin_cc_test(
+        NAME
+        test_tuple_record
+        SOURCES
+        test_tuple_record.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)

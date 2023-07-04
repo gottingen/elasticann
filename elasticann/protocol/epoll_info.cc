@@ -81,7 +81,7 @@ int EpollInfo::get_ready_events(int cnt) {
 bool EpollInfo::poll_events_mod(SmartSocket sock, unsigned int events) {
     struct epoll_event ev;
     ev.events = 0;
-    ev.data.ptr = NULL;
+    ev.data.ptr = nullptr;
     ev.data.fd = 0;
     ev.data.u32 = 0;
     ev.data.u64 = 0;

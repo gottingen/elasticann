@@ -17,7 +17,6 @@
 
 #include <string>
 #include <fstream>
-#include <boost/algorithm/string.hpp>
 #include <brpc/server.h>
 #include <gflags/gflags.h>
 #include "elasticann/raft/my_raft_log.h"
@@ -31,41 +30,34 @@
 
 namespace EA {
 DECLARE_int32(meta_port);
+DECLARE_string(meta_listen);
 DECLARE_string(meta_server_bns);
 DECLARE_int32(meta_replica_number);
 }
 
 int main(int argc, char **argv) {
-#ifdef BAIKALDB_REVISION
-    google::SetVersionString(BAIKALDB_REVISION);
-    static bvar::Status<std::string> baikaldb_version("baikaldb_version", "");
-    baikaldb_version.set_value(BAIKALDB_REVISION);
-#endif
-    google::SetCommandLineOption("flagfile", "conf/gflags.conf");
+    google::SetCommandLineOption("flagfile", "conf/meta_gflags.conf");
     google::ParseCommandLineFlags(&argc, &argv, true);
     turbo::filesystem::path remove_path("init.success");
     turbo::filesystem::remove_all(remove_path);
     // Initail log
-    if (EA::init_log(argv[0]) != 0) {
+    if (!EA::init_tlog()) {
         fprintf(stderr, "log init failed.");
         return -1;
     }
-    DB_WARNING("log file load success");
+    TLOG_INFO("log file load success");
 
     // 注册自定义的raft log的存储方式
     EA::register_myraft_extension();
 
     //add service
     brpc::Server server;
-    butil::EndPoint addr;
-    addr.ip = butil::IP_ANY;
-    addr.port = EA::FLAGS_meta_port;
     //将raft加入到baidu-rpc server中
-    if (0 != braft::add_service(&server, addr)) {
-        DB_FATAL("Fail to init raft");
+    if (0 != braft::add_service(&server, EA::FLAGS_meta_listen.c_str())) {
+        TLOG_ERROR("Fail to init raft");
         return -1;
     }
-    DB_WARNING("add raft to baidu-rpc server success");
+    TLOG_INFO("add raft to baidu-rpc server success");
    
     int ret = 0;
     //this step must be before server.Start
@@ -76,7 +68,7 @@ int main(int argc, char **argv) {
     //指定的是ip:port的形式
     std::vector<std::string> list_raft_peers = turbo::StrSplit(EA::FLAGS_meta_server_bns, ',');
     for (auto & raft_peer : list_raft_peers) {
-        DB_WARNING("raft_peer:%s", raft_peer.c_str());
+        TLOG_INFO("raft_peer:{}", raft_peer.c_str());
         braft::PeerId peer(raft_peer);
         peers.push_back(peer);
     }
@@ -84,17 +76,17 @@ int main(int argc, char **argv) {
     EA::MetaServer* meta_server = EA::MetaServer::get_instance();
     //注册处理meta逻辑的service服务
     if (0 != server.AddService(meta_server, brpc::SERVER_DOESNT_OWN_SERVICE)) {
-        DB_FATAL("Fail to Add idonlyeService");
+        TLOG_ERROR("Fail to Add idonlyeService");
         return -1;
     }
     //启动端口
-    if (server.Start(addr, NULL) != 0) {
-        DB_FATAL("Fail to start server");
+    if (server.Start(EA::FLAGS_meta_listen.c_str(), nullptr) != 0) {
+        TLOG_ERROR("Fail to start server");
         return -1;
     }
-    DB_WARNING("baidu-rpc server start");
+    TLOG_INFO("baidu-rpc server start");
     if (meta_server->init(peers) != 0) {
-        DB_FATAL("meta server init fail");
+        TLOG_ERROR("meta server init fail");
         return -1;
     }
     EA::MemoryGCHandler::get_instance()->init();
@@ -105,20 +97,20 @@ int main(int argc, char **argv) {
         }
         std::ofstream init_fs("init.success", std::ofstream::out | std::ofstream::trunc);
     }
-    DB_WARNING("meta server init success");
+    TLOG_INFO("meta server init success");
     //server.RunUntilAskedToQuit(); 这个方法会先把端口关了，导致丢请求
     while (!brpc::IsAskedToQuit()) {
         bthread_usleep(1000000L);
     }
-    DB_WARNING("recevie kill signal, begin to quit"); 
+    TLOG_INFO("recevie kill signal, begin to quit");
     meta_server->shutdown_raft();
     meta_server->close();
     EA::MemoryGCHandler::get_instance()->close();
     EA::RocksWrapper::get_instance()->close();
-    DB_WARNING("raft shut down, rocksdb close");
+    TLOG_INFO("raft shut down, rocksdb close");
     server.Stop(0);
     server.Join();
-    DB_WARNING("meta server quit success"); 
+    TLOG_INFO("meta server quit success");
     return 0;
 }
 

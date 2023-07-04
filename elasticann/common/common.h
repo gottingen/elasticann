@@ -44,6 +44,7 @@
 #include "elasticann/common/log.h"
 #include "elasticann/proto/common.pb.h"
 #include "elasticann/proto/meta.interface.pb.h"
+#include "elasticann/common/tlog.h"
 
 
 namespace EA {
@@ -189,8 +190,8 @@ inline void bthread_usleep_fast_shutdown(int64_t interval_us, T& shutdown) {
 class BthreadCond {
 public:
     BthreadCond(int count = 0) {
-        bthread_cond_init(&_cond, NULL);
-        bthread_mutex_init(&_mutex, NULL);
+        bthread_cond_init(&_cond, nullptr);
+        bthread_mutex_init(&_mutex, nullptr);
         _count = count;
     }
     ~BthreadCond() {
@@ -301,7 +302,7 @@ public:
                     auto call = static_cast<std::function<void()>*>(p);
                     (*call)();
                     delete call;
-                    return NULL;
+                    return nullptr;
                 }, _call);
         if (ret != 0) {
             DB_FATAL("bthread_start_background fail");
@@ -315,14 +316,14 @@ public:
                     auto call = static_cast<std::function<void()>*>(p);
                     (*call)();
                     delete call;
-                    return NULL;
+                    return nullptr;
                 }, _call);
         if (ret != 0) {
             DB_FATAL("bthread_start_urgent fail");
         }
     }
     void join() {
-        bthread_join(_tid, NULL);
+        bthread_join(_tid, nullptr);
     }
     bthread_t id() {
         return _tid;
@@ -330,7 +331,7 @@ public:
 
 private:
     bthread_t _tid;
-    const bthread_attr_t* _attr = NULL;
+    const bthread_attr_t* _attr = nullptr;
 };
 class ConcurrencyBthread {
 public:
@@ -360,7 +361,7 @@ public:
 private:
     int _concurrency = 10;
     BthreadCond _cond;
-    const bthread_attr_t* _attr = NULL;
+    const bthread_attr_t* _attr = nullptr;
 };
 // wrapper bthread timer functions for c++ style
 class BthreadTimer {
@@ -379,12 +380,12 @@ public:
                     bthread_t tid;
                     bthread_start_background(
                             &tid, 
-                            NULL,
+                            nullptr,
                             [](void* p2) -> void* {
                                 auto call = static_cast<std::function<void()>*>(p2);
                                 (*call)();
                                 delete call;
-                                return NULL;
+                                return nullptr;
                             },
                             p);
                 },
@@ -402,7 +403,7 @@ public:
 
 private:
     bthread_timer_t _timer = 0;
-    std::function<void()>* _call = NULL;
+    std::function<void()>* _call = nullptr;
 };
 template <typename T> 
 class BthreadLocal {
@@ -464,7 +465,7 @@ private:
 #define SCOPEGUARD_LINENAME(name, line) SCOPEGUARD_LINENAME_CAT(name, line)
 #define ON_SCOPE_EXIT(callback) ScopeGuard SCOPEGUARD_LINENAME(scope_guard, __LINE__)(callback)
 #ifndef SAFE_DELETE
-#define SAFE_DELETE(p) { if(p){delete(p);  (p)=NULL;} }
+#define SAFE_DELETE(p) { if(p){delete(p);  (p)=nullptr;} }
 #endif
 
 template <typename KEY, typename VALUE, uint32_t MAP_COUNT = 23>
@@ -473,7 +474,7 @@ class ThreadSafeMap {
 public:
     ThreadSafeMap() {
         for (uint32_t i = 0; i < MAP_COUNT; i++) {
-            bthread_mutex_init(&_mutex[i], NULL);
+            bthread_mutex_init(&_mutex[i], nullptr);
         }
     }
     ~ThreadSafeMap() {
@@ -726,7 +727,7 @@ template <typename T>
 class IncrementalUpdate {
 public:
     IncrementalUpdate() {
-        bthread_mutex_init(&_mutex, NULL);
+        bthread_mutex_init(&_mutex, nullptr);
     }
 
     ~IncrementalUpdate() {

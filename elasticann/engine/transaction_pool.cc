@@ -18,8 +18,6 @@
 #include "elasticann/engine/transaction_pool.h"
 
 #include <gflags/gflags.h>
-#include <boost/algorithm/string.hpp>
-
 #include "elasticann/store/rpc_sender.h"
 #include "elasticann/common/meta_server_interact.h"
 #include "elasticann/store/store.h"

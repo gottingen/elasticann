@@ -15,10 +15,10 @@
 //
 
 
-#include <boost/algorithm/string.hpp>
 #include "elasticann/session/network_socket.h"
 #include "elasticann/logical_plan/setkv_planner.h"
 #include "elasticann/expr/literal.h"
+#include "turbo/strings/match.h"
 
 namespace EA {
 int SetKVPlanner::plan() {
@@ -42,29 +42,29 @@ int SetKVPlanner::plan() {
         bool system_var = false;
         bool global_var = false;
 
-        if (boost::algorithm::istarts_with(key, "@@global.")) {
+        if (turbo::StartsWithIgnoreCase(key, "@@global.")) {
             system_var = true;
             global_var = true;
             key = key.substr(9);
-        } else if (boost::algorithm::istarts_with(key, "@@session.")) {
+        } else if (turbo::StartsWithIgnoreCase(key, "@@session.")) {
             system_var = true;
             global_var = false;
             key = key.substr(10);
-        } else if (boost::algorithm::istarts_with(key, "@@local.")) {
+        } else if (turbo::StartsWithIgnoreCase(key, "@@local.")) {
             system_var = true;
             global_var = false;
             key = key.substr(8);
-        } else if (boost::algorithm::istarts_with(key, "@@isolation.")) {
+        } else if (turbo::StartsWithIgnoreCase(key, "@@isolation.")) {
             //只为了兼容mysql，所有设置事务隔离级别的sql不做任何处理
             //如果后续需要完善次功能需要修改sql paser
             key = key.substr(12);
             _ctx->succ_after_logical_plan = true;
             return 0;
-        } else if (boost::algorithm::istarts_with(key, "@@")) {
+        } else if (turbo::StartsWithIgnoreCase(key, "@@")) {
             system_var = true;
             global_var = false;
             key = key.substr(2);
-        } else if (boost::algorithm::istarts_with(key, "@")) {
+        } else if (turbo::StartsWithIgnoreCase(key, "@")) {
             system_var = false;
             key = key.substr(1);
         } else {

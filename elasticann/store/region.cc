@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <fstream>
 #include <turbo/files/filesystem.h>
-#include <boost/algorithm/string.hpp>
 #include "elasticann/common/table_key.h"
 #include "elasticann/runtime/runtime_state.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
@@ -37,6 +36,8 @@
 #include "elasticann/engine/qos.h"
 #include <butil/files/file.h>
 #include "turbo/strings/str_split.h"
+#include "turbo/format/str_format.h"
+#include "turbo/strings/match.h"
 
 namespace braft {
     DECLARE_int32(raft_election_heartbeat_factor);
@@ -51,7 +52,7 @@ namespace EA {
     DEFINE_int32(reverse_level2_len, 5000, "reverse index level2 length, default : 5000");
     DEFINE_string(raftlog_uri, "myraftlog://my_raft_log?id=", "raft log uri");
     DEFINE_string(binlog_uri, "mybinlog://my_bin_log?id=", "bin log uri");
-//不兼容配置，默认用写到rocksdb的信息; raft自带的local://./raft_data/stable/region_
+    //不兼容配置，默认用写到rocksdb的信息; raft自带的local://./raft_data/stable/region_
     DEFINE_string(stable_uri, "myraftmeta://my_raft_meta?id=", "raft stable path");
     DEFINE_string(snapshot_uri, "local://./raft_data/snapshot", "raft snapshot path");
     DEFINE_int64(disable_write_wait_timeout_us, 1000 * 1000,
@@ -63,7 +64,7 @@ namespace EA {
     DEFINE_int64(snapshot_diff_lines, 10000, "save_snapshot when num_table_lines diff");
     DEFINE_int64(snapshot_diff_logs, 2000, "save_snapshot when log entries diff");
     DEFINE_int64(snapshot_log_exec_time_s, 60, "save_snapshot when log entries apply time");
-//分裂判断标准，如果3600S没有收到请求，则认为分裂失败
+    //分裂判断标准，如果3600S没有收到请求，则认为分裂失败
     DEFINE_int64(split_duration_us, 3600 * 1000 * 1000LL, "split duration time : 3600s");
     DEFINE_int64(compact_delete_lines, 200000, "compact when _num_delete_lines > compact_delete_lines");
     DEFINE_int64(throttle_throughput_bytes, 50 * 1024 * 1024LL, "throttle throughput bytes");
@@ -101,7 +102,7 @@ namespace EA {
     const int BATCH_COUNT = 1024;
 
     ScopeProcStatus::~ScopeProcStatus() {
-        if (_region != NULL) {
+        if (_region != nullptr) {
             _region->reset_region_status();
             if (_region->is_disable_write()) {
                 _region->reset_allow_write();
@@ -112,7 +113,7 @@ namespace EA {
     }
 
     ScopeMergeStatus::~ScopeMergeStatus() {
-        if (_region != NULL) {
+        if (_region != nullptr) {
             _region->reset_region_status();
             _region->reset_allow_write();
         }
@@ -270,17 +271,17 @@ namespace EA {
         //options.snapshot_interval_s = FLAGS_snapshot_interval_s; // 禁止raft自动触发snapshot
         if (!_is_binlog_region) {
             options.log_uri = FLAGS_raftlog_uri +
-                              boost::lexical_cast<std::string>(_region_id);
+                              turbo::Format(_region_id);
         } else {
             options.log_uri = FLAGS_binlog_uri +
-                              boost::lexical_cast<std::string>(_region_id);
+                              turbo::Format(_region_id);
         }
 
         options.raft_meta_uri = FLAGS_stable_uri +
-                                boost::lexical_cast<std::string>(_region_id);
+                                turbo::Format(_region_id);
 
         options.snapshot_uri = FLAGS_snapshot_uri + "/region_" +
-                               boost::lexical_cast<std::string>(_region_id);
+                               turbo::Format(_region_id);
         options.snapshot_file_system_adaptor = &_snapshot_adaptor;
 
         _txn_pool.init(_region_id, _use_ttl, _online_ttl_base_expire_time_us);
@@ -2779,7 +2780,7 @@ namespace EA {
                 MemRow *row = batch.get_row().get();
                 rows++;
                 ttl_idx++;
-                if (row == NULL) {
+                if (row == nullptr) {
                     DB_FATAL("row is null; region_id: %ld, rows:%d", _region_id, rows);
                     continue;
                 }
@@ -2866,7 +2867,7 @@ namespace EA {
         int rows = 0;
         for (sample_batch.reset(); !sample_batch.is_traverse_over(); sample_batch.next()) {
             MemRow *row = sample_batch.get_row().get();
-            if (row == NULL) {
+            if (row == nullptr) {
                 DB_FATAL("row is null; region_id: %ld, rows:%d", _region_id, rows);
                 continue;
             }
@@ -3816,7 +3817,7 @@ namespace EA {
         // 拿起始userid
         TableKey tableKey(_split_param.split_key, true);
         std::string first_filed_str = tableKey.decode_start_key_string(pk_fields, 1);
-        int64_t first_filed = strtoll(first_filed_str.c_str(), NULL, 10);
+        int64_t first_filed = strtoll(first_filed_str.c_str(), nullptr, 10);
         // 计算所有的start key
         int step = _factory->get_tail_split_step(table_id);
         std::string start_key = _split_param.split_key;
@@ -4728,7 +4729,7 @@ namespace EA {
             std::string child_path = iter->path().c_str();
             std::vector<std::string> split_vec = turbo::StrSplit(child_path, '/');
             std::string out_path = split_vec.back();
-            if (boost::istarts_with(out_path, SNAPSHOT_DATA_FILE)) {
+            if (turbo::EqualsIgnoreCase(out_path, SNAPSHOT_DATA_FILE)) {
                 std::string link_path = dir + "/link." + out_path;
                 // 建一个硬链接，通过ingest采用move方式，可以不用修改异常恢复流程
                 // 失败了说明之前创建过，可忽略
@@ -5254,7 +5255,7 @@ int Region::clear_data() {
         region_info->set_log_index(0);
         region_info->set_status(proto::DOING);
         region_info->set_parent(_region_id);
-        region_info->set_timestamp(time(NULL));
+        region_info->set_timestamp(time(nullptr));
         region_info->set_can_add_peer(false);
         region_info->set_partition_num(get_partition_num());
         _spliting_new_region_infos.emplace_back(*region_info);
@@ -5265,7 +5266,7 @@ int Region::clear_data() {
         } else {
             init_region_request.set_snapshot_times(1);
         }
-        if (_region_control.init_region_to_store(instance, init_region_request, NULL) != 0) {
+        if (_region_control.init_region_to_store(instance, init_region_request, nullptr) != 0) {
             DB_FATAL("create new region fail, split fail, region_id: %ld, new_region_id: %ld, new_instance: %s",
                      _region_id, new_region_id, instance.c_str());
             return -1;
@@ -6518,7 +6519,7 @@ int Region::clear_data() {
                 continue;
             }
             response.Clear();
-            proto::StoreService_Stub(&channel).query(&cntl, &request, &response, NULL);
+            proto::StoreService_Stub(&channel).query(&cntl, &request, &response, nullptr);
             if (cntl.Failed()) {
                 DB_WARNING("region split fail when add version for split, region_id: %ld, err:%s",
                            _region_id, cntl.ErrorText().c_str());
@@ -7515,7 +7516,7 @@ int Region::clear_data() {
         // TASK_OPTIONS_INPLACE模式会抢占并阻塞当前bthread，等队列里这个task执行完，该bthread才会继续执行丢task到队列之后的逻辑
         c->cond.increase();
         if (_wait_read_idx_queue == nullptr
-            || _wait_read_idx_queue->execute(c, &bthread::TASK_OPTIONS_NORMAL, NULL) != 0) {
+            || _wait_read_idx_queue->execute(c, &bthread::TASK_OPTIONS_NORMAL, nullptr) != 0) {
             c->set_failed();
             DB_FATAL("_wait_read_idx_queue append reads fail, region_id: %ld", _region_id);
             return -1;
@@ -7660,7 +7661,7 @@ int Region::clear_data() {
             return 0;
         }
         if (_wait_exec_queue == nullptr
-            || _wait_exec_queue->execute({read_idx, tasks}, &bthread::TASK_OPTIONS_NORMAL, NULL) != 0) {
+            || _wait_exec_queue->execute({read_idx, tasks}, &bthread::TASK_OPTIONS_NORMAL, nullptr) != 0) {
             DB_FATAL("region_id: %ld, add _wait_exec_queue fail, batch_size: %ld, read_idx: %ld",
                      _region_id, size, read_idx);
             return -1;

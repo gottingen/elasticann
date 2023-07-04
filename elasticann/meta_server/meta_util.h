@@ -19,7 +19,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/algorithm/string.hpp>
 #include "elasticann/common/common.h"
 #include "turbo/strings/str_split.h"
 
@@ -29,12 +28,12 @@ namespace EA {
         std::string logical_room;
         std::string physical_room;
 
-        IdcInfo() {};
+        IdcInfo() = default;
 
         IdcInfo(const std::string &resource, const std::string &logical, const std::string &physical)
                 : resource_tag(resource), logical_room(logical), physical_room(physical) {};
 
-        IdcInfo(std::string str) {
+        IdcInfo(std::string_view str) {
             std::vector<std::string> split_vec = turbo::StrSplit(str, ':', turbo::SkipEmpty());
             if (split_vec.size() >= 1) {
                 resource_tag = split_vec[0];
@@ -47,15 +46,15 @@ namespace EA {
             }
         }
 
-        std::string to_string() const {
+        [[nodiscard]] std::string to_string() const {
             return resource_tag + ":" + logical_room + ":" + physical_room;
         }
 
-        std::string logical_room_level() const {
+        [[nodiscard]] std::string logical_room_level() const {
             return resource_tag + ":" + logical_room + ":";
         }
 
-        std::string resource_tag_level() const {
+        [[nodiscard]] std::string resource_tag_level() const {
             return resource_tag + "::";
         }
 
@@ -73,7 +72,7 @@ namespace EA {
     do {\
         DB_FATAL("request op_type:%d, %s ,log_id:%lu",\
                 op_type, err_message, log_id);\
-        if (response != NULL) {\
+        if (response != nullptr) {\
             response->set_errcode(errcode);\
             response->set_errmsg(err_message);\
             response->set_op_type(op_type);\
@@ -84,7 +83,7 @@ namespace EA {
     do {\
         DB_WARNING("request op_type:%d, %s ,log_id:%lu",\
                 op_type, err_message, log_id);\
-        if (response != NULL) {\
+        if (response != nullptr) {\
             response->set_errcode(errcode);\
             response->set_errmsg(err_message);\
             response->set_op_type(op_type);\

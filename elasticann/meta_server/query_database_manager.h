@@ -20,17 +20,18 @@
 #include "elasticann/meta_server/database_manager.h"
 
 namespace EA {
-class QueryDatabaseManager {
-public:
-    ~QueryDatabaseManager() {}
-    static QueryDatabaseManager* get_instance() {
-        static QueryDatabaseManager instance;
-        return &instance;
-    }
-    void get_database_info(const proto::QueryRequest* request, proto::QueryResponse* response);
-private:
-    QueryDatabaseManager() {}
-}; //class
-}//namespace
+    class QueryDatabaseManager {
+    public:
+        ~QueryDatabaseManager() {}
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+        static QueryDatabaseManager *get_instance() {
+            static QueryDatabaseManager instance;
+            return &instance;
+        }
+
+        void get_database_info(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+    private:
+        QueryDatabaseManager() {}
+    }; //class
+} // namespace EA

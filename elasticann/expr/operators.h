@@ -71,4 +71,3 @@ BINARY_OP_DEFINE(logic_or, bool);
 //BINARY_OP_DEFINE(logic_xor, bool);
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

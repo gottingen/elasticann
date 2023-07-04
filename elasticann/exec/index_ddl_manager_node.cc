@@ -83,7 +83,7 @@ int IndexDDLManagerNode::open(RuntimeState* state) {
             continue;
         }
         auto& batch = iter->second;
-        if (batch == NULL || batch->size() == 0) {
+        if (batch == nullptr || batch->size() == 0) {
             _fetcher_store.region_batch.erase(iter);
             continue;
         }

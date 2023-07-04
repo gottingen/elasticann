@@ -1,15 +1,18 @@
 // 
-#include <gtest/gtest.h>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
+
+#include "tests/doctest/doctest.h"
 #include <climits>
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include "expr_value.h"
-#include "fn_manager.h"
-#include "proto/expr.pb.h"
-#include "parser.h"
+#include "elasticann/common/expr_value.h"
+#include "elasticann/expr/fn_manager.h"
+#include "elasticann/proto/expr.pb.h"
+#include "elasticann/sqlparser/parser.h"
 #include "qos.h"
 #include <vector>
 #include "ea_client.h"
@@ -26,7 +29,7 @@ DEFINE_int64(qos_sleep_us,          1000, "max_tokens_per_second, default: 10w")
 DEFINE_int64(peer_thread_us,        1000*1000, "max_tokens_per_second, default: 10w");
 
 
-namespace baikaldb {
+namespace EA {
 
 void test_func() {
     bvar::Adder<int64_t> test_sum;
@@ -108,9 +111,9 @@ int qos_test2(baikal::client::Service* baikaldb) {
 }
 
 
-} // namespace baikaldb
+} // namespace EA
 
-using namespace baikaldb;
+using namespace EA;
 int main(int argc, char* argv[]) {
     google::ParseCommandLineFlags(&argc, &argv, true);
     baikal::client::Manager tmp_manager;
@@ -132,15 +135,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    baikaldb::StoreQos* store_qos = baikaldb::StoreQos::get_instance();
+    EA::StoreQos* store_qos = EA::StoreQos::get_instance();
     ret = store_qos->init();
     if (ret < 0) {
         DB_FATAL("store qos init fail");
         return -1;
     } 
 
-    baikaldb::TimeCost cost;
-    baikaldb::BthreadCond cond;
+    EA::TimeCost cost;
+    EA::BthreadCond cond;
     for (int i = 0; i < FLAGS_qos_bthread_count; i++) {
 
         auto calc = [i, &cond]() {
@@ -148,11 +151,11 @@ int main(int argc, char* argv[]) {
                 if (i % 2 == 0) {
                     sign= 124;
                 }
-                StoreQos::get_instance()->create_bthread_local(baikaldb::QOS_SELECT,sign,123);
+                StoreQos::get_instance()->create_bthread_local(EA::QOS_SELECT,sign,123);
                 
-                baikaldb::QosBthreadLocal* local = StoreQos::get_instance()->get_bthread_local();
+                EA::QosBthreadLocal* local = StoreQos::get_instance()->get_bthread_local();
                 DB_WARNING("local:%p", local);
-                baikaldb::TimeCost local_time;
+                EA::TimeCost local_time;
                 for (;;) {
 
                     // 限流
@@ -172,7 +175,7 @@ int main(int argc, char* argv[]) {
             };
             
             cond.increase();
-            baikaldb::Bthread bth(&BTHREAD_ATTR_SMALL);
+            EA::Bthread bth(&BTHREAD_ATTR_SMALL);
             bth.run(calc);
     }
 

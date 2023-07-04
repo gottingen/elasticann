@@ -903,4 +903,3 @@ int AggFnCall::finalize(const std::string& key, MemRow* dst) {
 }
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

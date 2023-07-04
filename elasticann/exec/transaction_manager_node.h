@@ -42,4 +42,3 @@ protected:
     proto::OpType _op_type = proto::OP_NONE;
 };
 }
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

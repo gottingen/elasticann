@@ -24,6 +24,7 @@
 #include "elasticann/common/log.h"
 #include <gflags/gflags.h>
 #include <time.h>
+#include "turbo/strings/str_replace.h"
 
 namespace bthread {
     DECLARE_int32(bthread_concurrency); //bthread.cpp
@@ -579,7 +580,7 @@ namespace EA {
                         std::string plat = sql_agg.substr(pos, sql_agg.find_first_of(']', pos) - pos);
                         pos = sql_agg.find_first_of('[') + 1;
                         std::string sql_text = sql_agg.substr(pos, sql_agg.find_first_of(']', pos) - pos);
-                        sql_text = boost::replace_all_copy(sql_text, "'", "\\'");
+                        sql_text = turbo::StrReplaceAll(sql_text, {{"'", "\\'"}});
                         // 避免REPLACE INTO的执行发生递归
                         if (family == "BaikalStat" && tbl == "baikaldb_trace_info" &&
                             sql_text.find("REPLACE") != std::string::npos) {
@@ -862,25 +863,25 @@ namespace EA {
                 factory->update_instance_canceled(addr);
             }
 
-            time_t time_now = time(NULL);
+            time_t time_now = time(nullptr);
             if (time_now == (time_t) -1) {
                 DB_WARNING("get current time failed.");
                 return;
             }
-            if (_epoll_info == NULL) {
+            if (_epoll_info == nullptr) {
                 DB_WARNING("_epoll_info not initialized yet.");
                 return;
             }
 
             for (int32_t idx = 0; idx < CONFIG_MPL_EPOLL_MAX_SIZE; ++idx) {
                 SmartSocket sock = _epoll_info->get_fd_mapping(idx);
-                if (sock == NULL || sock->is_free || sock->fd == -1) {
+                if (sock == nullptr || sock->is_free || sock->fd == -1) {
                     continue;
                 }
 
                 // 处理客户端Hang住的情况，server端没有发送handshake包或者auth_result包
                 timeval current;
-                gettimeofday(&current, NULL);
+                gettimeofday(&current, nullptr);
                 int64_t diff_us = (current.tv_sec - sock->connect_time.tv_sec) * 1000000
                                   + (current.tv_usec - sock->connect_time.tv_usec);
                 if (!sock->is_authed && diff_us >= 1000000) {
@@ -900,7 +901,7 @@ namespace EA {
                                                             sock->shutdown || _shutdown);
                     continue;
                 }
-                time_now = time(NULL);
+                time_now = time(nullptr);
                 auto ctx = sock->get_query_ctx();
                 if (ctx != nullptr &&
                     ctx->mysql_cmd != COM_SLEEP) {
@@ -1074,7 +1075,7 @@ namespace EA {
     NetworkServer::NetworkServer() :
             _is_init(false),
             _shutdown(false),
-            _epoll_info(NULL),
+            _epoll_info(nullptr),
             _heart_beat_count("heart_beat_count") {
     }
 
@@ -1085,9 +1086,9 @@ namespace EA {
         _other_heartbeat_bth.join();
         _agg_sql_bth.join();
         _health_check_bth.join();
-        if (_epoll_info != NULL) {
+        if (_epoll_info != nullptr) {
             delete _epoll_info;
-            _epoll_info = NULL;
+            _epoll_info = nullptr;
         }
     }
 
@@ -1166,7 +1167,7 @@ namespace EA {
                 return false;
             }
             _baikaldb = _manager.get_service("baikaldb");
-            if (_baikaldb == NULL) {
+            if (_baikaldb == nullptr) {
                 DB_FATAL("baikaldb is null");
                 return false;
             }
@@ -1219,7 +1220,7 @@ namespace EA {
         // Fetch a socket.
         SocketFactory *socket_pool = SocketFactory::get_instance();
         SmartSocket sock = socket_pool->create(SERVER_SOCKET);
-        if (sock == NULL) {
+        if (sock == nullptr) {
             DB_FATAL("Failed to fetch socket from poll.type:[%u]", SERVER_SOCKET);
             return SmartSocket();
         }
@@ -1372,7 +1373,7 @@ namespace EA {
                     }
                     // Create NetworkSocket for new client socket.
                     SmartSocket client_socket = socket_pool->create(CLIENT_SOCKET);
-                    if (client_socket == NULL) {
+                    if (client_socket == nullptr) {
                         DB_WARNING("Failed to create NetworkSocket from pool.fd:[%d]", client_fd);
                         close(client_fd);
                         continue;
@@ -1380,7 +1381,7 @@ namespace EA {
 
                     // Set attribute of client socket.
                     char *ip_address = inet_ntoa(client_addr.sin_addr);
-                    if (NULL != ip_address) {
+                    if (nullptr != ip_address) {
                         client_socket->ip = ip_address;
                     }
                     client_socket->fd = client_fd;
@@ -1407,7 +1408,7 @@ namespace EA {
 
                 // Check if socket in fd_mapping or not.
                 SmartSocket sock = _epoll_info->get_fd_mapping(fd);
-                if (sock == NULL) {
+                if (sock == nullptr) {
                     DB_DEBUG("Can't find fd in fd_mapping, fd:[%d], listen_fd:[%d], fd_cnt:[%d]",
                              fd, listen_fd, cnt);
                     continue;
@@ -1422,7 +1423,7 @@ namespace EA {
                                       state2str(sock).c_str());
                     continue;
                 }
-                sock->last_active = time(NULL);
+                sock->last_active = time(nullptr);
 
                 // Check socket event.
                 // EPOLLHUP: closed by client. because of protocol of sending package is wrong.

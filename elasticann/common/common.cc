@@ -28,14 +28,11 @@
 #include <brpc/controller.h>
 #include <butil/file_util.h>
 #include "rocksdb/slice.h"
-#include <boost/algorithm/string.hpp>
 #include <google/protobuf/descriptor.pb.h>
 #include "rocksdb/slice.h"
 #include "elasticann/common/expr_value.h"
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"
-
-#include <boost/algorithm/string.hpp>
 
 using google::protobuf::FieldDescriptorProto;
 
@@ -604,7 +601,7 @@ int brpc_with_http(const std::string& host, const std::string& url, std::string&
 
     brpc::Controller cntl;
     cntl.http_request().uri() = url;  // 设置为待访问的URL
-    channel.CallMethod(NULL, &cntl, NULL, NULL, NULL/*done*/);
+    channel.CallMethod(nullptr, &cntl, nullptr, nullptr, nullptr/*done*/);
     DB_DEBUG("http status code : %d",cntl.http_response().status_code());
     response = cntl.response_attachment().to_string();
     DB_WARNING("host: %s, url: %s, response: %s", host.c_str(), url.c_str(), response.c_str());
@@ -710,4 +707,4 @@ void parse_sample_sql(const std::string& sample_sql, std::string& database, std:
     DB_WARNING("sample_sql: %s, database: %s, table: %s, sql: %s", sample_sql.c_str(), database.c_str(), table.c_str(), sql.c_str());
 }
 
-}  // baikaldb
+}  // EA

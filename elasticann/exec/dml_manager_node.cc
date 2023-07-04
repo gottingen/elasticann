@@ -193,4 +193,3 @@ int DmlManagerNode::send_request_concurrency(RuntimeState* state, size_t start_c
     return 0;
 }
 } // namespace EA
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

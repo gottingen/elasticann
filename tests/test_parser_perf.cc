@@ -1,25 +1,26 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-#include "common.h"
+//
+#include "elasticann/common/common.h"
 #include "sql_define.h"
-#include "parser.h"
+#include "elasticann/sqlparser/parser.h"
 #include <baidu/rpc/server.h>
 
 void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
-    baikaldb::TimeCost cost;
-    baikaldb::BthreadCond cond;
+    EA::TimeCost cost;
+    EA::BthreadCond cond;
     for (int i = 0; i < num_thread; ++i) {
         auto parse_sqls = [&sqls, &cond, i, loop] () {
             mem_pool_t* pool = mp_init(1024 * 1024 * 10);
@@ -44,7 +45,7 @@ void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
             cond.decrease_signal();
         };
         cond.increase();
-        baikaldb::Bthread bth;
+        EA::Bthread bth;
         bth.run(parse_sqls);
     }
     cond.wait();
@@ -52,8 +53,8 @@ void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
 }
 
 void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
-    baikaldb::TimeCost cost;
-    baikaldb::BthreadCond cond;
+    EA::TimeCost cost;
+    EA::BthreadCond cond;
     for (int i = 0; i < num_thread; ++i) {
         auto parse_sqls = [&sqls, &cond, i, loop] () {
             for (int j = 0; j < loop; ++j) {
@@ -75,7 +76,7 @@ void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
             return;
         };
         cond.increase();
-        baikaldb::Bthread bth;
+        EA::Bthread bth;
         bth.run(parse_sqls);
     }
     cond.wait();

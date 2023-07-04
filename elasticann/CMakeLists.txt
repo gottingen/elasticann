@@ -20,7 +20,7 @@ execute_process(
         COMMAND bash ${CMAKE_SOURCE_DIR}/elasticann/sqlparser/gen_source.sh ${CMAKE_SOURCE_DIR} opensource ${PROJECT_BINARY_DIR}/elasticann/sqlparser
         RESULT_VARIABLE CMD_RET
 )
-
+file(COPY ${PROJECT_SOURCE_DIR}/conf DESTINATION ${PROJECT_BINARY_DIR})
 file(GLOB ENGINE engine/*.cc)
 file(GLOB EXEC exec/*.cc)
 file(GLOB EXPR expr/*.cc)
@@ -36,6 +36,7 @@ file(GLOB SESSION session/*.cc)
 file(GLOB SQLPARSER sqlparser/*.cc ${CMAKE_CURRENT_BINARY_DIR}/sqlparser/*.cc)
 file(GLOB STORE store/*.cc)
 file(GLOB COMMON common/*.cc)
+file(GLOB CONFIG config/*.cc)
 
 set(EA_COMMON
         ${COMMON}
@@ -53,6 +54,7 @@ set(EA_COMMON
         ${SESSION}
         ${SQLPARSER}
         ${STORE}
+        ${CONFIG}
         )
 
 add_definitions(
@@ -124,6 +126,38 @@ carbin_cc_binary(
         elasticann::proto-object
         PUBLIC
 )
+
+file(GLOB ROUTER router/*.cc)
+carbin_cc_binary(
+        NAMESPACE elasticann
+        NAME earouter
+        SOURCES
+        ${ROUTER}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-Wno-strict-aliasing"
+        DEPS
+        ${CARBIN_DEPS_LINK}
+        elasticann::common
+        elasticann::proto-object
+        PUBLIC
+)
+
+file(GLOB CLIENT_SRC client/*.cc)
+carbin_cc_binary(
+        NAMESPACE elasticann
+        NAME eacli
+        SOURCES
+        ${CLIENT_SRC}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-Wno-strict-aliasing"
+        DEPS
+        ${CARBIN_DEPS_LINK}
+        elasticann::proto-object
+        PUBLIC
+)
+
 
 file(GLOB ROUTER_SERVER raft_dummy/*.cc)
 carbin_cc_binary(

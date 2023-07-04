@@ -16,15 +16,15 @@
 
 
 #include "elasticann/protocol/state_machine.h"
-#include <boost/algorithm/string.hpp>
 #include "elasticann/protocol/network_server.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/common/store_interact.h"
 #include <rapidjson/reader.h>
 #include <rapidjson/document.h>
-#include <boost/algorithm/string/join.hpp>
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"
+#include "turbo/strings/utility.h"
+#include "turbo/format/str_format.h"
 
 namespace EA {
     DEFINE_int32(max_connections_per_user, 4000, "default user max connections");
@@ -63,7 +63,7 @@ namespace EA {
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                 }
-                gettimeofday(&(client->connect_time), NULL);
+                gettimeofday(&(client->connect_time), nullptr);
                 break;
             }
             case STATE_SEND_HANDSHAKE: {
@@ -120,7 +120,7 @@ namespace EA {
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                 }
-                gettimeofday(&(client->connect_time), NULL);
+                gettimeofday(&(client->connect_time), nullptr);
                 // If auth is ok, go on doing next status.
                 if (go_on == 0) { break; }
             }
@@ -155,7 +155,7 @@ namespace EA {
                     run_machine(client, epoll_info, shutdown);
                     break;
                 }
-                gettimeofday(&(client->query_ctx->stat_info.start_stamp), NULL);
+                gettimeofday(&(client->query_ctx->stat_info.start_stamp), nullptr);
                 // Read query.
                 TimeCost cost_read;
                 int ret = _query_read(client);
@@ -207,7 +207,7 @@ namespace EA {
                     epoll_info->poll_events_mod(client, 0);
                 } else if (STATE_READ_QUERY_RESULT == client->state) {
                     //epoll_info->poll_events_mod(client, EPOLLOUT);
-                    gettimeofday(&(client->query_ctx->stat_info.send_stamp), NULL); // start send
+                    gettimeofday(&(client->query_ctx->stat_info.send_stamp), nullptr); // start send
                     run_machine(client, epoll_info, shutdown);
                 } else if (STATE_SEND_AUTH_RESULT == client->state) {
                     epoll_info->poll_events_mod(client, EPOLLIN);
@@ -344,7 +344,7 @@ namespace EA {
     void StateMachine::_print_query_time(SmartSocket client) {
         auto ctx = client->query_ctx;
         auto stat_info = &(ctx->stat_info);
-        gettimeofday(&(stat_info->end_stamp), NULL);
+        gettimeofday(&(stat_info->end_stamp), nullptr);
         stat_info->result_send_time = timestamp_diff(
                 stat_info->send_stamp, stat_info->end_stamp);
         stat_info->total_time = timestamp_diff(
@@ -527,13 +527,13 @@ namespace EA {
         }
         SchemaFactory::use_backup.set_bthread_local(false);
         ctx->mysql_cmd = COM_SLEEP;
-        client->last_active = time(NULL);
+        client->last_active = time(nullptr);
         return;
     }
 
     int StateMachine::_auth_read(SmartSocket sock) {
         if (!sock) {
-            DB_FATAL("sock==NULL");
+            DB_FATAL("sock==nullptr");
             return RET_ERROR;
         }
         // Read packet to socket self buffer.
@@ -676,7 +676,7 @@ namespace EA {
             return RET_WAIT_FOR_EVENT;
         }
 
-        uint8_t *header = NULL;
+        uint8_t *header = nullptr;
         header = sock->self_buf->_data;
         sock->current_packet_len = header[0] | header[1] << 8 | header[2] << 16;
         sock->packet_len += sock->current_packet_len;
@@ -693,7 +693,7 @@ namespace EA {
 
     int StateMachine::_read_packet(SmartSocket sock) {
         if (!sock || !sock->self_buf) {
-            DB_FATAL("sock == NULL || self_buf == NULL");
+            DB_FATAL("sock == nullptr || self_buf == nullptr");
             return RET_ERROR;
         }
         int ret = RET_SUCCESS;
@@ -731,7 +731,7 @@ namespace EA {
 
     int StateMachine::_query_read(SmartSocket sock) {
         if (!sock) {
-            DB_FATAL("s==NULL");
+            DB_FATAL("s==nullptr");
             return RET_ERROR;
         }
         sock->reset_query_ctx(new(std::nothrow)QueryContext(sock->user_info, sock->current_db));
@@ -1007,7 +1007,7 @@ namespace EA {
 
     bool StateMachine::_query_process(SmartSocket client) {
         TimeCost cost;
-        //gettimeofday(&(client->query_ctx->stat_info.start_stamp), NULL);
+        //gettimeofday(&(client->query_ctx->stat_info.start_stamp), nullptr);
 
         bool ret = true;
         auto command = client->query_ctx->mysql_cmd;
@@ -1059,11 +1059,11 @@ namespace EA {
                 // 先忽略character_set_results
                 _wrapper->make_simple_ok_packet(client);
                 client->state = STATE_READ_QUERY_RESULT;
-            } else if (boost::iequals(client->query_ctx->sql, SQL_SELECT_DATABASE)) {
+            } else if (turbo::EqualsIgnoreCase(client->query_ctx->sql, SQL_SELECT_DATABASE)) {
                 ret = _handle_client_query_select_database(client);
-            } else if (boost::iequals(client->query_ctx->sql, SQL_SELECT_CONNECTION_ID)) {
+            } else if (turbo::EqualsIgnoreCase(client->query_ctx->sql, SQL_SELECT_CONNECTION_ID)) {
                 ret = _handle_client_query_select_connection_id(client);
-            } else if (boost::istarts_with(client->query_ctx->sql, SQL_HANDLE)) {
+            } else if (turbo::StartsWithIgnoreCase(client->query_ctx->sql, SQL_HANDLE)) {
                 size_t pos = 0;
                 std::string sql = client->query_ctx->sql;
                 while ((pos = sql.find("  ")) != std::string::npos) {
@@ -1072,7 +1072,7 @@ namespace EA {
                 client->query_ctx->sql = sql;
                 // handle sql like "handle xxx"
                 ret = HandleHelper::get_instance()->execute(client);
-            } else if (boost::istarts_with(client->query_ctx->sql, SQL_SHOW)) {
+            } else if (turbo::StartsWithIgnoreCase(client->query_ctx->sql, SQL_SHOW)) {
                 size_t pos = 0;
                 std::string sql = client->query_ctx->sql;
                 while ((pos = sql.find("  ")) != std::string::npos) {
@@ -1081,7 +1081,7 @@ namespace EA {
                 client->query_ctx->sql = sql;
                 ret = ShowHelper::get_instance()->execute(client);
             } else if (type == SQL_USE_IN_QUERY_NUM
-                       && boost::algorithm::istarts_with(client->query_ctx->sql, SQL_USE)) {
+                       && turbo::StartsWithIgnoreCase(client->query_ctx->sql, SQL_USE)) {
                 ret = _handle_client_query_use_database(client);
             } else if (type == SQL_DESC_NUM) {
                 ret = _handle_client_query_desc_table(client);
@@ -1139,10 +1139,10 @@ namespace EA {
         re2::RE2 reg("^\\/\\*(.*?)\\*\\/", option);
 
         // Remove ignore character.
-        boost::algorithm::trim_right_if(ctx->sql, boost::is_any_of(" \t\n\r\x0B;"));
-        boost::algorithm::trim_left_if(ctx->sql, boost::is_any_of(" \t\n\r\x0B"));
+        turbo::TrimRight(ctx->sql, turbo::ByAnyOf(" \t\n\r\x0B;"));
+        turbo::TrimLeft(ctx->sql, turbo::ByAnyOf(" \t\n\r\x0B"));
 
-        while (boost::algorithm::starts_with(ctx->sql, "/*")) {
+        while (turbo::StartsWith(ctx->sql, "/*")) {
             size_t len = ctx->sql.size();
             std::string comment;
             if (!RE2::Extract(ctx->sql, reg, "\\1", &comment)) {
@@ -1156,7 +1156,7 @@ namespace EA {
                 break;
             }
             // Remove ignore character.
-            boost::algorithm::trim_left_if(ctx->sql, boost::is_any_of(" \t\n\r\x0B"));
+            turbo::TrimLeft(ctx->sql, turbo::ByAnyOf(" \t\n\r\x0B"));
         }
     }
 
@@ -1223,7 +1223,7 @@ namespace EA {
         int type = client->query_ctx->type;
         std::string db;
         if (type == SQL_USE_NUM) {
-            boost::algorithm::trim_left_if(sql, boost::is_any_of(" `"));
+            turbo::TrimLeft(sql, turbo::ByAnyOf(" `"));
             db = sql;
         } else if (type == SQL_USE_IN_QUERY_NUM) {
             std::vector<std::string> split_vec = turbo::StrSplit(client->query_ctx->sql,
@@ -1329,7 +1329,7 @@ namespace EA {
         } while (0);
 
         std::vector<std::string> split_vec = turbo::StrSplit(client->query_ctx->sql,
-                     turbo::ByAnyChar(" \t\n\r."), turbo::SkipEmpty());
+                                                             turbo::ByAnyChar(" \t\n\r."), turbo::SkipEmpty());
         std::string db = client->current_db;
         std::string table;
         if (split_vec.size() == 2) {
@@ -1368,7 +1368,7 @@ namespace EA {
             }
             std::vector<std::string> row;
             std::vector<std::string> split_vec = turbo::StrSplit(field.name,
-                         turbo::ByAnyChar(" \t\n\r."), turbo::SkipEmpty());
+                                                                 turbo::ByAnyChar(" \t\n\r."), turbo::SkipEmpty());
             row.push_back(split_vec[split_vec.size() - 1]);
             row.push_back(PrimitiveType_Name(field.type));
             row.push_back(field.can_null ? "YES" : "NO");
@@ -1391,7 +1391,7 @@ namespace EA {
                     index_types.push_back(index);
                     extra_vec.push_back(proto::IndexState_Name(index_info.state));
                 }
-                row.push_back(boost::algorithm::join(index_types, "|"));
+                row.push_back(turbo::FormatRange("{}",index_types, "|"));
             }
             row.push_back(field.default_value);
 
@@ -1401,7 +1401,7 @@ namespace EA {
                 //extra_vec.push_back(" ");
             }
 
-            row.push_back(boost::algorithm::join(extra_vec, "|"));
+            row.push_back(turbo::FormatRange("{}",extra_vec, "|"));
 
             rows.push_back(row);
         }
@@ -1422,7 +1422,7 @@ namespace EA {
             std::vector<ResultField> &fields,
             std::vector<std::vector<std::string> > &rows) {
         if (!sock) {
-            DB_FATAL("sock == NULL.");
+            DB_FATAL("sock == nullptr.");
             return RET_ERROR;
         }
         if (fields.size() == 0) {
@@ -1473,7 +1473,7 @@ namespace EA {
 
     int StateMachine::_query_result_send(SmartSocket sock) {
         if (!sock || sock->is_free) {
-            DB_FATAL("s==NULL");
+            DB_FATAL("s==nullptr");
             return RET_ERROR;
         }
         return _wrapper->real_write(sock);
@@ -1531,7 +1531,7 @@ namespace EA {
 
     void StateMachine::client_free(SmartSocket sock, EpollInfo *epoll_info) {
         if (!sock) {
-            DB_FATAL("s==NULL");
+            DB_FATAL("s==nullptr");
             return;
         }
         DB_WARNING_CLIENT(sock, "client_free, cmd=%d", sock->query_ctx->mysql_cmd);
@@ -1591,59 +1591,59 @@ namespace EA {
         }
         // Unknow number.
         if (ctx->sql.size() <= 0) {
-            DB_WARNING("query->sql is NULL, command=%d", ctx->mysql_cmd);
+            DB_WARNING("query->sql is nullptr, command=%d", ctx->mysql_cmd);
             return SQL_UNKNOWN_NUM;
         }
         // Get sql type.
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_SELECT)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_SELECT)) {
             return SQL_SELECT_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_SHOW)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_SHOW)) {
             return SQL_SHOW_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_EXPLAIN)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_EXPLAIN)) {
             return SQL_EXPLAIN_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_KILL)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_KILL)) {
             return SQL_KILL_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_USE)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_USE)) {
             return SQL_USE_IN_QUERY_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_DESC)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_DESC)) {
             return SQL_DESC_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_CALL)) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_CALL)) {
             return SQL_CALL_NUM;
         }
-        if (boost::algorithm::istarts_with(ctx->sql, SQL_SET)) {
-            std::string value_str = boost::algorithm::trim_left_copy_if(
-                    ctx->sql, boost::is_any_of(" SETset"));
-            if (boost::algorithm::istarts_with(value_str, "names")) {
+        if (turbo::StartsWithIgnoreCase(ctx->sql, SQL_SET)) {
+            auto value_str = turbo::TrimLeft(
+                    ctx->sql, turbo::ByAnyOf(" SETset"));
+            if (turbo::StartsWithIgnoreCase(value_str, "names")) {
                 return SQL_SET_NAMES_NUM;
             }
-            if (boost::algorithm::istarts_with(value_str, "charset")) {
+            if (turbo::StartsWithIgnoreCase(value_str, "charset")) {
                 return SQL_SET_CHARSET_NUM;
             }
             // do not support "set [global | session | local | @@] ..."
-            if (boost::algorithm::istarts_with(value_str, "character_set_client")) {
+            if (turbo::StartsWithIgnoreCase(value_str, "character_set_client")) {
                 return SQL_SET_CHARACTER_SET_CLIENT_NUM;
             }
             // get character_set_connection query
-            if (boost::algorithm::istarts_with(value_str, "character_set_connection")) {
+            if (turbo::StartsWithIgnoreCase(value_str, "character_set_connection")) {
                 return SQL_SET_CHARACTER_SET_CONNECTION_NUM;
             }
             // get character_set_results query
-            if (boost::algorithm::istarts_with(value_str, "character_set_results")) {
+            if (turbo::StartsWithIgnoreCase(value_str, "character_set_results")) {
                 return SQL_SET_CHARACTER_SET_RESULTS_NUM;
             }
             // get set character set.
-            if (boost::algorithm::istarts_with(value_str, "character set")) {
+            if (turbo::StartsWithIgnoreCase(value_str, "character set")) {
                 return SQL_SET_CHARACTER_SET_NUM;
             }
             // get autocommit.
-            // if (boost::algorithm::istarts_with(value_str, "autocommit")) {
-            //     std::string tmp = boost::algorithm::trim_left_copy_if(
+            // if (turbo::StartsWithIgnoreCase(value_str, "autocommit")) {
+            //     std::string tmp = turbo::TrimLeft(
             //                                 ctx->sql, turbo::ByAnyChar(" autocommit="));
             //     return tmp == "0" ? SQL_AUTOCOMMIT_0_NUM : SQL_AUTOCOMMIT_1_NUM;
             // }
@@ -1654,7 +1654,7 @@ namespace EA {
 
     bool StateMachine::_handle_client_query_common_query(SmartSocket client) {
         if (client == nullptr) {
-            DB_FATAL("param invalid: socket==NULL");
+            DB_FATAL("param invalid: socket==nullptr");
             //client->state = STATE_ERROR;
             return false;
         }

@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/join.hpp>
 #include "elasticann/common/common.h"
 #include "elasticann/session/network_socket.h"
 #include "elasticann/common/meta_server_interact.h"

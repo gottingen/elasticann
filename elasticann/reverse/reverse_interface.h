@@ -126,7 +126,7 @@ public:
         if (_temp_map.count(term) == 1) {
             return _temp_map[term];
         }
-        return NULL;
+        return nullptr;
     }
     void set_index_search(IndexSearchType* index_ptr) {
         _index_ptr = index_ptr;

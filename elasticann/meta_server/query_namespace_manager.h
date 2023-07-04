@@ -20,19 +20,19 @@
 #include "elasticann/meta_server/namespace_manager.h"
 
 namespace EA {
-class QueryNamespaceManager {
-public:
-    ~QueryNamespaceManager() {}
-    
-    static QueryNamespaceManager* get_instance() {
-        static QueryNamespaceManager instance;
-        return &instance;
-    }
-    //查询类接口，与写入类接口并发访问
-    void get_namespace_info(const proto::QueryRequest* request, proto::QueryResponse* response);
-private:
-    QueryNamespaceManager() {}
-};
-}//namespace
+    class QueryNamespaceManager {
+    public:
+        ~QueryNamespaceManager() {}
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+        static QueryNamespaceManager *get_instance() {
+            static QueryNamespaceManager instance;
+            return &instance;
+        }
+
+        //查询类接口，与写入类接口并发访问
+        void get_namespace_info(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+    private:
+        QueryNamespaceManager() {}
+    };
+} // namespace EA

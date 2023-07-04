@@ -636,4 +636,3 @@ int ExprNode::serialize_tree(uint64_t& serialize_slot_id) {
 
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

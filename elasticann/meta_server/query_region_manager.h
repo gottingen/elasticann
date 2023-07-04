@@ -20,40 +20,50 @@
 #include "elasticann/meta_server/region_manager.h"
 
 namespace EA {
-class QueryRegionManager {
-public:
-    ~QueryRegionManager() {}
-    static QueryRegionManager* get_instance() {
-        static QueryRegionManager instance;
-        return &instance;
-    }
-    void get_flatten_region(const proto::QueryRequest* request, proto::QueryResponse* response);
-    void get_region_info(const proto::QueryRequest* request, proto::QueryResponse* response);
+    class QueryRegionManager {
+    public:
+        ~QueryRegionManager() {}
 
-    void get_region_info_per_instance(const std::string& instance, proto::QueryResponse* response);
-    void get_region_count_per_instance(
-                    const std::string& instance,
-                    int64_t& region_count,
-                    int64_t& region_leader_count);
-    void get_peer_ids_per_instance(
-                const std::string& instance,
-                std::set<int64_t>& peer_ids);
+        static QueryRegionManager *get_instance() {
+            static QueryRegionManager instance;
+            return &instance;
+        }
 
-    void send_transfer_leader(const proto::QueryRequest* request, proto::QueryResponse* response);
-    void send_set_peer(const proto::QueryRequest* request, proto::QueryResponse* response);
-    void get_region_peer_status(const proto::QueryRequest* request, proto::QueryResponse* response);
-    void get_region_learner_status(const proto::QueryRequest* request, proto::QueryResponse* response);
-    void send_remove_region_request(std::string instance_address, int64_t region_id);
-    void check_region_and_update(
-            const std::unordered_map<int64_t, proto::RegionHeartBeat>&
-            region_version_map,
-            proto::ConsoleHeartBeatResponse* response);
-private:
-    void construct_query_region(const proto::RegionInfo* region_info,
-            proto::QueryRegion* query_region_info);
-    QueryRegionManager() {}
-}; //class
+        void get_flatten_region(const proto::QueryRequest *request, proto::QueryResponse *response);
 
-}//namespace
+        void get_region_info(const proto::QueryRequest *request, proto::QueryResponse *response);
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+        void get_region_info_per_instance(const std::string &instance, proto::QueryResponse *response);
+
+        void get_region_count_per_instance(
+                const std::string &instance,
+                int64_t &region_count,
+                int64_t &region_leader_count);
+
+        void get_peer_ids_per_instance(
+                const std::string &instance,
+                std::set<int64_t> &peer_ids);
+
+        void send_transfer_leader(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+        void send_set_peer(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+        void get_region_peer_status(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+        void get_region_learner_status(const proto::QueryRequest *request, proto::QueryResponse *response);
+
+        void send_remove_region_request(std::string instance_address, int64_t region_id);
+
+        void check_region_and_update(
+                const std::unordered_map<int64_t, proto::RegionHeartBeat> &
+                region_version_map,
+                proto::ConsoleHeartBeatResponse *response);
+
+    private:
+        void construct_query_region(const proto::RegionInfo *region_info,
+                                    proto::QueryRegion *query_region_info);
+
+        QueryRegionManager() {}
+    }; //class
+
+}  // namespace EA

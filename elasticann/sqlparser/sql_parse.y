@@ -5371,4 +5371,3 @@ int sql_error(YYLTYPE* yylloc, yyscan_t yyscanner, SqlParser *parser, const char
     //printf("sql_error");
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

@@ -30,7 +30,7 @@ MysqlWrapper::MysqlWrapper() {
 
 int MysqlWrapper::handshake_send(SmartSocket sock) {
     if (!sock) {
-        DB_FATAL("sock==NULL");
+        DB_FATAL("sock==nullptr");
         return RET_ERROR;
     }
     int ret = 0;
@@ -91,7 +91,7 @@ int MysqlWrapper::handshake_send(SmartSocket sock) {
 
 int MysqlWrapper::fill_auth_failed_packet(SmartSocket sock, const char* msg) {
     if (!sock) {
-        DB_FATAL("sock == NULL");
+        DB_FATAL("sock == nullptr");
         return RET_ERROR;
     }
     sock->send_buf->byte_array_clear();
@@ -106,7 +106,7 @@ int MysqlWrapper::fill_auth_failed_packet(SmartSocket sock, const char* msg) {
 
 int MysqlWrapper::auth_result_send(SmartSocket sock) {
     if (!sock) {
-        DB_FATAL("sock==NULL");
+        DB_FATAL("sock==nullptr");
         return RET_ERROR;
     }
     int ret = 0;
@@ -153,7 +153,7 @@ int MysqlWrapper::protocol_get_length_fixed_int(
         size_t      int_len,
         uint64_t&   result) {
     if (nullptr == data) {
-        DB_FATAL("data == NULL");
+        DB_FATAL("data == nullptr");
         return RET_ERROR;
     }
     if ((uint32_t)packet_len < offset + int_len) {
@@ -193,7 +193,7 @@ int MysqlWrapper::protocol_get_string(
             return RET_ERROR;
         }
         char* tmp_buf = new (std::nothrow)char[MAX_STRING_BUF_SIZE];
-        if (tmp_buf == NULL) {
+        if (tmp_buf == nullptr) {
             DB_FATAL("create tmp buf failed");
             return RET_ERROR;
         }
@@ -216,8 +216,8 @@ int MysqlWrapper::protocol_get_sql_string(uint8_t*  packet,
                                         std::string& sql,
                                         int sql_len) {
 
-    if (NULL == packet) {
-        DB_FATAL(" NULL == packet || NULL == off");
+    if (nullptr == packet) {
+        DB_FATAL(" nullptr == packet || nullptr == off");
         return RET_ERROR;
     }
     if (packet_len < sql_len) {
@@ -339,8 +339,8 @@ bool MysqlWrapper::make_err_packet(SmartSocket sock, MysqlErrCode err_code, cons
 }
 
 bool MysqlWrapper::make_field_packet(DataBuffer* array, const ResultField* field, const int packet_id) {
-    if (array == NULL) {
-        DB_FATAL("array is NULL.");
+    if (array == nullptr) {
+        DB_FATAL("array is nullptr.");
         return false;
     }
 
@@ -458,7 +458,7 @@ bool MysqlWrapper::make_field_packet(DataBuffer* array, const ResultField* field
 bool MysqlWrapper::make_row_packet(DataBuffer* send_buf,
                                     const std::vector<std::string>& row,
                                     const int send_packet_id) {
-    if (send_buf == NULL){
+    if (send_buf == nullptr){
         DB_FATAL("invalid parameter, send_buf==null");
         return false;
     }
@@ -506,8 +506,8 @@ bool MysqlWrapper::make_row_packet(DataBuffer* send_buf,
 }
 
 int MysqlWrapper::real_read_header(SmartSocket sock, int want_len, int* real_read_len) {
-    if (!sock || NULL == sock->self_buf || NULL == real_read_len) {
-        DB_FATAL("s == NULL || send_buf == NULL || NULL == real_read_len");
+    if (!sock || nullptr == sock->self_buf || nullptr == real_read_len) {
+        DB_FATAL("s == nullptr || send_buf == nullptr || nullptr == real_read_len");
         return RET_ERROR;
     }
     // Check read want length.
@@ -544,8 +544,8 @@ int MysqlWrapper::real_read_header(SmartSocket sock, int want_len, int* real_rea
 }
 
 int MysqlWrapper::real_read(SmartSocket sock, int want_len, int* real_read_len) {
-    if (!sock || NULL == sock->self_buf || NULL == real_read_len) {
-        DB_FATAL("s == NULL || send_buf == NULL || NULL == real_read_len");
+    if (!sock || nullptr == sock->self_buf || nullptr == real_read_len) {
+        DB_FATAL("s == nullptr || send_buf == nullptr || nullptr == real_read_len");
         return RET_ERROR;
     }
     // Check read want length.
@@ -581,8 +581,8 @@ int MysqlWrapper::real_read(SmartSocket sock, int want_len, int* real_read_len) 
 }
 
 int MysqlWrapper::real_write(SmartSocket sock) {
-    if (!sock || sock->send_buf == NULL) {
-        DB_FATAL("sock == NULL or sock->send_buf == NULL");
+    if (!sock || sock->send_buf == nullptr) {
+        DB_FATAL("sock == nullptr or sock->send_buf == nullptr");
         return RET_ERROR;
     }
     int ret = RET_ERROR;
@@ -654,7 +654,7 @@ bool MysqlWrapper::make_eof_packet(DataBuffer* send_buf, const int packet_id) {
 
 bool MysqlWrapper::make_simple_ok_packet(SmartSocket sock) {
     if (sock == nullptr) {
-        DB_FATAL("sock==NULL");
+        DB_FATAL("sock==nullptr");
         return false;
     }
     const uint8_t packet_ok[] =
@@ -672,7 +672,7 @@ bool MysqlWrapper::make_simple_ok_packet(SmartSocket sock) {
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
 bool MysqlWrapper::make_stmt_prepare_ok_packet(SmartSocket sock) {
     if (sock == nullptr) {
-        DB_FATAL("sock==NULL");
+        DB_FATAL("sock==nullptr");
         return false;
     }
     auto iter = sock->prepared_plans.find(sock->query_ctx->prepare_stmt_name);
@@ -761,8 +761,8 @@ bool MysqlWrapper::make_stmt_prepare_ok_packet(SmartSocket sock) {
 }
 
 bool MysqlWrapper::make_string_packet(SmartSocket sock, const char* data) {
-    if (!sock || data == NULL) {
-        DB_FATAL("s == NULL || data == NULL ");
+    if (!sock || data == nullptr) {
+        DB_FATAL("s == nullptr || data == nullptr ");
         return false;
     }
     std::string tmp = "\xff\x88\x88#88S88";

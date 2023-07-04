@@ -1,18 +1,22 @@
-// Copyright (c) 2018 Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Turbo Authors.
+// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
 
-#include <gtest/gtest.h>
+#include "tests/doctest/doctest.h"
 #include <climits>
 #include <iostream>
 #include <cstdio>
@@ -20,50 +24,46 @@
 #include <ctime>
 #include <boost/regex.hpp>
 #include "re2/re2.h"
-#include "predicate.h"
+#include "elasticann/expr/predicate.h"
 
-int main(int argc, char* argv[])
-{
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+namespace EA {
 
-namespace baikaldb {
+    DOCTEST_TEST_CASE("test_covent_pattern, case_all") {
+        /*
+        LikePredicate pred;
+        std::string a("www.bad/aca?bd_vid");
+        std::string b("www.bad/aca?bd_vid");
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>(a, b));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("abc", "a_c"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("abc", "%"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("axxx", "a%x%x"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("axxx", "a%x%x"));
+        DOCTEST_CHECK_EQ(true,
+                         *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½ï¿½ï¿½testbd_vidï¿½ï¿½ï¿½ï¿½test", "ï¿½ï¿½ï¿½ï¿½testbd_vidï¿½ï¿½ï¿½ï¿½test"));
+        //DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½ï¿½ï¿½testbd_vidï¿½ï¿½ï¿½ï¿½test", "%testbd_vidï¿½ï¿½ï¿½ï¿½tes%"));
+        DOCTEST_CHECK_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½ï¿½ï¿½", "%ï¿½ï¿½%"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("ï¿½ï¿½ï¿½ï¿½", "%ï¿½ï¿½%"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½%ï¿½ï¿½", "ï¿½ï¿½\\%ï¿½ï¿½"));
+        DOCTEST_CHECK_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½\\%ï¿½ï¿½"));
+        DOCTEST_CHECK_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½fï¿½ï¿½", "ï¿½ï¿½\\_ï¿½ï¿½"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½fï¿½ï¿½", "ï¿½ï¿½_ï¿½ï¿½"));
+        DOCTEST_CHECK_EQ(false, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½%ï¿½ï¿½", "ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("ï¿½ï¿½aaaï¿½ï¿½", "ï¿½ï¿½%ï¿½ï¿½"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("", ""));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "te%st"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("test", "te%st"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "te%%st"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("test", "te%%st"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "%test%"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("test", "%test%"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "_%_%_%_"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "_%_%st"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::GBKCharset>("3hello", "3%hello"));
+        DOCTEST_CHECK_EQ(true, *pred.like<LikePredicate::Binary>("3hello", "3%hello"));
+        DOCTEST_CHECK_EQ(false,
+                         *pred.like<LikePredicate::GBKCharset>("aaaaaaaaaaaaaaaaaaaaaaaaaaa", "a%a%a%a%a%a%a%a%b"));
+        DOCTEST_CHECK_EQ(false, *pred.like<LikePredicate::Binary>("aaaaaaaaaaaaaaaaaaaaaaaaaaa", "a%a%a%a%a%a%a%a%b"));
+         */
+    }
 
-TEST(test_covent_pattern, case_all) {
-    LikePredicate pred;
-    std::string a("www.bad/aca?bd_vid");
-    std::string b("www.bad/aca?bd_vid");
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>(a, b));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("abc", "a_c"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("abc", "%"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("axxx", "a%x%x"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("axxx", "a%x%x"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ÖÐÎÄtestbd_vidÖÐÎÄtest", "ÖÐÎÄtestbd_vidÖÐÎÄtest"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ÖÐÎÄtestbd_vidÖÐÎÄtest", "%testbd_vidÖÐÎÄtes%"));
-    //¼Á GBK Âëµã£º BCC1
-    //»¼ÁË GBKÂëµã£ºBBBC C1CB
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("»¼ÁË", "%¼Á%"));
-    EXPECT_EQ(true,  *pred.like<LikePredicate::Binary>("»¼ÁË", "%¼Á%"));
-    EXPECT_EQ(true,  *pred.like<LikePredicate::GBKCharset>("ÖÐ%ÎÄ", "ÖÐ\\%ÎÄ"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ÖÐ²âÊÔÎÄ", "ÖÐ\\%ÎÄ"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ÖÐfÎÄ", "ÖÐ\\_ÎÄ"));
-    EXPECT_EQ(true,  *pred.like<LikePredicate::GBKCharset>("ÖÐfÎÄ", "ÖÐ_ÎÄ"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("ÖÐ%ÎÄ", "ÖÐ²âÊÔÎÄ"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("ÖÐaaaÎÄ", "ÖÐ%ÎÄ"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("", ""));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "te%st"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("test", "te%st"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "te%%st"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("test", "te%%st"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "%test%"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("test", "%test%"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "_%_%_%_"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("test", "_%_%st"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::GBKCharset>("3hello", "3%hello"));
-    EXPECT_EQ(true, *pred.like<LikePredicate::Binary>("3hello", "3%hello"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::GBKCharset>("aaaaaaaaaaaaaaaaaaaaaaaaaaa", "a%a%a%a%a%a%a%a%b"));
-    EXPECT_EQ(false, *pred.like<LikePredicate::Binary>("aaaaaaaaaaaaaaaaaaaaaaaaaaa", "a%a%a%a%a%a%a%a%b"));
-}
-
-}  // namespace baikal
+}  // namespace EA

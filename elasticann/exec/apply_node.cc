@@ -42,7 +42,7 @@ int ApplyNode::init(const proto::PlanNode& node) {
     _is_select_field = apply_node.is_select_field();
     _is_apply = true;
     for (auto& expr : apply_node.conditions()) {
-        ExprNode* condition = NULL;
+        ExprNode* condition = nullptr;
         ret = ExprNode::create_tree(expr, &condition);
         if (ret < 0) {
             //如何释放资源
@@ -564,7 +564,7 @@ int ApplyNode::get_next_via_inner_hash_map(RuntimeState* state, RowBatch* batch,
         MutTableKey outer_key;
         encode_hash_key(*_outer_iter, _outer_equal_slot, outer_key);
         auto inner_mem_rows = _hash_map.seek(outer_key.data());
-        if (inner_mem_rows != NULL) {
+        if (inner_mem_rows != nullptr) {
             if (_join_type == proto::ANTI_SEMI_JOIN) {
                 ++_outer_iter;
                 _result_row_index = 0;
@@ -612,7 +612,7 @@ int ApplyNode::get_next_via_inner_hash_map(RuntimeState* state, RowBatch* batch,
                 //DB_WARNING("when join, batch is full, time_cost:%ld", get_next_time.get_time());
                 return 0;
             }
-            //fill NULL
+            //fill nullptr
             int ret = construct_null_result_batch(batch, *_outer_iter);
             if (ret < 0) {
                 DB_WARNING("construct result batch fail");
@@ -648,7 +648,7 @@ int ApplyNode::get_next_via_outer_hash_map(RuntimeState* state, RowBatch* batch,
         MutTableKey inner_key;
         encode_hash_key(inner_mem_row.get(), _inner_equal_slot, inner_key);
         auto outer_mem_rows = _hash_map.seek(inner_key.data());
-        if (outer_mem_rows != NULL) {
+        if (outer_mem_rows != nullptr) {
             for (; _result_row_index < outer_mem_rows->size(); ++_result_row_index) {
                 if (reached_limit()) {
                     *eos = true;
@@ -722,7 +722,7 @@ int ApplyNode::get_next_via_loop_outer_hash_map(RuntimeState* state, RowBatch* b
         MutTableKey inner_key;
         encode_hash_key(inner_mem_row, _inner_equal_slot, inner_key);
         auto outer_mem_rows = _hash_map.seek(inner_key.data());
-        if (outer_mem_rows != NULL) {
+        if (outer_mem_rows != nullptr) {
             for (; _result_row_index < outer_mem_rows->size(); ++_result_row_index) {
                 if (reached_limit()) {
                     *eos = true;

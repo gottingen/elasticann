@@ -49,10 +49,10 @@ namespace EA {
         bool is_succ;                     // 任务处理是否成功
 
         // 当前任务组完成数量，用于同步，当前任务完成时会将该变量加1
-        //boost::atomic<uint32_t>& count;
+        //std::atomic<uint32_t>& count;
         // 同步条件，任务分配完后，主线程阻塞等待子任务完成
         // 当所有子任务完成时，最后一个子任务唤醒主线程
-        //boost::condition_variable& cond;
+        //std::condition_variable& cond;
         //size_t executor_units_size;             // 任务总数
         DriverTask(
                 SmartSocket _sock,

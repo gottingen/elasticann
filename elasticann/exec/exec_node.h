@@ -98,7 +98,7 @@ public:
         }
     }
     virtual std::vector<ExprNode*>* mutable_conjuncts() {
-        return NULL;
+        return nullptr;
     }
     virtual void find_place_holder(std::map<int, ExprNode*>& placeholders) {
         for (size_t idx = 0; idx < _children.size(); ++idx) {
@@ -169,7 +169,7 @@ public:
     void clear_children() {
         for (auto child : _children) {
             if (child->_parent == this) {
-                child->_parent = NULL;
+                child->_parent = nullptr;
             }
         }
         _children.clear();
@@ -179,7 +179,7 @@ public:
             if (child == old_child) {
                 new_child->set_parent(this);
                 if (old_child->_parent == this) {
-                    old_child->_parent = NULL;
+                    old_child->_parent = nullptr;
                 }
                 child = new_child;
                 return 0;
@@ -309,4 +309,3 @@ private:
 typedef std::shared_ptr<proto::TraceNode> SmartTrace;
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

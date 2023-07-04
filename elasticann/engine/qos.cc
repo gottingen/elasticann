@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 
-#include <boost/algorithm/string.hpp>
 #include "elasticann/engine/qos.h"
 
 namespace EA {

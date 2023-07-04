@@ -17,7 +17,7 @@
 
 #pragma once
 #include "elasticann/exec/exec_node.h"
-#include "joiner.h"
+#include "elasticann/exec/joiner.h"
 #include "elasticann/common/mut_table_key.h"
 #include <butil/containers/flat_map.h>
 #include "elasticann/expr/slot_ref.h"
@@ -72,4 +72,3 @@ private:
 };
 }
 
-/* vim: set ts=4 sw=4 sts=4 tw=100 */
