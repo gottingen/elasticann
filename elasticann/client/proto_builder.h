@@ -36,6 +36,21 @@ namespace EA::client {
 
         static void
         make_namespace_query(EA::proto::QueryRequest *req, const std::string &ns_name);
+
+        static void
+        make_database_create(EA::proto::MetaManagerRequest *req);
+
+        static void
+        make_database_remove(EA::proto::MetaManagerRequest *req);
+
+        static void
+        make_database_modify(EA::proto::MetaManagerRequest *req);
+
+        static void
+        make_database_list(EA::proto::QueryRequest *req);
+
+        static void
+        make_database_info(EA::proto::QueryRequest *req);
     };
 }  // namespace EA::client
 
