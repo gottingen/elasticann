@@ -23,7 +23,18 @@ namespace EA {
         brpc::ClosureGuard done_guard(done);
         auto ret = MetaServerInteract::get_instance()->send_request("meta_manager", *request, *response);
         if(ret != 0) {
-            TLOG_ERROR("rpc to meta server error:{}", controller->ErrorText());
+            TLOG_ERROR("rpc to meta server:meta_manager error:{}", controller->ErrorText());
+        }
+    }
+
+    void RouterServiceImpl::query(::google::protobuf::RpcController* controller,
+               const ::EA::proto::QueryRequest* request,
+               ::EA::proto::QueryResponse* response,
+               ::google::protobuf::Closure* done) {
+        brpc::ClosureGuard done_guard(done);
+        auto ret = MetaServerInteract::get_instance()->send_request("query", *request, *response);
+        if(ret != 0) {
+            TLOG_ERROR("rpc to meta server:query error:{}", controller->ErrorText());
         }
     }
 }
