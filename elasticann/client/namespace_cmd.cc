@@ -17,6 +17,7 @@
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
 #include "elasticann/proto/router.interface.pb.h"
+#include "turbo/format/print.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -48,7 +49,7 @@ namespace EA::client {
     void run_namespace_cmd(turbo::App* app) {
         // Do stuff...
         if(app->get_subcommands().empty()) {
-            std::cout<<app->help()<<std::endl;
+            turbo::Println("{}", app->help());
         }
     }
 
@@ -61,11 +62,11 @@ namespace EA::client {
         request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            TLOG_ERROR(rs.ToString());
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
             return;
         }
-        TLOG_INFO("rpc success to server:{}", OptionContext::get_instance()->server);
-        TLOG_INFO("server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
+        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
     }
     void run_ns_remove_cmd() {
         TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);

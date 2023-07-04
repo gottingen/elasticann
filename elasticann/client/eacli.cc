@@ -14,12 +14,12 @@
 //
 #include "elasticann/client/schema_cmd.h"
 #include "turbo/flags/flags.h"
-
+#include "turbo/format/print.h"
 int main(int argc, char **argv) {
     turbo::App app{"elastic ann search client"};
     app.callback([&app]{
         if(app.get_subcommands().empty()) {
-            std::cout<<app.help()<<std::endl;
+            turbo::Println("{}", app.help());
         }
     });
     // Call the setup functions for the subcommands.

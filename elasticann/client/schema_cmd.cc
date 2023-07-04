@@ -15,8 +15,7 @@
 #include "elasticann/client/schema_cmd.h"
 #include "elasticann/client/namespace_cmd.h"
 #include "elasticann/client/option_context.h"
-#include <iostream>
-#include <memory>
+#include "turbo/format/print.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -42,7 +41,7 @@ namespace EA::client {
     /// but having a separate function is cleaner.
     void run_schema_cmd(turbo::App &app) {
         if(app.get_subcommands().empty()) {
-            std::cout<<app.help()<<std::endl;
+            turbo::Println("{}", app.help());
         }
     }
 }  // namespace EA::client
