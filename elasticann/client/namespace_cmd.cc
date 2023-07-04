@@ -84,7 +84,7 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_namespace_create(&request, OptionContext::get_instance()->namespace_name, OptionContext::get_instance()->namespace_quota);
+        ProtoBuilder::make_namespace_modify(&request, OptionContext::get_instance()->namespace_name, OptionContext::get_instance()->namespace_quota);
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
             turbo::Println(turbo::color::golden_rod, "rpc to server error");

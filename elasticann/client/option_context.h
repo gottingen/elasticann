@@ -26,7 +26,7 @@ namespace EA::client {
             static OptionContext ins;
             return &ins;
         }
-        std::string server{"127.0.0.0:8050"};
+        std::string server;
         std::string namespace_name;
         int64_t namespace_quota{0};
         std::string load_balancer{"rr"};
@@ -34,6 +34,7 @@ namespace EA::client {
         int32_t  connect_timeout_ms{100};
         int32_t  max_retry{3};
         int32_t time_between_meta_connect_error_ms{1000};
+        bool verbose{false};
     };
 }  // namespace EA::client
 

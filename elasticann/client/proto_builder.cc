@@ -29,4 +29,12 @@ namespace EA::client {
         ns_req->set_namespace_name(ns_name);
         req->set_op_type(EA::proto::OP_DROP_NAMESPACE);
     }
+
+    void
+    ProtoBuilder::make_namespace_modify(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota) {
+        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
+        ns_req->set_namespace_name(ns_name);
+        ns_req->set_quota(quota);
+        req->set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+    }
 }

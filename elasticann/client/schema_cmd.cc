@@ -28,7 +28,7 @@ namespace EA::client {
         auto *sub = app.add_subcommand("schema", "schema operations");
 
         // Add options to sub, binding them to opt.
-        sub->add_option("-s,--server", opt->server, "server address")->required();
+        sub->add_option("-s,--server", opt->server, "server address")->default_val("127.0.0.0:8050");
         EA::client::setup_namespace_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_schema_cmd(*sub); });

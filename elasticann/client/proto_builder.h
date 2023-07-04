@@ -30,6 +30,9 @@ namespace EA::client {
 
         static void
         make_namespace_remove(EA::proto::MetaManagerRequest *req, const std::string &ns_name);
+
+        static void
+        make_namespace_modify(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota);
     };
 }  // namespace EA::client
 
