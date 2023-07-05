@@ -18,6 +18,7 @@
 #include "elasticann/client/router_interact.h"
 #include "elasticann/proto/router.interface.pb.h"
 #include "elasticann/client/proto_builder.h"
+#include "elasticann/client/show_help.h"
 #include "turbo/format/print.h"
 
 namespace EA::client {
@@ -71,70 +72,85 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_namespace_create(&request, OptionContext::get_instance()->namespace_name, OptionContext::get_instance()->namespace_quota);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        auto rs = ProtoBuilder::make_namespace_create(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_request_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_ns_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_namespace_remove(&request, OptionContext::get_instance()->namespace_name);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        auto rs = ProtoBuilder::make_namespace_remove(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_request_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_ns_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_namespace_modify(&request, OptionContext::get_instance()->namespace_name, OptionContext::get_instance()->namespace_quota);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        auto rs = ProtoBuilder::make_namespace_modify(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_request_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_ns_list_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ProtoBuilder::make_namespace_query(&request, "");
-        auto rs = RouterInteract::get_instance()->send_request("query", request, response);
+        auto rs = ProtoBuilder::make_namespace_query(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_query_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
-        turbo::Println(turbo::color::golden_rod, "response:\n{}", response.ShortDebugString());
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_ns_response(response);
     }
 
     void run_ns_info_cmd() {
-        turbo::Println(turbo::color::green, "start to get namespace list");
+        turbo::Println(turbo::color::green, "start to get namespace info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ProtoBuilder::make_namespace_query(&request, OptionContext::get_instance()->namespace_name);
-        auto rs = RouterInteract::get_instance()->send_request("query", request, response);
+        auto rs = ProtoBuilder::make_namespace_query(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_query_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
-        turbo::Println(turbo::color::golden_rod, "response:\n{}", response.ShortDebugString());
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_ns_response(response);
     }
 
 }  // namespace EA::client

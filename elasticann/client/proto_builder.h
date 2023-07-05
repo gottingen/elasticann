@@ -17,6 +17,7 @@
 #define ELASTICANN_CLIENT_PROTO_BUILDER_H_
 
 #include "elasticann/proto/router.interface.pb.h"
+#include "turbo/base/status.h"
 #include <string>
 #include <cstddef>
 #include <cstdint>
@@ -25,32 +26,45 @@ namespace EA::client {
 
     class ProtoBuilder {
     public:
-        static void
-        make_namespace_create(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota = 0);
+        [[nodiscard]] static turbo::Status
+        make_namespace_create(EA::proto::MetaManagerRequest *req);
 
-        static void
-        make_namespace_remove(EA::proto::MetaManagerRequest *req, const std::string &ns_name);
+        [[nodiscard]] static turbo::Status
+        make_namespace_remove(EA::proto::MetaManagerRequest *req);
 
-        static void
-        make_namespace_modify(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota);
+        [[nodiscard]] static turbo::Status
+        make_namespace_modify(EA::proto::MetaManagerRequest *req);
 
-        static void
-        make_namespace_query(EA::proto::QueryRequest *req, const std::string &ns_name);
+        [[nodiscard]] static turbo::Status
+        make_namespace_query(EA::proto::QueryRequest *req);
 
-        static void
+        [[nodiscard]] static turbo::Status
         make_database_create(EA::proto::MetaManagerRequest *req);
 
-        static void
+        [[nodiscard]] static turbo::Status
         make_database_remove(EA::proto::MetaManagerRequest *req);
 
-        static void
+        [[nodiscard]] static turbo::Status
         make_database_modify(EA::proto::MetaManagerRequest *req);
 
-        static void
+        [[nodiscard]] static turbo::Status
         make_database_list(EA::proto::QueryRequest *req);
 
-        static void
+        [[nodiscard]] static turbo::Status
         make_database_info(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_cluster_create_logical(EA::proto::MetaManagerRequest *req);
+        [[nodiscard]] static turbo::Status
+        make_cluster_remove_logical(EA::proto::MetaManagerRequest *req);
+
+        [[nodiscard]] static turbo::Status make_cluster_create_physical(EA::proto::MetaManagerRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_cluster_remove_physical(EA::proto::MetaManagerRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_cluster_move_physical(EA::proto::MetaManagerRequest *req);
     };
 }  // namespace EA::client
 

@@ -15,69 +15,172 @@
 
 #include "elasticann/client/proto_builder.h"
 #include "elasticann/client/option_context.h"
+#include "elasticann/client/validator.h"
 
 namespace EA::client {
-    void
-    ProtoBuilder::make_namespace_create(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota) {
+    turbo::Status
+    ProtoBuilder::make_namespace_create(EA::proto::MetaManagerRequest *req) {
         EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
-        ns_req->set_namespace_name(ns_name);
-        ns_req->set_quota(quota);
-        req->set_op_type(EA::proto::OP_CREATE_NAMESPACE);
-    }
-
-    void
-    ProtoBuilder::make_namespace_remove(EA::proto::MetaManagerRequest *req, const std::string &ns_name) {
-        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
-        ns_req->set_namespace_name(ns_name);
-        req->set_op_type(EA::proto::OP_DROP_NAMESPACE);
-    }
-
-    void
-    ProtoBuilder::make_namespace_modify(EA::proto::MetaManagerRequest *req, const std::string &ns_name, int64_t quota) {
-        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
-        ns_req->set_namespace_name(ns_name);
-        ns_req->set_quota(quota);
-        req->set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
-    }
-
-    void ProtoBuilder::make_namespace_query(EA::proto::QueryRequest *req, const std::string &ns_name) {
-        if (!ns_name.empty()) {
-            req->set_namespace_name(ns_name);
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
         }
-        req->set_op_type(EA::proto::QUERY_NAMESPACE);
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        ns_req->set_quota(OptionContext::get_instance()->namespace_quota);
+        req->set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        return turbo::OkStatus();
     }
 
-    void ProtoBuilder::make_database_create(EA::proto::MetaManagerRequest *req) {
+    turbo::Status
+    ProtoBuilder::make_namespace_remove(EA::proto::MetaManagerRequest *req) {
+        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
+        }
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        req->set_op_type(EA::proto::OP_DROP_NAMESPACE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status
+    ProtoBuilder::make_namespace_modify(EA::proto::MetaManagerRequest *req) {
+        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
+        }
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        ns_req->set_quota(OptionContext::get_instance()->namespace_quota);
+        req->set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_namespace_query(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_NAMESPACE);
+        if (!OptionContext::get_instance()->namespace_name.empty()) {
+            req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+            auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+            if(!rs.ok()) {
+                return rs;
+            }
+        }
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_database_create(EA::proto::MetaManagerRequest *req) {
         EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if(!rs.ok()) {
+            return rs;
+        }
         db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
         db_req->set_database(OptionContext::get_instance()->db_name);
         db_req->set_quota(OptionContext::get_instance()->db_quota);
         req->set_op_type(EA::proto::OP_CREATE_DATABASE);
+        return turbo::OkStatus();
     }
 
-    void ProtoBuilder::make_database_remove(EA::proto::MetaManagerRequest *req) {
+    turbo::Status ProtoBuilder::make_database_remove(EA::proto::MetaManagerRequest *req) {
         EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if(!rs.ok()) {
+            return rs;
+        }
         db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
         db_req->set_database(OptionContext::get_instance()->db_name);
         req->set_op_type(EA::proto::OP_DROP_DATABASE);
+        return turbo::OkStatus();
     }
 
-    void ProtoBuilder::make_database_modify(EA::proto::MetaManagerRequest *req) {
+    turbo::Status ProtoBuilder::make_database_modify(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_MODIFY_DATABASE);
         EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if(!rs.ok()) {
+            return rs;
+        }
         db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
         db_req->set_database(OptionContext::get_instance()->db_name);
         db_req->set_quota(OptionContext::get_instance()->db_quota);
-        req->set_op_type(EA::proto::OP_MODIFY_DATABASE);
+        return turbo::OkStatus();
     }
 
-    void ProtoBuilder::make_database_list(EA::proto::QueryRequest *req) {
+    turbo::Status ProtoBuilder::make_database_list(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_DATABASE);
+        return turbo::OkStatus();
     }
 
-    void ProtoBuilder::make_database_info(EA::proto::QueryRequest *req) {
-
+    turbo::Status ProtoBuilder::make_database_info(EA::proto::QueryRequest *req) {
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if(!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if(!rs.ok()) {
+            return rs;
+        }
         req->set_namespace_name(OptionContext::get_instance()->namespace_name);
         req->set_database(OptionContext::get_instance()->db_name);
         req->set_op_type(EA::proto::QUERY_DATABASE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_cluster_create_logical(EA::proto::MetaManagerRequest *req) {
+        EA::proto::LogicalRoom *loc_req = req->mutable_logical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        loc_req->mutable_logical_rooms()->Reserve(rs.size());
+        for(size_t i = 0; i < rs.size(); i++) {
+            loc_req->add_logical_rooms()->assign(rs[i]);
+        }
+        req->set_op_type(EA::proto::OP_ADD_LOGICAL);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_cluster_remove_logical(EA::proto::MetaManagerRequest *req) {
+        EA::proto::LogicalRoom *loc_req = req->mutable_logical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        loc_req->mutable_logical_rooms()->Reserve(rs.size());
+        for(size_t i = 0; i < rs.size(); i++) {
+            loc_req->add_logical_rooms()->assign(rs[i]);
+        }
+        req->set_op_type(EA::proto::OP_DROP_LOGICAL);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_cluster_create_physical(EA::proto::MetaManagerRequest *req) {
+        EA::proto::PhysicalRoom *phy_req = req->mutable_physical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        if(rs.size() != 1) {
+            return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", rs.size());
+        }
+        phy_req->set_logical_room(rs[1]);
+
+        auto &ps = OptionContext::get_instance()->physical_idc;
+        for(size_t i = 0; i < rs.size(); i++) {
+            phy_req->add_physical_rooms()->assign(ps[i]);
+        }
+        req->set_op_type(EA::proto::OP_ADD_PHYSICAL);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_cluster_remove_physical(EA::proto::MetaManagerRequest *req) {
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::make_cluster_move_physical(EA::proto::MetaManagerRequest *req) {
+        return turbo::OkStatus();
     }
 }  // namespace EA::client

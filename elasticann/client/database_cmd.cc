@@ -18,6 +18,7 @@
 #include "elasticann/client/router_interact.h"
 #include "elasticann/proto/router.interface.pb.h"
 #include "elasticann/client/proto_builder.h"
+#include "elasticann/client/show_help.h"
 #include "turbo/format/print.h"
 
 namespace EA::client {
@@ -34,18 +35,18 @@ namespace EA::client {
         //ns->require_subcommand();
         // add sub cmd
         auto cdb = ns->add_subcommand("create", " create database");
-        cdb->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        cdb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
         cdb->add_option("-d,--database", opt->db_name, "database name")->required();
         cdb->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         cdb->callback([]() { run_db_create_cmd(); });
 
         auto rdb = ns->add_subcommand("remove", " remove database");
-        rdb->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        rdb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
         rdb->add_option("-d,--database", opt->db_name, "database name")->required();
         rdb->callback([]() { run_db_remove_cmd(); });
 
         auto mdb = ns->add_subcommand("modify", " modify database");
-        mdb->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        mdb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
         mdb->add_option("-d,--database", opt->db_name, "database name")->required();
         mdb->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         mdb->callback([]() { run_db_modify_cmd(); });
@@ -54,7 +55,7 @@ namespace EA::client {
         lns->callback([]() { run_db_list_cmd(); });
 
         auto idb = ns->add_subcommand("info", " get database info");
-        idb->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        idb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
         idb->add_option("-d,--database", opt->db_name, "database name")->required();
         idb->callback([]() { run_db_info_cmd(); });
 
@@ -74,10 +75,14 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_database_create(&request);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        auto rs= ProtoBuilder::make_database_create(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_request_rpc_error_status(rs, request);
             return;
         }
         turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
@@ -87,10 +92,14 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_database_remove(&request);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        auto rs = ProtoBuilder::make_database_remove(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_request_rpc_error_status(rs, request);
             return;
         }
         turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
@@ -100,10 +109,14 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ProtoBuilder::make_database_modify(&request);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        auto rs = ProtoBuilder::make_database_modify(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_request_rpc_error_status(rs, request);
             return;
         }
         turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
@@ -114,10 +127,14 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ProtoBuilder::make_database_list(&request);
-        auto rs = RouterInteract::get_instance()->send_request("query", request, response);
+        auto rs = ProtoBuilder::make_database_list(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_query_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
             return;
         }
         turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
@@ -129,10 +146,14 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ProtoBuilder::make_database_info(&request);
-        auto rs = RouterInteract::get_instance()->send_request("query", request, response);
+        auto rs = ProtoBuilder::make_database_info(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            ShowHelper::show_query_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
             return;
         }
         turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);

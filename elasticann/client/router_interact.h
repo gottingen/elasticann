@@ -78,13 +78,14 @@ namespace EA::client {
                 if (response.errcode() != proto::SUCCESS) {
                     TLOG_WARN_IF(verbose, "send meta server fail, log_id:{}, response:{}", cntl.log_id(),
                               response.ShortDebugString());
-                    return turbo::UnavailableError("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
-                                                   response.ShortDebugString());
+                    //return turbo::UnavailableError("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
+                    //                               response.ShortDebugString());
+                    return turbo::OkStatus();
                 } else {
                     return turbo::OkStatus();
                 }
             } while (retry_time < OptionContext::get_instance()->max_retry);
-            return turbo::UnavailableError("");
+            return turbo::DeadlineExceededError("try times {} and can not get response.", retry_time);
 
         }
 
