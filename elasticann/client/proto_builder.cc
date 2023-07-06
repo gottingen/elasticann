@@ -239,7 +239,7 @@ namespace EA::client {
     turbo::Status
     ProtoBuilder::make_cluster_query_physical_info(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_PHYSICAL);
-        auto &phys = OptionContext::get_instance()->logical_idc;
+        auto &phys = OptionContext::get_instance()->physical_idc;
         if (phys.size() != 1) {
             return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", phys.size());
         }

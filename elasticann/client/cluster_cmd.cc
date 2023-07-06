@@ -38,7 +38,7 @@ namespace EA::client {
         ali->add_option("-l,--logical", opt->logical_idc, "logical idc names")->required();
         ali->callback([]() { run_logical_create_cmd(); });
 
-        auto rli = ns->add_subcommand("remove_logical", " create logical idc");
+        auto rli = ns->add_subcommand("remove_logical", " remove logical idc");
         rli->add_option("-l,--logical", opt->logical_idc, "logical idc names")->required();
         rli->callback([]() { run_logical_remove_cmd(); });
 
@@ -47,12 +47,13 @@ namespace EA::client {
         api->add_option("-p,--physical", opt->physical_idc, "physical idc names")->required();
         api->callback([]() { run_physical_create_cmd(); });
 
-        auto rpi = ns->add_subcommand("remove_physical", " create physical idc");
-        rpi->add_option("-l,--physical", opt->physical_idc, "physical idc names")->required();
+        auto rpi = ns->add_subcommand("remove_physical", " remove physical idc");
+        rpi->add_option("-p,--physical", opt->physical_idc, "physical idc names")->required();
         rpi->callback([]() { run_physical_remove_cmd(); });
 
-        auto mpi = ns->add_subcommand("move_physical", " create physical idc");
-        mpi->add_option("-l,--physical", opt->logical_idc, "physical idc names")->required();
+        auto mpi = ns->add_subcommand("move_physical", " move physical idc");
+        mpi->add_option("-l,--logical", opt->logical_idc, "physical idc names")->required();
+        mpi->add_option("-p,--physical", opt->physical_idc, "physical idc names")->required();
         mpi->callback([]() { run_physical_move_cmd(); });
 
         auto lli = ns->add_subcommand("list_logical", " list logical idc");
@@ -65,8 +66,8 @@ namespace EA::client {
         auto lpi = ns->add_subcommand("list_physical", " list physical idc");
         lpi->callback([]() { run_physical_list_cmd(); });
 
-        auto ipi = ns->add_subcommand("info_physical", " info logical idc");
-        ipi->add_option("-l,--physical", opt->logical_idc, "physical idc name")->required();
+        auto ipi = ns->add_subcommand("info_physical", " info physical idc");
+        ipi->add_option("-p,--physical", opt->physical_idc, "physical idc name")->required();
         ipi->callback([]() { run_physical_info_cmd(); });
 
     }
