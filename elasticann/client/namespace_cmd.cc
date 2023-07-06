@@ -61,96 +61,106 @@ namespace EA::client {
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_namespace_cmd(turbo::App* app) {
+    void run_namespace_cmd(turbo::App *app) {
         // Do stuff...
-        if(app->get_subcommands().empty()) {
+        if (app->get_subcommands().empty()) {
             turbo::Println("{}", app->help());
         }
     }
 
     void run_ns_create_cmd() {
-        turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to create namespace: {}",
+                       OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         auto rs = ProtoBuilder::make_namespace_create(&request);
-        if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+        ShowHelper sh;
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ShowHelper::show_request_rpc_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
+
     void run_ns_remove_cmd() {
-        turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to remove namespace: {}",
+                       OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_namespace_remove(&request);
-        if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ShowHelper::show_request_rpc_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
+
     void run_ns_modify_cmd() {
-        turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to modify namespace: {}",
+                       OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_namespace_modify(&request);
-        if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ShowHelper::show_request_rpc_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
 
     void run_ns_list_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_namespace_query(&request);
-        if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
-        if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+        if (!rs.ok()) {
+           sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_ns_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_ns_response(response);
     }
 
     void run_ns_info_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_namespace_query(&request);
-        if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
-        if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_ns_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_ns_response(response);
     }
 
 }  // namespace EA::client

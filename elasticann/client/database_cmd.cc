@@ -75,86 +75,90 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs= ProtoBuilder::make_database_create(&request);
         if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_request_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
     void run_db_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_database_remove(&request);
         if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_request_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
     void run_db_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_database_modify(&request);
         if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_request_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
 
     void run_db_list_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_database_list(&request);
         if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_db_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_db_response(response);
     }
 
     void run_db_info_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_database_info(&request);
         if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_db_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_db_response(response);
     }
 
 }  // namespace EA::client

@@ -86,155 +86,164 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_cluster_create_logical(&request);
         if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_logical_remove_cmd() {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_cluster_remove_logical(&request);
         if(!rs.ok()) {
-            ShowHelper::show_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_physical_create_cmd() {
         turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        auto r = ProtoBuilder::make_cluster_create_physical(&request);
-        if(!r.ok()) {
-            ShowHelper::show_error_status(r, request);
-            return;
-        }
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        ShowHelper sh;
+        auto rs = ProtoBuilder::make_cluster_create_physical(&request);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            sh.pre_send_error(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_physical_remove_cmd() {
         turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto r = ProtoBuilder::make_cluster_remove_physical(&request);
         if(!r.ok()) {
-            ShowHelper::show_error_status(r, request);
+            sh.pre_send_error(r, request);
             return;
         }
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_physical_move_cmd() {
         turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
         auto r = ProtoBuilder::make_cluster_move_physical(&request);
         if(!r.ok()) {
-            ShowHelper::show_error_status(r, request);
+            sh.pre_send_error(r, request);
             return;
         }
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
+        sh.show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_logical_list_cmd() {
         turbo::Println(turbo::color::green, "start to get logical list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_cluster_query_logical_list(&request);
         if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_logical_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_logical_response(response);
     }
 
     void run_logical_info_cmd() {
         turbo::Println(turbo::color::green, "start to get logical info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_cluster_query_logical_info(&request);
         if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_logical_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_logical_response(response);
     }
 
     void run_physical_list_cmd() {
         turbo::Println(turbo::color::green, "start to get physical list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_cluster_query_physical_list(&request);
         if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_physical_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_physical_response(response);
     }
 
     void run_physical_info_cmd() {
         turbo::Println(turbo::color::green, "start to get physical info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
+        ShowHelper sh;
         auto rs = ProtoBuilder::make_cluster_query_physical_info(&request);
         if(!rs.ok()) {
-            ShowHelper::show_query_error_status(rs, request);
+            sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            ShowHelper::show_query_rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request);
             return;
         }
-        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        ShowHelper::show_meta_query_physical_response(response);
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_physical_response(response);
     }
 
 }  // namespace EA::client
