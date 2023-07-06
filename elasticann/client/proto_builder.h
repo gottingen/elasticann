@@ -65,6 +65,17 @@ namespace EA::client {
 
         [[nodiscard]] static turbo::Status
         make_cluster_move_physical(EA::proto::MetaManagerRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_cluster_query_logical_list(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_cluster_query_logical_info(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_cluster_query_physical_list(EA::proto::QueryRequest *req);
+        [[nodiscard]] static turbo::Status
+        make_cluster_query_physical_info(EA::proto::QueryRequest *req);
     };
 }  // namespace EA::client
 

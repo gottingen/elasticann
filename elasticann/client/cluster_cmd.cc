@@ -55,6 +55,20 @@ namespace EA::client {
         mpi->add_option("-l,--physical", opt->logical_idc, "physical idc names")->required();
         mpi->callback([]() { run_physical_move_cmd(); });
 
+        auto lli = ns->add_subcommand("list_logical", " list logical idc");
+        lli->callback([]() { run_logical_list_cmd(); });
+
+        auto ili = ns->add_subcommand("info_logical", " info logical idc");
+        ili->add_option("-l,--logical", opt->logical_idc, "logical idc name")->required();
+        ili->callback([]() { run_logical_info_cmd(); });
+
+        auto lpi = ns->add_subcommand("list_physical", " list physical idc");
+        lpi->callback([]() { run_physical_list_cmd(); });
+
+        auto ipi = ns->add_subcommand("info_physical", " info logical idc");
+        ipi->add_option("-l,--physical", opt->logical_idc, "physical idc name")->required();
+        ipi->callback([]() { run_physical_info_cmd(); });
+
     }
 
     /// The function that runs our code.
@@ -81,8 +95,7 @@ namespace EA::client {
             turbo::Println(turbo::color::golden_rod, "rpc to server error");
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_logical_remove_cmd() {
@@ -99,8 +112,7 @@ namespace EA::client {
             turbo::Println(turbo::color::golden_rod, "rpc to server error");
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_physical_create_cmd() {
@@ -117,15 +129,111 @@ namespace EA::client {
             turbo::Println(turbo::color::golden_rod, "rpc to server error");
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_physical_remove_cmd() {
-
+        turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        auto r = ProtoBuilder::make_cluster_remove_physical(&request);
+        if(!r.ok()) {
+            ShowHelper::show_error_status(r, request);
+            return;
+        }
+        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            return;
+        }
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_physical_move_cmd() {
-
+        turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        auto r = ProtoBuilder::make_cluster_move_physical(&request);
+        if(!r.ok()) {
+            ShowHelper::show_error_status(r, request);
+            return;
+        }
+        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if(!rs.ok()) {
+            turbo::Println(turbo::color::golden_rod, "rpc to server error");
+            return;
+        }
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
 
+    void run_logical_list_cmd() {
+        turbo::Println(turbo::color::green, "start to get logical list");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        auto rs = ProtoBuilder::make_cluster_query_logical_list(&request);
+        if(!rs.ok()) {
+            ShowHelper::show_query_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_logical_response(response);
+    }
+
+    void run_logical_info_cmd() {
+        turbo::Println(turbo::color::green, "start to get logical info");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        auto rs = ProtoBuilder::make_cluster_query_logical_info(&request);
+        if(!rs.ok()) {
+            ShowHelper::show_query_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_logical_response(response);
+    }
+
+    void run_physical_list_cmd() {
+        turbo::Println(turbo::color::green, "start to get physical list");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        auto rs = ProtoBuilder::make_cluster_query_physical_list(&request);
+        if(!rs.ok()) {
+            ShowHelper::show_query_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_physical_response(response);
+    }
+
+    void run_physical_info_cmd() {
+        turbo::Println(turbo::color::green, "start to get physical info");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        auto rs = ProtoBuilder::make_cluster_query_physical_info(&request);
+        if(!rs.ok()) {
+            ShowHelper::show_query_error_status(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if(!rs.ok()) {
+            ShowHelper::show_query_rpc_error_status(rs, request);
+            return;
+        }
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_physical_response(response);
+    }
 
 }  // namespace EA::client

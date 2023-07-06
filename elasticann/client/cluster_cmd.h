@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef ELASTICANN_CLIENT_DATABASE_CMD_H_
-#define ELASTICANN_CLIENT_DATABASE_CMD_H_
+#ifndef ELASTICANN_CLIENT_CLUSTER_CMD_H_
+#define ELASTICANN_CLIENT_CLUSTER_CMD_H_
 
 #include "turbo/flags/flags.h"
 #include <string>
@@ -31,10 +31,21 @@ namespace EA::client {
     void run_logical_create_cmd();
 
     void run_logical_remove_cmd();
+
     void run_physical_create_cmd();
+
     void run_physical_remove_cmd();
+
     void run_physical_move_cmd();
+
+    void run_logical_list_cmd();
+
+    void run_logical_info_cmd();
+
+    void run_physical_list_cmd();
+
+    void run_physical_info_cmd();
 
 }  // namespace EA::client
 
-#endif  // ELASTICANN_CLIENT_DATABASE_CMD_H_
+#endif  // ELASTICANN_CLIENT_CLUSTER_CMD_H_

@@ -39,7 +39,13 @@ namespace EA::client {
 
         static void show_meta_query_response(const std::string_view &server, EA::proto::QueryOpType op,
                                              const EA::proto::QueryResponse &res);
+
         static void show_meta_query_ns_response(const EA::proto::QueryResponse &res);
+
+        static void show_meta_query_db_response(const EA::proto::QueryResponse &res);
+
+        static void show_meta_query_logical_response(const EA::proto::QueryResponse &res);
+        static void show_meta_query_physical_response(const EA::proto::QueryResponse &res);
 
     };
 }  // namespace EA::client

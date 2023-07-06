@@ -15,6 +15,7 @@
 #include "elasticann/client/schema_cmd.h"
 #include "elasticann/client/namespace_cmd.h"
 #include "elasticann/client/database_cmd.h"
+#include "elasticann/client/cluster_cmd.h"
 #include "elasticann/client/option_context.h"
 #include "turbo/format/print.h"
 
@@ -32,6 +33,7 @@ namespace EA::client {
         sub->add_option("-s,--server", opt->server, "server address")->default_val("127.0.0.0:8050");
         EA::client::setup_namespace_cmd(*sub);
         EA::client::setup_database_cmd(*sub);
+        EA::client::setup_cluster_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_schema_cmd(*sub); });
         //sub->require_subcommand();

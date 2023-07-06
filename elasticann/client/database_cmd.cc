@@ -102,8 +102,7 @@ namespace EA::client {
             ShowHelper::show_request_rpc_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
     void run_db_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
@@ -119,8 +118,7 @@ namespace EA::client {
             ShowHelper::show_request_rpc_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        ShowHelper::show_meta_response( OptionContext::get_instance()->server, response);
     }
 
     void run_db_list_cmd() {
@@ -137,9 +135,8 @@ namespace EA::client {
             ShowHelper::show_query_rpc_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
-        turbo::Println(turbo::color::golden_rod, "response:\n{}", response.ShortDebugString());
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_db_response(response);
     }
 
     void run_db_info_cmd() {
@@ -156,9 +153,8 @@ namespace EA::client {
             ShowHelper::show_query_rpc_error_status(rs, request);
             return;
         }
-        turbo::Println(turbo::color::green,"rpc success to server:{}", OptionContext::get_instance()->server);
-        turbo::Println(turbo::color::green,"server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
-        turbo::Println(turbo::color::golden_rod, "response:\n{}", response.ShortDebugString());
+        ShowHelper::show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        ShowHelper::show_meta_query_db_response(response);
     }
 
 }  // namespace EA::client

@@ -53,6 +53,10 @@ namespace EA::client {
                 return "query namespace";
             case EA::proto::QUERY_DATABASE:
                 return "query database";
+            case EA::proto::QUERY_LOGICAL:
+                return "query logical";
+            case EA::proto::QUERY_PHYSICAL:
+                return "query physical";
             default:
                 return "unknown operation";
         }
@@ -142,6 +146,59 @@ namespace EA::client {
             turbo::Println(turbo::color::light_golden_rod_yellow,"\treplica number: {}", ns.replica_num());
             turbo::Println(turbo::color::light_golden_rod_yellow,"\tresource tag: {}", ns.resource_tag());
             turbo::Println(turbo::color::light_golden_rod_yellow,"\tregion split lines: {}", ns.region_split_lines());
+        }
+        turbo::Println("");
+    }
+
+    void ShowHelper::show_meta_query_db_response(const EA::proto::QueryResponse &res) {
+        if(res.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        auto &dbs = res.database_infos();
+        turbo::Println(turbo::color::lawn_green,"get database {}", dbs.size());
+        for(auto ns : dbs) {
+            turbo::Println(turbo::color::light_sea_green,"namespace: {}", ns.database());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tnamespace: {}", ns.namespace_name());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tnamespace id: {}", ns.namespace_id());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tid: {}", ns.database_id());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tversion: {}", ns.version());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tquota: {}", ns.quota());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\treplica number: {}", ns.replica_num());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tresource tag: {}", ns.resource_tag());
+            turbo::Println(turbo::color::light_golden_rod_yellow,"\tregion split lines: {}", ns.region_split_lines());
+        }
+        turbo::Println("");
+    }
+
+    void ShowHelper::show_meta_query_logical_response(const EA::proto::QueryResponse &res) {
+        if(res.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        auto &idcs = res.physical_rooms();
+        turbo::Println(turbo::color::lawn_green,"get logical {}", idcs.size());
+        for(auto ns : idcs) {
+            turbo::Println(turbo::color::light_sea_green,"logical: {}", ns.logical_room());
+            auto phys = ns.physical_rooms();
+            for(auto& ps: phys) {
+                turbo::Println(turbo::color::light_golden_rod_yellow, "\tphysical: {}", ps);
+            }
+        }
+        turbo::Println("");
+    }
+
+    void ShowHelper::show_meta_query_physical_response(const EA::proto::QueryResponse &res) {
+        if(res.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        auto &phyis = res.physical_instances();
+        turbo::Println(turbo::color::lawn_green,"get logical {}", phyis.size());
+        for(auto ns : phyis) {
+            turbo::Println(turbo::color::light_sea_green,"logical: {}", ns.logical_room());
+            turbo::Println(turbo::color::light_sea_green,"physical: {}", ns.physical_room());
+            auto phys = ns.instances();
+            for(auto& ps: phys) {
+                turbo::Println(turbo::color::light_golden_rod_yellow, "\tinstance: {}", ps);
+            }
         }
         turbo::Println("");
     }
