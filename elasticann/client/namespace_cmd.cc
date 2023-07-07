@@ -17,6 +17,9 @@
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
 #include "elasticann/proto/router.interface.pb.h"
+#include "elasticann/client/proto_builder.h"
+#include "elasticann/client/show_help.h"
+#include "turbo/format/print.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -27,51 +30,137 @@ namespace EA::client {
         // Create the option and subcommand objects.
         auto opt = OptionContext::get_instance();
         auto *ns = app.add_subcommand("namespace", "namespace operations");
-        ns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
         ns->callback([ns]() { run_namespace_cmd(ns); });
         // Add options to sub, binding them to opt.
         //ns->require_subcommand();
         // add sub cmd
         auto cns = ns->add_subcommand("create", " create namespace");
+        cns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        cns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         cns->callback([]() { run_ns_create_cmd(); });
+
         auto rns = ns->add_subcommand("remove", " remove namespace");
+        rns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        rns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         rns->callback([]() { run_ns_remove_cmd(); });
+
         auto mns = ns->add_subcommand("modify", " modify namespace");
-        mns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota")->required();
+        mns->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        mns->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
         mns->callback([]() { run_ns_modify_cmd(); });
+
+        auto lns = ns->add_subcommand("list", " list namespaces");
+        lns->callback([]() { run_ns_list_cmd(); });
+
+        auto ins = ns->add_subcommand("info", " get namespace info");
+        ins->add_option("-n,--name", opt->namespace_name, "namespace name")->required();
+        ins->callback([]() { run_ns_info_cmd(); });
 
     }
 
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_namespace_cmd(turbo::App* app) {
+    void run_namespace_cmd(turbo::App *app) {
         // Do stuff...
-        if(app->get_subcommands().empty()) {
-            std::cout<<app->help()<<std::endl;
+        if (app->get_subcommands().empty()) {
+            turbo::Println("{}", app->help());
         }
     }
 
     void run_ns_create_cmd() {
-        TLOG_INFO("start to create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to create namespace: {}",
+                       OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        EA::proto::NameSpaceInfo *ns_req = request.mutable_namespace_info();
-        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            TLOG_ERROR(rs.ToString());
+        auto rs = ProtoBuilder::make_namespace_create(&request);
+        ShowHelper sh;
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
             return;
         }
-        TLOG_INFO("rpc success to server:{}", OptionContext::get_instance()->server);
-        TLOG_INFO("server response:{} ", response.errcode() == EA::proto::SUCCESS ? "ok" : response.errmsg());
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
+
     void run_ns_remove_cmd() {
-        TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to remove namespace: {}",
+                       OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
+        auto rs = ProtoBuilder::make_namespace_remove(&request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
     }
+
     void run_ns_modify_cmd() {
-        TLOG_INFO("create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to modify namespace: {}",
+                       OptionContext::get_instance()->namespace_name);
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
+        ShowHelper sh;
+        auto rs = ProtoBuilder::make_namespace_modify(&request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_meta_response(OptionContext::get_instance()->server, response);
+    }
+
+    void run_ns_list_cmd() {
+        turbo::Println(turbo::color::green, "start to get namespace list");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        ShowHelper sh;
+        auto rs = ProtoBuilder::make_namespace_query(&request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if (!rs.ok()) {
+           sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_ns_response(response);
+    }
+
+    void run_ns_info_cmd() {
+        turbo::Println(turbo::color::green, "start to get namespace info");
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
+        ShowHelper sh;
+        auto rs = ProtoBuilder::make_namespace_query(&request);
+        if (!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        if (!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
+        sh.show_meta_query_ns_response(response);
     }
 
 }  // namespace EA::client

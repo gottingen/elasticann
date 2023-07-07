@@ -42,8 +42,9 @@ namespace EA::client {
             const ::google::protobuf::ServiceDescriptor *service_desc = proto::RouterService::descriptor();
             const ::google::protobuf::MethodDescriptor *method =
                     service_desc->FindMethodByName(service_name);
+            auto verbose =  OptionContext::get_instance()->verbose;
             if (method == nullptr) {
-                TLOG_ERROR("service name not exist, service:{}", service_name);
+                TLOG_ERROR_IF(verbose, "service name not exist, service:{}", service_name);
                 return turbo::InvalidArgumentError("service name not exist, service:{}", service_name);
             }
             int retry_time = 0;
@@ -60,30 +61,31 @@ namespace EA::client {
                 channel_opt.connect_timeout_ms = OptionContext::get_instance()->connect_timeout_ms;
                 brpc::Channel short_channel;
                 if (short_channel.Init(OptionContext::get_instance()->server.c_str(), &channel_opt) != 0) {
-                    TLOG_WARN("connect with router server fail. channel Init fail, leader_addr:{}", OptionContext::get_instance()->server);
+                    TLOG_WARN_IF(verbose, "connect with router server fail. channel Init fail, leader_addr:{}", OptionContext::get_instance()->server);
                     ++retry_time;
                     continue;
                 }
                 short_channel.CallMethod(method, &cntl, &request, &response, nullptr);
 
-                TLOG_TRACE("router_req[{}], router_resp[{}]", request.ShortDebugString(), response.ShortDebugString());
+                TLOG_TRACE_IF(verbose, "router_req[{}], router_resp[{}]", request.ShortDebugString(), response.ShortDebugString());
                 if (cntl.Failed()) {
-                    TLOG_WARN("connect with router server fail. send request fail, error:{}, log_id:{}",
+                    TLOG_WARN_IF(verbose, "connect with router server fail. send request fail, error:{}, log_id:{}",
                               cntl.ErrorText(), cntl.log_id());
                     ++retry_time;
                     continue;
                 }
 
                 if (response.errcode() != proto::SUCCESS) {
-                    TLOG_WARN("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
+                    TLOG_WARN_IF(verbose, "send meta server fail, log_id:{}, response:{}", cntl.log_id(),
                               response.ShortDebugString());
-                    return turbo::UnavailableError("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
-                                                   response.ShortDebugString());
+                    //return turbo::UnavailableError("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
+                    //                               response.ShortDebugString());
+                    return turbo::OkStatus();
                 } else {
                     return turbo::OkStatus();
                 }
             } while (retry_time < OptionContext::get_instance()->max_retry);
-            return turbo::UnavailableError("");
+            return turbo::DeadlineExceededError("try times {} and can not get response.", retry_time);
 
         }
 

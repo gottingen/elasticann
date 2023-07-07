@@ -28,6 +28,11 @@ namespace EA {
                                   const ::EA::proto::MetaManagerRequest* request,
                                   ::EA::proto::MetaManagerResponse* response,
                                   ::google::protobuf::Closure* done) override;
+
+        void query(::google::protobuf::RpcController* controller,
+                           const ::EA::proto::QueryRequest* request,
+                           ::EA::proto::QueryResponse* response,
+                           ::google::protobuf::Closure* done) override;
     };
 }  // namespace EA
 

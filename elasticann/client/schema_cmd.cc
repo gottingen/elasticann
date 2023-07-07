@@ -14,9 +14,11 @@
 //
 #include "elasticann/client/schema_cmd.h"
 #include "elasticann/client/namespace_cmd.h"
+#include "elasticann/client/database_cmd.h"
+#include "elasticann/client/cluster_cmd.h"
+#include "elasticann/client/table_cmd.h"
 #include "elasticann/client/option_context.h"
-#include <iostream>
-#include <memory>
+#include "turbo/format/print.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -29,8 +31,11 @@ namespace EA::client {
         auto *sub = app.add_subcommand("schema", "schema operations");
 
         // Add options to sub, binding them to opt.
-        sub->add_option("-s,--server", opt->server, "server address")->required();
+        sub->add_option("-s,--server", opt->server, "server address")->default_val("127.0.0.0:8050");
         EA::client::setup_namespace_cmd(*sub);
+        EA::client::setup_database_cmd(*sub);
+        EA::client::setup_cluster_cmd(*sub);
+        EA::client::setup_table_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_schema_cmd(*sub); });
         //sub->require_subcommand();
@@ -42,7 +47,7 @@ namespace EA::client {
     /// but having a separate function is cleaner.
     void run_schema_cmd(turbo::App &app) {
         if(app.get_subcommands().empty()) {
-            std::cout<<app.help()<<std::endl;
+            turbo::Println("{}", app.help());
         }
     }
 }  // namespace EA::client

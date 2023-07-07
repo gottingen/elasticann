@@ -37,4 +37,6 @@ service RouterService {
 
   rpc meta_manager(MetaManagerRequest) returns (MetaManagerResponse);
 
+  rpc query(QueryRequest) returns (QueryResponse);
+
 };

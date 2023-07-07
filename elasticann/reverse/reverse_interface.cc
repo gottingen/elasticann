@@ -30,70 +30,68 @@
 
 namespace EA {
 //--xbs interface
-const char delim_term = ';';
-const char delim_score = ':';
+    const char delim_term = ';';
+    const char delim_score = ':';
 
-void src_2_term_infos(const std::string &src, std::vector<std::string>& term_infos)
-{
-    int pos = 0;
-    int size = src.length();
-    int begin = 0;
-    bool over = false;
+    void src_2_term_infos(const std::string &src, std::vector<std::string> &term_infos) {
+        int pos = 0;
+        int size = src.length();
+        int begin = 0;
+        bool over = false;
 
-    int tmp_pos = src.find(':');
-    if (tmp_pos == -1 || tmp_pos == size -1) {
+        int tmp_pos = src.find(':');
+        if (tmp_pos == -1 || tmp_pos == size - 1) {
+            return;
+        }
+        std::string new_src = src.substr(tmp_pos + 1, size - tmp_pos - 1);
+        while (true) {
+            pos = new_src.find(delim_term, begin);
+            if (pos == -1) {
+                pos = new_src.length();
+                over = true;
+            }
+            term_infos.push_back(new_src.substr(begin, pos - begin));
+            begin = pos + 1;
+            if (over) {
+                break;
+            }
+        }
         return;
     }
-    std::string new_src = src.substr(tmp_pos + 1, size - tmp_pos - 1);
-    while (true) {
-        pos = new_src.find(delim_term, begin);
-        if (pos == -1) {
-            pos = new_src.length();
-            over = true;
-        }
-        term_infos.push_back(new_src.substr(begin, pos - begin));
-        begin = pos + 1;
-        if (over) {
-            break;
-        }
-    }
-    return;
-}
 
-int parse_term_info(
-        const std::string& term_info, 
-        std::string& term, 
-        float& score, 
-        std::vector<uint32_t>& tag_source_vec)
-{
-    int pos = term_info.find(delim_score);
-    if (pos == -1) {
-        return -1;
-    }
-    int len = term_info.length();
-    term = term_info.substr(0, pos);
-    std::string score_source_str = term_info.substr(pos + 1, len - pos - 1);
-    char *next = nullptr;
-    score = strtof(score_source_str.c_str(), &next);
-    if (*next != delim_score) {
-        return -1;
-    }
-    uint64_t tags = strtoul(next + 1, nullptr, 10);
-    uint64_t tag = 1;
-    uint64_t tmp = UINT64_MAX;//判断后续位是否还有1的标志
-    for (uint32_t i = 1; i <= 64; ++i) {
-        if (tags & tag) {
-            tag_source_vec.push_back(tag);
+    int parse_term_info(
+            const std::string &term_info,
+            std::string &term,
+            float &score,
+            std::vector<uint32_t> &tag_source_vec) {
+        int pos = term_info.find(delim_score);
+        if (pos == -1) {
+            return -1;
         }
-        tmp ^= tag;
-        if ((tags & tmp) == 0) {
-            //后续位没有1，则退出
-            break;
+        int len = term_info.length();
+        term = term_info.substr(0, pos);
+        std::string score_source_str = term_info.substr(pos + 1, len - pos - 1);
+        char *next = nullptr;
+        score = strtof(score_source_str.c_str(), &next);
+        if (*next != delim_score) {
+            return -1;
         }
-        tag <<= 1;
-    }  
-    return 0;
-}
+        uint64_t tags = strtoul(next + 1, nullptr, 10);
+        uint64_t tag = 1;
+        uint64_t tmp = UINT64_MAX;//判断后续位是否还有1的标志
+        for (uint32_t i = 1; i <= 64; ++i) {
+            if (tags & tag) {
+                tag_source_vec.push_back(tag);
+            }
+            tmp ^= tag;
+            if ((tags & tmp) == 0) {
+                //后续位没有1，则退出
+                break;
+            }
+            tag <<= 1;
+        }
+        return 0;
+    }
 
 }// end of namespace
 

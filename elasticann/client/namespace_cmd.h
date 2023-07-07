@@ -33,6 +33,11 @@ namespace EA::client {
     void run_ns_remove_cmd();
 
     void run_ns_modify_cmd();
+
+    void run_ns_list_cmd();
+
+    void run_ns_info_cmd();
+
 }  // namespace EA::client
 
 #endif  // ELASTICANN_CLIENT_NAMESPACE_CMD_H_
