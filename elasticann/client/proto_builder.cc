@@ -16,6 +16,7 @@
 #include "elasticann/client/proto_builder.h"
 #include "elasticann/client/option_context.h"
 #include "elasticann/client/validator.h"
+#include "turbo/strings/utility.h"
 
 namespace EA::client {
     turbo::Status
@@ -241,7 +242,8 @@ namespace EA::client {
         req->set_op_type(EA::proto::QUERY_PHYSICAL);
         auto &phys = OptionContext::get_instance()->physical_idc;
         if (phys.size() != 1) {
-            return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", phys.size());
+            return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}",
+                                               phys.size());
         }
         auto rs = CheckValidNameType(phys[0]);
         if (!rs.ok()) {
@@ -249,5 +251,42 @@ namespace EA::client {
         }
         req->set_physical_room(phys[0]);
         return turbo::OkStatus();
+    }
+
+    turbo::ResultStatus<EA::proto::FieldInfo> ProtoBuilder::string_to_table_field(const std::string &str) {
+        // format: field_name:field_type
+        std::vector<std::string> fv = turbo::StrSplit(str,':');
+        if(fv.size() != 2) {
+            return turbo::InvalidArgumentError("{} is bad format as the format should be: field_name:field_type");
+        }
+        EA::proto::FieldInfo ret;
+        ret.set_field_name(fv[0]);
+    }
+
+    turbo::Status
+    ProtoBuilder::make_table_create(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_CREATE_TABLE);
+        auto *treq = req->mutable_table_info();
+        // namespace
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+
+        // db name
+        treq->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        treq->set_database(OptionContext::get_instance()->db_name);
+
+        // table name
+        rs = CheckValidNameType(OptionContext::get_instance()->table_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        treq->set_table_name(OptionContext::get_instance()->table_name);
+
     }
 }  // namespace EA::client

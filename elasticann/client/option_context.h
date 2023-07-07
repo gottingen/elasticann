@@ -44,6 +44,11 @@ namespace EA::client {
 
         std::vector<std::string> logical_idc;
         std::vector<std::string> physical_idc;
+
+        // for tables
+        std::string table_name;
+        std::vector<std::string> table_fields;
+        std::vector<std::string> table_indexes;
     };
 }  // namespace EA::client
 

@@ -49,8 +49,6 @@
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/common/concurrency.h"
 #include "elasticann/store/backup.h"
-
-//开源编译，等raft learner开源后删除
 #include <braft/raft.h>
 
 namespace braft {

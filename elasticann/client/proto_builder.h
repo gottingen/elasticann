@@ -18,6 +18,7 @@
 
 #include "elasticann/proto/router.interface.pb.h"
 #include "turbo/base/status.h"
+#include "turbo/base/result_status.h"
 #include <string>
 #include <cstddef>
 #include <cstdint>
@@ -76,6 +77,11 @@ namespace EA::client {
         make_cluster_query_physical_list(EA::proto::QueryRequest *req);
         [[nodiscard]] static turbo::Status
         make_cluster_query_physical_info(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_table_create(EA::proto::MetaManagerRequest *req);
+    private:
+        static turbo::ResultStatus<EA::proto::FieldInfo> string_to_table_field(const std::string &str);
     };
 }  // namespace EA::client
 

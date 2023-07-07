@@ -16,7 +16,14 @@
 #ifndef ELASTICANN_CLIENT_TABLE_CMD_H_
 #define ELASTICANN_CLIENT_TABLE_CMD_H_
 
+#include "turbo/flags/flags.h"
+#include <string>
+
 namespace EA::client {
 
+    void setup_table_cmd(turbo::App &app);
+
+    void run_table_cmd(turbo::App *app);
+    void run_table_create();
 }  // namespace EA::client
 #endif  // ELASTICANN_CLIENT_TABLE_CMD_H_
