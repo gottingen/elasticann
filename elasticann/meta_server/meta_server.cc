@@ -16,7 +16,7 @@
 
 
 #include "elasticann/meta_server/meta_server.h"
-#include "auto_incr_state_machine.h"
+#include "elasticann/meta_server/auto_incr_state_machine.h"
 #include "elasticann/meta_server/tso_state_machine.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/cluster_manager.h"

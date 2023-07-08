@@ -22,111 +22,113 @@
 
 namespace EA {
 
-class TransactionDBBthreadMutex : public rocksdb::TransactionDBMutex {
-public:
-    TransactionDBBthreadMutex() {}
-    ~TransactionDBBthreadMutex() override {}
+    class TransactionDBBthreadMutex : public rocksdb::TransactionDBMutex {
+    public:
+        TransactionDBBthreadMutex() {}
 
-    rocksdb::Status Lock() override;
+        ~TransactionDBBthreadMutex() override {}
 
-    rocksdb::Status TryLockFor(int64_t timeout_time) override;
+        rocksdb::Status Lock() override;
 
-    void UnLock() override { _mutex.unlock(); }
+        rocksdb::Status TryLockFor(int64_t timeout_time) override;
 
-    friend class TransactionDBBthreadCond;
+        void UnLock() override { _mutex.unlock(); }
 
-private:
-    bthread::Mutex _mutex;
-};
+        friend class TransactionDBBthreadCond;
 
-class TransactionDBBthreadCond : public rocksdb::TransactionDBCondVar {
-public:
-    TransactionDBBthreadCond() {}
-    ~TransactionDBBthreadCond() override {}
+    private:
+        bthread::Mutex _mutex;
+    };
 
-    rocksdb::Status Wait(std::shared_ptr<rocksdb::TransactionDBMutex> mutex) override;
+    class TransactionDBBthreadCond : public rocksdb::TransactionDBCondVar {
+    public:
+        TransactionDBBthreadCond() {}
 
-    rocksdb::Status WaitFor(std::shared_ptr<rocksdb::TransactionDBMutex> mutex,
-                    int64_t timeout_time) override;
+        ~TransactionDBBthreadCond() override {}
 
-    void Notify() override { _cv.notify_one(); }
+        rocksdb::Status Wait(std::shared_ptr<rocksdb::TransactionDBMutex> mutex) override;
 
-    void NotifyAll() override { _cv.notify_all(); }
+        rocksdb::Status WaitFor(std::shared_ptr<rocksdb::TransactionDBMutex> mutex,
+                                int64_t timeout_time) override;
 
-private:
-    bthread::ConditionVariable _cv;
-};
+        void Notify() override { _cv.notify_one(); }
 
-std::shared_ptr<rocksdb::TransactionDBMutex>
-TransactionDBBthreadFactory::AllocateMutex() {
-    return std::shared_ptr<rocksdb::TransactionDBMutex>(new TransactionDBBthreadMutex());
-}
+        void NotifyAll() override { _cv.notify_all(); }
 
-std::shared_ptr<rocksdb::TransactionDBCondVar>
-TransactionDBBthreadFactory::AllocateCondVar() {
-    return std::shared_ptr<rocksdb::TransactionDBCondVar>(new TransactionDBBthreadCond());
-}
+    private:
+        bthread::ConditionVariable _cv;
+    };
 
-rocksdb::Status TransactionDBBthreadMutex::Lock() {
-    _mutex.lock();
-    return rocksdb::Status::OK();
-}
+    std::shared_ptr<rocksdb::TransactionDBMutex>
+    TransactionDBBthreadFactory::AllocateMutex() {
+        return std::shared_ptr<rocksdb::TransactionDBMutex>(new TransactionDBBthreadMutex());
+    }
 
-rocksdb::Status TransactionDBBthreadMutex::TryLockFor(int64_t timeout_time) {
-    bool locked = true;
+    std::shared_ptr<rocksdb::TransactionDBCondVar>
+    TransactionDBBthreadFactory::AllocateCondVar() {
+        return std::shared_ptr<rocksdb::TransactionDBCondVar>(new TransactionDBBthreadCond());
+    }
 
-    if (timeout_time == 0) {
-        locked = _mutex.try_lock();
-    } else {
+    rocksdb::Status TransactionDBBthreadMutex::Lock() {
         _mutex.lock();
+        return rocksdb::Status::OK();
     }
 
-    if (!locked) {
-        // timeout acquiring mutex
-        return rocksdb::Status::TimedOut(rocksdb::Status::SubCode::kMutexTimeout);
-    }
+    rocksdb::Status TransactionDBBthreadMutex::TryLockFor(int64_t timeout_time) {
+        bool locked = true;
 
-    return rocksdb::Status::OK();
-}
-
-rocksdb::Status TransactionDBBthreadCond::Wait(
-    std::shared_ptr<rocksdb::TransactionDBMutex> mutex) {
-    auto bthread_mutex = reinterpret_cast<TransactionDBBthreadMutex*>(mutex.get());
-
-    std::unique_lock<bthread_mutex_t> lock(*(bthread_mutex->_mutex.native_handler()), std::adopt_lock);
-    _cv.wait(lock);
-
-    // Make sure unique_lock doesn't unlock mutex when it destructs
-    lock.release();
-
-    return rocksdb::Status::OK();
-}
-
-rocksdb::Status TransactionDBBthreadCond::WaitFor(
-    std::shared_ptr<rocksdb::TransactionDBMutex> mutex, int64_t timeout_time) {
-    rocksdb::Status s;
-
-    auto bthread_mutex = reinterpret_cast<TransactionDBBthreadMutex*>(mutex.get());
-    std::unique_lock<bthread_mutex_t> lock(*(bthread_mutex->_mutex.native_handler()), std::adopt_lock);
-
-    if (timeout_time < 0) {
-        // If timeout is negative, do not use a timeout
-        _cv.wait(lock);
-    } else {
-        // auto duration = std::chrono::microseconds(timeout_time);
-        auto cv_status = _cv.wait_for(lock, timeout_time);
-
-        // Check if the wait stopped due to timing out.
-        if (cv_status == ETIMEDOUT) {
-            s = rocksdb::Status::TimedOut(rocksdb::Status::SubCode::kMutexTimeout);
+        if (timeout_time == 0) {
+            locked = _mutex.try_lock();
+        } else {
+            _mutex.lock();
         }
+
+        if (!locked) {
+            // timeout acquiring mutex
+            return rocksdb::Status::TimedOut(rocksdb::Status::SubCode::kMutexTimeout);
+        }
+
+        return rocksdb::Status::OK();
     }
 
-    // Make sure unique_lock doesn't unlock mutex when it destructs
-    lock.release();
+    rocksdb::Status TransactionDBBthreadCond::Wait(
+            std::shared_ptr<rocksdb::TransactionDBMutex> mutex) {
+        auto bthread_mutex = reinterpret_cast<TransactionDBBthreadMutex *>(mutex.get());
 
-    // CV was signaled, or we spuriously woke up (but didn't time out)
-    return s;
-}
+        std::unique_lock<bthread_mutex_t> lock(*(bthread_mutex->_mutex.native_handler()), std::adopt_lock);
+        _cv.wait(lock);
+
+        // Make sure unique_lock doesn't unlock mutex when it destructs
+        lock.release();
+
+        return rocksdb::Status::OK();
+    }
+
+    rocksdb::Status TransactionDBBthreadCond::WaitFor(
+            std::shared_ptr<rocksdb::TransactionDBMutex> mutex, int64_t timeout_time) {
+        rocksdb::Status s;
+
+        auto bthread_mutex = reinterpret_cast<TransactionDBBthreadMutex *>(mutex.get());
+        std::unique_lock<bthread_mutex_t> lock(*(bthread_mutex->_mutex.native_handler()), std::adopt_lock);
+
+        if (timeout_time < 0) {
+            // If timeout is negative, do not use a timeout
+            _cv.wait(lock);
+        } else {
+            // auto duration = std::chrono::microseconds(timeout_time);
+            auto cv_status = _cv.wait_for(lock, timeout_time);
+
+            // Check if the wait stopped due to timing out.
+            if (cv_status == ETIMEDOUT) {
+                s = rocksdb::Status::TimedOut(rocksdb::Status::SubCode::kMutexTimeout);
+            }
+        }
+
+        // Make sure unique_lock doesn't unlock mutex when it destructs
+        lock.release();
+
+        // CV was signaled, or we spuriously woke up (but didn't time out)
+        return s;
+    }
 
 }  // namespace EA

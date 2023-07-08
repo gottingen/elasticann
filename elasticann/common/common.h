@@ -229,7 +229,7 @@ public:
         while (_count > cond) {
             ret = bthread_cond_wait(&_cond, &_mutex);
             if (ret != 0) {
-                DB_WARNING("wait timeout, ret:%d", ret);
+                TLOG_WARN("wait timeout, ret:{}", ret);
                 break;
             }
         }
@@ -242,7 +242,7 @@ public:
         while (_count + 1 > cond) {
             ret = bthread_cond_wait(&_cond, &_mutex);
             if (ret != 0) {
-                DB_WARNING("wait timeout, ret:%d", ret);
+                TLOG_WARN("wait timeout, ret:{}", ret);
                 break;
             }
         }
@@ -257,7 +257,7 @@ public:
         while (_count > cond) {
             ret = bthread_cond_timedwait(&_cond, &_mutex, &tm);
             if (ret != 0) {
-                DB_WARNING("wait timeout, ret:%d", ret);
+                TLOG_WARN("wait timeout, ret:{}", ret);
                 break;
             }
         }
@@ -272,7 +272,7 @@ public:
         while (_count + 1 > cond) {
             ret = bthread_cond_timedwait(&_cond, &_mutex, &tm);
             if (ret != 0) {
-                DB_WARNING("wait timeout, ret:%d", ret);
+                TLOG_WARN("wait timeout, ret: {}", ret);
                 break; 
             }
         }
@@ -305,7 +305,7 @@ public:
                     return nullptr;
                 }, _call);
         if (ret != 0) {
-            DB_FATAL("bthread_start_background fail");
+            TLOG_ERROR("bthread_start_background fail");
         }
     }
     void run_urgent(const std::function<void()>& call) {
@@ -319,7 +319,7 @@ public:
                     return nullptr;
                 }, _call);
         if (ret != 0) {
-            DB_FATAL("bthread_start_urgent fail");
+            TLOG_ERROR("bthread_start_urgent fail");
         }
     }
     void join() {
@@ -1202,7 +1202,7 @@ private:
 inline void update_param(const std::string& name, const std::string& value) {
     std::string target;
     if (!google::GetCommandLineOption(name.c_str(), &target)) {
-        DB_WARNING("get command line: %s failed",name.c_str());
+        TLOG_WARN("get command line: {} failed",name);
         return;
     }
 
@@ -1211,10 +1211,10 @@ inline void update_param(const std::string& name, const std::string& value) {
     }
 
     if (google::SetCommandLineOption(name.c_str(), value.c_str()).empty()) {
-        DB_WARNING("set command line: %s value: %s failed", name.c_str(), value.c_str());
+        TLOG_WARN("set command line: {} value: {} failed", name, value);
         return;
     } else {
-        DB_WARNING("set command line: %s %s => %s", name.c_str(), target.c_str(), value.c_str());
+        TLOG_WARN("set command line: {} {} => {}", name, target, value);
     }
 }
 

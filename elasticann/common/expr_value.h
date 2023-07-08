@@ -28,6 +28,7 @@
 #include "elasticann/common/datetime.h"
 #include "elasticann/common/type_utils.h"
 #include "bluebird/bits/bitmap.h"
+#include "turbo/strings/numbers.h"
 
 namespace EA {
 
@@ -172,7 +173,7 @@ namespace EA {
                             *_u.bitmap = bluebird::Bitmap::readSafe(value.string_val().data(),
                                                                     value.string_val().size());
                         } catch (...) {
-                            DB_WARNING("bitmap read from string failed");
+                            TLOG_WARN("bitmap read from string failed");
                         }
                     }
                     break;
@@ -260,7 +261,7 @@ namespace EA {
         }
 
         uint64_t unit64_value(int prefix_len) {
-            DB_WARNING("unit64_value, prefix: %d, str: %s", prefix_len, str_val.c_str());
+            TLOG_WARN("unit64_value, prefix: {}, str: {}", prefix_len, str_val);
             uint64_t val = 0;
             if (type == proto::STRING) {
                 if (prefix_len >= (int) str_val.size()) {
@@ -271,7 +272,7 @@ namespace EA {
                     if (i < (int) str_val.size()) {
                         val += uint8_t(str_val[i]);
                     }
-                    DB_WARNING("i: %d, val: %lu", i, val);
+                    TLOG_WARN("i: {}, val: {}", i, val);
                 }
                 return val;
             }
@@ -518,7 +519,7 @@ namespace EA {
                         try {
                             *_u.bitmap = bluebird::Bitmap::readSafe(str_val.c_str(), str_val.size());
                         } catch (...) {
-                            DB_WARNING("bitmap read from string failed");
+                            TLOG_WARN("bitmap read from string failed");
                         }
                     }
                     break;
@@ -883,8 +884,8 @@ namespace EA {
         double calc_diff(const ExprValue &end, int prefix_len) {
             ExprValue tmp_end = end;
             double ret = tmp_end.float_value(prefix_len) - float_value(prefix_len);
-            DB_WARNING("start:%s, end:%s, prefix_len:%d, ret:%f",
-                       get_string().c_str(), end.get_string().c_str(), prefix_len, ret);
+            TLOG_WARN("start:{}, end:{}, prefix_len:{}, ret:{}",
+                       get_string(), end.get_string(), prefix_len, ret);
             return ret;
         }
 
@@ -909,5 +910,5 @@ namespace EA {
 
     using ExprValueFlatSet = butil::FlatSet<ExprValue, ExprValue::HashFunction>;
 
-}
+}  // namespace EA
 

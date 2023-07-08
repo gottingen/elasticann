@@ -16,6 +16,7 @@
 
 
 #pragma once
+
 #include <sys/time.h>
 #include <string>
 #include <unordered_map>
@@ -23,34 +24,42 @@
 #include <butil/containers/linked_list.h>
 
 namespace EA {
-    
-template <typename ItemKey, typename ItemType>
-struct LruNode : public butil::LinkNode<LruNode<ItemKey, ItemType>> {
-    ItemType value;
-    ItemKey key;
-};
 
-template <typename ItemKey, typename ItemType>
-class Cache {
-public:
-    Cache() : _total_count(0), _hit_count(0), 
-        _len_threshold(10000){}
-    int init(int64_t len_threshold);
-    std::string get_info();
-    int check(const ItemKey& key);
-    int find(const ItemKey& key, ItemType* value);
-    int add(const ItemKey& key, const ItemType& value);
-    int del(const ItemKey& key);
-private:
-    //双链表，从尾部插入数据，超过阈值数据从头部删除
-    butil::LinkedList<LruNode<ItemKey, ItemType>> _lru_list;
-    std::unordered_map<ItemKey, LruNode<ItemKey, ItemType>*> _lru_map;
-    std::mutex _mutex;
-    int64_t _total_count;
-    int64_t _hit_count;
-    int64_t _len_threshold;
-};
+    template<typename ItemKey, typename ItemType>
+    struct LruNode : public butil::LinkNode<LruNode<ItemKey, ItemType>> {
+        ItemType value;
+        ItemKey key;
+    };
+
+    template<typename ItemKey, typename ItemType>
+    class Cache {
+    public:
+        Cache() : _total_count(0), _hit_count(0),
+                  _len_threshold(10000) {}
+
+        int init(int64_t len_threshold);
+
+        std::string get_info();
+
+        int check(const ItemKey &key);
+
+        int find(const ItemKey &key, ItemType *value);
+
+        int add(const ItemKey &key, const ItemType &value);
+
+        int del(const ItemKey &key);
+
+    private:
+        //双链表，从尾部插入数据，超过阈值数据从头部删除
+        butil::LinkedList<LruNode<ItemKey, ItemType>> _lru_list;
+        std::unordered_map<ItemKey, LruNode<ItemKey, ItemType> *> _lru_map;
+        std::mutex _mutex;
+        int64_t _total_count;
+        int64_t _hit_count;
+        int64_t _len_threshold;
+    };
 
 }
+
 #include "lru_cache.hpp"
 

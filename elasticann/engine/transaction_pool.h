@@ -16,137 +16,147 @@
 
 
 #pragma once
- 
+
 #include <unordered_map>
 #include "elasticann/common/common.h"
 #include "elasticann/engine/transaction.h"
 
 namespace EA {
-//class Region;
-class Region;
-class MetaWriter;
-// TODO: remove locking for thread-safe codes
-class TransactionPool {
-public:
-    virtual ~TransactionPool() {
-    }
+    //class Region;
+    class Region;
 
-    void close() {
-        _txn_map.clear();
-        _txn_count = 0;
-    }
+    class MetaWriter;
 
-    TransactionPool() : _num_prepared_txn(0), _txn_count(0) {}
-
-    int init(int64_t region_id, bool use_ttl, int64_t online_ttl_base_expire_time_us);
-
-    // -1 means insert error (already exists)
-    int begin_txn(uint64_t txn_id, SmartTransaction& txn, int64_t primary_region_id,
-             int64_t txn_timeout, int64_t txn_lock_timeout);
-
-    void remove_txn(uint64_t txn_id, bool mark_finished);
-
-    SmartTransaction get_txn(uint64_t txn_id) {
-        return _txn_map.get(txn_id);
-    }
-    // -1 not found;
-    int get_finished_txn_affected_rows(uint64_t txn_id) {
-        if (_finished_txn_map.read()->exist(txn_id)) {
-            return _finished_txn_map.read()->get(txn_id);
+    // TODO: remove locking for thread-safe codes
+    class TransactionPool {
+    public:
+        virtual ~TransactionPool() {
         }
-        if (_finished_txn_map.read_background()->exist(txn_id)) {
-            return _finished_txn_map.read_background()->get(txn_id);
+
+        void close() {
+            _txn_map.clear();
+            _txn_count = 0;
         }
-        return -1;
-    }
 
-    void rollback_mark_finished(uint64_t txn_id) {
-        (*_finished_txn_map.read())[txn_id] = -1;
-    }
+        TransactionPool() : _num_prepared_txn(0), _txn_count(0) {}
 
-    bool is_mark_finished(uint64_t txn_id) {
-        if (_finished_txn_map.read()->exist(txn_id)) {
-            return true;
+        int init(int64_t region_id, bool use_ttl, int64_t online_ttl_base_expire_time_us);
+
+        // -1 means insert error (already exists)
+        int begin_txn(uint64_t txn_id, SmartTransaction &txn, int64_t primary_region_id,
+                      int64_t txn_timeout, int64_t txn_lock_timeout);
+
+        void remove_txn(uint64_t txn_id, bool mark_finished);
+
+        SmartTransaction get_txn(uint64_t txn_id) {
+            return _txn_map.get(txn_id);
         }
-        if (_finished_txn_map.read_background()->exist(txn_id)) {
-            return true;
+
+        // -1 not found;
+        int get_finished_txn_affected_rows(uint64_t txn_id) {
+            if (_finished_txn_map.read()->exist(txn_id)) {
+                return _finished_txn_map.read()->get(txn_id);
+            }
+            if (_finished_txn_map.read_background()->exist(txn_id)) {
+                return _finished_txn_map.read_background()->get(txn_id);
+            }
+            return -1;
         }
-        return false;
-    }
 
-    void increase_prepared() {
-        _num_prepared_txn.increase();
-    }
+        void rollback_mark_finished(uint64_t txn_id) {
+            (*_finished_txn_map.read())[txn_id] = -1;
+        }
 
-    void decrease_prepared() {
-        _num_prepared_txn.decrease_signal();
-    }
+        bool is_mark_finished(uint64_t txn_id) {
+            if (_finished_txn_map.read()->exist(txn_id)) {
+                return true;
+            }
+            if (_finished_txn_map.read_background()->exist(txn_id)) {
+                return true;
+            }
+            return false;
+        }
 
-    int32_t num_prepared() {
-        return _num_prepared_txn.count();
-    }
+        void increase_prepared() {
+            _num_prepared_txn.increase();
+        }
 
-    int32_t num_began() {
-        return _txn_count.load();
-    }
+        void decrease_prepared() {
+            _num_prepared_txn.decrease_signal();
+        }
 
-    bool use_ttl() const {
-        return _use_ttl;
-    }
+        int32_t num_prepared() {
+            return _num_prepared_txn.count();
+        }
 
-    int64_t online_ttl_base_expire_time_us() const {
-        return _online_ttl_base_expire_time_us;
-    }
+        int32_t num_began() {
+            return _txn_count.load();
+        }
 
-    void update_ttl_info(bool use_ttl, int64_t online_ttl_base_expire_time_us) {
-        _use_ttl = use_ttl;
-        _online_ttl_base_expire_time_us = online_ttl_base_expire_time_us;
-    }
+        bool use_ttl() const {
+            return _use_ttl;
+        }
 
-    bool exec_1pc_out_fsm();
+        int64_t online_ttl_base_expire_time_us() const {
+            return _online_ttl_base_expire_time_us;
+        }
 
-    void clear_transactions(Region* region);
+        void update_ttl_info(bool use_ttl, int64_t online_ttl_base_expire_time_us) {
+            _use_ttl = use_ttl;
+            _online_ttl_base_expire_time_us = online_ttl_base_expire_time_us;
+        }
 
-    void on_leader_stop_rollback();
+        bool exec_1pc_out_fsm();
 
-    void clear_orphan_transactions();
+        void clear_transactions(Region *region);
 
-    void rollback_txn_before(int64_t txn_timeout);
+        void on_leader_stop_rollback();
 
-    void update_primary_timestamp(const proto::TransactionInfo& txn_info);
+        void clear_orphan_transactions();
 
-    void get_prepared_txn_info(std::unordered_map<uint64_t, proto::TransactionInfo>& prepared_txn, bool for_num_rows);
+        void rollback_txn_before(int64_t txn_timeout);
 
-    void update_txn_num_rows_after_split(const std::vector<proto::TransactionInfo>& txn_infos);
+        void update_primary_timestamp(const proto::TransactionInfo &txn_info);
 
-    void txn_query_primary_region(uint64_t txn_id, Region* region, proto::RegionInfo& region_info);
-    void txn_commit_through_raft(uint64_t txn_id, proto::RegionInfo& region_info, proto::OpType op_type);
-    void get_txn_state(const proto::StoreReq* request, proto::StoreRes* response);
-    void read_only_txn_process(int64_t region_id, SmartTransaction txn, proto::OpType op_type, bool optimize_1pc);
-    int get_region_info_from_meta(int64_t region_id, proto::RegionInfo& region_info);
-    //清空所有的状态
-    void clear();
-private:
-    struct TxnParams {
-        bool is_primary_region = true;
-        bool is_finished = false;
-        bool is_prepared = false;
-        int seq_id = 0;
-        int64_t primary_region_id = -1;
+        void
+        get_prepared_txn_info(std::unordered_map<uint64_t, proto::TransactionInfo> &prepared_txn, bool for_num_rows);
+
+        void update_txn_num_rows_after_split(const std::vector<proto::TransactionInfo> &txn_infos);
+
+        void txn_query_primary_region(uint64_t txn_id, Region *region, proto::RegionInfo &region_info);
+
+        void txn_commit_through_raft(uint64_t txn_id, proto::RegionInfo &region_info, proto::OpType op_type);
+
+        void get_txn_state(const proto::StoreReq *request, proto::StoreRes *response);
+
+        void read_only_txn_process(int64_t region_id, SmartTransaction txn, proto::OpType op_type, bool optimize_1pc);
+
+        int get_region_info_from_meta(int64_t region_id, proto::RegionInfo &region_info);
+
+        //清空所有的状态
+        void clear();
+
+    private:
+        struct TxnParams {
+            bool is_primary_region = true;
+            bool is_finished = false;
+            bool is_prepared = false;
+            int seq_id = 0;
+            int64_t primary_region_id = -1;
+        };
+        int64_t _region_id = 0;
+        int64_t _latest_active_txn_ts = 0;
+        bool _use_ttl = false;
+        int64_t _online_ttl_base_expire_time_us = 0;
+
+        // txn_id => txn handler mapping
+        ThreadSafeMap<uint64_t, SmartTransaction> _txn_map;
+        // txn_id => affected_rows use for idempotent
+        DoubleBuffer<ThreadSafeMap<uint64_t, int>> _finished_txn_map;
+        TimeCost _clean_finished_txn_cost;
+
+        BthreadCond _num_prepared_txn;  // total number of prepared transactions
+        std::atomic<int32_t> _txn_count;
+        MetaWriter *_meta_writer = nullptr;
     };
-    int64_t _region_id = 0;
-    int64_t _latest_active_txn_ts = 0;
-    bool _use_ttl = false;
-    int64_t _online_ttl_base_expire_time_us = 0;
-
-    // txn_id => txn handler mapping
-    ThreadSafeMap<uint64_t, SmartTransaction>  _txn_map;
-    // txn_id => affected_rows use for idempotent
-    DoubleBuffer<ThreadSafeMap<uint64_t, int>> _finished_txn_map;
-    TimeCost _clean_finished_txn_cost;
-
-    BthreadCond  _num_prepared_txn;  // total number of prepared transactions
-    std::atomic<int32_t> _txn_count;
-    MetaWriter*          _meta_writer = nullptr;
-};
 }

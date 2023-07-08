@@ -21,16 +21,16 @@
 
 namespace EA {
 
-MutTableKey::MutTableKey(const TableKey& key) : 
-        _full(key.get_full()),
-        _data(key.data().data_, key.data().size_) {}
+    MutTableKey::MutTableKey(const TableKey &key) :
+            _full(key.get_full()),
+            _data(key.data().data_, key.data().size_) {}
 
-MutTableKey& MutTableKey::append_index(const TableKey& key) {
-    _data.append(key.data().data_, key.data().size_);
-    return *this;
-}
+    MutTableKey &MutTableKey::append_index(const TableKey &key) {
+        _data.append(key.data().data_, key.data().size_);
+        return *this;
+    }
 
-int MutTableKey::append_index(IndexInfo& index, TableRecord* record, int field_cnt, bool clear) {
-    return record->encode_key(index, *this, field_cnt, clear, false);
-}
-} // end of namespace EA
+    int MutTableKey::append_index(IndexInfo &index, TableRecord *record, int field_cnt, bool clear) {
+        return record->encode_key(index, *this, field_cnt, clear, false);
+    }
+}  // namespace EA
