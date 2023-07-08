@@ -21,34 +21,34 @@
 #include <string>
 
 namespace EA {
-//T是被管理类，Derived是继承ObjectManager的管理器
-template <typename T, typename Derived>
-class ObjectManager {
-public:
-    static Derived* instance() {
-        static Derived manager;
-        return &manager;
-    }
 
-    virtual ~ObjectManager() {
-    }
+    template<typename T, typename Derived>
+    class ObjectManager {
+    public:
+        static Derived *instance() {
+            static Derived manager;
+            return &manager;
+        }
 
-    T get_object(const std::string& name) {
-        if (_objects.count(name) == 1) {
-            return _objects[name];
-        } 
-        return nullptr;
-    }
+        virtual ~ObjectManager() {
+        }
 
-    int register_object(const std::string& name, T object) {
-        _objects[name] = object;
-        return 0;
-    }
+        T get_object(const std::string &name) {
+            if (_objects.count(name) == 1) {
+                return _objects[name];
+            }
+            return nullptr;
+        }
 
-protected:
-    ObjectManager() {
-    }
+        int register_object(const std::string &name, T object) {
+            _objects[name] = object;
+            return 0;
+        }
 
-    std::unordered_map<std::string, T> _objects;
-};
+    protected:
+        ObjectManager() {
+        }
+
+        std::unordered_map<std::string, T> _objects;
+    };
 }

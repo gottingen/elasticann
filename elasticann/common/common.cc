@@ -413,7 +413,7 @@ void update_schema_conf_common(const std::string& table_name, const proto::Schem
             }
 
         }
-        DB_WARNING("%s schema conf UPDATE TO : %s", table_name.c_str(), schema_conf.ShortDebugString().c_str());
+        TLOG_WARN("{} schema conf UPDATE TO : {}", table_name, schema_conf.ShortDebugString());
 }
 
 int primitive_to_proto_type(proto::PrimitiveType type) {
@@ -441,7 +441,7 @@ int primitive_to_proto_type(proto::PrimitiveType type) {
         { proto::NULL_TYPE,    FieldDescriptorProto::TYPE_BOOL}
     };
     if (_mysql_pb_type_mapping.count(type) == 0) {
-        DB_WARNING("mysql_type %d not supported.", type);
+        TLOG_WARN("mysql_type {} not supported.", type);
         return -1;
     }
     return _mysql_pb_type_mapping[type];
@@ -595,16 +595,16 @@ int brpc_with_http(const std::string& host, const std::string& url, std::string&
     brpc::ChannelOptions options;
     options.protocol = brpc::PROTOCOL_HTTP;
     if (channel.Init(host.c_str() /*any url*/, &options) != 0) {
-        DB_WARNING("Fail to initialize channel, host: %s, url: %s", host.c_str(), url.c_str());
+        TLOG_WARN("Fail to initialize channel, host: {}, url: {}", host, url);
         return -1;
     }
 
     brpc::Controller cntl;
     cntl.http_request().uri() = url;  // 设置为待访问的URL
     channel.CallMethod(nullptr, &cntl, nullptr, nullptr, nullptr/*done*/);
-    DB_DEBUG("http status code : %d",cntl.http_response().status_code());
+    TLOG_DEBUG("http status code : {}",cntl.http_response().status_code());
     response = cntl.response_attachment().to_string();
-    DB_WARNING("host: %s, url: %s, response: %s", host.c_str(), url.c_str(), response.c_str());
+    TLOG_WARN("host: {}, url: {}, response: {}", host, url, response);
     return 0;
 }
 
@@ -671,7 +671,7 @@ std::string store_or_db_bns_to_meta_bns(const std::string& bns) {
         re2::RE2 reg(".*(group.*baikalMeta.*all).*", option);
         meta_bns.clear();
         if (!RE2::Extract(response, reg, "\\1", &meta_bns)) {
-            DB_WARNING("extract commit error. response: %s", response.c_str());
+            TLOG_WARN("extract commit error. response: {}", response);
             continue;
         }
 
@@ -682,7 +682,7 @@ std::string store_or_db_bns_to_meta_bns(const std::string& bns) {
         }
     }
 
-    DB_WARNING("bns_group: %s; store_bns to meta bns : %s => %s", bns_group.c_str(), bns.c_str(), meta_bns.c_str());
+    TLOG_WARN("bns_group: {}; store_bns to meta bns : {} => {}", bns_group, bns, meta_bns);
 
     return meta_bns;
 }
@@ -696,15 +696,15 @@ void parse_sample_sql(const std::string& sample_sql, std::string& database, std:
     re2::RE2 reg("family_table_tag_optype_plat=\\[(.*)\t(.*)\t.*\t.*\t.*sql=\\[(.*)\\]", option);
 
     if (!RE2::Extract(sample_sql, reg, "\\1", &database)) {
-        DB_WARNING("extract commit error.");
+        TLOG_WARN("extract commit error.");
     }
     if (!RE2::Extract(sample_sql, reg, "\\2", &table)) {
-        DB_WARNING("extract commit error.");
+        TLOG_WARN("extract commit error.");
     }
     if (!RE2::Extract(sample_sql, reg, "\\3", &sql)) {
-        DB_WARNING("extract commit error.");
+        TLOG_WARN("extract commit error.");
     }
-    DB_WARNING("sample_sql: %s, database: %s, table: %s, sql: %s", sample_sql.c_str(), database.c_str(), table.c_str(), sql.c_str());
+    TLOG_WARN("sample_sql: {}, database: {}, table: {}, sql: {}", sample_sql, database, table, sql);
 }
 
 }  // EA

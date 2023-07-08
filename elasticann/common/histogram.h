@@ -77,8 +77,8 @@ namespace EA {
             ExprValue tmp_start = start;
             ExprValue tmp_end = end;
             double ret = tmp_end.float_value(prefix_len) - tmp_start.float_value(prefix_len);
-            DB_DEBUG("start:%s, end:%s, prefix_len:%d, ret:%f",
-                     start.get_string().c_str(), end.get_string().c_str(), prefix_len, ret);
+            TLOG_DEBUG("start:{}, end:{}, prefix_len:{}, ret:{}",
+                     start.get_string(), end.get_string(), prefix_len, ret);
             return ret;
         }
 
@@ -90,8 +90,8 @@ namespace EA {
             ExprValue tmp_value = value;
             double ret = (tmp_value.float_value(prefix_len) - tmp_start.float_value(prefix_len)) /
                          (tmp_end.float_value(prefix_len) - tmp_start.float_value(prefix_len));
-            DB_DEBUG("value:%s, start:%s, end:%s, prefix_len:%d, ret:%f",
-                     value.get_string().c_str(), start.get_string().c_str(), end.get_string().c_str(), prefix_len, ret);
+            TLOG_DEBUG("value: {}, start: {}, end: {}, prefix_len: {}, ret: {}",
+                     value.get_string(), start.get_string(), end.get_string(), prefix_len, ret);
             return ret;
         }
 
@@ -124,9 +124,9 @@ namespace EA {
             if (count < 0) {
                 count = 0;
             }
-            DB_DEBUG("tmp_lower:%s, tmp_upper%s,start:%s, end:%s, count:%d",
-                     lower.get_string().c_str(), upper.get_string().c_str(),
-                     bucket_ptr->start.get_string().c_str(), bucket_ptr->end.get_string().c_str(), count);
+            TLOG_DEBUG("tmp_lower:{}, tmp_upper: {},start: {}, end: {}, count: {}",
+                     lower.get_string(), upper.get_string(),
+                     bucket_ptr->start.get_string(), bucket_ptr->end.get_string(), count);
             return count;
         }
 
@@ -178,10 +178,10 @@ namespace EA {
             //超出取值范围返-2，上层需要特殊处理
             if (tmp_lower.compare(_bucket_mapping.rbegin()->second->end) > 0
                 || tmp_upper.compare(_bucket_mapping.begin()->second->start) < 0) {
-                DB_DEBUG("tmp_lower:%s, tmp_upper%s,start:%s, end:%s",
-                         tmp_lower.get_string().c_str(), tmp_upper.get_string().c_str(),
-                         _bucket_mapping.begin()->second->start.get_string().c_str(),
-                         _bucket_mapping.rbegin()->second->end.get_string().c_str());
+                TLOG_DEBUG("tmp_lower: {}, tmp_upper: {},start: {}, end: {}",
+                         tmp_lower.get_string(), tmp_upper.get_string(),
+                         _bucket_mapping.begin()->second->start.get_string(),
+                         _bucket_mapping.rbegin()->second->end.get_string());
                 return -2;
             }
 
@@ -210,9 +210,9 @@ namespace EA {
 
             if (value.compare(_bucket_mapping.rbegin()->second->end) > 0
                 || value.compare(_bucket_mapping.begin()->second->start) < 0) {
-                DB_DEBUG("value:%s, start:%s, end:%s", value.get_string().c_str(),
-                         _bucket_mapping.begin()->second->start.get_string().c_str(),
-                         _bucket_mapping.rbegin()->second->end.get_string().c_str());
+                TLOG_DEBUG("value: {}, start: {}, end: {}", value.get_string(),
+                         _bucket_mapping.begin()->second->start.get_string(),
+                         _bucket_mapping.rbegin()->second->end.get_string());
                 return -2;
             }
 
@@ -222,8 +222,8 @@ namespace EA {
                 --iter;
                 if (value.compare(iter->second->end) > 0
                     || value.compare(iter->second->start) < 0) {
-                    DB_DEBUG("value:%s, start:%s, end:%s", value.get_string().c_str(),
-                             iter->second->start.get_string().c_str(), iter->second->end.get_string().c_str());
+                    TLOG_DEBUG("value: {}, start: {}, end: {}", value.get_string(),
+                             iter->second->start.get_string(), iter->second->end.get_string());
                     return -2;
                 }
                 if (iter->second->distinct_cnt == 0) {
@@ -281,7 +281,7 @@ namespace EA {
         int _expect_bucket_size = 0;
     };
 
-// 处理从store获取的抽样行
+    // 处理从store获取的抽样行
     class PacketSample {
     public:
         PacketSample(std::vector<std::shared_ptr<RowBatch> > &batch_vector,
@@ -308,7 +308,7 @@ namespace EA {
                     std::shared_ptr<RowBatch> batch = std::make_shared<RowBatch>();
                     int ret = sample_sorter.get_next(batch.get(), &eos);
                     if (ret < 0) {
-                        DB_WARNING("get_next fail:%d", ret);
+                        TLOG_WARN("get_next fail: {}", ret);
                         return ret;
                     }
                     for (batch->reset(); !batch->is_traverse_over(); batch->next()) {
@@ -323,7 +323,7 @@ namespace EA {
                 sample_sorter.packet_column(column_info);
                 i++;
             }
-            DB_WARNING("histogram:%s", histogram->ShortDebugString().c_str());
+            TLOG_WARN("histogram: {}", histogram->ShortDebugString());
             return 0;
         }
 
@@ -332,4 +332,4 @@ namespace EA {
         proto::TupleDescriptor *_tuple_desc;
         std::vector<std::shared_ptr<RowBatch> > _batch_vector;
     };
-}
+}  // namespace EA

@@ -15,16 +15,18 @@
 //
 
 #pragma once
+
 #include "rocksdb/utilities/transaction_db_mutex.h"
 
 namespace EA {
 
-// Default implementation of TransactionDBMutexFactory.  May be overridden
-// by TransactionDBOptions.custom_mutex_factory.
-class TransactionDBBthreadFactory : public rocksdb::TransactionDBMutexFactory {
-public:
-    std::shared_ptr<rocksdb::TransactionDBMutex> AllocateMutex() override;
-    std::shared_ptr<rocksdb::TransactionDBCondVar> AllocateCondVar() override;
-};
+    // Default implementation of TransactionDBMutexFactory.  May be overridden
+    // by TransactionDBOptions.custom_mutex_factory.
+    class TransactionDBBthreadFactory : public rocksdb::TransactionDBMutexFactory {
+    public:
+        std::shared_ptr<rocksdb::TransactionDBMutex> AllocateMutex() override;
+
+        std::shared_ptr<rocksdb::TransactionDBCondVar> AllocateCondVar() override;
+    };
 
 }  // namespace EA

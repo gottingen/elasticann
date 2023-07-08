@@ -28,12 +28,12 @@ namespace EA {
         std::string database_name = namespace_name + "\001" + database_info.database();
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
-            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} not exist", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         if (_database_id_map.find(database_name) != _database_id_map.end()) {
-            DB_WARNING("request database:%s already exist", database_name.c_str());
+            TLOG_WARN("request database:{} already exist", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database already exist");
             return;
         }
@@ -71,7 +71,7 @@ namespace EA {
 
         std::string database_value;
         if (!database_info.SerializeToString(&database_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -94,7 +94,7 @@ namespace EA {
         set_max_database_id(tmp_database_id);
         NamespaceManager::get_instance()->add_database_id(namespace_id, tmp_database_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("create database success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("create database success, request:{}", request.ShortDebugString());
     }
 
     void DatabaseManager::drop_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -104,18 +104,18 @@ namespace EA {
         std::string database_name = namespace_name + "\001" + database_info.database();
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
-            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            TLOG_WARN("request namespace: {} not exist", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         if (_database_id_map.find(database_name) == _database_id_map.end()) {
-            DB_WARNING("request database:%s not exist", database_name.c_str());
+            TLOG_WARN("request database: {} not exist", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
             return;
         }
         int64_t database_id = _database_id_map[database_name];
         if (!_table_ids[database_id].empty()) {
-            DB_WARNING("request database:%s has tables", database_name.c_str());
+            TLOG_WARN("request database:{} has tables", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database has table");
             return;
         }
@@ -123,7 +123,7 @@ namespace EA {
         int ret = MetaRocksdb::get_instance()->delete_meta_info(
                 std::vector<std::string>{construct_database_key(database_id)});
         if (ret < 0) {
-            DB_WARNING("drop datbase:%s to rocksdb fail", database_name.c_str());
+            TLOG_WARN("drop database: {} to rocksdb fail", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -132,7 +132,7 @@ namespace EA {
         //更新内存中namespace信息
         NamespaceManager::get_instance()->delete_database_id(namespace_id, database_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop database success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop database success, request:{}", request.ShortDebugString());
     }
 
     void DatabaseManager::modify_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -141,12 +141,12 @@ namespace EA {
         std::string database_name = namespace_name + "\001" + database_info.database();
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
-            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} not exist", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         if (_database_id_map.find(database_name) == _database_id_map.end()) {
-            DB_WARNING("request database:%s not exist", database_name.c_str());
+            TLOG_WARN("request database:{} not exist", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
             return;
         }
@@ -177,7 +177,7 @@ namespace EA {
         }
         std::string database_value;
         if (!tmp_database_info.SerializeToString(&database_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -189,16 +189,16 @@ namespace EA {
         //更新内存值
         set_database_info(tmp_database_info);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("modify database success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("modify database success, request:{}", request.ShortDebugString());
     }
 
     int DatabaseManager::load_database_snapshot(const std::string &value) {
         proto::DataBaseInfo database_pb;
         if (!database_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load database snapshot, key:%s", value.c_str());
+            TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
             return -1;
         }
-        DB_WARNING("database snapshot:%s", database_pb.ShortDebugString().c_str());
+        TLOG_WARN("database snapshot:{}", database_pb.ShortDebugString());
         set_database_info(database_pb);
         //更新内存中namespace的值
         NamespaceManager::get_instance()->add_database_id(

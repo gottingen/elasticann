@@ -16,7 +16,7 @@
 
 
 #include "elasticann/meta_server/meta_server.h"
-#include "auto_incr_state_machine.h"
+#include "elasticann/meta_server/auto_incr_state_machine.h"
 #include "elasticann/meta_server/tso_state_machine.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/cluster_manager.h"
@@ -67,7 +67,7 @@ namespace EA {
     int MetaServer::init(const std::vector<braft::PeerId> &peers) {
         auto ret = MetaRocksdb::get_instance()->init();
         if (ret < 0) {
-            DB_FATAL("rocksdb init fail");
+            TLOG_ERROR("rocksdb init fail");
             return -1;
         }
         butil::EndPoint addr;
@@ -77,40 +77,40 @@ namespace EA {
         braft::PeerId peer_id(addr, 0);
         _meta_state_machine = new(std::nothrow)MetaStateMachine(peer_id);
         if (_meta_state_machine == nullptr) {
-            DB_FATAL("new meta_state_machine fail");
+            TLOG_ERROR("new meta_state_machine fail");
             return -1;
         }
         //state_machine初始化
         ret = _meta_state_machine->init(peers);
         if (ret != 0) {
-            DB_FATAL("meta state machine init fail");
+            TLOG_ERROR("meta state machine init fail");
             return -1;
         }
-        DB_WARNING("meta state machine init success");
+        TLOG_WARN("meta state machine init success");
 
         _auto_incr_state_machine = new(std::nothrow)AutoIncrStateMachine(peer_id);
         if (_auto_incr_state_machine == nullptr) {
-            DB_FATAL("new auot_incr_state_machine fail");
+            TLOG_ERROR("new auot_incr_state_machine fail");
             return -1;
         }
         ret = _auto_incr_state_machine->init(peers);
         if (ret != 0) {
-            DB_FATAL(" auot_incr_state_machine init fail");
+            TLOG_ERROR(" auot_incr_state_machine init fail");
             return -1;
         }
-        DB_WARNING("auot_incr_state_machine init success");
+        TLOG_WARN("auot_incr_state_machine init success");
 
         _tso_state_machine = new(std::nothrow)TSOStateMachine(peer_id);
         if (_tso_state_machine == nullptr) {
-            DB_FATAL("new _tso_state_machine fail");
+            TLOG_ERROR("new _tso_state_machine fail");
             return -1;
         }
         ret = _tso_state_machine->init(peers);
         if (ret != 0) {
-            DB_FATAL(" _tso_state_machine init fail");
+            TLOG_ERROR(" _tso_state_machine init fail");
             return -1;
         }
-        DB_WARNING("_tso_state_machine init success");
+        TLOG_WARN("_tso_state_machine init success");
 
         SchemaManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         PrivilegeManager::get_instance()->set_meta_state_machine(_meta_state_machine);
@@ -143,11 +143,11 @@ namespace EA {
             rocksdb::FlushOptions flush_options;
             auto status = rocksdb->flush(flush_options, rocksdb->get_meta_info_handle());
             if (!status.ok()) {
-                DB_WARNING("flush meta info to rocksdb fail, err_msg:%s", status.ToString().c_str());
+                TLOG_WARN("flush meta info to rocksdb fail, err_msg:{}", status.ToString());
             }
             status = rocksdb->flush(flush_options, rocksdb->get_raft_log_handle());
             if (!status.ok()) {
-                DB_WARNING("flush log_cf to rocksdb fail, err_msg:%s", status.ToString().c_str());
+                TLOG_WARN("flush log_cf to rocksdb fail, err_msg:{}", status.ToString());
             }
         }
     }
@@ -262,12 +262,12 @@ namespace EA {
             response->set_op_type(request->op_type());
             if (request->resource_tags_size() == 0) {
                 _meta_state_machine->set_global_load_balance(true);
-                DB_WARNING("open global load balance");
+                TLOG_WARN("open global load balance");
                 return;
             }
             for (auto &resource_tag: request->resource_tags()) {
                 _meta_state_machine->set_load_balance(resource_tag, true);
-                DB_WARNING("open load balance for resource_tag: %s", resource_tag.c_str());
+                TLOG_WARN("open load balance for resource_tag: {}", resource_tag);
             }
             return;
         }
@@ -277,12 +277,12 @@ namespace EA {
             response->set_op_type(request->op_type());
             if (request->resource_tags_size() == 0) {
                 _meta_state_machine->set_global_load_balance(false);
-                DB_WARNING("close global load balance");
+                TLOG_WARN("close global load balance");
                 return;
             }
             for (auto &resource_tag: request->resource_tags()) {
                 _meta_state_machine->set_load_balance(resource_tag, false);
-                DB_WARNING("close load balance for resource_tag: %s", resource_tag.c_str());
+                TLOG_WARN("close load balance for resource_tag: {}", resource_tag);
             }
             return;
         }
@@ -292,12 +292,12 @@ namespace EA {
             response->set_op_type(request->op_type());
             if (request->resource_tags_size() == 0) {
                 _meta_state_machine->set_global_migrate(true);
-                DB_WARNING("open global migrate");
+                TLOG_WARN("open global migrate");
                 return;
             }
             for (auto &resource_tag: request->resource_tags()) {
                 _meta_state_machine->set_migrate(resource_tag, true);
-                DB_WARNING("open migrate for resource_tag: %s", resource_tag.c_str());
+                TLOG_WARN("open migrate for resource_tag: {}", resource_tag);
             }
             return;
         }
@@ -307,12 +307,12 @@ namespace EA {
             response->set_op_type(request->op_type());
             if (request->resource_tags_size() == 0) {
                 _meta_state_machine->set_global_migrate(false);
-                DB_WARNING("close migrate");
+                TLOG_WARN("close migrate");
                 return;
             }
             for (auto &resource_tag: request->resource_tags()) {
                 _meta_state_machine->set_migrate(resource_tag, false);
-                DB_WARNING("close migrate for resource_tag: %s", resource_tag.c_str());
+                TLOG_WARN("close migrate for resource_tag: {}", resource_tag);
             }
             return;
         }
@@ -322,12 +322,12 @@ namespace EA {
             response->set_op_type(request->op_type());
             if (request->resource_tags_size() == 0) {
                 _meta_state_machine->set_global_network_segment_balance(true);
-                DB_WARNING("open global network segment balance");
+                TLOG_WARN("open global network segment balance");
                 return;
             }
             for (auto &resource_tag: request->resource_tags()) {
                 _meta_state_machine->set_network_segment_balance(resource_tag, true);
-                DB_WARNING("open network segment balance for resource_tag: %s", resource_tag.c_str());
+                TLOG_WARN("open network segment balance for resource_tag: {}", resource_tag);
             }
             return;
         }
@@ -337,12 +337,12 @@ namespace EA {
             response->set_op_type(request->op_type());
             if (request->resource_tags_size() == 0) {
                 _meta_state_machine->set_global_network_segment_balance(false);
-                DB_WARNING("close global network segment balance");
+                TLOG_WARN("close global network segment balance");
                 return;
             }
             for (auto &resource_tag: request->resource_tags()) {
                 _meta_state_machine->set_network_segment_balance(resource_tag, false);
-                DB_WARNING("close network segment balance for resource_tag: %s", resource_tag.c_str());
+                TLOG_WARN("close network segment balance for resource_tag: {}", resource_tag);
             }
             return;
         }
@@ -350,14 +350,14 @@ namespace EA {
             _meta_state_machine->set_unsafe_decision(true);
             response->set_errcode(proto::SUCCESS);
             response->set_op_type(request->op_type());
-            DB_WARNING("open unsafe decision");
+            TLOG_WARN("open unsafe decision");
             return;
         }
         if (request->op_type() == proto::OP_CLOSE_UNSAFE_DECISION) {
             _meta_state_machine->set_unsafe_decision(false);
             response->set_errcode(proto::SUCCESS);
             response->set_op_type(request->op_type());
-            DB_WARNING("close unsafe decision");
+            TLOG_WARN("close unsafe decision");
             return;
         }
         if (request->op_type() == proto::OP_RESTORE_REGION) {
@@ -371,7 +371,7 @@ namespace EA {
                 response->set_errcode(proto::NOT_LEADER);
                 response->set_errmsg("not leader");
                 response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
-                DB_WARNING("meta state machine is not leader, request: %s", request->ShortDebugString().c_str());
+                TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
                 return;
             }
             response->set_errcode(proto::SUCCESS);
@@ -379,7 +379,7 @@ namespace EA {
             RegionManager::get_instance()->recovery_all_region(*request, response);
             return;
         }
-        DB_FATAL("request has wrong op_type:%d , log_id:%lu",
+        TLOG_ERROR("request has wrong op_type:{} , log_id:{}",
                  request->op_type(), log_id);
         response->set_errcode(proto::INPUT_PARAM_ERROR);
         response->set_errmsg("invalid op_type");
@@ -481,7 +481,7 @@ namespace EA {
                     response->set_errcode(proto::NOT_LEADER);
                     response->set_errmsg("not leader");
                     response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
-                    DB_WARNING("meta state machine is not leader, request: %s", request->ShortDebugString().c_str());
+                    TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
                     return;
                 }
                 QueryRegionManager::get_instance()->get_region_peer_status(request, response);
@@ -492,7 +492,7 @@ namespace EA {
                     response->set_errcode(proto::NOT_LEADER);
                     response->set_errmsg("not leader");
                     response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
-                    DB_WARNING("meta state machine is not leader, request: %s", request->ShortDebugString().c_str());
+                    TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
                     return;
                 }
                 QueryRegionManager::get_instance()->get_region_learner_status(request, response);
@@ -523,15 +523,15 @@ namespace EA {
                 break;
             }
             default: {
-                DB_WARNING("invalid op_type, request:%s logid:%lu",
-                           request->ShortDebugString().c_str(), log_id);
+                TLOG_WARN("invalid op_type, request:{} logid:{}",
+                           request->ShortDebugString(), log_id);
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 response->set_errmsg("invalid op_type");
             }
         }
-        DB_NOTICE("query op_type_name:%s, time_cost:%ld, log_id:%lu, ip:%s, request: %s",
-                  proto::QueryOpType_Name(request->op_type()).c_str(),
-                  time_cost.get_time(), log_id, remote_side, request->ShortDebugString().c_str());
+        TLOG_INFO("query op_type_name:{}, time_cost:{}, log_id:{}, ip:{}, request: {}",
+                  proto::QueryOpType_Name(request->op_type()),
+                  time_cost.get_time(), log_id, remote_side, request->ShortDebugString());
     }
 
     void MetaServer::raft_control(google::protobuf::RpcController *controller,
@@ -554,7 +554,7 @@ namespace EA {
         response->set_region_id(request->region_id());
         response->set_errcode(proto::INPUT_PARAM_ERROR);
         response->set_errmsg("unmatch region id");
-        DB_FATAL("unmatch region_id in meta server, request: %s", request->ShortDebugString().c_str());
+        TLOG_ERROR("unmatch region_id in meta server, request: {}", request->ShortDebugString());
     }
 
     void MetaServer::store_heartbeat(google::protobuf::RpcController *controller,
@@ -652,15 +652,15 @@ namespace EA {
         const std::string *data = cntl->http_request().uri().GetQuery("data");
         cntl->http_response().set_content_type("text/plain");
         if (!_init_success) {
-            DB_WARNING("migrate have not init");
+            TLOG_WARN("migrate have not init");
             cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
             return;
         }
         proto::MigrateRequest request;
-        DB_WARNING("start any_migrate");
+        TLOG_WARN("start any_migrate");
         if (data != nullptr) {
             std::string decode_data = url_decode(*data);
-            DB_WARNING("start any_migrate %s %s", data->c_str(), decode_data.c_str());
+            TLOG_WARN("start any_migrate {} {}", data->c_str(), decode_data);
             json2pb(decode_data, &request);
         }
         static std::map<std::string, std::string> bns_pre_ip_port;
@@ -680,7 +680,7 @@ namespace EA {
             } else {
                 get_instance_from_bns(&ret, bns, bns_instances, false);
                 if (bns_instances.size() != 1) {
-                    DB_WARNING("bns:%s must have 1 instance", bns.c_str());
+                    TLOG_WARN("bns:{} must have 1 instance", bns);
                     res_instance->set_status("PROCESSING");
                     return;
                 }
@@ -699,26 +699,26 @@ namespace EA {
                 internal_req.mutable_instance()->set_address(ip_port);
                 ret = meta_proxy(meta_bns)->send_request("meta_manager", internal_req, internal_res);
                 if (ret != 0) {
-                    DB_WARNING("internal request fail, bns:%s, %s, %s",
-                               bns.c_str(),
-                               internal_req.ShortDebugString().c_str(),
-                               internal_res.ShortDebugString().c_str());
+                    TLOG_WARN("internal request fail, bns:{}, {}, {}",
+                               bns,
+                               internal_req.ShortDebugString(),
+                               internal_res.ShortDebugString());
                     res_instance->set_status("PROCESSING");
                     return;
                 }
-                DB_WARNING("bns: %s, meta_bns: %s, status:%s",
-                           bns.c_str(), meta_bns.c_str(), internal_res.errmsg().c_str());
+                TLOG_WARN("bns: {}, meta_bns: {}, status:{}",
+                           bns, meta_bns, internal_res.errmsg());
                 res_instance->set_status(internal_res.errmsg());
                 if (internal_res.errmsg() == "ALLOWED") {
-                    DB_WARNING("bns: %s, meta_bns: %s ALLOWED", bns.c_str(), meta_bns.c_str());
+                    TLOG_WARN("bns: {}, meta_bns: {} ALLOWED", bns, meta_bns);
                 }
                 BAIDU_SCOPED_LOCK(bns_mutex);
                 bns_pre_ip_port[bns] = ip_port;
             } else if (event == "MIGRATED") {
                 if (instance.pre_host() == instance.post_host()) {
                     res_instance->set_status("SUCCESS");
-                    DB_WARNING("instance not migrate, request: %s, meta_bns: %s",
-                               instance.ShortDebugString().c_str(), meta_bns.c_str());
+                    TLOG_WARN("instance not migrate, request: {}, meta_bns: {}",
+                               instance.ShortDebugString(), meta_bns);
                 } else {
                     BAIDU_SCOPED_LOCK(bns_mutex);
                     if (bns != "" && bns_pre_ip_port.count(bns) == 1) {
@@ -731,9 +731,9 @@ namespace EA {
                 query_req.set_instance_address(ip_port);
                 ret = meta_proxy(meta_bns)->send_request("query", query_req, query_res);
                 if (ret != 0) {
-                    DB_WARNING("internal request fail, %s, %s",
-                               query_req.ShortDebugString().c_str(),
-                               query_res.ShortDebugString().c_str());
+                    TLOG_WARN("internal request fail, {}, {}",
+                               query_req.ShortDebugString(),
+                               query_res.ShortDebugString());
                     res_instance->set_status("PROCESSING");
                     return;
                 }
@@ -751,9 +751,9 @@ namespace EA {
                 internal_req.mutable_instance()->set_address(ip_port);
                 ret = meta_proxy(meta_bns)->send_request("meta_manager", internal_req, internal_res);
                 if (ret != 0) {
-                    DB_WARNING("internal request fail, %s, %s",
-                               internal_req.ShortDebugString().c_str(),
-                               internal_res.ShortDebugString().c_str());
+                    TLOG_WARN("internal request fail, {}, {}",
+                               internal_req.ShortDebugString(),
+                               internal_res.ShortDebugString());
                     res_instance->set_status("PROCESSING");
                     return;
                 }

@@ -323,7 +323,7 @@ namespace EA {
         int64_t get_instance_pk_prefix_peer_count(const std::string &instance, const std::string &pk_prefix) {
             DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
             if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return 0;
             }
             auto instance_iter = schedule_info_ptr->find(instance);
@@ -343,7 +343,7 @@ namespace EA {
             int64_t count = 0;
             DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
             if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return 0;
             }
             for (const auto &instance_schedule_info: *schedule_info_ptr) {
@@ -364,7 +364,7 @@ namespace EA {
             int64_t count = 0;
             DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
             if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return 0;
             }
             for (const auto &instance_schedule_info: *schedule_info_ptr) {
@@ -384,7 +384,7 @@ namespace EA {
             int64_t count = 0;
             DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
             if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return 0;
             }
             for (const auto &instance_schedule_info: *schedule_info_ptr) {
@@ -400,7 +400,7 @@ namespace EA {
         int64_t get_peer_count(const std::string &instance, int64_t table_id) {
             DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
             if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return 0;
             }
             auto instance_schedule_info = schedule_info_ptr->find(instance);
@@ -499,7 +499,7 @@ namespace EA {
         bool get_resource_tag(const std::string &instance, std::string &resource_tag) {
             DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
             if (_scheduling_info.Read(&info_iter) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return false;
             }
             auto iter = info_iter->find(instance);
@@ -516,7 +516,7 @@ namespace EA {
             int ret = 0;
             DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
             if (_scheduling_info.Read(&info_iter) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return -2;
             }
             for (const auto &peer: peers) {
@@ -580,7 +580,7 @@ namespace EA {
         int get_instance_idc(const std::string &instance, IdcInfo &idc) {
             DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
             if (_scheduling_info.Read(&info_iter) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return -1;
             }
             auto iter = info_iter->find(instance);
@@ -597,7 +597,7 @@ namespace EA {
             if (position != instance.npos) {
                 return instance.substr(0, position);
             }
-            DB_FATAL("find instance: %s ip error", instance.c_str());
+            TLOG_ERROR("find instance: {} ip error", instance);
             return "";
         }
 

@@ -109,7 +109,7 @@ namespace EA {
             mem_ddlwork.update_timestamp = butil::gettimeofday_us();
             BAIDU_SCOPED_LOCK(_address_instance_mutex);
             for (const auto &instance_pair: _address_instance_map) {
-                DB_NOTICE("insert txn task %s", instance_pair.first.c_str());
+                TLOG_INFO("insert txn task {}", instance_pair.first);
                 if (instance_pair.second.instance_status.state != proto::FAULTY) {
                     task_ptr->to_do_task_map.set(instance_pair.first, mem_ddlwork);
                     number++;
@@ -130,7 +130,7 @@ namespace EA {
                 ins.address = address;
                 ins.physical_room = room;
                 _address_instance_map[address] = ins;
-                DB_NOTICE("DBManager address[%s] room[%s]", address.c_str(), room.c_str());
+                TLOG_INFO("DBManager address[{}] room[{}]", address, room);
             } else {
                 iter->second.instance_status.timestamp = current_timestamp;
                 iter->second.instance_status.state = proto::NORMAL;
@@ -161,7 +161,7 @@ namespace EA {
         void update_txn_ready(int64_t table_id);
 
         void clear_all_tasks() {
-            DB_NOTICE("DBManger clear all tasks.");
+            TLOG_INFO("DBManger clear all tasks.");
             _common_task_map.clear();
             BAIDU_SCOPED_LOCK(_broadcast_mutex);
             _broadcast_task_map.clear();
@@ -272,7 +272,7 @@ namespace EA {
         int update_region_ddlwork(const proto::RegionDdlWork &work);
 
         void set_txn_ready(int64_t table_id, bool success) {
-            DB_NOTICE("set txn ready.");
+            TLOG_INFO("set txn ready.");
             BAIDU_SCOPED_LOCK(_txn_mutex);
             auto iter = _wait_txns.find(table_id);
             if (iter != _wait_txns.end()) {
@@ -318,7 +318,7 @@ namespace EA {
             BAIDU_SCOPED_LOCK(_table_mutex);
             auto it = _table_ddl_mem.find(table_id);
             if (it == _table_ddl_mem.end()) {
-                DB_FATAL("not find table %ld", table_id);
+                TLOG_ERROR("not find table {}", table_id);
                 return -1;
             }
             return it->second.doing_work;
@@ -336,7 +336,7 @@ namespace EA {
             BAIDU_SCOPED_LOCK(_table_mutex);
             auto it = _table_ddl_mem.find(table_id);
             if (it == _table_ddl_mem.end()) {
-                DB_FATAL("not find table %ld", table_id);
+                TLOG_ERROR("not find table {}", table_id);
                 return 0;
             }
             auto current = it->second.doing_work;
@@ -344,7 +344,7 @@ namespace EA {
             if (it->second.doing_work <= 0) {
                 it->second.doing_work = 0;
             }
-            DB_NOTICE("doing work %d", it->second.doing_work);
+            TLOG_INFO("doing work {}", it->second.doing_work);
             return it->second.doing_work;
         }
 

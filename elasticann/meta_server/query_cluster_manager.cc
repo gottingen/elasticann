@@ -186,7 +186,7 @@ namespace EA {
                 instance_mems.push_back(instance.second);
             }
         }
-        SELF_TRACE("cluster_info mutex cost time:%ld", cost.get_time());
+        TLOG_TRACE("cluster_info mutex cost time: {}", cost.get_time());
         cost.reset();
 
         std::map<std::string, std::multimap<std::string, proto::QueryInstance>> logical_instance_infos;
@@ -200,7 +200,7 @@ namespace EA {
                 *query_instance_ptr = query_instance.second;
             }
         }
-        SELF_TRACE("cluster_info update cost time:%ld", cost.get_time());
+        TLOG_TRACE("cluster_info update cost time: {}", cost.get_time());
     }
 
     void QueryClusterManager::get_diff_region_ids(const proto::QueryRequest *request,
@@ -309,7 +309,7 @@ namespace EA {
         ClusterManager *manager = ClusterManager::get_instance();
         DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
         if (manager->_scheduling_info.Read(&info_iter) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         auto instance_region_map_iter = info_iter->find(instance);
@@ -329,7 +329,7 @@ namespace EA {
         ClusterManager *manager = ClusterManager::get_instance();
         DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
         if (manager->_scheduling_info.Read(&info_iter) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         auto instance_region_map_iter = info_iter->find(instance);
@@ -374,4 +374,4 @@ namespace EA {
         logical_instance_infos[logical_room] = physical_instance_infos;
     }
 
-}  // namespace Ea
+}  // namespace EA

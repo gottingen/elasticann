@@ -66,7 +66,7 @@ namespace EA {
                 // 通过raft更新状态为 doing
                 auto task_id = std::to_string(region_ddl_info.table_id()) +
                                "_" + std::to_string(region_ddl_info.region_id());
-                DB_NOTICE("start_db task_%s work %s", task_id.c_str(), region_ddl_info.ShortDebugString().c_str());
+                TLOG_INFO("start_db task_{} work {}", task_id, region_ddl_info.ShortDebugString());
                 DDLManager::get_instance()->update_region_ddlwork(region_ddl_info);
                 db_task_map.doing_task_map.insert(*todo_iter);
                 todo_iter = db_task_map.to_do_task_map.erase(todo_iter);
@@ -76,7 +76,7 @@ namespace EA {
         //处理已经完成的工作
         for (const auto &region_ddl_info: request->region_ddl_works()) {
             // 删除 _to_launch_task_info_map内任务。
-            //DB_NOTICE("update ddlwork %s", region_ddl_info.ShortDebugString().c_str());
+            //TLOG_INFO("update ddlwork {}", region_ddl_info.ShortDebugString());
             _common_task_map.update(region_ddl_info.address(), [&region_ddl_info](CommonTaskMap &db_task_map) {
                 auto task_id = std::to_string(region_ddl_info.table_id()) +
                                "_" + std::to_string(region_ddl_info.region_id());
@@ -85,12 +85,12 @@ namespace EA {
                     auto iter = db_task_map.doing_task_map.find(task_id);
                     if (iter != db_task_map.doing_task_map.end()) {
                         iter->second.update_timestamp = butil::gettimeofday_us();
-                        //DB_NOTICE("task_%s update work %s", task_id.c_str(), region_ddl_info.ShortDebugString().c_str());
+                        //TLOG_INFO("task_{} update work {}", task_id, region_ddl_info.ShortDebugString());
                     }
                 } else {
                     auto doing_iter = db_task_map.doing_task_map.find(task_id);
                     if (doing_iter != db_task_map.doing_task_map.end()) {
-                        DB_NOTICE("task_%s work done %s", task_id.c_str(), region_ddl_info.ShortDebugString().c_str());
+                        TLOG_INFO("task_{} work done {}", task_id, region_ddl_info.ShortDebugString());
                         DDLManager::get_instance()->update_region_ddlwork(region_ddl_info);
                         db_task_map.doing_task_map.erase(doing_iter);
                     }
@@ -134,31 +134,31 @@ namespace EA {
                 BAIDU_SCOPED_LOCK(_broadcast_mutex);
                 auto iter = _broadcast_task_map.find(table_id);
                 if (iter == _broadcast_task_map.end()) {
-                    DB_NOTICE("unknown txn task.");
+                    TLOG_INFO("unknown txn task.");
                     continue;
                 }
                 txn_ptr = iter->second;
             }
 
-            DB_NOTICE("before number %ld", txn_ptr->number.load());
+            TLOG_INFO("before number {}", txn_ptr->number.load());
             //iter->second.done_txn_task_map.insert(std::make_pair(address, txn_ddl_info));
             //判断是否所有的db都返回。
             if (txn_ddl_info.status() == proto::DdlWorkDoing) {
                 bool ret = txn_ptr->doing_task_map.update(address, [address](MemDdlWork &ddlwork) {
                     ddlwork.update_timestamp = butil::gettimeofday_us();
-                    DB_NOTICE("update txn work timestamp %ld address:%s", ddlwork.update_timestamp, address.c_str());
+                    TLOG_INFO("update txn work timestamp {} address:{}", ddlwork.update_timestamp, address);
                 });
                 if (!ret) {
                     txn_ptr->to_do_task_map.update(address, [address](MemDdlWork &ddlwork) {
                         ddlwork.update_timestamp = butil::gettimeofday_us();
-                        DB_NOTICE("update txn work timestamp %ld address:%s", ddlwork.update_timestamp,
-                                  address.c_str());
+                        TLOG_INFO("update txn work timestamp {} address:{}", ddlwork.update_timestamp,
+                                  address);
                     });
                 }
                 continue;
             } else if (txn_ddl_info.status() == proto::DdlWorkFail) {
-                DB_WARNING("wait txn work %s fail address:%s.", txn_ddl_info.ShortDebugString().c_str(),
-                           address.c_str());
+                TLOG_WARN("wait txn work {} fail address:{}.", txn_ddl_info.ShortDebugString(),
+                           address);
                 DDLManager::get_instance()->set_txn_ready(txn_ptr->work.table_id(), false);
                 {
                     BAIDU_SCOPED_LOCK(_broadcast_mutex);
@@ -172,7 +172,7 @@ namespace EA {
                 }
             }
             if (txn_ptr->number == 0) {
-                DB_NOTICE("table_%ld txn work done.", table_id);
+                TLOG_INFO("table_{} txn work done.", table_id);
                 DDLManager::get_instance()->set_txn_ready(txn_ptr->work.table_id(), true);
                 {
                     BAIDU_SCOPED_LOCK(_broadcast_mutex);
@@ -202,12 +202,12 @@ namespace EA {
         process_broadcast_task_hearbeat(address, request, response);
         auto broadcast_task_ts = tc.get_time();
 
-        DB_NOTICE(
-                "process ddl baikal heartbeat update biakaldb info %ld, common task time %ld, broadcast task time %ld",
+        TLOG_INFO(
+                "process ddl baikal heartbeat update biakaldb info {}, common task time {}, broadcast task time {}",
                 update_db_info_ts, common_task_ts, broadcast_task_ts);
 
-        DB_DEBUG("ddl_request : %s address %s", request->ShortDebugString().c_str(), address.c_str());
-        DB_DEBUG("dll_response : %s address %s", response->ShortDebugString().c_str(), address.c_str());
+        TLOG_DEBUG("ddl_request : {} address {}", request->ShortDebugString(), address);
+        TLOG_DEBUG("dll_response : {} address {}", response->ShortDebugString(), address);
     }
 
     bool DBManager::round_robin_select(std::string *selected_address, bool is_column_ddl) {
@@ -222,7 +222,7 @@ namespace EA {
                 iter = _address_instance_map.begin();
             }
             if (iter->second.instance_status.state == proto::FAULTY) {
-                DB_NOTICE("address %s is faulty.", iter->first.c_str());
+                TLOG_INFO("address {} is faulty.", iter->first);
                 iter++;
                 continue;
             }
@@ -238,7 +238,7 @@ namespace EA {
             if (!find_task_map || current_task_number < max_concurrent) {
                 _last_rolling_instance = iter->first;
                 *selected_address = iter->first;
-                DB_NOTICE("select address %s", iter->first.c_str());
+                TLOG_INFO("select address {}", iter->first);
                 return true;
             }
             iter++;
@@ -272,7 +272,7 @@ namespace EA {
         int32_t max_concurrent = work.region_info.op_type() == proto::OP_MODIFY_FIELD ?
                                  FLAGS_single_table_ddl_max_concurrent * 10 : FLAGS_single_table_ddl_max_concurrent;
         if (all_task_count_by_table_id > max_concurrent) {
-            DB_NOTICE("table %s ddl task count %d reach max concurrency %d", table_id_prefix.c_str(),
+            TLOG_INFO("table {} ddl task count {} reach max concurrency {}", table_id_prefix,
                       all_task_count_by_table_id, max_concurrent);
             return -1;
         }
@@ -293,7 +293,7 @@ namespace EA {
                                                            [&work, &task_id](CommonTaskMap &db_task_map) {
                                                                db_task_map.to_do_task_map[task_id] = work;
                                                            }, map);
-            DB_NOTICE("choose address_%s for task_%s", address.c_str(), task_id.c_str());
+            TLOG_INFO("choose address_{} for task_{}", address, task_id);
             return 0;
         } else {
             return -1;
@@ -308,13 +308,13 @@ namespace EA {
         for (; iter != _address_instance_map.end();) {
             if (butil::gettimeofday_us() - iter->second.instance_status.timestamp >
                 FLAGS_baikal_heartbeat_interval_us * 20) {
-                DB_NOTICE("db %s is faulty.", iter->first.c_str());
+                TLOG_INFO("db {} is faulty.", iter->first);
                 iter->second.instance_status.state = proto::FAULTY;
                 ret.emplace_back(iter->first);
 
                 if (butil::gettimeofday_us() - iter->second.instance_status.timestamp >
                     FLAGS_baikal_heartbeat_interval_us * 90) {
-                    DB_NOTICE("db %s is dead, delete", iter->first.c_str());
+                    TLOG_INFO("db {} is dead, delete", iter->first);
                     iter = _address_instance_map.erase(iter);
                     continue;
                 }
@@ -326,15 +326,15 @@ namespace EA {
 
     void DBManager::init() {
         _bth.run([this]() {
-            DB_NOTICE("sleep, wait collect db info.");
+            TLOG_INFO("sleep, wait collect db info.");
             bthread_usleep(2 * 60 * 1000 * 1000LL);
             while (!_shutdown) {
                 if (!_meta_state_machine->is_leader()) {
-                    DB_NOTICE("not leader, sleep.");
+                    TLOG_INFO("not leader, sleep.");
                     bthread_usleep_fast_shutdown(5 * 1000 * 1000, _shutdown);
                     continue;
                 }
-                DB_NOTICE("db manager working thread.");
+                TLOG_INFO("db manager working thread.");
                 _common_task_map.traverse([this](CommonTaskMap &db_task_map) {
                     auto traverse_func = [](std::unordered_map<TaskId, MemRegionDdlWork> &update_map) {
                         auto iter = update_map.begin();
@@ -344,8 +344,8 @@ namespace EA {
 
                                 auto task_id = std::to_string(iter->second.region_info.table_id()) + "_" +
                                                std::to_string(iter->second.region_info.region_id());
-                                DB_NOTICE("task_%s restart work %s", task_id.c_str(),
-                                          iter->second.region_info.ShortDebugString().c_str());
+                                TLOG_INFO("task_{} restart work {}", task_id,
+                                          iter->second.region_info.ShortDebugString());
 
                                 iter->second.region_info.set_status(proto::DdlWorkIdle);
                                 DDLManager::get_instance()->update_region_ddlwork(iter->second.region_info);
@@ -378,7 +378,7 @@ namespace EA {
                                 [&cast_task_ptr, &timeout_instance_vec](const std::string &instance, MemDdlWork &work) {
                                     if (butil::gettimeofday_us() - work.update_timestamp >
                                         FLAGS_baikal_heartbeat_interval_us * 30) {
-                                        DB_WARNING("instance %s txn work heartbeat timeout.", instance.c_str());
+                                        TLOG_WARN("instance {} txn work heartbeat timeout.", instance);
                                         timeout_instance_vec.emplace_back(instance);
                                     }
                                 });
@@ -397,8 +397,8 @@ namespace EA {
                             for (auto &task: task_map) {
                                 auto task_id = std::to_string(task.second.region_info.table_id()) + "_" +
                                                std::to_string(task.second.region_info.region_id());
-                                DB_NOTICE("re_launch task_%s %s", task_id.c_str(),
-                                          task.second.region_info.ShortDebugString().c_str());
+                                TLOG_INFO("re_launch task_{} {}", task_id,
+                                          task.second.region_info.ShortDebugString());
                                 task.second.region_info.set_status(proto::DdlWorkIdle);
                                 DDLManager::get_instance()->update_region_ddlwork(task.second.region_info);
                             }
@@ -430,7 +430,7 @@ namespace EA {
                                                        [&work, &task_id](CommonTaskMap &db_task_map) {
                                                            db_task_map.doing_task_map[task_id] = work;
                                                        }, map);
-        DB_NOTICE("choose address_%s for doing_task_map task_%s", region_ddl_info.address().c_str(), task_id.c_str());
+        TLOG_INFO("choose address_{} for doing_task_map task_{}", region_ddl_info.address(), task_id);
         return 0;
     }
 
@@ -445,7 +445,7 @@ namespace EA {
                     _broadcast_task_map.erase(iter);
                 }
             } else {
-                DB_WARNING("unknown txn work %ld", table_id);
+                TLOG_WARN("unknown txn work {}", table_id);
             }
         }
         if (is_ready) {
@@ -454,11 +454,11 @@ namespace EA {
     }
 
     int DDLManager::init_del_index_ddlwork(int64_t table_id, const proto::IndexInfo &index_info) {
-        DB_NOTICE("init del ddl tid_%ld iid_%ld is_global:%d", table_id,
+        TLOG_INFO("init del ddl tid_{} iid_{} is_global:{}", table_id,
                   index_info.index_id(), index_info.is_global());
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_ddl_mem.count(table_id) == 1) {
-            DB_WARNING("table_id_%ld delete index is running..", table_id);
+            TLOG_WARN("table_id_{} delete index is running..", table_id);
             return -1;
         }
         MemDdlInfo mem_info;
@@ -470,12 +470,12 @@ namespace EA {
         _table_ddl_mem.emplace(table_id, mem_info);
         std::string index_ddl_string;
         if (!mem_info.work_info.SerializeToString(&index_ddl_string)) {
-            DB_FATAL("serialzeTostring error.");
+            TLOG_ERROR("serialzeTostring error.");
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
                 construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
-            DB_FATAL("put meta info error.");
+            TLOG_ERROR("put meta info error.");
             return -1;
         }
         return 0;
@@ -483,10 +483,10 @@ namespace EA {
 
     int DDLManager::init_index_ddlwork(int64_t table_id, const proto::IndexInfo &index_info,
                                        std::unordered_map<int64_t, std::set<int64_t>> &partition_regions) {
-        DB_NOTICE("init ddl tid_%ld iid_%ld", table_id, index_info.index_id());
+        TLOG_INFO("init ddl tid_{} iid_{}", table_id, index_info.index_id());
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_ddl_mem.count(table_id) == 1) {
-            DB_WARNING("table_id_%ld add index is running..", table_id);
+            TLOG_WARN("table_id_{} add index is running..", table_id);
             return -1;
         }
         MemDdlInfo mem_info;
@@ -499,12 +499,12 @@ namespace EA {
         _table_ddl_mem.emplace(table_id, mem_info);
         std::string index_ddl_string;
         if (!mem_info.work_info.SerializeToString(&index_ddl_string)) {
-            DB_FATAL("serialzeTostring error.");
+            TLOG_ERROR("serialzeTostring error.");
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
                 construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
-            DB_FATAL("put meta info error.");
+            TLOG_ERROR("put meta info error.");
             return -1;
         }
         std::vector<int64_t> region_ids;
@@ -516,7 +516,7 @@ namespace EA {
                 region_partition_map[region_id] = partition_region.first;
             }
         }
-        DB_NOTICE("work %s region size %zu", mem_info.work_info.ShortDebugString().c_str(), region_ids.size());
+        TLOG_INFO("work {} region size {}", mem_info.work_info.ShortDebugString(), region_ids.size());
         std::vector<SmartRegionInfo> region_infos;
         RegionManager::get_instance()->get_region_info(region_ids, region_infos);
 
@@ -542,7 +542,7 @@ namespace EA {
             region_work.set_partition(region_partition_map[region_info->region_id()]);
             std::string region_work_string;
             if (!region_work.SerializeToString(&region_work_string)) {
-                DB_FATAL("serialze region work error.");
+                TLOG_ERROR("serialze region work error.");
                 return -1;
             }
             MemRegionDdlWork region_ddl_work;
@@ -551,14 +551,14 @@ namespace EA {
             region_map_ptr->set(region_info->region_id(), region_ddl_work);
 
             auto task_id = std::to_string(table_id) + "_" + std::to_string(region_work.region_id());
-            DB_NOTICE("init region_ddlwork task_%s table%ld region_%ld region_%s", task_id.c_str(), table_id,
-                      region_info->region_id(), region_work.ShortDebugString().c_str());
+            TLOG_INFO("init region_ddlwork task_{} table{} region_{} region_{}", task_id, table_id,
+                      region_info->region_id(), region_work.ShortDebugString());
             region_ddl_work_keys.emplace_back(construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
                                                                      {table_id, region_info->region_id()}));
             region_ddl_work_values.emplace_back(region_work_string);
             if (region_ddl_work_keys.size() == 100) {
                 if (MetaRocksdb::get_instance()->put_meta_info(region_ddl_work_keys, region_ddl_work_values) != 0) {
-                    DB_FATAL("put region info error.");
+                    TLOG_ERROR("put region info error.");
                     return -1;
                 }
                 region_ddl_work_keys.clear();
@@ -567,7 +567,7 @@ namespace EA {
         }
         if (region_ddl_work_keys.size() != 0) {
             if (MetaRocksdb::get_instance()->put_meta_info(region_ddl_work_keys, region_ddl_work_values) != 0) {
-                DB_FATAL("put region info error.");
+                TLOG_ERROR("put region info error.");
                 return -1;
             }
         }
@@ -576,10 +576,10 @@ namespace EA {
 
     int DDLManager::init_column_ddlwork(int64_t table_id, const proto::DdlWorkInfo &work_info,
                                         std::unordered_map<int64_t, std::set<int64_t>> &partition_regions) {
-        DB_NOTICE("init column ddl tid_%ld opt:%s", table_id, work_info.opt_sql().c_str());
+        TLOG_INFO("init column ddl tid_{} opt:{}", table_id, work_info.opt_sql());
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_ddl_mem.count(table_id) == 1) {
-            DB_WARNING("table_id_%ld add index is running..", table_id);
+            TLOG_WARN("table_id_{} add index is running..", table_id);
             return -1;
         }
         MemDdlInfo mem_info;
@@ -590,12 +590,12 @@ namespace EA {
         _table_ddl_mem.emplace(table_id, mem_info);
         std::string ddl_work_string;
         if (!mem_info.work_info.SerializeToString(&ddl_work_string)) {
-            DB_FATAL("serialzeTostring error.");
+            TLOG_ERROR("serialzeTostring error.");
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
                 construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), ddl_work_string) != 0) {
-            DB_FATAL("put meta info error.");
+            TLOG_ERROR("put meta info error.");
             return -1;
         }
         std::vector<int64_t> region_ids;
@@ -607,7 +607,7 @@ namespace EA {
                 region_partition_map[region_id] = partition_region.first;
             }
         }
-        DB_NOTICE("work %s region size %zu", mem_info.work_info.ShortDebugString().c_str(), region_ids.size());
+        TLOG_INFO("work {} region size {}", mem_info.work_info.ShortDebugString(), region_ids.size());
         std::vector<SmartRegionInfo> region_infos;
         RegionManager::get_instance()->get_region_info(region_ids, region_infos);
 
@@ -633,7 +633,7 @@ namespace EA {
             region_work.mutable_column_ddl_info()->CopyFrom(work_info.column_ddl_info());
             std::string region_work_string;
             if (!region_work.SerializeToString(&region_work_string)) {
-                DB_FATAL("serialze region work error.");
+                TLOG_ERROR("serialze region work error.");
                 return -1;
             }
             MemRegionDdlWork region_ddl_work;
@@ -642,14 +642,14 @@ namespace EA {
             region_map_ptr->set(region_info->region_id(), region_ddl_work);
 
             auto task_id = std::to_string(table_id) + "_" + std::to_string(region_work.region_id());
-            DB_NOTICE("init region_ddlwork task_%s table%ld region_%ld region_%s", task_id.c_str(), table_id,
-                      region_info->region_id(), region_work.ShortDebugString().c_str());
+            TLOG_INFO("init region_ddlwork task_{} table{} region_{} region_{}", task_id, table_id,
+                      region_info->region_id(), region_work.ShortDebugString());
             region_ddl_work_keys.emplace_back(construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
                                                                      {table_id, region_info->region_id()}));
             region_ddl_work_values.emplace_back(region_work_string);
             if (region_ddl_work_keys.size() == 100) {
                 if (MetaRocksdb::get_instance()->put_meta_info(region_ddl_work_keys, region_ddl_work_values) != 0) {
-                    DB_FATAL("put region info error.");
+                    TLOG_ERROR("put region info error.");
                     return -1;
                 }
                 region_ddl_work_keys.clear();
@@ -658,7 +658,7 @@ namespace EA {
         }
         if (region_ddl_work_keys.size() != 0) {
             if (MetaRocksdb::get_instance()->put_meta_info(region_ddl_work_keys, region_ddl_work_values) != 0) {
-                DB_FATAL("put region info error.");
+                TLOG_ERROR("put region info error.");
                 return -1;
             }
         }
@@ -667,15 +667,15 @@ namespace EA {
 
 // 定时线程处理所有ddl work。
     int DDLManager::work() {
-        DB_NOTICE("sleep, wait ddl manager init.");
+        TLOG_INFO("sleep, wait ddl manager init.");
         bthread_usleep(3 * 60 * 1000 * 1000LL);
         while (!_shutdown) {
             if (!_meta_state_machine->is_leader()) {
-                DB_NOTICE("not leader, sleep.");
+                TLOG_INFO("not leader, sleep.");
                 bthread_usleep_fast_shutdown(5 * 1000 * 1000, _shutdown);
                 continue;
             }
-            DB_NOTICE("leader process ddl work.");
+            TLOG_INFO("leader process ddl work.");
             std::unordered_map<int64_t, MemDdlInfo> temp_ddl_mem;
             {
                 BAIDU_SCOPED_LOCK(_table_mutex);
@@ -689,14 +689,14 @@ namespace EA {
 
                         if (iter->second.work_info.errcode() == proto::EXEC_FAIL &&
                             iter->second.work_info.op_type() == proto::OP_ADD_INDEX) {
-                            DB_NOTICE("ddl add index job fail, drop index %s",
-                                      iter->second.work_info.ShortDebugString().c_str());
+                            TLOG_INFO("ddl add index job fail, drop index {}",
+                                      iter->second.work_info.ShortDebugString());
                             TableManager::get_instance()->drop_index_request(iter->second.work_info);
                         }
-                        DB_NOTICE("ddl job[%s] finish.", iter->second.work_info.ShortDebugString().c_str());
+                        TLOG_INFO("ddl job[{}] finish.", iter->second.work_info.ShortDebugString());
                     } else {
                         if (iter->second.work_info.suspend()) {
-                            DB_NOTICE("work %ld is suspend.", iter->second.work_info.table_id());
+                            TLOG_INFO("work {} is suspend.", iter->second.work_info.table_id());
                         } else {
                             temp_ddl_mem.insert(*iter);
                         }
@@ -713,7 +713,7 @@ namespace EA {
                 } else if (op_type == proto::OP_MODIFY_FIELD) {
                     add_column_ddlwork(table_ddl_info.second.work_info);
                 } else {
-                    DB_FATAL("unknown optype.");
+                    TLOG_ERROR("unknown optype.");
                 }
             }
             bthread_usleep_fast_shutdown(20 * 1000 * 1000, _shutdown);
@@ -724,7 +724,7 @@ namespace EA {
 
     int DDLManager::load_table_ddl_snapshot(const proto::DdlWorkInfo &ddl_work) {
         BAIDU_SCOPED_LOCK(_table_mutex);
-        DB_NOTICE("load table ddl snapshot %s.", ddl_work.ShortDebugString().c_str());
+        TLOG_INFO("load table ddl snapshot {}.", ddl_work.ShortDebugString());
         MemDdlInfo mem_info;
         mem_info.work_info = ddl_work;
         if (ddl_work.op_type() == proto::OP_MODIFY_FIELD && ddl_work.job_state() == proto::IS_PUBLIC) {
@@ -738,15 +738,15 @@ namespace EA {
     int DDLManager::load_region_ddl_snapshot(const std::string &region_ddl_info) {
         proto::RegionDdlWork region_work;
         if (!region_work.ParseFromString(region_ddl_info)) {
-            DB_FATAL("parse from string error.");
+            TLOG_ERROR("parse from string error.");
             return 0;
         }
         MemRegionDdlWork region_ddl_work;
         region_ddl_work.region_info = region_work;
         auto task_id = std::to_string(region_ddl_work.region_info.table_id()) +
                        "_" + std::to_string(region_ddl_work.region_info.region_id());
-        DB_NOTICE("load region ddl task_%s snapshot %s",
-                  task_id.c_str(), region_ddl_work.region_info.ShortDebugString().c_str());
+        TLOG_INFO("load region ddl task_{} snapshot {}",
+                  task_id, region_ddl_work.region_info.ShortDebugString());
         auto table_id = region_work.table_id();
         BAIDU_SCOPED_LOCK(_region_mutex);
         if (_region_ddlwork[table_id] == nullptr) {
@@ -766,11 +766,11 @@ namespace EA {
             }
         }
         for (auto &region_work_ptr: region_work_ptrs) {
-            DB_NOTICE("leader start reload ddl work.");
+            TLOG_INFO("leader start reload ddl work.");
             region_work_ptr->traverse([this](MemRegionDdlWork &work) {
                 auto &region_work = work.region_info;
                 if (region_work.status() == proto::DdlWorkDoing) {
-                    DB_NOTICE("restore ddl work %s.", region_work.ShortDebugString().c_str());
+                    TLOG_INFO("restore ddl work {}.", region_work.ShortDebugString());
                     increase_doing_work_number(region_work.table_id());
                     DBManager::get_instance()->restore_task(region_work);
                 }
@@ -815,16 +815,16 @@ namespace EA {
 
     int DDLManager::drop_index_ddlwork(proto::DdlWorkInfo &ddl_work) {
         int64_t table_id = ddl_work.table_id();
-        DB_NOTICE("process drop index ddlwork tid_%ld", table_id);
+        TLOG_INFO("process drop index ddlwork tid_{}", table_id);
         proto::IndexState current_state;
         if (TableManager::get_instance()->get_index_state(ddl_work.table_id(), ddl_work.index_id(), current_state) !=
             0) {
-            DB_WARNING("ddl index not ready. table_id[%ld] index_id[%ld]",
+            TLOG_WARN("ddl index not ready. table_id[{}] index_id[{}]",
                        ddl_work.table_id(), ddl_work.index_id());
             return -1;
         }
         if (ddl_work.errcode() == proto::EXEC_FAIL) {
-            DB_FATAL("drop index failed");
+            TLOG_ERROR("drop index failed");
             return 0;
         }
         switch (current_state) {
@@ -907,16 +907,16 @@ namespace EA {
         int64_t table_id = ddl_work.table_id();
         int64_t region_table_id = ddl_work.global() ? ddl_work.index_id() : ddl_work.table_id();
         size_t region_size = TableManager::get_instance()->get_region_size(region_table_id);
-        DB_NOTICE("table_id:%ld index_id:%ld region size %zu", table_id, ddl_work.index_id(), region_size);
+        TLOG_INFO("table_id:{} index_id:{} region size {}", table_id, ddl_work.index_id(), region_size);
         proto::IndexState current_state;
         if (TableManager::get_instance()->get_index_state(ddl_work.table_id(), ddl_work.index_id(), current_state) !=
             0) {
-            DB_WARNING("ddl index not ready. table_id[%ld] index_id[%ld]",
+            TLOG_WARN("ddl index not ready. table_id[{}] index_id[{}]",
                        ddl_work.table_id(), ddl_work.index_id());
             return -1;
         }
         if (ddl_work.errcode() == proto::EXEC_FAIL) {
-            DB_FATAL("ddl work %s fail", ddl_work.ShortDebugString().c_str());
+            TLOG_ERROR("ddl work {} fail", ddl_work.ShortDebugString());
             return 0;
         }
 
@@ -944,14 +944,14 @@ namespace EA {
                     DBManager::get_instance()->update_txn_ready(table_id);
                     if (is_txn_done(table_id)) {
                         if (is_txn_success(table_id)) {
-                            DB_NOTICE("ddl work %s all txn done", ddl_work.ShortDebugString().c_str());
+                            TLOG_INFO("ddl work {} all txn done", ddl_work.ShortDebugString());
                             ddl_work.set_job_state(proto::IS_WRITE_LOCAL);
                             update_table_ddl_mem(ddl_work);
                             TableManager::get_instance()->update_index_status(ddl_work);
                             erase_txn_info(table_id);
                         } else {
-                            DB_WARNING("ddl work %s wait txn fail.", ddl_work.ShortDebugString().c_str());
-                            DB_WARNING("ddl work %s rollback.", ddl_work.ShortDebugString().c_str());
+                            TLOG_WARN("ddl work {} wait txn fail.", ddl_work.ShortDebugString());
+                            TLOG_WARN("ddl work {} rollback.", ddl_work.ShortDebugString());
                             ddl_work.set_errcode(proto::EXEC_FAIL);
                             ddl_work.set_status(proto::DdlWorkFail);
                             update_table_ddl_mem(ddl_work);
@@ -959,7 +959,7 @@ namespace EA {
                             _update_policy.clear(table_id);
                         }
                     } else {
-                        DB_NOTICE("ddl work wait all txn done.");
+                        TLOG_INFO("ddl work wait all txn done.");
                     }
                 }
             }
@@ -978,7 +978,7 @@ namespace EA {
                     region_map_ptr = _region_ddlwork[table_id];
                 }
                 if (region_map_ptr == nullptr) {
-                    DB_WARNING("ddl work table_id %ld is done.", table_id);
+                    TLOG_WARN("ddl work table_id {} is done.", table_id);
                     return 0;
                 }
 
@@ -986,7 +986,7 @@ namespace EA {
                 if (doing_work_number == -1) {
                     return 0;
                 } else if (doing_work_number > region_size * FLAGS_max_region_num_ratio) {
-                    DB_NOTICE("table_%ld not enough region.", table_id);
+                    TLOG_INFO("table_{} not enough region.", table_id);
                     return 0;
                 }
 
@@ -997,28 +997,28 @@ namespace EA {
                                    "_" + std::to_string(region_work.region_info.region_id());
                     if (region_work.region_info.status() == proto::DdlWorkIdle) {
                         done = false;
-                        DB_NOTICE("execute task_%s %s", task_id.c_str(),
-                                  region_work.region_info.ShortDebugString().c_str());
+                        TLOG_INFO("execute task_{} {}", task_id,
+                                  region_work.region_info.ShortDebugString());
                         if (DBManager::get_instance()->execute_task(region_work) == 0) {
                             //提交任务成功，设置状态为DOING.
                             region_work.region_info.set_status(proto::DdlWorkDoing);
                             if (increase_doing_work_number(table_id) > region_size * FLAGS_max_region_num_ratio) {
-                                DB_NOTICE("table_%ld not enough region.", table_id);
+                                TLOG_INFO("table_{} not enough region.", table_id);
                                 return false;
                             }
                             current_task_number++;
                             if (current_task_number > max_task_number) {
-                                DB_NOTICE("table_%ld launch task next round.", table_id);
+                                TLOG_INFO("table_{} launch task next round.", table_id);
                                 return false;
                             }
                         } else {
-                            DB_NOTICE("table_%ld not enough baikaldb to execute.", table_id);
+                            TLOG_INFO("table_{} not enough ea to execute.", table_id);
                             return false;
                         }
                     }
                     if (region_work.region_info.status() != proto::DdlWorkDone) {
-                        DB_NOTICE("wait task_%s %s", task_id.c_str(),
-                                  region_work.region_info.ShortDebugString().c_str());
+                        TLOG_INFO("wait task_{} {}", task_id,
+                                  region_work.region_info.ShortDebugString());
                         wait_num++;
                         done = false;
                     }
@@ -1028,28 +1028,28 @@ namespace EA {
                             if (DBManager::get_instance()->execute_task(region_work) == 0) {
                                 region_work.region_info.set_status(proto::DdlWorkDoing);
                                 if (increase_doing_work_number(table_id) > region_size * FLAGS_max_region_num_ratio) {
-                                    DB_NOTICE("not enough region.");
+                                    TLOG_INFO("not enough region.");
                                     return false;
                                 }
-                                DB_NOTICE("retry task_%s %s", task_id.c_str(),
-                                          region_work.region_info.ShortDebugString().c_str());
+                                TLOG_INFO("retry task_{} {}", task_id,
+                                          region_work.region_info.ShortDebugString());
                             }
                         } else {
                             rollback = true;
-                            DB_NOTICE("rollback task_%s %s", task_id.c_str(),
-                                      region_work.region_info.ShortDebugString().c_str());
+                            TLOG_INFO("rollback task_{} {}", task_id,
+                                      region_work.region_info.ShortDebugString());
                         }
                         done = false;
                     } else if (region_work.region_info.status() == proto::DdlWorkDupUniq ||
                                region_work.region_info.status() == proto::DdlWorkError) {
-                        DB_FATAL("region task_%s %s dup uniq or create index region error.", task_id.c_str(),
-                                 region_work.region_info.ShortDebugString().c_str());
+                        TLOG_ERROR("region task_{} {} dup uniq or create index region error.", task_id,
+                                 region_work.region_info.ShortDebugString());
                         done = false;
                         rollback = true;
                     }
 
                     if (rollback) {
-                        DB_FATAL("ddl work %s rollback.", ddl_work.ShortDebugString().c_str());
+                        TLOG_ERROR("ddl work {} rollback.", ddl_work.ShortDebugString());
                         ddl_work.set_errcode(proto::EXEC_FAIL);
                         ddl_work.set_status(proto::DdlWorkFail);
                         update_table_ddl_mem(ddl_work);
@@ -1059,14 +1059,14 @@ namespace EA {
                     return true;
                 });
                 if (done) {
-                    DB_NOTICE("done");
+                    TLOG_INFO("done");
                     ddl_work.set_job_state(proto::IS_PUBLIC);
                     ddl_work.set_errcode(proto::SUCCESS);
                     ddl_work.set_status(proto::DdlWorkDone);
                     update_table_ddl_mem(ddl_work);
                     TableManager::get_instance()->update_index_status(ddl_work);
                 } else {
-                    DB_NOTICE("wait %d ddl work to finish.", wait_num);
+                    TLOG_INFO("wait {} ddl work to finish.", wait_num);
                 }
             }
                 break;
@@ -1078,7 +1078,7 @@ namespace EA {
                     update_table_ddl_mem(ddl_work);
                     TableManager::get_instance()->update_index_status(ddl_work);
                 }
-                DB_NOTICE("work done.");
+                TLOG_INFO("work done.");
                 break;
             default:
                 break;
@@ -1095,7 +1095,7 @@ namespace EA {
         int64_t table_id = ddl_work.table_id();
         size_t region_size = TableManager::get_instance()->get_region_size(table_id);
         if (ddl_work.errcode() == proto::EXEC_FAIL) {
-            DB_FATAL("ddl work %s fail", ddl_work.ShortDebugString().c_str());
+            TLOG_ERROR("ddl work {} fail", ddl_work.ShortDebugString());
             return 0;
         }
         MemRegionDdlWorkMapPtr region_map_ptr;
@@ -1104,7 +1104,7 @@ namespace EA {
             region_map_ptr = _region_ddlwork[table_id];
         }
         if (region_map_ptr == nullptr) {
-            DB_WARNING("ddl work table_id %ld is done.", table_id);
+            TLOG_WARN("ddl work table_id {} is done.", table_id);
             return 0;
         }
 
@@ -1112,7 +1112,7 @@ namespace EA {
         if (doing_work_number == -1) {
             return 0;
         } else if (doing_work_number > region_size * FLAGS_max_region_num_ratio) {
-            DB_NOTICE("table_%ld not enough region.", table_id);
+            TLOG_INFO("table_{} not enough region.", table_id);
             return 0;
         }
         ddl_work.set_job_state(proto::IS_WRITE_LOCAL);
@@ -1125,26 +1125,26 @@ namespace EA {
                            "_" + std::to_string(region_work.region_info.region_id());
             if (region_work.region_info.status() == proto::DdlWorkIdle) {
                 done = false;
-                DB_NOTICE("execute task_%s %s", task_id.c_str(), region_work.region_info.ShortDebugString().c_str());
+                TLOG_INFO("execute task_{} {}", task_id, region_work.region_info.ShortDebugString());
                 if (DBManager::get_instance()->execute_task(region_work) == 0) {
                     //提交任务成功，设置状态为DOING.
                     region_work.region_info.set_status(proto::DdlWorkDoing);
                     if (increase_doing_work_number(table_id) > region_size * FLAGS_max_region_num_ratio) {
-                        DB_NOTICE("table_%ld not enough region.", table_id);
+                        TLOG_INFO("table_{} not enough region.", table_id);
                         return false;
                     }
                     current_task_number++;
                     if (current_task_number > max_task_number) {
-                        DB_NOTICE("table_%ld launch task next round.", table_id);
+                        TLOG_INFO("table_{} launch task next round.", table_id);
                         return false;
                     }
                 } else {
-                    DB_NOTICE("table_%ld not enough baikaldb to execute.", table_id);
+                    TLOG_INFO("table_{} not enough baikaldb to execute.", table_id);
                     return false;
                 }
             }
             if (region_work.region_info.status() != proto::DdlWorkDone) {
-                DB_NOTICE("wait task_%s %s", task_id.c_str(), region_work.region_info.ShortDebugString().c_str());
+                TLOG_INFO("wait task_{} {}", task_id, region_work.region_info.ShortDebugString());
                 wait_num++;
                 done = false;
             }
@@ -1154,28 +1154,28 @@ namespace EA {
                     if (DBManager::get_instance()->execute_task(region_work) == 0) {
                         region_work.region_info.set_status(proto::DdlWorkDoing);
                         if (increase_doing_work_number(table_id) > region_size * FLAGS_max_region_num_ratio) {
-                            DB_NOTICE("not enough region.");
+                            TLOG_INFO("not enough region.");
                             return false;
                         }
-                        DB_NOTICE("retry task_%s %s", task_id.c_str(),
-                                  region_work.region_info.ShortDebugString().c_str());
+                        TLOG_INFO("retry task_{} {}", task_id,
+                                  region_work.region_info.ShortDebugString());
                     }
                 } else {
                     rollback = true;
-                    DB_NOTICE("rollback task_%s %s", task_id.c_str(),
-                              region_work.region_info.ShortDebugString().c_str());
+                    TLOG_INFO("rollback task_{} {}", task_id,
+                              region_work.region_info.ShortDebugString());
                 }
                 done = false;
             } else if (region_work.region_info.status() == proto::DdlWorkDupUniq ||
                        region_work.region_info.status() == proto::DdlWorkError) {
-                DB_FATAL("region task_%s %s dup uniq or create index region error.", task_id.c_str(),
-                         region_work.region_info.ShortDebugString().c_str());
+                TLOG_ERROR("region task_{} {} dup uniq or create index region error.", task_id,
+                         region_work.region_info.ShortDebugString());
                 done = false;
                 rollback = true;
             }
 
             if (rollback) {
-                DB_FATAL("ddl work %s rollback.", ddl_work.ShortDebugString().c_str());
+                TLOG_ERROR("ddl work {} rollback.", ddl_work.ShortDebugString());
                 ddl_work.set_errcode(proto::EXEC_FAIL);
                 ddl_work.set_job_state(proto::IS_PUBLIC);
                 ddl_work.set_status(proto::DdlWorkFail);
@@ -1192,7 +1192,7 @@ namespace EA {
             ddl_work.set_end_timestamp(butil::gettimeofday_s());
             update_table_ddl_mem(ddl_work);
         } else {
-            DB_NOTICE("wait %d ddl work to finish.", wait_num);
+            TLOG_INFO("wait {} ddl work to finish.", wait_num);
         }
         return 0;
     }
@@ -1211,7 +1211,7 @@ namespace EA {
     }
 
     int DDLManager::delete_index_ddlwork_region_info(int64_t table_id) {
-        DB_NOTICE("delete ddl region info.");
+        TLOG_INFO("delete ddl region info.");
         {
             BAIDU_SCOPED_LOCK(_region_mutex);
             _region_ddlwork.erase(table_id);
@@ -1224,8 +1224,8 @@ namespace EA {
         RocksWrapper *db = RocksWrapper::get_instance();
         auto res = db->remove_range(write_options, db->get_meta_info_handle(), begin_key, end_key, true);
         if (!res.ok()) {
-            DB_FATAL("DDL_LOG remove_index error: code=%d, msg=%s",
-                     res.code(), res.ToString().c_str());
+            TLOG_ERROR("DDL_LOG remove_index error: code={}, msg={}",
+                     res.code(), res.ToString());
         }
 
         return 0;
@@ -1233,7 +1233,7 @@ namespace EA {
 
     int DDLManager::delete_index_ddlwork_info(int64_t table_id,
                                               const proto::DdlWorkInfo &work_info) {
-        DB_NOTICE("delete ddl table info.");
+        TLOG_INFO("delete ddl table info.");
         {
             BAIDU_SCOPED_LOCK(_table_mutex);
             _table_ddl_mem.erase(table_id);
@@ -1254,17 +1254,17 @@ namespace EA {
         if (work_info.op_type() == proto::OP_MODIFY_FIELD) {
             std::string ddl_string;
             if (!work_info.SerializeToString(&ddl_string)) {
-                DB_FATAL("serialzeTostring error.");
+                TLOG_ERROR("serialzeTostring error.");
                 return -1;
             }
             if (MetaRocksdb::get_instance()->put_meta_info(ddlwork_key, ddl_string) != 0) {
-                DB_FATAL("put meta info error.");
+                TLOG_ERROR("put meta info error.");
                 return -1;
             }
         } else {
             std::vector<std::string> keys{ddlwork_key};
             if (MetaRocksdb::get_instance()->delete_meta_info(keys) != 0) {
-                DB_FATAL("delete meta info error.");
+                TLOG_ERROR("delete meta info error.");
                 return -1;
             }
         }
@@ -1278,12 +1278,12 @@ namespace EA {
             update_table_ddl_mem(mem_info);
             std::string index_ddl_string;
             if (!mem_info.SerializeToString(&index_ddl_string)) {
-                DB_FATAL("serialzeTostring error.");
+                TLOG_ERROR("serialzeTostring error.");
                 return -1;
             }
             if (MetaRocksdb::get_instance()->put_meta_info(
                     construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
-                DB_FATAL("put meta info error.");
+                TLOG_ERROR("put meta info error.");
                 return -1;
             }
         }
@@ -1301,12 +1301,12 @@ namespace EA {
                 break;
             }
             case proto::OP_SUSPEND_DDL_WORK: {
-                DB_NOTICE("suspend ddl work %ld", table_id);
+                TLOG_INFO("suspend ddl work {}", table_id);
                 update_ddl_status(true, table_id);
                 break;
             }
             case proto::OP_RESTART_DDL_WORK: {
-                DB_NOTICE("restart ddl work %ld", table_id);
+                TLOG_INFO("restart ddl work {}", table_id);
                 update_ddl_status(false, table_id);
                 break;
             }
@@ -1318,7 +1318,7 @@ namespace EA {
     }
 
     void DDLManager::delete_ddlwork(const proto::MetaManagerRequest &request, braft::Closure *done) {
-        DB_NOTICE("delete ddlwork %s", request.ShortDebugString().c_str());
+        TLOG_INFO("delete ddlwork {}", request.ShortDebugString());
         proto::DdlWorkInfo del_work;
         bool find = false;
         int64_t table_id = request.ddlwork_info().table_id();
@@ -1357,20 +1357,20 @@ namespace EA {
         }
         auto task_id = std::to_string(table_id) + "_" + std::to_string(work.region_id());
         if (region_map_ptr != nullptr) {
-            DB_NOTICE("update region task_%s %s", task_id.c_str(), work.ShortDebugString().c_str());
+            TLOG_INFO("update region task_{} {}", task_id, work.ShortDebugString());
             MemRegionDdlWork region_work;
             region_work.region_info = work;
             region_map_ptr->set(work.region_id(), region_work);
         }
         std::string region_ddl_string;
         if (!work.SerializeToString(&region_ddl_string)) {
-            DB_FATAL("serialzeTostring error.");
+            TLOG_ERROR("serialzeTostring error.");
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
                 construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
                                        {work.table_id(), work.region_id()}), region_ddl_string) != 0) {
-            DB_FATAL("put region info error.");
+            TLOG_ERROR("put region info error.");
             return -1;
         }
         return 0;

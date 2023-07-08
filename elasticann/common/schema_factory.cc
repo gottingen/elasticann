@@ -42,7 +42,7 @@ namespace EA {
         int ret = bthread::execution_queue_start(&_region_queue_id, nullptr,
                                                  update_regions_double_buffer, (void *) this);
         if (ret != 0) {
-            DB_FATAL("execution_queue_start error, %d", ret);
+            TLOG_ERROR("execution_queue_start error, {}", ret);
             return -1;
         }
 
@@ -62,7 +62,7 @@ namespace EA {
             std::function<int(SchemaMapping &schema_mapping, const proto::SchemaInfo &table)> update_func =
                     std::bind(&SchemaFactory::update_table_internal, this, std::placeholders::_1,
                               std::placeholders::_2);
-            DB_NOTICE("update_table double_buffer_sync");
+            TLOG_INFO("update_table double_buffer_sync");
             delete_table_region_map(table);
             _double_buffer_table.Modify(update_func, table);
         }
@@ -108,8 +108,8 @@ namespace EA {
                 idc_mapping.instance_info_mapping[addr].status = s;
                 idc_mapping.instance_info_mapping[addr].normal_count = 0;
                 idc_mapping.instance_info_mapping[addr].faulty_count = 0;
-                DB_WARNING("addr:%s %s to %s", addr.c_str(),
-                           proto::Status_Name(old_s).c_str(), proto::Status_Name(s).c_str());
+                TLOG_WARN("addr: {} {} to {}", addr,
+                          proto::Status_Name(old_s), proto::Status_Name(s));
             }
         } else if (user_check) {
             // 如果两次user_check间隔太久，则从头计数
@@ -121,8 +121,8 @@ namespace EA {
                 idc_mapping.instance_info_mapping[addr].status = s;
                 idc_mapping.instance_info_mapping[addr].normal_count = 0;
                 idc_mapping.instance_info_mapping[addr].faulty_count = 0;
-                DB_WARNING("addr:%s %s to %s", addr.c_str(),
-                           proto::Status_Name(old_s).c_str(), proto::Status_Name(s).c_str());
+                TLOG_WARN("addr: {} {} to {}", addr,
+                          proto::Status_Name(old_s), proto::Status_Name(s));
             }
         } else {
             idc_mapping.instance_info_mapping[addr].normal_count = 0;
@@ -131,8 +131,8 @@ namespace EA {
             if (s == proto::DEAD) {
                 idc_mapping.instance_info_mapping[addr].need_cancel = true;
             }
-            DB_WARNING("addr:%s %s to %s", addr.c_str(),
-                       proto::Status_Name(old_s).c_str(), proto::Status_Name(s).c_str());
+            TLOG_WARN("addr: {} {} to {}", addr,
+                      proto::Status_Name(old_s), proto::Status_Name(s));
         }
         return 1;
     }
@@ -148,7 +148,7 @@ namespace EA {
 
     int SchemaFactory::update_idc_internal(IdcMapping &idc_mapping, const proto::IdcInfo &idc_info) {
         //double buffer根据该函数返回值确定是否更新idc_mapping。0：不更新，非0：更新
-        SELF_TRACE("update_idc idc_info[%s]", idc_info.ShortDebugString().c_str());
+        TLOG_TRACE("update_idc idc_info[{}]", idc_info.ShortDebugString());
         std::unordered_map<std::string, InstanceDBStatus> tmp_map;
         tmp_map.swap(idc_mapping.instance_info_mapping);
         idc_mapping.physical_logical_mapping.clear();
@@ -179,16 +179,16 @@ namespace EA {
     bool SchemaFactory::is_big_sql(const std::string &sql) {
         DoubleBufferStringSet::ScopedPtr set_ptr;
         if (_double_buffer_big_sql.Read(&set_ptr) != 0) {
-            DB_WARNING("read double_buffer_big_sql error.");
+            TLOG_WARN("read double_buffer_big_sql error.");
             return false;
         }
         return set_ptr->count(sql) == 1;
     }
 
-//TODO
+    //TODO
     void SchemaFactory::delete_table(const proto::SchemaInfo &table, SchemaMapping &background) {
         if (!table.has_table_id()) {
-            DB_FATAL("missing fields in SchemaInfo");
+            TLOG_ERROR("missing fields in SchemaInfo");
             return;
         }
         auto &table_info_mapping = background.table_info_mapping;
@@ -198,17 +198,17 @@ namespace EA {
         auto &global_index_id_mapping = background.global_index_id_mapping;
         int64_t table_id = table.table_id();
         if (table_info_mapping.count(table_id) == 0) {
-            DB_FATAL("no table found with tableid: %ld", table_id);
+            TLOG_ERROR("no table found with table id: {}", table_id);
             return;
         }
         auto tbl_info_ptr = table_info_mapping[table_id];
         auto &tbl_info = *tbl_info_ptr;
         std::string full_name = try_to_lower(tbl_info.namespace_ + "." + tbl_info.name);
-        DB_WARNING("full_name: %s, %ld", full_name.c_str(), table_name_id_mapping.size());
+        TLOG_INFO("full_name: {}, {}", full_name, table_name_id_mapping.size());
         auto full_name_iter = table_name_id_mapping.find(full_name);
         if (full_name_iter != table_name_id_mapping.end() && full_name_iter->second == table_id) {
             table_name_id_mapping.erase(full_name);
-            DB_WARNING("full_name deleted: %ld", table_name_id_mapping.size());
+            TLOG_WARN("full_name deleted: {}", table_name_id_mapping.size());
         }
         for (auto index_id: tbl_info.indices) {
             global_index_id_mapping.erase(index_id);
@@ -217,12 +217,12 @@ namespace EA {
             }
             IndexInfo &idx_info = *index_info_mapping[index_id];
             std::string full_idx_name = tbl_info.namespace_ + "." + idx_info.name;
-            DB_WARNING("full_idx_name: %s, %ld", full_idx_name.c_str(),
-                       index_name_id_mapping.size());
+            TLOG_WARN("full_idx_name: {}, {}", full_idx_name,
+                      index_name_id_mapping.size());
             auto idx_name_iter = index_name_id_mapping.find(full_idx_name);
             if (idx_name_iter != index_name_id_mapping.end() && idx_name_iter->second == index_id) {
                 index_name_id_mapping.erase(full_idx_name);
-                DB_WARNING("full_idx_name deleted: %ld", index_name_id_mapping.size());
+                TLOG_WARN("full_idx_name deleted: {}", index_name_id_mapping.size());
             }
             index_info_mapping.erase(index_id);
         }
@@ -247,7 +247,7 @@ namespace EA {
         update_schema_conf_common(table_name, schema_conf, &mem_conf);
     }
 
-// not thread-safe
+    // not thread-safe
     int SchemaFactory::update_table_internal(SchemaMapping &background, const proto::SchemaInfo &table) {
         auto &table_info_mapping = background.table_info_mapping;
         auto &table_name_id_mapping = background.table_name_id_mapping;
@@ -255,9 +255,9 @@ namespace EA {
         auto &db_name_id_mapping = background.db_name_id_mapping;
         auto &global_index_id_mapping = background.global_index_id_mapping;
 
-        //DB_WARNING("table:%s", table.ShortDebugString().c_str());
+        //TLOG_WARN("table: {}", table.ShortDebugString());
         if (!_is_inited) {
-            DB_FATAL("SchemaFactory not initialized");
+            TLOG_ERROR("SchemaFactory not initialized");
             return -1;
         }
         if (table.has_deleted() && table.deleted()) {
@@ -269,7 +269,7 @@ namespace EA {
             || !table.has_table_id()
             || !table.has_database()
             || !table.has_table_name()) {
-            DB_FATAL("missing fields in SchemaInfo");
+            TLOG_ERROR("missing fields in SchemaInfo");
             return -1;
         }
         int64_t database_id = table.database_id();
@@ -293,7 +293,7 @@ namespace EA {
         SmartTable tbl_info_ptr = std::make_shared<TableInfo>();
         if (table_info_mapping.count(table_id) == 0) {
             if (nullptr == (tbl_info_ptr->file_proto = new(std::nothrow)FileDescriptorProto)) {
-                DB_FATAL("create FileDescriptorProto failed");
+                TLOG_ERROR("create FileDescriptorProto failed");
                 return -1;
             }
         } else {
@@ -302,7 +302,7 @@ namespace EA {
             std::copy(tbl_info.indices.begin(), tbl_info.indices.end(), std::inserter(last_indics, last_indics.end()));
             // need not  update when version GE
             if (tbl_info.version >= table.version()) {
-                //DB_WARNING("need not  update, orgin version:%ld, new version:%ld, table_id:%ld", 
+                //TLOG_WARN("need not  update, orgin version: {}, new version: {}, table_id: {}",
                 //tbl_info.version, table.version(), table_id);
                 return 0;
             }
@@ -338,7 +338,7 @@ namespace EA {
         } else {
             tbl_info.region_split_lines = table.region_size() / tbl_info.byte_size_per_record;
         }
-        //DB_WARNING("schema_conf:%s", table.schema_conf().ShortDebugString().c_str());
+        //TLOG_WARN("schema_conf: {}", table.schema_conf().ShortDebugString());
         if (table.has_schema_conf()) {
             update_schema_conf(_tbl_name, table.schema_conf(), tbl_info.schema_conf);
             auto bk = table.schema_conf().backup_table();
@@ -360,42 +360,50 @@ namespace EA {
             }
 
             if (tbl_info.schema_conf.has_sign_blacklist() && tbl_info.schema_conf.sign_blacklist() != "") {
-                DB_DEBUG("sign_blacklist: %s", tbl_info.schema_conf.sign_blacklist().c_str());
+                TLOG_DEBUG("sign_blacklist: {}", tbl_info.schema_conf.sign_blacklist());
                 std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_blacklist(), ',',
                                                                turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
-                    uint64_t sign_num = strtoull(sign_str.c_str(), nullptr, 10);
-                    tbl_info.sign_blacklist.emplace(sign_num);
-                    DB_DEBUG("sign_num: %lu, sign_str: %s", sign_num, sign_str.c_str());
+                    auto sign_num = turbo::Atoi<uint64_t>(sign_str);
+                    if(!sign_num.ok()) {
+                        TLOG_WARN("parse fail: {}",sign_str);
+                        return -1;
+                    }
+                    tbl_info.sign_blacklist.emplace(sign_num.value());
+                    TLOG_DEBUG("sign_num: {}, sign_str: {}", sign_num.value(), sign_str);
                 }
             }
             if (tbl_info.schema_conf.has_sign_forcelearner() && tbl_info.schema_conf.sign_forcelearner() != "") {
-                DB_DEBUG("sign_forcelearner: %s", tbl_info.schema_conf.sign_forcelearner().c_str());
+                TLOG_DEBUG("sign_forcelearner: {}", tbl_info.schema_conf.sign_forcelearner());
                 std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forcelearner(), ',',
                                                                turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
-                    uint64_t sign_num = strtoull(sign_str.c_str(), nullptr, 10);
-                    tbl_info.sign_forcelearner.emplace(sign_num);
-                    DB_DEBUG("sign_num: %lu, sign_str: %s", sign_num, sign_str.c_str());
+                    auto sign_num = turbo::Atoi<uint64_t>(sign_str);
+                    if(!sign_num.ok()) {
+                        TLOG_WARN("parse fail: {}",sign_str);
+                        return -1;
+                    }
+                    tbl_info.sign_forcelearner.emplace(sign_num.value());
+                    TLOG_DEBUG("sign_num: {}, sign_str: {}", sign_num.value(), sign_str);
                 }
             }
             if (tbl_info.schema_conf.has_sign_forceindex() && tbl_info.schema_conf.sign_forceindex() != "") {
-                DB_DEBUG("sign_forceindex: %s", tbl_info.schema_conf.sign_forceindex().c_str());
+                TLOG_DEBUG("sign_forceindex: {}", tbl_info.schema_conf.sign_forceindex());
                 std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forceindex(), ',',
                                                                turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
                     tbl_info.sign_forceindex.emplace(sign_str);
-                    DB_DEBUG("sign_str: %s", sign_str.c_str());
+                    TLOG_DEBUG("sign_str: {}", sign_str);
                 }
             }
             if (tbl_info.schema_conf.has_sign_forceindex() && tbl_info.schema_conf.sign_forceindex() != "") {
-                DB_DEBUG("sign_forceindex: %s",
-                         tbl_info.schema_conf.sign_forceindex().c_str());
+                TLOG_DEBUG("sign_forceindex: {}",
+                           tbl_info.schema_conf.sign_forceindex());
                 std::vector<std::string> vec = turbo::StrSplit(tbl_info.schema_conf.sign_forceindex(), ',',
                                                                turbo::SkipEmpty());
                 for (auto &sign_str: vec) {
                     tbl_info.sign_forceindex.emplace(sign_str);
-                    DB_DEBUG("sign_str: %s", sign_str.c_str());
+                    TLOG_DEBUG("sign_str: {}", sign_str);
                 }
             }
         }
@@ -422,17 +430,17 @@ namespace EA {
         if (table.has_binlog_info()) {
             auto &binlog_info = table.binlog_info();
             if (binlog_info.has_binlog_table_id()) {
-                DB_WARNING("table %s,link binlog %ld", tbl_info.name.c_str(), binlog_info.binlog_table_id());
+                TLOG_WARN("table {},link binlog {}", tbl_info.name, binlog_info.binlog_table_id());
                 tbl_info.is_linked = true;
                 tbl_info.binlog_id = binlog_info.binlog_table_id();
             } else {
-                DB_DEBUG("unlink binlog");
+                TLOG_DEBUG("unlink binlog");
                 tbl_info.is_linked = false;
                 tbl_info.binlog_id = 0;
             }
             tbl_info.binlog_target_ids.clear();
             for (auto target_id: table.binlog_info().target_table_ids()) {
-                DB_DEBUG("insert target id %ld", target_id);
+                TLOG_DEBUG("insert target id {}", target_id);
                 tbl_info.binlog_target_ids.insert(target_id);
             }
         }
@@ -447,10 +455,10 @@ namespace EA {
                 tbl_info.ttl_info.online_ttl_expire_time_us = table.online_ttl_expire_time_us();
             }
 
-            DB_WARNING("table:%s ttl_duration:%ld, online_ttl_expire_time_us:%ld, %s",
-                       tbl_info.name.c_str(), tbl_info.ttl_info.ttl_duration_s,
-                       tbl_info.ttl_info.online_ttl_expire_time_us,
-                       timestamp_to_str(tbl_info.ttl_info.online_ttl_expire_time_us / 1000000).c_str());
+            TLOG_WARN("table:{} ttl_duration:{}, online_ttl_expire_time_us:{}, {}",
+                      tbl_info.name, tbl_info.ttl_info.ttl_duration_s,
+                      tbl_info.ttl_info.online_ttl_expire_time_us,
+                      timestamp_to_str(tbl_info.ttl_info.online_ttl_expire_time_us / 1000000));
         }
 
         tbl_info.learner_resource_tags.clear();
@@ -467,13 +475,13 @@ namespace EA {
         }
         std::unique_ptr<DescriptorPool> tmp_pool(new(std::nothrow)DescriptorPool);
         if (tmp_pool == nullptr) {
-            DB_FATAL("create FileDescriptorProto failed");
+            TLOG_ERROR("create FileDescriptorProto failed");
             return -1;
         }
         std::unique_ptr<DynamicMessageFactory> tmp_factory(
                 new(std::nothrow)DynamicMessageFactory(tmp_pool.get()));
         if (tmp_factory == nullptr) {
-            DB_FATAL("create DynamicMessageFactory failed");
+            TLOG_ERROR("create DynamicMessageFactory failed");
             return -1;
         }
 
@@ -489,7 +497,7 @@ namespace EA {
             if (!field.has_field_id()
                 || !field.has_mysql_type()
                 || !field.has_field_name()) {
-                DB_FATAL("missing field id (type or name)");
+                TLOG_ERROR("missing field id (type or name)");
                 return -1;
             }
             if (field.auto_increment()) {
@@ -497,17 +505,17 @@ namespace EA {
             }
             FieldDescriptorProto *field_proto = tbl_info.tbl_proto->add_field();
             if (!field_proto) {
-                DB_FATAL("add field failed: %d", field.has_field_id());
+                TLOG_ERROR("add field failed: {}", field.has_field_id());
                 return -1;
             }
             if (field.mysql_type() == proto::TDIGEST) {
-                DB_WARNING("%s is TDIGEST", tbl_info.name.c_str());
+                TLOG_WARN("{} is TDIGEST", tbl_info.name);
             }
             field_proto->set_name(field.field_name());
             //FieldDescriptorProto::Type proto_type;
             int proto_type = primitive_to_proto_type(field.mysql_type());
             if (proto_type == -1) {
-                DB_FATAL("mysql_type %d not supported.", field.mysql_type());
+                TLOG_ERROR("mysql_type {} not supported.", field.mysql_type());
                 return -1;
             }
             field_proto->set_type((FieldDescriptorProto::Type) proto_type);
@@ -550,7 +558,7 @@ namespace EA {
             } else {
                 field_info.size = get_num_size(field_info.type);
                 if (field_info.size == -1) {
-                    DB_FATAL("get_num_size type %d not supported.", field.mysql_type());
+                    TLOG_ERROR("get_num_size type {} not supported.", field.mysql_type());
                     return -1;
                 }
             }
@@ -560,44 +568,44 @@ namespace EA {
                 }
             }
             tbl_info.fields.push_back(field_info);
-            //DB_WARNING("field_name:%s, field_id:%d", field_info.name.c_str(), field_info.id);
+            //TLOG_WARN("field_name:{}, field_id:{}", field_info.name, field_info.id);
         }
         tbl_info.is_binlog = (table.engine() == proto::BINLOG);
         bool pb_need_update = tbl_info.fields_sign != new_fields_sign.str();
-        DB_NOTICE("double_buffer_write pb_need_update:%d, old:%s new:%s table:%s ", pb_need_update,
-                  tbl_info.fields_sign.c_str(), new_fields_sign.str().c_str(), table.ShortDebugString().c_str());
+        TLOG_INFO("double_buffer_write pb_need_update:{}, old:{} new:{} table:{} ", pb_need_update,
+                  tbl_info.fields_sign, new_fields_sign.str(), table.ShortDebugString());
         tbl_info.fields_sign = new_fields_sign.str();
 
         if (table.partition_num() > 1 && table.has_partition_info()) {
-            DB_NOTICE("update partition info table_%ld table_info[%s].", table_id,
-                      table.ShortDebugString().c_str());
+            TLOG_INFO("update partition info table_{} table_info[{}].", table_id,
+                      table.ShortDebugString());
             tbl_info.partition_info.CopyFrom(table.partition_info());
             if (table.partition_info().type() == proto::PT_RANGE) {
                 tbl_info.partition_ptr.reset(new RangePartition);
                 if (tbl_info.partition_ptr->init(table.partition_info(), tbl_info_ptr, table.partition_num()) != 0) {
-                    DB_WARNING("init RangePartition error.");
+                    TLOG_WARN("init RangePartition error.");
                     return -1;
                 }
             } else if (table.partition_info().type() == proto::PT_HASH) {
                 tbl_info.partition_ptr.reset(new HashPartition);
                 if (tbl_info.partition_ptr->init(table.partition_info(), tbl_info_ptr, table.partition_num()) != 0) {
-                    DB_WARNING("init HashPartition error.");
+                    TLOG_WARN("init HashPartition error.");
                     return -1;
                 }
             } else {
-                DB_WARNING("unknown partition type.");
+                TLOG_WARN("unknown partition type.");
                 return -1;
             }
         }
         if (pb_need_update) {
             const FileDescriptor *db_desc = tmp_pool->BuildFile(*tbl_info.file_proto);
             if (db_desc == nullptr) {
-                DB_FATAL("build proto_file [%ld] failed, %s", database_id, tbl_info.file_proto->DebugString().c_str());
+                TLOG_ERROR("build proto_file [{}] failed, {}", database_id, tbl_info.file_proto->DebugString());
                 return -1;
             }
             const Descriptor *descriptor = db_desc->FindMessageTypeByName(table_name);
             if (descriptor == nullptr) {
-                DB_FATAL("FindMessageTypeByName [%ld] failed.", table_id);
+                TLOG_ERROR("FindMessageTypeByName [{}] failed.", table_id);
                 return -1;
             }
             auto del_pool = tbl_info.pool;
@@ -620,8 +628,8 @@ namespace EA {
         // create name => id mapping
         db_name_id_mapping[try_to_lower(_namespace + "." + _db_name)] = database_id;
 
-        DB_WARNING("db_name_id_mapping: %s->%ld", std::string(_namespace + "." + _db_name).c_str(),
-                   database_id);
+        TLOG_WARN("db_name_id_mapping: {}->{}", std::string(_namespace + "." + _db_name),
+                  database_id);
 
         std::string _db_table(try_to_lower(_namespace + "." + _db_name + "." + _tbl_name));
         //old_tbl_name = _namespace + "." + old_tbl_name;
@@ -641,13 +649,13 @@ namespace EA {
             }
         }
         if (pk_index == nullptr && index_cnt > 0) {
-            DB_FATAL("find pk_index failed: %ld, %ld", database_id, table_id);
+            TLOG_ERROR("find pk_index failed: {}, {}", database_id, table_id);
             return -1;
         }
         for (size_t idx = 0; idx < index_cnt; ++idx) {
             const proto::IndexInfo &cur = table.indexs(idx);
             int64_t index_id = cur.index_id();
-            DB_WARNING("schema_factory_update_index: %ld", index_id);
+            TLOG_WARN("schema_factory_update_index: {}", index_id);
             last_indics.erase(index_id);
             update_index(tbl_info, cur, pk_index, background);
             if (cur.index_type() == proto::I_PRIMARY
@@ -666,7 +674,7 @@ namespace EA {
                 tbl_info.has_index_write_only_or_write_local = true;
             }
             if (cur.state() != proto::IS_PUBLIC) {
-                DB_WARNING("table:%s index:%s not public", _db_table.c_str(), cur.index_name().c_str());
+                TLOG_WARN("table: {} index: {} not public", _db_table, cur.index_name());
             }
             tbl_info.indices.push_back(index_id);
         }
@@ -679,10 +687,10 @@ namespace EA {
                 std::string fullname = tbl_info.namespace_ + "." + index_info_iter->second->name;
                 index_info_mapping.erase(index_info_iter);
                 if (index_name_id_mapping.erase(fullname) != 1) {
-                    DB_WARNING("delete index_name_id_mapping error.");
+                    TLOG_WARN("delete index_name_id_mapping error.");
                 }
-                DB_NOTICE("delete index info: index_id[%ld] index_name[%s].",
-                          index_id, fullname.c_str());
+                TLOG_INFO("delete index info: index_id[{}] index_name[{}].",
+                          index_id, fullname);
             }
         }
 
@@ -691,11 +699,11 @@ namespace EA {
         return 1;
     }
 
-//TODO, string index type
+    //TODO, string index type
     void SchemaFactory::update_index(TableInfo &table_info, const proto::IndexInfo &index,
                                      const proto::IndexInfo *pk_index, SchemaMapping &background) {
 
-        DB_NOTICE("double_buffer_write index_info [%s]", index.ShortDebugString().c_str());
+        TLOG_INFO("double_buffer_write index_info [{}]", index.ShortDebugString());
         auto &index_info_mapping = background.index_info_mapping;
         auto &index_name_id_mapping = background.index_name_id_mapping;
         SmartIndex idx_info_ptr = std::make_shared<IndexInfo>();
@@ -732,7 +740,7 @@ namespace EA {
         idx_info.max_field_id = table_info.max_field_id;
         if (idx_info.state == proto::IS_WRITE_ONLY) {
             auto time = butil::gettimeofday_us();
-            DB_DEBUG("update write_only timestamp %ld", time);
+            TLOG_DEBUG("update write_only timestamp {}", time);
             idx_info.write_only_time = time;
         } else {
             idx_info.write_only_time = -1;
@@ -743,15 +751,15 @@ namespace EA {
                 if (idx_info.index_hint_status != proto::IHS_NORMAL &&
                     index.hint_status() == proto::IHS_NORMAL) {
                     idx_info.restore_time = butil::gettimeofday_us();
-                    DB_WARNING("table_id: %ld, index_id: %ld, restore time: %ld",
-                               idx_info.pk, idx_info.id, idx_info.restore_time);
+                    TLOG_WARN("table_id: {}, index_id: {}, restore time: {}",
+                              idx_info.pk, idx_info.id, idx_info.restore_time);
                 }
 
                 if (idx_info.index_hint_status != proto::IHS_DISABLE &&
                     index.hint_status() == proto::IHS_DISABLE) {
                     idx_info.disable_time = butil::gettimeofday_us();
-                    DB_WARNING("table_id: %ld, index_id: %ld, disable time: %ld",
-                               idx_info.pk, idx_info.id, idx_info.disable_time);
+                    TLOG_WARN("table_id: {}, index_id: {}, disable time: {}",
+                              idx_info.pk, idx_info.id, idx_info.disable_time);
                 }
             }
             idx_info.index_hint_status = index.hint_status();
@@ -773,15 +781,15 @@ namespace EA {
         for (int idx = 0; idx < field_cnt; ++idx) {
             FieldInfo *info = table_info.get_field_ptr(index.field_ids(idx));
             if (info == nullptr) {
-                DB_FATAL("table %ld index %ld field %d not exist",
-                         table_info.id, idx_info.id, index.field_ids(idx));
+                TLOG_ERROR("table {} index {} field {} not exist",
+                           table_info.id, idx_info.id, index.field_ids(idx));
                 return;
             }
             idx_info.fields.push_back(*info);
 
             //记录field_id在index_bytes中的对应位置
             id_map.insert(std::make_pair(info->id, idx_info.length));
-            //DB_WARNING("index:%ld, field:%d, length:%d", idx_info.id, info.id, idx_info.length);
+            //TLOG_WARN("index:{}, field:{}, length:{}", idx_info.id, info.id, idx_info.length);
             if (info->can_null) {
                 idx_info.has_nullable = true;
             }
@@ -791,9 +799,9 @@ namespace EA {
                 idx_info.length += info->size;
             }
             if (idx_info.type == proto::I_FULLTEXT) {
-                DB_NOTICE("table %ld:%s index %ld insert reverse field %d, type:%s",
-                          table_info.id, table_info.name.c_str(), idx_info.id, info->id,
-                          StorageType_Name(idx_info.storage_type).c_str());
+                TLOG_INFO("table {}:{} index {} insert reverse field {}, type:{}",
+                          table_info.id, table_info.name, idx_info.id, info->id,
+                          StorageType_Name(idx_info.storage_type));
                 if (idx_info.storage_type == proto::ST_PROTOBUF_OR_FORMAT1) {
                     table_info.reverse_fields[info->id] = idx_info.id;
                 } else {
@@ -804,7 +812,7 @@ namespace EA {
         if (idx_info.has_nullable) {
             idx_info.length = -1;
         }
-        //DB_WARNING("index:%ld, index_length:%d", idx_info.id, idx_info.length);
+        //TLOG_WARN("index: {}, index_length: {}", idx_info.id, idx_info.length);
 
         //只有二级索引需要保存pk_fields
         if (idx_info.type == proto::I_KEY || idx_info.type == proto::I_UNIQ) {
@@ -817,8 +825,8 @@ namespace EA {
                 int32_t field_id = pk_index->field_ids(idx);
                 FieldInfo *info = table_info.get_field_ptr(field_id);
                 if (info == nullptr) {
-                    DB_FATAL("table %ld index %ld pk field %d not exist",
-                             table_info.id, idx_info.id, field_id);
+                    TLOG_ERROR("table {} index {} pk field {} not exist",
+                               table_info.id, idx_info.id, field_id);
                     return;
                 }
                 if (info->size == -1) {
@@ -874,7 +882,7 @@ namespace EA {
             index_name_id_mapping.erase(old_idx_name);
         }
         fullname = table_info.namespace_ + "." + idx_info.name;
-        DB_WARNING("index full name:%s, %ld, %d", fullname.c_str(), idx_info.id, idx_info.overlap);
+        TLOG_WARN("index full name: {}, {}, {}", fullname, idx_info.id, idx_info.overlap);
         index_name_id_mapping[fullname] = idx_info.id;
     }
 
@@ -888,12 +896,12 @@ namespace EA {
         SchemaFactory *factory = (SchemaFactory *) meta;
         TimeCost cost;
         factory->update_regions_double_buffer(iter);
-        SELF_TRACE("update_regions_double_buffer time:%ld", cost.get_time());
+        TLOG_TRACE("update_regions_double_buffer time: {}", cost.get_time());
         return 0;
     }
 
-// 心跳更新时，如果region有分裂，需要保证分裂出来的region与源region同时更新
-// todo liuhuicong 更新时判断所有的start/end是否合法（重叠，空洞）
+    // 心跳更新时，如果region有分裂，需要保证分裂出来的region与源region同时更新
+    // todo liuhuicong 更新时判断所有的start/end是否合法（重叠，空洞）
     void SchemaFactory::update_regions_double_buffer(bthread::TaskIterator<RegionVec> &iter) {
         // tableid => (partion => (start_key => region))
         std::map<int64_t, std::map<int,
@@ -902,11 +910,11 @@ namespace EA {
             for (auto &region: *iter) {
                 int64_t table_id = region.table_id();
                 int p_id = region.partition_id();
-                //DB_WARNING("update_region : %s, pid %d", region.DebugString().c_str(), p_id);
+                //TLOG_WARN("update_region : {}, pid {}", region.DebugString(), p_id);
                 const std::string &start_key = region.start_key();
                 if (!start_key.empty() && start_key == region.end_key()) {
-                    DB_WARNING("table id:%ld region id:%ld is empty can`t add to map",
-                               table_id, region.region_id());
+                    TLOG_WARN("table id: {} region id: {} is empty can`t add to map",
+                              table_id, region.region_id());
                     continue;
                 }
                 table_key_region_map[table_id][p_id][start_key] = &region;
@@ -933,8 +941,8 @@ namespace EA {
             int p_id = region.partition_id();
             const std::string &start_key = region.start_key();
             if (!start_key.empty() && start_key == region.end_key()) {
-                DB_WARNING("table id:%ld region id:%ld is empty can`t add to map",
-                           table_id, region.region_id());
+                TLOG_WARN("table id: {} region id: {} is empty can`t add to map",
+                          table_id, region.region_id());
                 continue;
             }
             table_key_region_map[table_id][p_id][start_key] = &region;
@@ -954,7 +962,7 @@ namespace EA {
     void SchemaFactory::update_region(TableRegionPtr table_region_ptr,
                                       const proto::RegionInfo &region) {
         if (region.has_deleted() && region.deleted()) {
-            DB_WARNING("region:%s deleted", region.ShortDebugString().c_str());
+            TLOG_WARN("region: {} deleted", region.ShortDebugString());
             auto &vec = table_region_ptr->key_region_mapping;
             if (vec.count(region.partition_id()) == 0) {
                 return;
@@ -968,8 +976,8 @@ namespace EA {
         table_region_ptr->get_region_info(region.region_id(), orgin_region);
         //不允许version 回退
         if (orgin_region.version() > region.version()) {
-            DB_WARNING("no roll back, region_id: %ld, old_ver:%ld, ver:%ld",
-                       region.region_id(), orgin_region.version(), region.version());
+            TLOG_WARN("no roll back, region_id: {}, old_ver: {}, ver: {}",
+                      region.region_id(), orgin_region.version(), region.version());
             return;
         }
         auto &vec = table_region_ptr->key_region_mapping;
@@ -977,7 +985,7 @@ namespace EA {
         key_reg_map.insert(std::make_pair(region.start_key(), region.region_id()));
 
         table_region_ptr->insert_region_info(region);
-        DB_DEBUG("region_id: %ld %s update success", region.region_id(), region.ShortDebugString().c_str());
+        TLOG_DEBUG("region_id: {} {} update success", region.region_id(), region.ShortDebugString());
     }
 
     void SchemaFactory::clear_region(TableRegionPtr table_region_ptr,
@@ -991,12 +999,12 @@ namespace EA {
             //找到分区
             key_reg_map.erase(iter.first);
             table_region_ptr->region_info_mapping.erase(iter.second);
-            DB_WARNING("clear region_id:%ld start_key:%s", iter.second,
-                       str_to_hex(iter.first).c_str());
+            TLOG_WARN("clear region_id: {} start_key: {}", iter.second,
+                      str_to_hex(iter.first));
         }
     }
 
-// new_start_key < origin_start_key
+    // new_start_key < origin_start_key
     void SchemaFactory::get_clear_regions(const std::string &new_start_key,
                                           const std::string &origin_start_key,
                                           TableRegionPtr table_region_ptr,
@@ -1024,23 +1032,23 @@ namespace EA {
             }
             if (key != region_iter->first) {
                 clear_regions.clear();
-                DB_FATAL("region id:%ld, nonsequence start_key:%s vs %s",
-                         region_iter->second, str_to_hex(key).c_str(),
-                         str_to_hex(region_iter->first).c_str());
+                TLOG_ERROR("region id: {}, nonsequence start_key: {} vs {}",
+                           region_iter->second, str_to_hex(key),
+                           str_to_hex(region_iter->first));
                 return;
             }
             proto::RegionInfo region;
             int64_t region_id = region_iter->second;
             int ret = table_region_ptr->get_region_info(region_id, region);
             if (ret < 0) {
-                DB_FATAL("region_id:%ld is not in map", region_id);
+                TLOG_ERROR("region_id: {} is not in map", region_id);
                 clear_regions.clear();
                 return;
             }
-            DB_WARNING("region_id:%ld version:%ld start_key:%s end_key:%s need clear",
-                       region_id, region.version(),
-                       str_to_hex(region.start_key()).c_str(),
-                       str_to_hex(region.end_key()).c_str());
+            TLOG_WARN("region_id: {} version: {} start_key: {} end_key: {} need clear",
+                      region_id, region.version(),
+                      str_to_hex(region.start_key()),
+                      str_to_hex(region.end_key()));
             clear_regions[key] = region_id;
             key = region.end_key();
             if (key == origin_start_key) {
@@ -1060,10 +1068,10 @@ namespace EA {
 
         TableRegionPtr table_region_ptr = table_region_mapping[table_id];
 
-        //DB_NOTICE("double_buffer_write update_regions_table table_id[%ld]", table_id);
+        //TLOG_INFO("double_buffer_write update_regions_table table_id[{}]", table_id);
         for (auto &start_key_region: key_region_map) {
             auto partition = start_key_region.first;
-            DB_DEBUG("update region partition %d", partition);
+            TLOG_DEBUG("update region partition {}", partition);
             auto &start_key_region_map = start_key_region.second;
             std::vector<const proto::RegionInfo *> last_regions;
             std::map<std::string, int64_t> clear_regions;
@@ -1071,20 +1079,20 @@ namespace EA {
             std::string end_key;
             for (auto iter = start_key_region_map.begin(); iter != start_key_region_map.end(); ++iter) {
                 const proto::RegionInfo &region = *iter->second;
-                DB_DEBUG("double_buffer_write update region_info:%s", region.DebugString().c_str());
+                TLOG_DEBUG("double_buffer_write update region_info:{}", region.DebugString());
                 proto::RegionInfo orgin_region;
                 int ret = table_region_ptr->get_region_info(region.region_id(), orgin_region);
                 if (ret < 0) {
-                    DB_DEBUG("region:%s", region.DebugString().c_str());
+                    TLOG_DEBUG("region: {}", region.DebugString());
                     if (last_regions.size() != 0) {
-                        //DB_WARNING("last_region:%s, region:%s",
-                        //        last_region->ShortDebugString().c_str(), region.ShortDebugString().c_str());
+                        //TLOG_WARN("last_region:{}, region:{}",
+                        //        last_region->ShortDebugString(), region.ShortDebugString());
                         auto last_region = last_regions.back();
                         if (last_region->end_key() != region.start_key()) {
                             last_regions.clear();
                             clear_regions.clear();
-                            DB_FATAL("last_region->end_key():%s != region.start_key():%s",
-                                     last_region->end_key().c_str(), region.start_key().c_str());
+                            TLOG_ERROR("last_region->end_key(): {} != region.start_key(): {}",
+                                       last_region->end_key(), region.start_key());
                             continue;
                         }
                         last_regions.push_back(&region);
@@ -1092,19 +1100,19 @@ namespace EA {
                             clear_region(table_region_ptr, clear_regions, partition);
                             for (auto r: last_regions) {
                                 update_region(table_region_ptr, *r);
-                                DB_DEBUG("update regions %s", r->ShortDebugString().c_str());
+                                TLOG_DEBUG("update regions {}", r->ShortDebugString());
                             }
                             clear_regions.clear();
                             last_regions.clear();
                         } else if (end_key_compare(region.end_key(), end_key) > 0) {
-                            DB_FATAL("region.end_key:%s > end_key:%s",
-                                     str_to_hex(region.end_key()).c_str(),
-                                     str_to_hex(end_key).c_str());
+                            TLOG_ERROR("region.end_key: {} > end_key: {}",
+                                       str_to_hex(region.end_key()),
+                                       str_to_hex(end_key));
                             clear_regions.clear();
                             last_regions.clear();
                         }
                     } else {
-                        DB_DEBUG("region:%s", region.ShortDebugString().c_str());
+                        TLOG_DEBUG("region: {}", region.ShortDebugString());
                         // 先判断加入的region是否与现有的region有范围重叠
                         auto &vec = table_region_ptr->key_region_mapping;
                         StrInt64Map &key_reg_map = vec[partition];
@@ -1115,22 +1123,22 @@ namespace EA {
                             table_region_ptr->get_region_info(pre_region_id, pre_info);
                             // TODO:应该严格的按照last_end_key == start_key 担心有坑
                             if (end_key_compare(pre_info.end_key(), region.start_key()) > 0) {
-                                DB_WARNING("region:%ld %ld is overlapping",
-                                           pre_region_id, region.region_id());
+                                TLOG_WARN("region:{} {} is overlapping",
+                                          pre_region_id, region.region_id());
                                 continue;
                             }
                         }
-                        DB_DEBUG("region:%s", region.ShortDebugString().c_str());
+                        TLOG_DEBUG("region: {}", region.ShortDebugString());
                         update_region(table_region_ptr, region);
                     }
                 } else if (region.version() > orgin_region.version()) {
-                    DB_DEBUG("region:%s, orgin_region:%s",
-                             region.ShortDebugString().c_str(), orgin_region.ShortDebugString().c_str());
-                    DB_DEBUG("region id:%ld, new vs origin (%ld, %s, %s) vs (%ld, %s, %s)",
-                             region.region_id(), region.version(), str_to_hex(region.start_key()).c_str(),
-                             str_to_hex(region.end_key()).c_str(), orgin_region.version(),
-                             str_to_hex(orgin_region.start_key()).c_str(),
-                             str_to_hex(orgin_region.end_key()).c_str());
+                    TLOG_DEBUG("region:{}, orgin_region:{}",
+                               region.ShortDebugString(), orgin_region.ShortDebugString());
+                    TLOG_DEBUG("region id:{}, new vs origin ({}, {}, {}) vs ({}, {}, {})",
+                               region.region_id(), region.version(), str_to_hex(region.start_key()),
+                               str_to_hex(region.end_key()), orgin_region.version(),
+                               str_to_hex(orgin_region.start_key()),
+                               str_to_hex(orgin_region.end_key()));
                     clear_regions.clear();
                     last_regions.clear();
                     //保证整体更新
@@ -1171,12 +1179,12 @@ namespace EA {
                     }
                     continue;
                 } else {
-                    DB_DEBUG("region:%s, orgin_region:%s",
-                             region.ShortDebugString().c_str(), orgin_region.ShortDebugString().c_str());
+                    TLOG_DEBUG("region:{}, orgin_region:{}",
+                               region.ShortDebugString(), orgin_region.ShortDebugString());
                     update_region(table_region_ptr, region);
                 }
-                //DB_WARNING("region:%s, orgin_region:%s",
-                //        region.ShortDebugString().c_str(), orgin_region.ShortDebugString().c_str());
+                //TLOG_WARN("region:{}, orgin_region:{}",
+                //        region.ShortDebugString(), orgin_region.ShortDebugString());
                 //last_region = nullptr;
             }
         }
@@ -1200,7 +1208,7 @@ namespace EA {
         {
             DoubleBufferedUser::ScopedPtr ptr;
             if (_user_info_mapping.Read(&ptr) != 0) {
-                DB_WARNING("read _user_info_mapping error.");
+                TLOG_WARN("read _user_info_mapping error.");
                 return;
             }
             auto iter = ptr->find(username);
@@ -1275,7 +1283,7 @@ namespace EA {
                 turbo::Trim(&bns);
                 int ret2 = get_instance_from_bns(&ret, bns, instances, false, true);
                 if (ret2 != 0) {
-                    DB_WARNING("bns error:%s", bns.c_str());
+                    TLOG_WARN("bns error:{}", bns);
                     bns_error = true;
                 }
                 for (auto &instance: instances) {
@@ -1321,8 +1329,8 @@ namespace EA {
         for (auto &st: statistics) {
             SmartStatistics ptr = std::make_shared<Statistics>(st);
             tmp_mapping[ptr->table_id()] = ptr;
-            DB_WARNING("update statistics, table_id:%ld, version:%ld,size:%ld", ptr->table_id(), ptr->version(),
-                       st.ByteSizeLong());
+            TLOG_WARN("update statistics, table_id:{}, version:{},size:{}", ptr->table_id(), ptr->version(),
+                      st.ByteSizeLong());
         }
 
         std::function<int(SchemaMapping &schema_mapping, const std::map<int64_t, SmartStatistics> &mapping)> func =
@@ -1353,7 +1361,7 @@ namespace EA {
 
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return 0;
         }
         auto &table_statistics_mapping = table_ptr->table_statistics_mapping;
@@ -1368,7 +1376,7 @@ namespace EA {
 
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return 0;
         }
         auto &table_statistics_mapping = table_ptr->table_statistics_mapping;
@@ -1382,7 +1390,7 @@ namespace EA {
     int64_t SchemaFactory::get_histogram_sample_cnt(int64_t table_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
 
@@ -1398,7 +1406,7 @@ namespace EA {
     int64_t SchemaFactory::get_histogram_distinct_cnt(int64_t table_id, int field_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
 
@@ -1415,7 +1423,7 @@ namespace EA {
     SchemaFactory::get_histogram_ratio(int64_t table_id, int field_id, const ExprValue &lower, const ExprValue &upper) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return 1.0;
         }
 
@@ -1431,7 +1439,7 @@ namespace EA {
     double SchemaFactory::get_cmsketch_ratio(int64_t table_id, int field_id, const ExprValue &value) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return 1.0;
         }
 
@@ -1451,7 +1459,7 @@ namespace EA {
 
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return nullptr;
         }
 
@@ -1467,7 +1475,7 @@ namespace EA {
     void SchemaFactory::table_with_statistics_info(std::vector<std::string> &database_table) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
 
@@ -1483,13 +1491,13 @@ namespace EA {
         return;
     }
 
-// create a new table record (aka. a table row)
+    // create a new table record (aka. a table row)
     SmartRecord SchemaFactory::new_record(TableInfo &info) {
         Message *message = info.msg_proto->New();
         if (message) {
             return SmartRecord(new(std::nothrow)TableRecord(message));
         } else {
-            DB_FATAL("new fail, table_id: %ld", info.id);
+            TLOG_ERROR("new fail, table_id: {}", info.id);
             return SmartRecord(nullptr);
         }
     }
@@ -1498,12 +1506,12 @@ namespace EA {
     SmartRecord SchemaFactory::new_record(int64_t tableid) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return nullptr;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
         if (table_info_mapping.count(tableid) == 0) {
-            DB_WARNING("no table found: %ld", tableid);
+            TLOG_WARN("no table found: {}", tableid);
             return nullptr;
         }
         return new_record(*table_info_mapping.at(tableid));
@@ -1512,7 +1520,7 @@ namespace EA {
     DatabaseInfo SchemaFactory::get_database_info(int64_t databaseid) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return DatabaseInfo();
         }
         auto &db_info_mapping = table_ptr->db_info_mapping;
@@ -1525,7 +1533,7 @@ namespace EA {
     proto::Engine SchemaFactory::get_table_engine(int64_t tableid) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return proto::ROCKSDB;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -1547,7 +1555,7 @@ namespace EA {
     SmartTable SchemaFactory::get_table_info_ptr(int64_t tableid) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return nullptr;
         }
         auto iter = table_ptr->table_info_mapping.find(tableid);
@@ -1560,7 +1568,7 @@ namespace EA {
     SmartTable SchemaFactory::get_table_info_ptr_by_name(const std::string &table_name/*namespace.db.table*/) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return nullptr;
         }
 
@@ -1589,7 +1597,7 @@ namespace EA {
     SmartIndex SchemaFactory::get_index_info_ptr(int64_t indexid) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return nullptr;
         }
         auto iter = table_ptr->index_info_mapping.find(indexid);
@@ -1608,7 +1616,7 @@ namespace EA {
 
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return "failed";
         }
 
@@ -1622,7 +1630,7 @@ namespace EA {
     std::shared_ptr<UserInfo> SchemaFactory::get_user_info(const std::string &user) {
         DoubleBufferedUser::ScopedPtr ptr;
         if (_user_info_mapping.Read(&ptr) != 0) {
-            DB_WARNING("read _user_info_mapping error.");
+            TLOG_WARN("read _user_info_mapping error.");
             return nullptr;
         }
         auto iter = ptr->find(user);
@@ -1635,7 +1643,7 @@ namespace EA {
     std::shared_ptr<SqlStatistics> SchemaFactory::get_sql_stat(int64_t sign) {
         DoubleBufferedSql::ScopedPtr ptr;
         if (_double_buffer_sql_stat.Read(&ptr) != 0) {
-            DB_WARNING("read _double_buffer_sql_staterror.");
+            TLOG_WARN("read _double_buffer_sql_staterror.");
             return nullptr;
         }
         auto iter = ptr->find(sign);
@@ -1680,7 +1688,7 @@ namespace EA {
         }
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return vec;
         }
         for (auto &table_pair: table_ptr->table_info_mapping) {
@@ -1700,7 +1708,7 @@ namespace EA {
         std::vector<SmartTable> vec;
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return vec;
         }
         vec.reserve(table_ptr->table_info_mapping.size());
@@ -1722,7 +1730,7 @@ namespace EA {
                                             std::vector<SmartTable> &table_ptrs) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         for (const auto &table_pair: table_ptr->table_info_mapping) {
@@ -1738,7 +1746,7 @@ namespace EA {
     void SchemaFactory::get_all_table_version(std::unordered_map<int64_t, int64_t> &table_id_version_map) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         for (auto &table_pair: table_ptr->table_info_mapping) {
@@ -1750,7 +1758,7 @@ namespace EA {
                                                   int64_t max_split_line) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         for (auto &table_pair: table_ptr->table_info_mapping) {
@@ -1763,7 +1771,7 @@ namespace EA {
     int SchemaFactory::get_region_info(int64_t table_id, int64_t region_id, proto::RegionInfo &info) {
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
@@ -1777,7 +1785,7 @@ namespace EA {
     int SchemaFactory::get_table_id(const std::string &table_name, int64_t &table_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
         auto &table_name_id_mapping = table_ptr->table_name_id_mapping;
@@ -1791,13 +1799,13 @@ namespace EA {
     int SchemaFactory::get_region_capacity(int64_t global_index_id, int64_t &region_capacity) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
         auto &global_index_id_mapping = table_ptr->global_index_id_mapping;
         auto &table_info_mapping = table_ptr->table_info_mapping;
         if (global_index_id_mapping.count(global_index_id) == 0) {
-            DB_DEBUG("index_id: %ld not exist", global_index_id);
+            TLOG_DEBUG("index_id: {} not exist", global_index_id);
             return -1;
         }
         int64_t main_table_id = global_index_id_mapping.at(global_index_id);
@@ -1841,7 +1849,7 @@ namespace EA {
     bool SchemaFactory::is_switch_open(const int64_t table_id, const std::string &switch_name) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return false;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -1869,7 +1877,7 @@ namespace EA {
     void SchemaFactory::get_cost_switch_open(std::vector<std::string> &database_table) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -1900,7 +1908,7 @@ namespace EA {
     void SchemaFactory::get_schema_conf_open(const std::string &conf_name, std::vector<std::string> &database_table) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -1935,12 +1943,12 @@ namespace EA {
         return;
     }
 
-//database_table : namespace.db.table.binlog_db.binlog_table.learner_tags
+    //database_table : namespace.db.table.binlog_db.binlog_table.learner_tags
     void SchemaFactory::get_table_by_filter(std::vector<std::string> &database_table,
                                             const std::function<bool(const SmartTable &)> &select_table) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -1973,7 +1981,7 @@ namespace EA {
     int SchemaFactory::sql_force_learner_read(int64_t table_id, uint64_t sign) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return 0;
         }
 
@@ -2006,7 +2014,7 @@ namespace EA {
     int SchemaFactory::get_schema_conf_value(const int64_t table_id, const std::string &switch_name, T &value) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -2069,7 +2077,7 @@ namespace EA {
     int SchemaFactory::get_schema_conf_str(const int64_t table_id, const std::string &switch_name, std::string &value) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -2103,7 +2111,7 @@ namespace EA {
     TTLInfo SchemaFactory::get_ttl_duration(int64_t table_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return TTLInfo();
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -2116,7 +2124,7 @@ namespace EA {
     int SchemaFactory::get_database_id(const std::string &db_name, int64_t &db_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
         auto &db_name_id_mapping = table_ptr->db_name_id_mapping;
@@ -2130,7 +2138,7 @@ namespace EA {
     bool SchemaFactory::exist_tableid(int64_t table_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return false;
         }
         if (table_ptr->global_index_id_mapping.count(table_id) == 0) {
@@ -2138,19 +2146,19 @@ namespace EA {
         }
         return true;
     }
-// int SchemaFactory::get_column_id(const std::string& col_name, int32_t col_id) const {
-//     if (bsl::HASH_NOEXIST == _column_name_id_mapping.get(col_name, &col_id)) {
-//         return -1;
-//     }
-//     return 0;
-// }
+    // int SchemaFactory::get_column_id(const std::string& col_name, int32_t col_id) const {
+    //     if (bsl::HASH_NOEXIST == _column_name_id_mapping.get(col_name, &col_id)) {
+    //         return -1;
+    //     }
+    //     return 0;
+    // }
 
     int SchemaFactory::get_index_id(int64_t table_id,
                                     const std::string &index_name,
                                     int64_t &index_id) {
         DoubleBufferedTable::ScopedPtr table_ptr;
         if (_double_buffer_table.Read(&table_ptr) != 0) {
-            DB_WARNING("read double_buffer_table error.");
+            TLOG_WARN("read double_buffer_table error.");
             return -1;
         }
         auto &table_info_mapping = table_ptr->table_info_mapping;
@@ -2179,13 +2187,13 @@ namespace EA {
                                                   const std::vector<int64_t> &partitions) {
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
         auto it = table_region_mapping_ptr->find(table_id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping", table_id);
+            TLOG_WARN("index id[{}] not in table_region_mapping", table_id);
             return -1;
         }
         auto frontground = it->second;
@@ -2193,7 +2201,7 @@ namespace EA {
         for (auto partition: partitions) {
             auto iter = key_region_mapping.find(partition);
             if (iter == key_region_mapping.end()) {
-                DB_WARNING("partition %ld schema not update.", partition);
+                TLOG_WARN("partition {} schema not update.", partition);
                 return -1;
             }
             for (auto &pair: iter->second) {
@@ -2208,13 +2216,13 @@ namespace EA {
                                                  std::map<int64_t, proto::RegionInfo> *region_infos) {
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
         auto it = table_region_mapping_ptr->find(table_id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping", table_id);
+            TLOG_WARN("index id[{}] not in table_region_mapping", table_id);
             return -1;
         }
         auto frontground = it->second;
@@ -2229,17 +2237,17 @@ namespace EA {
         return 0;
     }
 
-// 检测table下region范围是否连续没有空洞
+    // 检测table下region范围是否连续没有空洞
     int SchemaFactory::check_region_ranges_consecutive(int64_t table_id) {
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
         auto it = table_region_mapping_ptr->find(table_id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping", table_id);
+            TLOG_WARN("index id[{}] not in table_region_mapping", table_id);
             return -1;
         }
         auto frontground = it->second;
@@ -2254,14 +2262,14 @@ namespace EA {
                 proto::RegionInfo region;
                 frontground->get_region_info(region_id, region);
                 if (region.start_key() != pre_region_end_key) {
-                    DB_FATAL("region range not consecutive, pre_region_end_key: %s, start_key: %s",
-                             pre_region_end_key.c_str(), region.start_key().c_str());
+                    TLOG_ERROR("region range not consecutive, pre_region_end_key: {}, start_key: {}",
+                             pre_region_end_key, region.start_key());
                     return -1;
                 }
                 pre_region_end_key = region.end_key();
             }
             if (pre_region_end_key != "") {
-                DB_FATAL("region range not consecutive, last region_end_key: %s", pre_region_end_key.c_str());
+                TLOG_ERROR("region range not consecutive, last region_end_key: {}", pre_region_end_key);
                 return -1;
             }
         }
@@ -2288,13 +2296,13 @@ namespace EA {
         }
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
         auto it = table_region_mapping_ptr->find(index.id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping", index.id);
+            TLOG_WARN("index id[{}] not in table_region_mapping", index.id);
             return -1;
         }
         bool is_binlog = is_binlog_table(main_table_id);
@@ -2305,7 +2313,7 @@ namespace EA {
             for (auto partition: partitions) {
                 auto iter = key_region_mapping.find(partition);
                 if (iter == key_region_mapping.end()) {
-                    DB_WARNING("partition %ld schema not update.", partition);
+                    TLOG_WARN("partition {} schema not update.", partition);
                     return -1;
                 }
                 for (auto &pair: iter->second) {
@@ -2336,11 +2344,11 @@ namespace EA {
             if (!range.left_pb_record().empty()) {
                 auto left = record_template->clone(false);
                 if (left->decode(range.left_pb_record()) != 0) {
-                    DB_FATAL("Fail to encode pb left, table:%ld", index.id);
+                    TLOG_ERROR("Fail to encode pb left, table: {}", index.id);
                     return -1;
                 }
                 if (left->encode_key(index, start, range.left_field_cnt(), false, like_prefix) != 0) {
-                    DB_FATAL("Fail to encode_key left, table:%ld", index.id);
+                    TLOG_ERROR("Fail to encode_key left, table: {}", index.id);
                     return -1;
                 }
             } else if (!range.left_key().empty()) {
@@ -2351,11 +2359,11 @@ namespace EA {
             if (!range.right_pb_record().empty()) {
                 auto right = record_template->clone(false);
                 if (right->decode(range.right_pb_record()) != 0) {
-                    DB_FATAL("Fail to encode pb right, table:%ld", index.id);
+                    TLOG_ERROR("Fail to encode pb right, table: {}", index.id);
                     return -1;
                 }
                 if (right->encode_key(index, end, range.right_field_cnt(), false, like_prefix) != 0) {
-                    DB_FATAL("Fail to encode_key right, table:%ld", index.id);
+                    TLOG_ERROR("Fail to encode_key right, table: {}", index.id);
                     return -1;
                 }
             } else if (!range.right_key().empty()) {
@@ -2372,7 +2380,7 @@ namespace EA {
             for (auto partition: partitions) {
                 auto key_region_iter = key_region_mapping.find(partition);
                 if (key_region_iter == key_region_mapping.end()) {
-                    DB_WARNING("partition %ld schema not update.", partition);
+                    TLOG_WARN("partition {} schema not update.", partition);
                     return -1;
                 }
                 // binlog表写入时分区内region随机选取，查询时需要广播分区所有region
@@ -2451,12 +2459,12 @@ namespace EA {
 
             DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
             if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-                DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+                TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
                 continue;
             }
             auto it = table_region_mapping_ptr->find(table_id);
             if (it == table_region_mapping_ptr->end()) {
-                DB_WARNING("index id[%ld] not in table_region_mapping", table_id);
+                TLOG_WARN("index id[{}] not in table_region_mapping", table_id);
                 continue;
             }
             //读 
@@ -2467,10 +2475,10 @@ namespace EA {
             const std::string &end = input_regions[idx].end_key();
 
             int64_t current_partition = input_regions[idx].partition_id();
-            DB_DEBUG("get region by key partition %ld", current_partition);
+            TLOG_DEBUG("get region by key partition {}", current_partition);
             auto key_region_iter = key_region_mapping.find(current_partition);
             if (key_region_iter == key_region_mapping.end()) {
-                DB_WARNING("partition %ld schema not update.", current_partition);
+                TLOG_WARN("partition {} schema not update.", current_partition);
                 return -1;
             }
             StrInt64Map &map = key_region_iter->second;
@@ -2502,12 +2510,12 @@ namespace EA {
 
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
         auto it = table_region_mapping_ptr->find(index.id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping", index.id);
+            TLOG_WARN("index id[{}] not in table_region_mapping", index.id);
             return -1;
         }
         auto frontground = it->second;
@@ -2520,12 +2528,12 @@ namespace EA {
         for (auto &record: records) {
             MutTableKey key;
             if (0 != key.append_index(index, record.get(), -1, false)) {
-                DB_FATAL("Fail to encode_key, table:%ld", index.id);
+                TLOG_ERROR("Fail to encode_key, table: {}", index.id);
                 return -1;
             }
             if (index.type == proto::I_KEY) {
                 if (0 != record->encode_primary_key(index, key, -1)) {
-                    DB_FATAL("Fail to append_pk_index, tab:%ld", index.id);
+                    TLOG_ERROR("Fail to append_pk_index, tab: {}", index.id);
                     return -1;
                 }
             }
@@ -2533,10 +2541,10 @@ namespace EA {
                 current_partition = table_ptr->partition_ptr->calc_partition(record);
                 record_partition_ids.emplace(current_partition);
             }
-            DB_DEBUG("get region by key partition %ld", current_partition);
+            TLOG_DEBUG("get region by key partition {}", current_partition);
             auto key_region_iter = key_region_mapping.find(current_partition);
             if (key_region_iter == key_region_mapping.end()) {
-                DB_WARNING("partition %ld schema not update.", current_partition);
+                TLOG_WARN("partition {} schema not update.", current_partition);
                 return -1;
             }
             StrInt64Map &map = key_region_iter->second;
@@ -2549,7 +2557,7 @@ namespace EA {
             region_ids[region_id].push_back(record);
             frontground->get_region_info(region_id, region_infos[region_id]);
         }
-        //DB_WARNING("region_id:%ld", region_iter->second);
+        //TLOG_WARN("region_id: {}", region_iter->second);
         return 0;
     }
 
@@ -2560,12 +2568,12 @@ namespace EA {
 
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
         auto it = table_region_mapping_ptr->find(index.id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping", index.id);
+            TLOG_WARN("index id[{}] not in table_region_mapping", index.id);
             return -1;
         }
         auto frontground = it->second;
@@ -2577,27 +2585,27 @@ namespace EA {
         auto table_ptr = get_table_info_ptr(main_table_id);
         for (auto &record: records) {
             if (record == nullptr) {
-                DB_FATAL("null record");
+                TLOG_ERROR("null record");
                 return -1;
             }
             MutTableKey key;
             if (0 != key.append_index(index, record.get(), -1, false)) {
-                DB_FATAL("Fail to encode_key, table:%ld", index.id);
+                TLOG_ERROR("Fail to encode_key, table: {}", index.id);
                 return -1;
             }
             if (index.type == proto::I_KEY) {
                 if (0 != record->encode_primary_key(index, key, -1)) {
-                    DB_FATAL("Fail to append_pk_index, tab:%ld", index.id);
+                    TLOG_ERROR("Fail to append_pk_index, tab: {}", index.id);
                     return -1;
                 }
             }
             if (is_partition) {
                 current_partition = table_ptr->partition_ptr->calc_partition(record);
             }
-            DB_DEBUG("get region by key partition %ld", current_partition);
+            TLOG_DEBUG("get region by key partition {}", current_partition);
             auto key_region_iter = key_region_mapping.find(current_partition);
             if (key_region_iter == key_region_mapping.end()) {
-                DB_WARNING("partition %ld schema not update.", current_partition);
+                TLOG_WARN("partition {} schema not update.", current_partition);
                 return -1;
             }
             StrInt64Map &map = key_region_iter->second;
@@ -2609,7 +2617,7 @@ namespace EA {
             int64_t region_id = region_iter->second;
             region_ids.emplace_back(region_id);
         }
-        //DB_WARNING("region_id:%ld", region_iter->second);
+        //TLOG_WARN("region_id: {}", region_iter->second);
         return 0;
     }
 
@@ -2626,13 +2634,13 @@ namespace EA {
 
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
         auto it = table_region_mapping_ptr->find(index.id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping.", index.id);
+            TLOG_WARN("index id[{}] not in table_region_mapping.", index.id);
             return -1;
         }
         auto frontground = it->second;
@@ -2645,22 +2653,22 @@ namespace EA {
         for (auto &record: insert_records) {
             MutTableKey key;
             if (0 != key.append_index(index, record.get(), -1, false)) {
-                DB_FATAL("Fail to encode_key, table:%ld", index.id);
+                TLOG_ERROR("Fail to encode_key, table: {}", index.id);
                 return -1;
             }
             if (index.type == proto::I_KEY) {
                 if (0 != record->encode_primary_key(index, key, -1)) {
-                    DB_FATAL("Fail to append_pk_index, tab:%ld", index.id);
+                    TLOG_ERROR("Fail to append_pk_index, tab: {}", index.id);
                     return -1;
                 }
             }
             if (is_partition) {
                 current_partition = table_ptr->partition_ptr->calc_partition(record);
             }
-            DB_DEBUG("get region by key partition %ld", current_partition);
+            TLOG_DEBUG("get region by key partition {}", current_partition);
             auto key_region_iter = key_region_mapping.find(current_partition);
             if (key_region_iter == key_region_mapping.end()) {
-                DB_WARNING("partition %ld schema is not update.", current_partition);
+                TLOG_WARN("partition {} schema is not update.", current_partition);
                 return -1;
             }
             StrInt64Map &map = key_region_iter->second;
@@ -2676,21 +2684,21 @@ namespace EA {
         for (auto &record: delete_records) {
             MutTableKey key;
             if (0 != key.append_index(index, record.get(), -1, false)) {
-                DB_FATAL("Fail to encode_key, table:%ld", index.id);
+                TLOG_ERROR("Fail to encode_key, table: {}", index.id);
                 return -1;
             }
             if (index.type == proto::I_KEY) {
                 if (0 != record->encode_primary_key(index, key, -1)) {
-                    DB_FATAL("Fail to append_pk_index, tab:%ld", index.id);
+                    TLOG_ERROR("Fail to append_pk_index, tab: {}", index.id);
                     return -1;
                 }
             }
             if (is_partition) {
                 current_partition = table_ptr->partition_ptr->calc_partition(record);
             }
-            DB_DEBUG("get region by key partition %ld", current_partition);
+            TLOG_DEBUG("get region by key partition {}", current_partition);
             if (key_region_mapping.count(current_partition) == 0) {
-                DB_WARNING("partition %ld schema is not update.", current_partition);
+                TLOG_WARN("partition {} schema is not update.", current_partition);
                 return -1;
             }
             StrInt64Map &map = key_region_mapping[current_partition];
@@ -2710,7 +2718,7 @@ namespace EA {
         if (table.has_deleted() && table.deleted()) {
             for (const auto &index: table.indexs()) {
                 if (index.is_global() || index.index_type() == proto::I_PRIMARY) {
-                    DB_DEBUG("erase global index_id %ld", index.index_id());
+                    TLOG_DEBUG("erase global index_id {}", index.index_id());
                     _table_region_mapping.Modify(double_buffer_table_region_erase, index.index_id());
                 }
             }
@@ -2741,30 +2749,30 @@ namespace EA {
         _partition_num = partition_num;
         _partition_info.CopyFrom(partition_info);
         if (_partition_num == 0) {
-            DB_FATAL("table_id[%ld] partition_num is zero", _table_id);
+            TLOG_ERROR("table_id[{}] partition_num is zero", _table_id);
             return -1;
         }
         _partition_field_id = partition_info.partition_field();
         auto _table_ptr = table_ptr;
         _field_info = _table_ptr->get_field_ptr(_partition_field_id);
         if (_field_info == nullptr) {
-            DB_WARNING("table_id %ld  field_id:%d not found.", _table_id, _partition_field_id);
+            TLOG_WARN("table_id {}  field_id: {} not found.", _table_id, _partition_field_id);
             return -1;
         }
         if (partition_info.has_hash_expr_value()) {
             if (0 != ExprNode::create_tree(partition_info.hash_expr_value(), &_hash_expr)) {
-                DB_FATAL("table_id[%ld] partition create expr failed expr:%s", _table_id,
-                         partition_info.hash_expr_value().ShortDebugString().c_str());
+                TLOG_ERROR("table_id[{}] partition create expr failed expr:{}", _table_id,
+                         partition_info.hash_expr_value().ShortDebugString());
                 return -1;
             }
             _hash_expr->expr_optimize();
             proto::Expr expr;
             ExprNode::create_pb_expr(&expr, _hash_expr);
-            DB_WARNING("partition create expr %s.", expr.ShortDebugString().c_str());
+            TLOG_WARN("partition create expr {}.", expr.ShortDebugString());
             std::unordered_set<int32_t> field_ids;
             _hash_expr->get_all_field_ids(field_ids);
             if (field_ids.size() != 1) {
-                DB_FATAL("table_id[%ld] multiple fields not support", _table_id);
+                TLOG_ERROR("table_id[{}] multiple fields not support", _table_id);
                 return -1;
             }
             _partition_field_id = *field_ids.begin();
@@ -2784,18 +2792,18 @@ namespace EA {
         _partition_field_id = partition_info.partition_field();
         if (partition_info.has_range_partition_field()) {
             if (0 != ExprNode::create_tree(partition_info.range_partition_field(), &_range_expr)) {
-                DB_FATAL("table_id[%ld] partition create expr failed expr:%s", _table_id,
-                         partition_info.range_partition_field().ShortDebugString().c_str());
+                TLOG_ERROR("table_id[{}] partition create expr failed expr: {}", _table_id,
+                         partition_info.range_partition_field().ShortDebugString());
                 return -1;
             }
             _range_expr->expr_optimize();
             proto::Expr expr;
             ExprNode::create_pb_expr(&expr, _range_expr);
-            DB_WARNING("partition create expr %s.", expr.ShortDebugString().c_str());
+            TLOG_WARN("partition create expr {}.", expr.ShortDebugString());
             std::unordered_set<int32_t> field_ids;
             _range_expr->get_all_field_ids(field_ids);
             if (field_ids.size() != 1) {
-                DB_FATAL("table_id[%ld] multiple fields not support", _table_id);
+                TLOG_ERROR("table_id[{}] multiple fields not support", _table_id);
                 return -1;
             }
             _partition_field_id = *field_ids.begin();
@@ -2804,21 +2812,21 @@ namespace EA {
         auto _table_ptr = table_ptr;
         _field_info = _table_ptr->get_field_ptr(_partition_field_id);
         if (_field_info == nullptr) {
-            DB_WARNING("table_id %ld  field_id:%d not found.", _table_id, _partition_field_id);
+            TLOG_WARN("table_id {}  field_id: {} not found.", _table_id, _partition_field_id);
             return -1;
         }
 
         for (const auto &range: partition_info.range_partition_values()) {
             ExprNode *node_ptr = nullptr;
             if (0 != ExprNode::create_expr_node(range.nodes(0), &node_ptr)) {
-                DB_WARNING("create expr node error.");
+                TLOG_WARN("create expr node error.");
                 return -1;
             }
             _range_values.emplace_back(node_ptr->get_value(nullptr));
             delete node_ptr;
         }
         if (_partition_num == 0 || _range_values.size() == 0) {
-            DB_WARNING("partition_num [%ld] or range_expr size is zero", _partition_num);
+            TLOG_WARN("partition_num [{}] or range_expr size is zero", _partition_num);
             return -1;
         }
         if (_partition_info.partition_names_size() != _range_values.size()) {
@@ -2842,19 +2850,19 @@ namespace EA {
         //获取binlog id
         int64_t binlog_id = 0;
         if (get_binlog_id(table_id, binlog_id) != 0) {
-            DB_WARNING("get binlog id error.");
+            TLOG_WARN("get binlog id error.");
             return -1;
         }
         int64_t partition_index = 0;
         if (get_partition_index(binlog_id, value, partition_index) == 0) {
             DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
             if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-                DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+                TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
                 return -1;
             }
             auto it = table_region_mapping_ptr->find(binlog_id);
             if (it == table_region_mapping_ptr->end()) {
-                DB_WARNING("index id[%ld] not in table_region_mapping.", binlog_id);
+                TLOG_WARN("index id[{}] not in table_region_mapping.", binlog_id);
                 return -1;
             }
             auto &key_region_mapping = it->second->key_region_mapping;
@@ -2864,7 +2872,7 @@ namespace EA {
                 auto &region_map = region_map_iter->second;
                 auto region_map_size = region_map.size();
                 if (region_map_size == 0) {
-                    DB_WARNING("no binlog region");
+                    TLOG_WARN("no binlog region");
                     return -1;
                 }
                 int32_t select_index = 0;
@@ -2878,18 +2886,18 @@ namespace EA {
 
                 auto region_info_ptr = region_info_mapping.find(select_iter->second);
                 if (region_info_ptr == region_info_mapping.end()) {
-                    DB_WARNING("no region info for region %ld", select_iter->second);
+                    TLOG_WARN("no region info for region {}", select_iter->second);
                     return -1;
                 }
-                DB_DEBUG("select index %d", select_index);
+                TLOG_DEBUG("select index {}", select_index);
                 region_info = region_info_ptr->second.region_info;
                 return 0;
             } else {
-                DB_WARNING("not find table %ld partition %ld region info.", binlog_id, partition_index);
+                TLOG_WARN("not find table {} partition {} region info.", binlog_id, partition_index);
                 return -1;
             }
         } else {
-            DB_WARNING("get table %ld binlog partition num error.", binlog_id);
+            TLOG_WARN("get table {} binlog partition num error.", binlog_id);
             return -1;
         }
     }
@@ -2936,18 +2944,18 @@ namespace EA {
             default_value.type = proto::STRING;
         }
         if (0 != record->set_value(record->get_field_by_tag(field.id), default_value)) {
-            DB_WARNING("fill insert value failed");
+            TLOG_WARN("fill insert value failed");
             return -1;
         }
         return 0;
     }
 
-//table_id => (partition_id, vector<RegionInfo1, RegionInfo2, RegionInfo3, ...>)
+    //table_id => (partition_id, vector<RegionInfo1, RegionInfo2, RegionInfo3, ...>)
     int SchemaFactory::get_partition_binlog_regions(const std::string &db_table_name, int64_t partition_input_value,
                                                     std::unordered_map<int64_t, std::unordered_map<int64_t, std::vector<proto::RegionInfo>>> &table_id_partition_binlogs) {
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
@@ -2986,13 +2994,13 @@ namespace EA {
                                           std::map<int64_t, proto::RegionInfo> &region_infos) {
         DoubleBufferedTableRegionInfo::ScopedPtr table_region_mapping_ptr;
         if (_table_region_mapping.Read(&table_region_mapping_ptr) != 0) {
-            DB_WARNING("DoubleBufferedTableRegion read scoped ptr error.");
+            TLOG_WARN("DoubleBufferedTableRegion read scoped ptr error.");
             return -1;
         }
 
         auto it = table_region_mapping_ptr->find(binlog_id);
         if (it == table_region_mapping_ptr->end()) {
-            DB_WARNING("index id[%ld] not in table_region_mapping.", binlog_id);
+            TLOG_WARN("index id[{}] not in table_region_mapping.", binlog_id);
             return -1;
         }
         auto &key_region_mapping = it->second->key_region_mapping;
@@ -3008,11 +3016,9 @@ namespace EA {
             }
             return 0;
         } else {
-            DB_WARNING("not find table %ld partition %ld region info.", binlog_id, partition_index);
+            TLOG_WARN("not find table {} partition {} region info.", binlog_id, partition_index);
             return -1;
         }
     }
-}//namespace
-
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+}  // namespace EA
 

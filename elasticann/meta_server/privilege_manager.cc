@@ -78,14 +78,14 @@ namespace EA {
         auto &user_privilege = const_cast<proto::UserPrivilege &>(request.user_privilege());
         std::string username = user_privilege.username();
         if (_user_privilege.find(username) != _user_privilege.end()) {
-            DB_WARNING("request username has been created, username:%s",
-                       user_privilege.username().c_str());
+            TLOG_WARN("request username has been created, username:{}",
+                       user_privilege.username());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "username has been repeated");
             return;
         }
         int ret = SchemaManager::get_instance()->check_and_get_for_privilege(user_privilege);
         if (ret < 0) {
-            DB_WARNING("request not illegal, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request not illegal, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "request invalid");
             return;
         }
@@ -93,14 +93,14 @@ namespace EA {
         // 构造key 和 value
         std::string value;
         if (!user_privilege.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         // write date to rocksdb
         ret = MetaRocksdb::get_instance()->put_meta_info(construct_privilege_key(username), value);
         if (ret < 0) {
-            DB_WARNING("add username:%s privilege to rocksdb fail", username.c_str());
+            TLOG_WARN("add username:{} privilege to rocksdb fail", username);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -108,40 +108,40 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_user_mutex);
         _user_privilege[username] = user_privilege;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("create user success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("create user success, request:{}", request.ShortDebugString());
     }
 
     void PrivilegeManager::drop_user(const proto::MetaManagerRequest &request, braft::Closure *done) {
         std::string username = request.user_privilege().username();
         if (_user_privilege.find(username) == _user_privilege.end()) {
-            DB_WARNING("request username not exist, username:%s", username.c_str());
+            TLOG_WARN("request username not exist, username:{}", username);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "username not exist");
             return;
         }
         auto ret = MetaRocksdb::get_instance()->delete_meta_info(
                 std::vector<std::string>{construct_privilege_key(username)});
         if (ret < 0) {
-            DB_WARNING("drop username:%s privilege to rocksdb fail", username.c_str());
+            TLOG_WARN("drop username:{} privilege to rocksdb fail", username);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
             return;
         }
         BAIDU_SCOPED_LOCK(_user_mutex);
         _user_privilege.erase(username);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop user success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop user success, request:{}", request.ShortDebugString());
     }
 
     void PrivilegeManager::add_privilege(const proto::MetaManagerRequest &request, braft::Closure *done) {
         auto &user_privilege = const_cast<proto::UserPrivilege &>(request.user_privilege());
         std::string username = user_privilege.username();
         if (_user_privilege.find(username) == _user_privilege.end()) {
-            DB_WARNING("request username not exist, username:%s", username.c_str());
+            TLOG_WARN("request username not exist, username:{}", username);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "username not exist");
             return;
         }
         int ret = SchemaManager::get_instance()->check_and_get_for_privilege(user_privilege);
         if (ret < 0) {
-            DB_WARNING("request not illegal, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request not illegal, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "request invalid");
             return;
         }
@@ -177,34 +177,34 @@ namespace EA {
         // 构造key 和 value
         std::string value;
         if (!tmp_mem_privilege.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         // write date to rocksdb
         ret = MetaRocksdb::get_instance()->put_meta_info(construct_privilege_key(username), value);
         if (ret != 0) {
-            DB_WARNING("add username:%s privilege to rocksdb fail", username.c_str());
+            TLOG_WARN("add username:{} privilege to rocksdb fail", username);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
         BAIDU_SCOPED_LOCK(_user_mutex);
         _user_privilege[username] = tmp_mem_privilege;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("add privilege success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("add privilege success, request:{}", request.ShortDebugString());
     }
 
     void PrivilegeManager::drop_privilege(const proto::MetaManagerRequest &request, braft::Closure *done) {
         auto &user_privilege = const_cast<proto::UserPrivilege &>(request.user_privilege());
         std::string username = user_privilege.username();
         if (_user_privilege.find(username) == _user_privilege.end()) {
-            DB_WARNING("request username not exist, username:%s", username.c_str());
+            TLOG_WARN("request username not exist, username:{}", username);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "username not exist");
             return;
         }
         int ret = SchemaManager::get_instance()->check_and_get_for_privilege(user_privilege);
         if (ret < 0) {
-            DB_WARNING("request not illegal, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request not illegal, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "request invalid");
             return;
         }
@@ -232,21 +232,21 @@ namespace EA {
         // 构造key 和 value
         std::string value;
         if (!tmp_mem_privilege.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         // write date to rocksdb
         ret = MetaRocksdb::get_instance()->put_meta_info(construct_privilege_key(username), value);
         if (ret < 0) {
-            DB_WARNING("add username:%s privilege to rocksdb fail", username.c_str());
+            TLOG_WARN("add username:{} privilege to rocksdb fail", username);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
         BAIDU_SCOPED_LOCK(_user_mutex);
         _user_privilege[username] = tmp_mem_privilege;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop privilege success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop privilege success, request:{}", request.ShortDebugString());
     }
 
     void PrivilegeManager::process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
@@ -272,11 +272,11 @@ namespace EA {
             std::string username(iter->key().ToString(), privilege_prefix.size());
             proto::UserPrivilege user_privilege;
             if (!user_privilege.ParseFromString(iter->value().ToString())) {
-                DB_FATAL("parse from pb fail when load privilege snapshot, key:%s",
+                TLOG_ERROR("parse from pb fail when load privilege snapshot, key:{}",
                          iter->key().data());
                 return -1;
             }
-            DB_WARNING("user_privilege:%s", user_privilege.ShortDebugString().c_str());
+            TLOG_WARN("user_privilege:{}", user_privilege.ShortDebugString());
             BAIDU_SCOPED_LOCK(_user_mutex);
             _user_privilege[username] = user_privilege;
         }

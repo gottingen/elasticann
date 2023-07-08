@@ -28,7 +28,7 @@ namespace EA {
     DEFINE_int64(exec_1pc_out_fsm_timeout_ms, 5 * 1000, "exec 1pc out of fsm, timeout");
     DEFINE_int64(exec_1pc_in_fsm_timeout_ms, 100, "exec 1pc in fsm, timeout");
 
-// value 出参，会remove prefix
+    // value 出参，会remove prefix
     int64_t ttl_decode(rocksdb::Slice &value, const IndexInfo *const index_info, int64_t base_expire_time_us) {
         if (base_expire_time_us == 0) {
             // 非online TTL
@@ -38,17 +38,18 @@ namespace EA {
         }
 
         if (value.size() < sizeof(uint64_t)) {
-            DB_DEBUG("value size < 8, index id: %ld, name: %s, ttl time: %ld",
-                     index_info->id, proto::IndexType_Name(index_info->type).c_str(), base_expire_time_us);
+            TLOG_DEBUG("value size < 8, index id: {}, name: {}, ttl time: {}",
+                       index_info->id, proto::IndexType_Name(index_info->type), base_expire_time_us);
             return base_expire_time_us;
         }
 
         // 时间戳无效则认为没有时间前缀
         int64_t time = decode_first_8bytes2int64(value);
         if (!valid_timestamp_us(time)) {
-            DB_DEBUG("invalid timestamp, index id: %ld, name: %s, ttl time: %ld, data size: %lu, invalid time: %ld",
-                     index_info->id, proto::IndexType_Name(index_info->type).c_str(), base_expire_time_us, value.size(),
-                     time);
+            TLOG_DEBUG("invalid timestamp, index id: {}, name: {}, ttl time: {}, data size: {}, invalid time: {}",
+                       index_info->id, proto::IndexType_Name(index_info->type), base_expire_time_us,
+                       value.size(),
+                       time);
             return base_expire_time_us;
         }
 
@@ -56,34 +57,34 @@ namespace EA {
         if (index_info->type == proto::I_KEY) {
             if (value.size() == sizeof(uint64_t)) {
                 value.remove_prefix(sizeof(uint64_t));
-                DB_DEBUG("has prefix timestamp index id: %ld, name: %s, ttl time: %ld",
-                         index_info->id, proto::IndexType_Name(index_info->type).c_str(), time);
+                TLOG_DEBUG("has prefix timestamp index id: {}, name: {}, ttl time: {}",
+                           index_info->id, proto::IndexType_Name(index_info->type), time);
             } else {
                 // 报警
-                DB_WARNING("ttl_decode fail, value size != 8, index id: %ld, name: %s, ttl time: %ld",
-                           index_info->id, proto::IndexType_Name(index_info->type).c_str(), time);
+                TLOG_DEBUG("ttl_decode fail, value size != 8, index id: {}, name: {}, ttl time: {}",
+                           index_info->id, proto::IndexType_Name(index_info->type), time);
             }
             return time;
         } else if (index_info->type == proto::I_PRIMARY) {
             TupleRecord tuple_record(value);
             if (tuple_record.verification_fields(index_info->max_field_id) != 0) {
-                DB_DEBUG("has prefix timestamp index id: %ld, name: %s, ttl time: %ld, value size: %lu",
-                         index_info->id, proto::IndexType_Name(index_info->type).c_str(), time, value.size());
+                TLOG_DEBUG("has prefix timestamp index id: {}, name: {}, ttl time: {}, value size: {}",
+                           index_info->id, proto::IndexType_Name(index_info->type), time, value.size());
                 value.remove_prefix(sizeof(uint64_t));
             } else {
                 // 报警
-                DB_WARNING(
-                        "ttl_decode fail, index id: %ld, name: %s, ttl time: %ld, value size: %lu, base_expire_time_us: %ld, value: %s",
-                        index_info->id, proto::IndexType_Name(index_info->type).c_str(), time, value.size(),
-                        base_expire_time_us, value.ToString(true).c_str());
+                TLOG_WARN(
+                        "ttl_decode fail, index id: {}, name: {}, ttl time: {}, value size: {}, base_expire_time_us: {}, value: {}",
+                        index_info->id, proto::IndexType_Name(index_info->type), time, value.size(),
+                        base_expire_time_us, value.ToString(true));
                 // 使用临时Slice删除8字节前缀然后再次解析确认
                 rocksdb::Slice tmp_slice_value(value);
                 tmp_slice_value.remove_prefix(sizeof(uint64_t));
                 TupleRecord tmp_tuple_record(tmp_slice_value);
                 if (tmp_tuple_record.verification_fields(index_info->max_field_id) != 0) {
                     // 去掉前缀后解析不通过，则说明该数据确实没有时间前缀
-                    DB_WARNING("has no prefix timestamp index id: %ld, name: %s, ttl time: %ld, value size: %lu",
-                               index_info->id, proto::IndexType_Name(index_info->type).c_str(), time, value.size());
+                    TLOG_WARN("has no prefix timestamp index id: {}, name: {}, ttl time: {}, value size: {}",
+                              index_info->id, proto::IndexType_Name(index_info->type), time, value.size());
                     return base_expire_time_us;
                 } else {
                     // 去掉前缀解析通过则认为时间前缀是合法的，通过报警提示跟进为什么有无前缀都能解析通过
@@ -98,8 +99,8 @@ namespace EA {
             TableKey key(value);
             for (auto &field_info: index_info->pk_fields) {
                 if (0 != key.skip_field(field_info, pos)) {
-                    DB_WARNING("decode index field error: field_id: %d, type: %d",
-                               field_info.id, field_info.type);
+                    TLOG_WARN("decode index field error: field_id: {}, type: {}",
+                              field_info.id, field_info.type);
                     succ = false;
                     break;
                 }
@@ -111,18 +112,18 @@ namespace EA {
 
             // 不能严格验证 TODO
             if (succ && pos == value.size()) {
-                DB_DEBUG("has prefix timestamp index id: %ld, name: %s, ttl time: %ld, pos: %d, value size: %lu",
-                         index_info->id, proto::IndexType_Name(index_info->type).c_str(), time, pos, value.size());
+                TLOG_DEBUG("has prefix timestamp index id: {}, name: {}, ttl time: {}, pos: {}, value size: {}",
+                           index_info->id, proto::IndexType_Name(index_info->type), time, pos, value.size());
             } else {
-                DB_WARNING("ttl_decode fail, index id: %ld, name: %s, ttl time: %ld, pos: %d, value size: %lu",
-                           index_info->id, proto::IndexType_Name(index_info->type).c_str(), time, pos, value.size());
+                TLOG_WARN("ttl_decode fail, index id: {}, name: {}, ttl time: {}, pos: {}, value size: {}",
+                          index_info->id, proto::IndexType_Name(index_info->type), time, pos, value.size());
             }
 
             return time;
         } else {
             // 报警
-            DB_WARNING("ttl_decode fail, index id: %ld, name: %s, ttl time: %ld, value size: %lu",
-                       index_info->id, proto::IndexType_Name(index_info->type).c_str(), time, value.size());
+            TLOG_WARN("ttl_decode fail, index id: {}, name: {}, ttl time: {}, value size: {}",
+                      index_info->id, proto::IndexType_Name(index_info->type), time, value.size());
             return time;
         }
     }
@@ -140,15 +141,15 @@ namespace EA {
 
     int Transaction::begin(const rocksdb::TransactionOptions &txn_opt) {
         if (nullptr == (_db = RocksWrapper::get_instance())) {
-            DB_WARNING("get rocksdb instance failed");
+            TLOG_WARN("get rocksdb instance failed");
             return -1;
         }
         if (nullptr == (_data_cf = _db->get_data_handle())) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         if (nullptr == (_meta_cf = _db->get_meta_info_handle())) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         _txn_opt = txn_opt;
@@ -158,7 +159,7 @@ namespace EA {
         }
         auto txn = _db->begin_transaction(_write_opt, _txn_opt);
         if (txn == nullptr) {
-            DB_WARNING("start_trananction failed");
+            TLOG_WARN("start_trananction failed");
             return -1;
         }
 
@@ -166,7 +167,6 @@ namespace EA {
         if (_pool != nullptr) {
             _use_ttl = _pool->use_ttl();
             _online_ttl_base_expire_time_us = _pool->online_ttl_base_expire_time_us();
-            DB_DEBUG();
         }
         last_active_time = butil::gettimeofday_us();
         begin_time = last_active_time;
@@ -196,7 +196,7 @@ namespace EA {
                 memcpy(pk_buf + pos, pk_bytes.data() + index_info.pk_pos[i].second, pk_index.fields[i].size);
                 pos += pk_index.fields[i].size;
             } else {
-                DB_WARNING("error.");
+                TLOG_WARN("error.");
                 return -1;
             }
         }
@@ -209,14 +209,14 @@ namespace EA {
                                                         bool &result) {
         MutTableKey _key;
         if (0 != _key.append_index(index_info, record.get(), -1, false)) {
-            DB_FATAL("Fail to append_index, reg:%ld, tab:%ld",
-                     _region_info->region_id(), index_info.id);
+            TLOG_ERROR("Fail to append_index, reg: {}, tab: {}",
+                       _region_info->region_id(), index_info.id);
             return -1;
         }
         if (index_info.type == proto::I_KEY) {
             if (0 != record->encode_primary_key(index_info, _key, -1)) {
-                DB_FATAL("Fail to append_pk_index, reg:%ld,tab:%ld",
-                         _region_info->region_id(), index_info.id);
+                TLOG_ERROR("Fail to append_pk_index, reg: {},tab: {}",
+                           _region_info->region_id(), index_info.id);
                 return -1;
             }
         }
@@ -235,8 +235,8 @@ namespace EA {
         result = true;
         MutTableKey _key;
         if (0 != _key.append_index(pk_index, record.get(), -1, false)) {
-            DB_FATAL("Fail to append_index, reg:%ld, tab:%ld",
-                     _region_info->region_id(), pk_index.id);
+            TLOG_ERROR("Fail to append_index, reg: {}, tab: {}",
+                       _region_info->region_id(), pk_index.id);
             return -1;
         }
         result = fits_region_range(rocksdb::Slice(_key.data()),
@@ -248,9 +248,9 @@ namespace EA {
         return 0;
     }
 
-// start指针为空表示不用判断region start_key
-// end指针为空表示不用判断region end_key
-// 传入待测试的key和value不包含regionid+table前缀
+    // start指针为空表示不用判断region start_key
+    // end指针为空表示不用判断region end_key
+    // 传入待测试的key和value不包含regionid+table前缀
     bool Transaction::fits_region_range(rocksdb::Slice key, rocksdb::Slice value,
                                         const std::string *start, const std::string *end,
                                         IndexInfo &pk_index, IndexInfo &index_info) {
@@ -262,21 +262,21 @@ namespace EA {
         //全局二级索引
         if (index_info.type == proto::I_PRIMARY || index_info.is_global) {
             if (start) {
-                //DB_WARNING("index_id: %ld, start_key: %s, key: %s",
+                //TLOG_WARN("index_id: {}, start_key: {}, key: {}",
                 //    index_info.id,
-                //    rocksdb::Slice(*start).ToString(true).c_str(), key.ToString(true).c_str());
+                //    rocksdb::Slice(*start).ToString(true), key.ToString(true));
                 ret1 = key.compare(*start);
                 if (ret1 < 0) {
                     return false;
                 }
             }
             if (end && !end->empty()) {
-                //DB_WARNING("index_id: %ld, start_key: %s, key: %s",
+                //TLOG_WARN("index_id: {}, start_key: {}, key: {}",
                 //    index_info.id,
-                //    rocksdb::Slice(*end).ToString(true).c_str(), key.ToString(true).c_str());
+                //    rocksdb::Slice(*end).ToString(true), key.ToString(true));
                 ret2 = key.compare(*end);
             }
-            //DB_WARNING("ret1: %d, ret2: %d", ret1, ret2);
+            //TLOG_WARN("ret1: {}, ret2: {}", ret1, ret2);
         } else if (index_info.type == proto::I_UNIQ) {
             if (pk_index.length > 0 && index_info.length > 0 && index_info.overlap) {
                 std::unique_ptr<char[]> pk_buf(new(std::nothrow)char[pk_index.length]);
@@ -309,7 +309,7 @@ namespace EA {
             if (pk_index.length > 0 && index_info.length > 0 && index_info.overlap) {
                 rocksdb::Slice _value(key);
                 if ((int) _value.size() < index_info.length) {
-                    DB_FATAL("index:%ld value_size:%lu len:%d", index_info.id, _value.size(), index_info.length);
+                    TLOG_ERROR("index: {} value_size: {} len: {}", index_info.id, _value.size(), index_info.length);
                     return false;
                 }
                 _value.remove_prefix(index_info.length);
@@ -331,7 +331,7 @@ namespace EA {
             } else {
                 if (index_info.length > 0) {
                     if ((int) key.size() < index_info.length) {
-                        DB_FATAL("index:%ld value_size:%lu len:%d", index_info.id, key.size(), index_info.length);
+                        TLOG_ERROR("index: {} value_size: {} len: {}", index_info.id, key.size(), index_info.length);
                         return false;
                     }
                     // index_info为定长
@@ -355,7 +355,7 @@ namespace EA {
                         }
                     }
                     if ((int) key.size() < pos) {
-                        DB_FATAL("index:%ld value_size:%lu pos:%d", index_info.id, key.size(), pos);
+                        TLOG_ERROR("index: {} value_size: {} pos: {}", index_info.id, key.size(), pos);
                         return false;
                     }
                     key.remove_prefix(pos);
@@ -378,14 +378,14 @@ namespace EA {
         return false;
     }
 
-//TODO: finer return status
-//return -3 when region not match
+    //TODO: finer return status
+    //return -3 when region not match
     int Transaction::put_primary(int64_t region, IndexInfo &pk_index, SmartRecord record,
                                  std::set<int32_t> *update_fields) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         MutTableKey key;
@@ -393,14 +393,14 @@ namespace EA {
         key.append_i64(region).append_i64(pk_index.id);
         //encode key (not allowing prefix, do post field_clear)
         if (0 != key.append_index(pk_index, record.get(), -1, true)) {
-            DB_FATAL("Fail to append_index, reg=%ld, tab=%ld", region, pk_index.id);
+            TLOG_ERROR("Fail to append_index, reg= {}, tab= {}", region, pk_index.id);
             return -1;
         }
         std::string value;
         if (!is_cstore()) {
             ret = record->encode(value);
             if (ret != 0) {
-                DB_WARNING("encode record failed: reg=%ld, tab=%ld", region, pk_index.id);
+                TLOG_WARN("encode record failed: reg= {}, tab= {}", region, pk_index.id);
                 return -1;
             }
         } else {
@@ -410,11 +410,11 @@ namespace EA {
         if (res.IsTimedOut()) {
             print_txninfo_holding_lock(key.data());
             int64_t region_id = _region_info != nullptr ? _region_info->region_id() : 0;
-            DB_WARNING("lock failed, region_id: %ld, txn:%ld, timedout: %s, key:%s",
-                       region_id, _txn_id, res.ToString().c_str(), record->debug_string().c_str());
+            TLOG_WARN("lock failed, region_id: {}, txn: {}, timedout: {}, key: {}",
+                      region_id, _txn_id, res.ToString(), record->debug_string());
             return -1;
         } else if (!res.ok()) {
-            DB_FATAL("put primary fail, error: %s", res.ToString().c_str());
+            TLOG_ERROR("put primary fail, error: {}", res.ToString());
             return -1;
         }
         if (_is_separate) {
@@ -424,23 +424,23 @@ namespace EA {
         if (is_cstore()) {
             return put_primary_columns(key, record, update_fields);
         }
-        //DB_WARNING("put primary, region_id: %ld, index_id: %ld, put_key: %s, put_value: %s",
-        //    region, pk_index.id, rocksdb::Slice(key.data()).ToString(true).c_str(), rocksdb::Slice(value).ToString(true).c_str());
+        //TLOG_WARN("put primary, region_id: {}, index_id: {}, put_key: {}, put_value: {}",
+        //    region, pk_index.id, rocksdb::Slice(key.data()).ToString(true), rocksdb::Slice(value).ToString(true));
         return 0;
     }
 
-//TODO: finer return status
-//txt->Put always return OK when using OptimisticTransactionDB
+    //TODO: finer return status
+    //txt->Put always return OK when using OptimisticTransactionDB
     int Transaction::put_secondary(int64_t region, IndexInfo &index, SmartRecord record) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         if (index.type != proto::I_KEY && index.type != proto::I_UNIQ) {
-            DB_WARNING("invalid index type, region_id: %ld, table_id: %ld, index_type:%d", region, index.id,
-                       index.type);
+            TLOG_WARN("invalid index type, region_id: {}, table_id: {}, index_type:{}", region, index.id,
+                      index.type);
             return -1;
         }
         MutTableKey key;
@@ -448,14 +448,14 @@ namespace EA {
 
         //encode key (not allowing prefix, no clear)
         if (0 != key.append_index(index, record.get(), -1, false)) {
-            DB_FATAL("Fail to append_index, reg:%ld, tab:%ld", region, index.id);
+            TLOG_ERROR("Fail to append_index, reg:{}, tab:{}", region, index.id);
             return -1;
         }
         rocksdb::Status res;
         MutTableKey pk;
         if (index.type == proto::I_KEY) {
             if (0 != record->encode_primary_key(index, key, -1)) {
-                DB_FATAL("Fail to append_index, reg:%ld, tab:%ld", region, index.pk);
+                TLOG_ERROR("Fail to append_index, reg: {}, tab: {}", region, index.pk);
                 return -1;
             }
             if (_is_separate) {
@@ -463,11 +463,11 @@ namespace EA {
                 add_kvop_put(key.data(), value, _write_ttl_timestamp_us, index.is_global);
             }
             res = put_kv_without_lock(key.data(), "", _write_ttl_timestamp_us);
-            //DB_FATAL("data:%s", str_to_hex(key.data()).c_str());
+            //TLOG_ERROR("data: {}", str_to_hex(key.data()));
         } else if (index.type == proto::I_UNIQ) {
             //MutTableKey pk;
             if (0 != record->encode_primary_key(index, pk, -1)) {
-                DB_FATAL("Fail to append_index, reg:%ld, tab:%ld", region, index.pk);
+                TLOG_ERROR("Fail to append_index, reg:{}, tab:{}", region, index.pk);
                 return -1;
             }
             if (_is_separate) {
@@ -478,15 +478,15 @@ namespace EA {
         if (res.IsTimedOut()) {
             print_txninfo_holding_lock(key.data());
             int64_t region_id = _region_info != nullptr ? _region_info->region_id() : 0;
-            DB_WARNING("lock failed, region_id: %ld, txn:%ld, timedout: %s, key:%s",
-                       region_id, _txn_id, res.ToString().c_str(), record->debug_string().c_str());
+            TLOG_WARN("lock failed, region_id: {}, txn:{}, timedout: {}, key:{}",
+                      region_id, _txn_id, res.ToString(), record->debug_string());
             return -1;
         } else if (!res.ok()) {
-            DB_FATAL("put secondary fail, error: %s", res.ToString().c_str());
+            TLOG_ERROR("put secondary fail, error: {}", res.ToString());
             return -1;
         }
-        //DB_WARNING("put secondary, region_id: %ld, index_id: %ld, put_key: %s, put_value: %s",
-        //    region, index.id, rocksdb::Slice(key.data()).ToString(true).c_str(), rocksdb::Slice(pk.data()).ToString(true).c_str());
+        //TLOG_WARN("put secondary, region_id: {}, index_id: {}, put_key: {}, put_value: {}",
+        //    region, index.id, rocksdb::Slice(key.data()).ToString(true), rocksdb::Slice(pk.data()).ToString(true));
         return 0;
     }
 
@@ -497,10 +497,10 @@ namespace EA {
         if (res.ok()) {
             return 0;
         } else if (res.IsNotFound()) {
-            //DB_WARNING("lock ok but key not exist");
+            //TLOG_WARN("lock ok but key not exist");
             return -2;
         } else {
-            DB_WARNING("get_for_update error: %d, %s", res.code(), res.ToString().c_str());
+            TLOG_WARN("get_for_update error: {}, {}", res.code(), res.ToString());
             return -1;
         }
     }
@@ -518,7 +518,7 @@ namespace EA {
         value_slices[0].size_ = sizeof(uint64_t);
         value_slices[1].data_ = value.data();
         value_slices[1].size_ = value.size();
-        DB_DEBUG("use_ttl:%d ttl_timestamp_us:%ld", _use_ttl, ttl_timestamp_us);
+        TLOG_DEBUG("use_ttl:{} ttl_timestamp_us:{}", _use_ttl, ttl_timestamp_us);
         if (_use_ttl && ttl_timestamp_us > 0) {
             value_slice_parts.parts = value_slices;
             value_slice_parts.num_parts = 2;
@@ -534,7 +534,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         auto res = put_kv_without_lock(key, value, ttl_timestamp_us);
         if (!res.ok()) {
-            DB_FATAL("put kv info fail, error: %s", res.ToString().c_str());
+            TLOG_ERROR("put kv info fail, error: {}", res.ToString());
 
             return -1;
         }
@@ -545,7 +545,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         auto res = _txn->Delete(_data_cf, rocksdb::Slice(key));
         if (!res.ok()) {
-            DB_FATAL("delete kv info fail, error: %s", res.ToString().c_str());
+            TLOG_ERROR("delete kv info fail, error: {}", res.ToString());
             return -1;
         }
         return 0;
@@ -554,7 +554,7 @@ namespace EA {
     int Transaction::put_meta_info(const std::string &key, const std::string &value) {
         auto res = _txn->Put(_meta_cf, rocksdb::Slice(key), rocksdb::Slice(value));
         if (!res.ok()) {
-            DB_FATAL("put meta info fail, error: %s", res.ToString().c_str());
+            TLOG_ERROR("put meta info fail, error: {}", res.ToString());
             return -1;
         }
         return 0;
@@ -563,14 +563,14 @@ namespace EA {
     int Transaction::remove_meta_info(const std::string &key) {
         auto res = _txn->Delete(_meta_cf, rocksdb::Slice(key));
         if (!res.ok()) {
-            DB_FATAL("remove meta info fail, error: %s", res.ToString().c_str());
+            TLOG_ERROR("remove meta info fail, error: {}", res.ToString());
             return -1;
         }
         return 0;
     }
 
-//val should be nullptr (create inside the func if the key is found)
-//TODO: update return status
+    //val should be nullptr (create inside the func if the key is found)
+    //TODO: update return status
     int Transaction::get_update_primary(
             int64_t region,
             IndexInfo &pk_index,
@@ -582,14 +582,14 @@ namespace EA {
         MutTableKey _key;
         //full key, no prefix allowed
         if (0 != _key.append_index(pk_index, key.get(), -1, false)) {
-            DB_WARNING("Fail to append_index, reg:%ld, tab:%ld", region, pk_index.id);
+            TLOG_WARN("Fail to append_index, reg:{}, tab:{}", region, pk_index.id);
             return -1;
         }
         return get_update_primary(region, pk_index, TableKey(_key),
                                   mode, key, fields, false, check_region, ttl_ts);
     }
 
-//TODO: update return status
+    //TODO: update return status
     int Transaction::get_update_primary(
             int64_t region,
             IndexInfo &pk_index,
@@ -603,10 +603,10 @@ namespace EA {
                                   mode, val, fields, true, check_region, ttl_ts);
     }
 
-//TODO: update return status
-//if val == null, don't read value
-//return -3 when region not match
-//
+    //TODO: update return status
+    //if val == null, don't read value
+    //return -3 when region not match
+    //
     int Transaction::get_update_primary(
             int64_t region,
             IndexInfo &pk_index,
@@ -619,17 +619,17 @@ namespace EA {
             int64_t &ttl_ts) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         if (_region_info == nullptr) {
-            DB_WARNING("no region_info");
+            TLOG_WARN("no region_info");
             return -1;
         }
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         int ret = -1;
         if (pk_index.type != proto::I_PRIMARY) {
-            DB_WARNING("invalid index type: %d", pk_index.type);
+            TLOG_WARN("invalid index type: {}", pk_index.type);
             return -1;
         }
         // region_info.end_key() == "" 是最后一个region
@@ -638,7 +638,7 @@ namespace EA {
             rocksdb::Slice value;
             if (!fits_region_range(pure_key, value,
                                    &_region_info->start_key(), &_region_info->end_key(), pk_index, pk_index)) {
-                //DB_WARNING("fail to fit: %s", pure_key.ToString(true).c_str());
+                //TLOG_WARN("fail to fit: {}", pure_key.ToString(true));
                 return -3;
             }
         }
@@ -653,25 +653,25 @@ namespace EA {
             rocksdb::ReadOptions read_opt;
             read_opt.snapshot = _snapshot;
             res = _txn->Get(read_opt, _data_cf, _key.data(), &pin_slice);
-            //DB_NOTICE("txn get time:%ld", cost.get_time());
+            //TLOG_INFO("txn get time:{}", cost.get_time());
         } else if (mode == LOCK_ONLY || mode == GET_LOCK) {
             rocksdb::ReadOptions read_opt;
             res = _txn->GetForUpdate(read_opt, _data_cf, _key.data(), &pin_slice);
-            //DB_WARNING("data: %s %d", _value.c_str(), _value.size());
+            //TLOG_WARN("data: {} {}", _value, _value.size());
         } else {
-            DB_WARNING("invalid GetMode: %d", mode);
+            TLOG_WARN("invalid GetMode: {}", mode);
             return -1;
         }
 
         if (res.ok()) {
-            DB_DEBUG("lock ok and key exist");
+            TLOG_DEBUG("lock ok and key exist");
             if (mode == GET_ONLY || mode == GET_LOCK) {
                 rocksdb::Slice value_slice(pin_slice);
                 if (_use_ttl && _read_ttl_timestamp_us > 0) {
                     int64_t row_ttl_timestamp_us = ttl_decode(value_slice, &pk_index, _online_ttl_base_expire_time_us);
                     if (_read_ttl_timestamp_us > row_ttl_timestamp_us) {
-                        DB_DEBUG("expired _read_ttl_timestamp_us:%ld row_ttl_timestamp_us:%ld",
-                                 _read_ttl_timestamp_us, row_ttl_timestamp_us);
+                        TLOG_DEBUG("expired _read_ttl_timestamp_us:{} row_ttl_timestamp_us:{}",
+                                   _read_ttl_timestamp_us, row_ttl_timestamp_us);
                         //expired
                         return -4;
                     }
@@ -682,40 +682,40 @@ namespace EA {
                     TupleRecord tuple_record(value_slice);
                     // only decode the required field (field_ids stored in fields)
                     if (0 != tuple_record.decode_fields(fields, val)) {
-                        DB_WARNING("decode value failed: %ld", pk_index.id);
+                        TLOG_WARN("decode value failed: {}", pk_index.id);
                         return -1;
                     }
                 } else {
                     // cstore, get non-pk columns value from db.
                     if (0 != get_update_primary_columns(_key, mode, val, nullptr, 0, nullptr, fields)) {
-                        DB_WARNING("get_update_primary_columns failed: %ld", pk_index.id);
+                        TLOG_WARN("get_update_primary_columns failed: {}", pk_index.id);
                         return -1;
                     }
                 }
                 if (parse_key) {
                     ret = val->decode_key(pk_index, key);
                     if (ret != 0) {
-                        DB_WARNING("decode primary index failed: %ld", pk_index.id);
+                        TLOG_WARN("decode primary index failed: {}", pk_index.id);
                         return -1;
                     }
                 }
-                //DB_NOTICE("decode time:%ld", cost.get_time());
+                //TLOG_INFO("decode time:{}", cost.get_time());
                 //val->merge_from(tmp_val);
             }
         } else if (res.IsNotFound()) {
-            DB_DEBUG("lock ok but key not exist");
+            TLOG_DEBUG("lock ok but key not exist");
             return -2;
         } else if (res.IsBusy()) {
-            DB_WARNING("lock failed, busy: %s", res.ToString().c_str());
+            TLOG_WARN("lock failed, busy: {}", res.ToString());
             return -1;
         } else if (res.IsTimedOut()) {
             print_txninfo_holding_lock(_key.data());
             int64_t region_id = _region_info != nullptr ? _region_info->region_id() : 0;
-            DB_WARNING("lock failed, region_id: %ld, txn:%ld, timedout: %s, key:%s",
-                       region_id, _txn_id, res.ToString().c_str(), key.decode_start_key_string(pk_index).c_str());
+            TLOG_WARN("lock failed, region_id: {}, txn:{}, timedout: {}, key:{}",
+                      region_id, _txn_id, res.ToString(), key.decode_start_key_string(pk_index));
             return -5;
         } else {
-            DB_WARNING("unknown error: %d, %s", res.code(), res.ToString().c_str());
+            TLOG_WARN("unknown error: {}, {}", res.code(), res.ToString());
             return -1;
         }
         return 0;
@@ -746,8 +746,8 @@ namespace EA {
                 if (_use_ttl && _read_ttl_timestamp_us > 0) {
                     int64_t row_ttl_timestamp_us = ttl_decode(value_slice, &pk_index, _online_ttl_base_expire_time_us);
                     if (_read_ttl_timestamp_us > row_ttl_timestamp_us) {
-                        DB_DEBUG("expired _read_ttl_timestamp_us:%ld row_ttl_timestamp_us:%ld",
-                                 _read_ttl_timestamp_us, row_ttl_timestamp_us);
+                        TLOG_DEBUG("expired _read_ttl_timestamp_us:{} row_ttl_timestamp_us:{}",
+                                   _read_ttl_timestamp_us, row_ttl_timestamp_us);
                         //expired
                         continue;
                     }
@@ -757,29 +757,29 @@ namespace EA {
                     TupleRecord tuple_record(value_slice);
                     // only decode the required field (field_ids stored in fields)
                     if (0 != tuple_record.decode_fields(fields, &field_slot, nullptr, tuple_id, &mem_row)) {
-                        DB_WARNING("decode value failed: %ld, _use_ttl:%d", pk_index.id, _use_ttl);
+                        TLOG_WARN("decode value failed: {}, _use_ttl: {}", pk_index.id, _use_ttl);
                         continue;
                     }
                 } else {
                     // cstore, get non-pk columns value from db.
                     if (0 != get_update_primary_columns(raw_read_keys[i], GET_ONLY, nullptr, mem_row.get(),
                                                         tuple_id, &field_slot, fields)) {
-                        DB_WARNING("get_update_primary_columns failed: %ld", pk_index.id);
+                        TLOG_WARN("get_update_primary_columns failed: {}", pk_index.id);
                         continue;
                     }
                 }
                 int prefix_len = 2 * sizeof(int64_t);
                 TableKey key(rocksdb_keys[i], true);
                 if (0 != mem_row->decode_key(tuple_id, pk_index, field_slot, key, prefix_len)) {
-                    DB_WARNING("decode primary index failed: %ld", pk_index.id);
+                    TLOG_WARN("decode primary index failed: {}", pk_index.id);
                     continue;
                 }
                 row_batch->move_row(std::move(mem_row));
             } else if (statuses[i].IsNotFound()) {
-                DB_DEBUG("lock ok but key not exist");
+                TLOG_DEBUG("lock ok but key not exist");
                 continue;
             } else {
-                DB_WARNING("unknown expect error: %d, %s", statuses[i].code(), statuses[i].ToString().c_str());
+                TLOG_WARN("unknown expect error: {}, {}", statuses[i].code(), statuses[i].ToString());
                 return -1;
             }
         }
@@ -798,16 +798,16 @@ namespace EA {
             bool sorted_input) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         if (_region_info == nullptr) {
-            DB_WARNING("no region_info");
+            TLOG_WARN("no region_info");
             return -1;
         }
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         if (pk_index.type != proto::I_PRIMARY) {
-            DB_WARNING("invalid index type: %d", pk_index.type);
+            TLOG_WARN("invalid index type: {}", pk_index.type);
             return -1;
         }
         std::vector<MutTableKey> raw_read_keys;
@@ -820,7 +820,7 @@ namespace EA {
             auto record = read_records.get_next();
             //full key, no prefix allowed
             if (0 != pk_key.append_index(pk_index, record.get(), -1, false)) {
-                DB_WARNING("Fail to append_index, reg:%ld, tab:%ld", region, pk_index.id);
+                TLOG_WARN("Fail to append_index, reg:{}, tab:{}", region, pk_index.id);
                 continue;
             }
             MutTableKey _key;
@@ -847,16 +847,16 @@ namespace EA {
             bool sorted_input) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         if (_region_info == nullptr) {
-            DB_WARNING("no region_info");
+            TLOG_WARN("no region_info");
             return -1;
         }
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         if (pk_index.type != proto::I_PRIMARY) {
-            DB_WARNING("invalid index type: %d", pk_index.type);
+            TLOG_WARN("invalid index type: {}", pk_index.type);
             return -1;
         }
         std::vector<MutTableKey> raw_read_keys;
@@ -885,7 +885,7 @@ namespace EA {
                                 mem_row_desc, row_batch, fields, field_slot, sorted_input);
     }
 
-//TODO: update return status
+    //TODO: update return status
     int Transaction::get_update_secondary(
             int64_t region,
             IndexInfo &pk_index,
@@ -898,13 +898,13 @@ namespace EA {
         MutTableKey pk_val;
         int ret = -1;
         if (index.type != proto::I_UNIQ) {
-            //DB_WARNING("invalid index type: %d", index.type);
+            //TLOG_WARN("invalid index type: {}", index.type);
             return -2;
         }
         MutTableKey secondary_key;
         //full key, no prefix allowed
         if (0 != secondary_key.append_index(index, key.get(), -1, false)) {
-            DB_WARNING("Fail to append_index, reg:%ld, tab:%ld", region, pk_index.id);
+            TLOG_WARN("Fail to append_index, reg:{}, tab:{}", region, pk_index.id);
             return -1;
         }
         int res = get_update_secondary(region, pk_index, index, secondary_key, key, mode, pk_val, check_region);
@@ -912,7 +912,7 @@ namespace EA {
             int pos = 0;
             ret = key->decode_primary_key(index, pk_val, pos);
             if (ret != 0) {
-                DB_WARNING("decode value failed: %ld", index.pk);
+                TLOG_WARN("decode value failed: {}", index.pk);
                 return -1;
             }
         }
@@ -932,7 +932,7 @@ namespace EA {
         MutTableKey pk_val;
         int ret = -1;
         if (index.type != proto::I_UNIQ) {
-            //DB_WARNING("invalid index type: %d", index.type);
+            //TLOG_WARN("invalid index type: {}", index.type);
             return -2;
         }
         int res = get_update_secondary(region, pk_index, index, key, val, mode, pk_val, check_region);
@@ -940,7 +940,7 @@ namespace EA {
             int pos = 0;
             ret = val->decode_primary_key(index, pk_val, pos);
             if (ret != 0) {
-                DB_WARNING("decode value failed: %ld", index.pk);
+                TLOG_WARN("decode value failed: {}", index.pk);
                 return -1;
             }
         }
@@ -963,16 +963,16 @@ namespace EA {
             bool sorted_input) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         if (_region_info == nullptr) {
-            DB_WARNING("no region_info");
+            TLOG_WARN("no region_info");
             return -1;
         }
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         if (index.type != proto::I_UNIQ) {
-            //DB_WARNING("invalid index type: %d", index.type);
+            //TLOG_WARN("invalid index type: {}", index.type);
             return -2;
         }
         std::vector<MutTableKey> raw_read_keys;
@@ -1017,12 +1017,12 @@ namespace EA {
                     MutTableKey pk_val(value_slice);
                     int ret = record->decode_primary_key(index, pk_val, pos);
                     if (ret != 0) {
-                        DB_WARNING("decode primary key value failed: %ld", index.pk);
+                        TLOG_WARN("decode primary key value failed: {}", index.pk);
                         continue;
                     }
                     ret = record->decode_key(index, rocksdb_keys[i]);
                     if (ret != 0) {
-                        DB_WARNING("decode index key failed: %ld", index.id);
+                        TLOG_WARN("decode index key failed: {}", index.id);
                         continue;
                     }
                     read_records.emplace_back(record);
@@ -1031,22 +1031,22 @@ namespace EA {
                     TableKey pkey(value_slice, true);
                     int pos = 0;
                     if (0 != mem_row->decode_primary_key(tuple_id, index, field_slot, pkey, pos)) {
-                        DB_WARNING("decode primary key failed: %ld", index.id);
+                        TLOG_WARN("decode primary key failed: {}", index.id);
                         continue;
                     }
                     TableKey key(rocksdb_keys[i], true);
                     pos = 0;
                     if (0 != mem_row->decode_key(tuple_id, index, field_slot, key, pos)) {
-                        DB_WARNING("decode second key failed: %ld", index.id);
+                        TLOG_WARN("decode second key failed: {}", index.id);
                         continue;
                     }
                     row_batch->move_row(std::move(mem_row));
                 }
             } else if (statuses[i].IsNotFound()) {
-                DB_DEBUG("lock ok but key not exist");
+                TLOG_DEBUG("lock ok but key not exist");
                 continue;
             } else {
-                DB_WARNING("unknown expect error: %d, %s", statuses[i].code(), statuses[i].ToString().c_str());
+                TLOG_WARN("unknown expect error: {}, {}", statuses[i].code(), statuses[i].ToString());
                 return -1;
             }
         }
@@ -1064,16 +1064,16 @@ namespace EA {
             bool check_region) {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         if (_region_info == nullptr) {
-            DB_WARNING("no region_info");
+            TLOG_WARN("no region_info");
             return -1;
         }
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         if (index.type != proto::I_UNIQ) {
-            //DB_WARNING("invalid index type: %d", index.type);
+            //TLOG_WARN("invalid index type: {}", index.type);
             return -2;
         }
         MutTableKey _key;
@@ -1090,25 +1090,25 @@ namespace EA {
             rocksdb::ReadOptions read_opt;
             res = _txn->GetForUpdate(read_opt, _data_cf, _key.data(), &pin_slice);
         } else {
-            DB_WARNING("invalid GetMode: %d", mode);
+            TLOG_WARN("invalid GetMode: {}", mode);
             return -1;
         }
         if (res.ok()) {
-            DB_DEBUG("lock ok and key exist");
+            TLOG_DEBUG("lock ok and key exist");
         } else if (res.IsNotFound()) {
-            DB_DEBUG("lock ok but key not exist");
+            TLOG_DEBUG("lock ok but key not exist");
             return -2;
         } else if (res.IsBusy()) {
-            DB_WARNING("lock failed, busy: %s", res.ToString().c_str());
+            TLOG_WARN("lock failed, busy: {}", res.ToString());
             return -1;
         } else if (res.IsTimedOut()) {
             print_txninfo_holding_lock(_key.data());
             int64_t region_id = _region_info != nullptr ? _region_info->region_id() : 0;
-            DB_WARNING("lock failed, region_id: %ld, txn:%ld, timedout: %s, key:%s",
-                       region_id, _txn_id, res.ToString().c_str(), val->debug_string().c_str());
+            TLOG_WARN("lock failed, region_id: {}, txn: {}, timedout: {}, key: {}",
+                      region_id, _txn_id, res.ToString(), val->debug_string());
             return -5;
         } else {
-            DB_WARNING("unknown error: %d, %s", res.code(), res.ToString().c_str());
+            TLOG_WARN("unknown error: {}, {}", res.code(), res.ToString());
             return -1;
         }
 
@@ -1137,32 +1137,32 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         MutTableKey _key;
         _key.append_i64(region).append_i64(index.id);
         if (0 != _key.append_index(index, key.get(), -1, false)) {
-            DB_FATAL("Fail to append_index, reg:%ld,tab:%ld", region, index.id);
+            TLOG_ERROR("Fail to append_index, reg: {},tab: {}", region, index.id);
             return -1;
         }
         if (index.type == proto::I_KEY) {
             if (0 != key->encode_primary_key(index, _key, -1)) {
-                DB_FATAL("Fail to append_pk_index, reg:%ld,tab:%ld", region, index.id);
+                TLOG_ERROR("Fail to append_pk_index, reg: {},tab: {}", region, index.id);
                 return -1;
             }
         }
 
         auto res = _txn->Delete(_data_cf, _key.data());
-        DB_DEBUG("delete key=%s", str_to_hex(_key.data()).c_str());
+        TLOG_DEBUG("delete key={}", str_to_hex(_key.data()));
         if (res.IsTimedOut()) {
             print_txninfo_holding_lock(_key.data());
             int64_t region_id = _region_info != nullptr ? _region_info->region_id() : 0;
-            DB_WARNING("lock failed, region_id: %ld, txn:%ld, timedout: %s, key:%s",
-                       region_id, _txn_id, res.ToString().c_str(), key->debug_string().c_str());
+            TLOG_WARN("lock failed, region_id: {}, txn: {}, timeout: {}, key: {}",
+                      region_id, _txn_id, res.ToString(), key->debug_string());
             return -1;
         } else if (!res.ok()) {
-            DB_WARNING("delete error: code=%d, msg=%s", res.code(), res.ToString().c_str());
+            TLOG_WARN("delete error: code={}, msg={}", res.code(), res.ToString());
             return -1;
         }
         if (_is_separate) {
@@ -1179,14 +1179,14 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: write a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: write a rolledback txn: {}", _txn_id);
             return -1;
         }
         MutTableKey _key;
         _key.append_i64(region).append_i64(index.id).append_index(key);
         if (index.type == proto::I_KEY) {
             // cannot append primary index
-            DB_WARNING("cannot delete type KEY index");
+            TLOG_WARN("cannot delete type KEY index");
             return -1;
         }
 
@@ -1194,11 +1194,11 @@ namespace EA {
         if (res.IsTimedOut()) {
             print_txninfo_holding_lock(_key.data());
             int64_t region_id = _region_info != nullptr ? _region_info->region_id() : 0;
-            DB_WARNING("lock failed, region_id: %ld, txn:%ld, timedout: %s, key:%s",
-                       region_id, _txn_id, res.ToString().c_str(), key.decode_start_key_string(index).c_str());
+            TLOG_WARN("lock failed, region_id: {}, txn:{}, timedout: {}, key: {}",
+                      region_id, _txn_id, res.ToString(), key.decode_start_key_string(index));
             return -1;
         } else if (!res.ok()) {
-            DB_WARNING("delete error: code=%d, msg=%s", res.code(), res.ToString().c_str());
+            TLOG_WARN("delete error: code= {}, msg= {}", res.code(), res.ToString());
             return -1;
         }
         if (_is_separate) {
@@ -1217,7 +1217,7 @@ namespace EA {
             return rocksdb::Status();
         }
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: prepare a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: prepare a rolledback txn: {}", _txn_id);
             return rocksdb::Status::Expired();
         }
         last_active_time = butil::gettimeofday_us();
@@ -1233,15 +1233,15 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_is_rolledback) {
-            DB_WARNING("TransactionWarn: commit a rolledback txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: commit a rolledback txn: {}", _txn_id);
             return rocksdb::Status::Expired();
         }
         if (_is_finished) {
-            DB_WARNING("TransactionWarn: commit a finished txn: %lu", _txn_id);
+            TLOG_WARN("TransactionWarn: commit a finished txn: {}", _txn_id);
             return rocksdb::Status();
         }
         if (_txn->GetName().size() != 0 && !_is_prepared) {
-            DB_FATAL("TransactionError: commit a un-prepare txn: %lu", _txn_id);
+            TLOG_ERROR("TransactionError: commit a un-prepare txn: {}", _txn_id);
             return rocksdb::Status::Aborted("commit a un-prepare txn");
         }
         auto res = _txn->Commit();
@@ -1258,7 +1258,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_is_finished) {
-            DB_WARNING("rollback a finished txn: %lu", _txn_id);
+            TLOG_WARN("rollback a finished txn: {}", _txn_id);
             return rocksdb::Status();
         }
         auto res = _txn->Rollback();
@@ -1273,9 +1273,9 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         //if (_save_point_seq.empty()) {
-        //    DB_WARNING("txn:%s seq_id:%d top_seq:%d",_txn->GetName().c_str(),  _seq_id, -1);
+        //    TLOG_WARN("txn:{} seq_id:{} top_seq:{}",_txn->GetName(),  _seq_id, -1);
         //} else {
-        //    DB_WARNING("txn:%s seq_id:%d top_seq:%d", _txn->GetName().c_str(), _seq_id, _save_point_seq.top());
+        //    TLOG_WARN("txn:{} seq_id:{} top_seq:{}", _txn->GetName(), _seq_id, _save_point_seq.top());
         //}
         if (_save_point_seq.empty() || _save_point_seq.top() < _seq_id) {
             _txn->SetSavePoint();
@@ -1292,9 +1292,9 @@ namespace EA {
         // 不管是否需要Rollback,_cache_plan_map对应的条目都需要erase
         // 因为_cache_plan_map会发给follower
         if (_save_point_seq.empty()) {
-            //DB_WARNING("txn:%s seq_id:%d top_seq:%d", _txn->GetName().c_str(), seq_id, -1);
+            //TLOG_WARN("txn:{} seq_id:{} top_seq:{}", _txn->GetName(), seq_id, -1);
         } else {
-            //DB_WARNING("txn:%s seq_id:%d top_seq:%d", _txn->GetName().c_str(), seq_id, _save_point_seq.top());
+            //TLOG_WARN("txn:{} seq_id:{} top_seq:{}", _txn->GetName(), seq_id, _save_point_seq.top());
         }
         _need_rollback_seq.insert(seq_id);
         {
@@ -1306,8 +1306,8 @@ namespace EA {
             _save_point_seq.pop();
             _save_point_increase_rows.pop();
             _txn->RollbackToSavePoint();
-            // DB_WARNING("txn:%s rollback cmd seq_id: %d, num_increase_rows: %ld",
-            //     _txn->GetName().c_str(), seq_id, num_increase_rows);
+            // TLOG_WARN("txn:{} rollback cmd seq_id: {}, num_increase_rows: {}",
+            //     _txn->GetName(), seq_id, num_increase_rows);
         }
     }
 
@@ -1315,7 +1315,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_txn_mutex);
         last_active_time = butil::gettimeofday_us();
         if (_current_req_point_seq.size() == 1) {
-            DB_WARNING("txn_id:%lu seq_id:%d no need rollback", _txn_id, _seq_id);
+            TLOG_WARN("txn_id:{} seq_id:{} no need rollback", _txn_id, _seq_id);
             return;
         }
         int first_seq_id = *_current_req_point_seq.begin();
@@ -1333,8 +1333,8 @@ namespace EA {
                 _save_point_seq.pop();
                 _save_point_increase_rows.pop();
                 _txn->RollbackToSavePoint();
-                DB_WARNING("txn:%s first_seq_id:%d rollback cmd seq_id: %d, num_increase_rows: %ld",
-                           _txn->GetName().c_str(), first_seq_id, seq_id, num_increase_rows);
+                TLOG_WARN("txn:{} first_seq_id:{} rollback cmd seq_id: {}, num_increase_rows: {}",
+                          _txn->GetName(), first_seq_id, seq_id, num_increase_rows);
             }
         }
         _seq_id = first_seq_id;
@@ -1344,11 +1344,11 @@ namespace EA {
         _current_req_point_seq.insert(_seq_id);
     }
 
-// for cstore only, only put column which HasField in record
+    // for cstore only, only put column which HasField in record
     int Transaction::put_primary_columns(const TableKey &primary_key, SmartRecord record,
                                          std::set<int32_t> *update_fields) {
         if (_table_info.get() == nullptr) {
-            DB_WARNING("no table_info");
+            TLOG_WARN("no table_info");
             return -1;
         }
         int32_t table_id = primary_key.extract_i64(sizeof(int64_t));
@@ -1370,11 +1370,11 @@ namespace EA {
             if (ret != 0) {
                 if (update_fields != nullptr) { // delete when update or replace
                     update_by_delete_old = true;
-                    DB_DEBUG("update_by_delete_old field=%d, value=%s", field_id,
-                             field_info.default_expr_value.get_string().c_str());
+                    TLOG_DEBUG("update_by_delete_old field={}, value={}", field_id,
+                               field_info.default_expr_value.get_string());
                 } else { // skip when insert
-                    DB_DEBUG("skip insert field=%d, value=%s", field_id,
-                             field_info.default_expr_value.get_string().c_str());
+                    TLOG_DEBUG("skip insert field={}, value={}", field_id,
+                               field_info.default_expr_value.get_string());
                     continue;
                 }
             }
@@ -1383,8 +1383,8 @@ namespace EA {
             key.replace_i32(field_id, sizeof(int64_t) + sizeof(int32_t));
             if (update_by_delete_old) {
                 auto res = _txn->Delete(_data_cf, key.data());
-                DB_DEBUG("del key=%s, res=%s", str_to_hex(key.data()).c_str(),
-                         res.ToString().c_str());
+                TLOG_DEBUG("del key={}, res={}", str_to_hex(key.data()),
+                           res.ToString());
                 if (!res.ok()) {
                     return -1;
                 }
@@ -1394,9 +1394,9 @@ namespace EA {
                 continue;
             }
             auto res = _txn->Put(_data_cf, key.data(), value);
-            DB_DEBUG("put key=%s,val=%s,res=%s", str_to_hex(key.data()).c_str(),
-                     record->get_value(record->get_field_by_tag(field_id)).get_string().c_str(),
-                     res.ToString().c_str());
+            TLOG_DEBUG("put key={},val={},res={}", str_to_hex(key.data()),
+                       record->get_value(record->get_field_by_tag(field_id)).get_string(),
+                       res.ToString());
             if (!res.ok()) {
                 return -1;
             }
@@ -1407,7 +1407,7 @@ namespace EA {
         return 0;
     }
 
-// get required and non-pk field value from cstore
+    // get required and non-pk field value from cstore
     int Transaction::get_update_primary_columns(
             const TableKey &primary_key,
             GetMode mode,
@@ -1417,7 +1417,7 @@ namespace EA {
             std::vector<int32_t> *field_slot,
             std::map<int32_t, FieldInfo *> &fields) {
         if (_table_info.get() == nullptr) {
-            DB_WARNING("no table_info");
+            TLOG_WARN("no table_info");
             return -1;
         }
         if (fields.size() == 0) {
@@ -1451,7 +1451,7 @@ namespace EA {
                     ret = mem_row->decode_field(tuple_id, (*field_slot)[field_id], field_info.type, value);
                 }
                 if (ret < 0) {
-                    DB_WARNING("decode value tuple_id: %d failed: %d", tuple_id, field_id);
+                    TLOG_WARN("decode value tuple_id: {} failed: {}", tuple_id, field_id);
                     return -1;
                 }
             } else if (res.IsNotFound()) {
@@ -1462,24 +1462,24 @@ namespace EA {
                     mem_row->set_value(tuple_id, (*field_slot)[field_id], field_info.default_expr_value);
                 }
             } else if (res.IsBusy()) {
-                DB_WARNING("get failed, busy: %s", res.ToString().c_str());
+                TLOG_WARN("get failed, busy: {}", res.ToString());
                 return -1;
             } else if (res.IsTimedOut()) {
                 print_txninfo_holding_lock(key.data());
-                DB_WARNING("timedout: %s", res.ToString().c_str());
+                TLOG_WARN("timeout: {}", res.ToString());
                 return -1;
             } else {
-                DB_WARNING("unknown error: %d, %s", res.code(), res.ToString().c_str());
+                TLOG_WARN("unknown error: {}, {}", res.code(), res.ToString());
                 return -1;
             }
         }
         return 0;
     }
 
-// for cstore only, delete non-pk columns.
+    // for cstore only, delete non-pk columns.
     int Transaction::remove_columns(const TableKey &primary_key) {
         if (_table_info.get() == nullptr) {
-            DB_WARNING("no table_info");
+            TLOG_WARN("no table_info");
             return -1;
         }
         int32_t table_id = primary_key.extract_i64(sizeof(int64_t));
@@ -1493,13 +1493,13 @@ namespace EA {
             key.replace_i32(table_id, sizeof(int64_t));
             key.replace_i32(field_id, sizeof(int64_t) + sizeof(int32_t));
             auto res = _txn->Delete(_data_cf, key.data());
-            DB_DEBUG("del key=%s, res=%s", str_to_hex(key.data()).c_str(), res.ToString().c_str());
+            TLOG_DEBUG("del key={}, res={}", str_to_hex(key.data()), res.ToString());
             if (res.IsTimedOut()) {
                 print_txninfo_holding_lock(key.data());
-                DB_WARNING("timedout: %s", res.ToString().c_str());
+                TLOG_WARN("timedout: {}", res.ToString());
                 return -1;
             } else if (!res.ok()) {
-                DB_WARNING("delete error: code=%d, msg=%s", res.code(), res.ToString().c_str());
+                TLOG_WARN("delete error: code={}, msg={}", res.code(), res.ToString());
                 return -1;
             }
             if (_is_separate) {
@@ -1518,8 +1518,8 @@ namespace EA {
             for (auto &it: lock_info) {
                 if (it.second.key.size() == key.size() && it.second.key == key) {
                     for (auto txn_id: it.second.ids) {
-                        DB_WARNING("holding lock, txn_id: %lu, cf_id: %u, key_hex: %s",
-                                   txn_id, it.first, str_to_hex(key).c_str());
+                        TLOG_WARN("holding lock, txn_id: {}, cf_id: {}, key_hex: {}",
+                                  txn_id, it.first, str_to_hex(key));
                     }
                     break;
                 }
@@ -1527,4 +1527,4 @@ namespace EA {
             print_lock_last_time.reset();
         }
     }
-} //nanespace baikaldb
+}  // nanespace EA

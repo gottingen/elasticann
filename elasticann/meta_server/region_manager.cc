@@ -21,7 +21,6 @@
 #include "elasticann/common/store_interact.h"
 #include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/meta_server/meta_util.h"
-#include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "turbo/format/format.h"
 
@@ -50,7 +49,7 @@ namespace EA {
         bool old_pb = false;
         std::vector<proto::RegionInfo> region_infos;
         if (request.has_region_info()) {
-            DB_WARNING("use optional region_info region_id:%ld",
+            TLOG_WARN("use optional region_info region_id: {}",
                        request.region_info().region_id());
             region_infos.push_back(request.region_info());
             old_pb = true;
@@ -68,9 +67,9 @@ namespace EA {
             int64_t partition_id = region_info.partition_id();
             auto ret = TableManager::get_instance()->whether_exist_table_id(table_id);
             if (ret < 0) {
-                DB_WARNING("table name:%s not exist, region_info:%s",
-                           region_info.table_name().c_str(),
-                           region_info.ShortDebugString().c_str());
+                TLOG_WARN("table name: {} not exist, region_info: {}",
+                           region_info.table_name(),
+                           region_info.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
                 return;
             }
@@ -81,7 +80,7 @@ namespace EA {
                 mutable_region_info.set_conf_version(region_ptr->conf_version() + 1);
                 new_add = false;
                 if (mutable_region_info.version() < region_ptr->version()) {
-                    DB_WARNING("region_id: %ld, request version %ld < master version %ld",
+                    TLOG_WARN("region_id: {}, request version {} < master version {}",
                                region_id, mutable_region_info.version(), region_ptr->version());
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "diff version");
                     return;
@@ -89,8 +88,8 @@ namespace EA {
             }
             std::string region_value;
             if (!region_info.SerializeToString(&region_value)) {
-                DB_WARNING("request serializeToArray fail, request:%s",
-                           request.ShortDebugString().c_str());
+                TLOG_WARN("request serializeToArray fail, request:{}",
+                           request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
                 return;
             }
@@ -121,7 +120,7 @@ namespace EA {
                 key_init = true;
             } else {
                 if (g_table_id != table_id) {
-                    DB_FATAL("two region has different table id %ld vs %ld",
+                    TLOG_ERROR("two region has different table id {} vs {}",
                              g_table_id, table_id);
                     return;
                 }
@@ -140,14 +139,14 @@ namespace EA {
             bool check_ok = TableManager::get_instance()->check_region_when_update(
                     g_table_id, min_start_key, max_end_key);
             if (!check_ok) {
-                DB_FATAL("table_id:%ld check_region_when_update check fail", g_table_id);
+                TLOG_ERROR("table_id:{} check_region_when_update check fail", g_table_id);
                 return;
             }
         }
 
         int ret = MetaRocksdb::get_instance()->put_meta_info(put_keys, put_values);
         if (ret < 0) {
-            DB_WARNING("update to rocksdb fail");
+            TLOG_WARN("update to rocksdb fail");
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -165,7 +164,7 @@ namespace EA {
         //更新内存值
         int i = 0;
         for (auto &region_info: region_infos) {
-            DB_DEBUG("update region info %s", region_info.ShortDebugString().c_str());
+            TLOG_DEBUG("update region info {}", region_info.ShortDebugString());
             int64_t region_id = region_info.region_id();
             int64_t table_id = region_info.table_id();
             int64_t partition_id = region_info.partition_id();
@@ -180,12 +179,12 @@ namespace EA {
         }
         put_incremental_regioninfo(apply_index, region_infos);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("update region success, request:%s, time_cost:%ld",
-                  request.ShortDebugString().c_str(), time_cost.get_time());
+        TLOG_INFO("update region success, request:{}, time_cost:{}",
+                  request.ShortDebugString(), time_cost.get_time());
     }
 
-//根据region_id恢复store上误删除的region
-//如果待回复的reigon信息存在则直接新建，如果不存在，则根据前后region恢复
+    //根据region_id恢复store上误删除的region
+    //如果待回复的reigon信息存在则直接新建，如果不存在，则根据前后region恢复
     void RegionManager::restore_region(const proto::MetaManagerRequest &request, proto::MetaManagerResponse *
     response) {
         int64_t region_id = request.restore_region().restore_region_id();
@@ -213,7 +212,7 @@ namespace EA {
             region_info.set_parent(0);
             region_info.set_timestamp(time(nullptr));
         } else {
-            DB_WARNING("region_id: %ld not exist", region_id);
+            TLOG_WARN("region_id: {} not exist", region_id);
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             response->set_op_type(request.op_type());
             response->set_errmsg("region not exist");
@@ -228,20 +227,20 @@ namespace EA {
         proto::StoreRes res;
         auto ret = store_interact.send_request("init_region", init_region_request, res);
         if (ret < 0) {
-            DB_FATAL("create table fail, address:%s, region_id: %ld",
-                     init_region_request.region_info().leader().c_str(),
+            TLOG_ERROR("create table fail, address:{}, region_id: {}",
+                     init_region_request.region_info().leader(),
                      region_id);
             response->set_errcode(proto::INTERNAL_ERROR);
             response->set_op_type(request.op_type());
             response->set_errmsg("new region fail");
             return;
         }
-        DB_NOTICE("new region_id: %ld success, table_name:%s",
-                  region_id, region_info.table_name().c_str());
+        TLOG_INFO("new region_id: {} success, table_name:{}",
+                  region_id, region_info.table_name());
     }
 
-//删除region_id的操作只会在表已经删除或创建失败的情况下才会调用
-//所以在删除region时表信息已经不存在，不在需要更新表信息
+    //删除region_id的操作只会在表已经删除或创建失败的情况下才会调用
+    //所以在删除region时表信息已经不存在，不在需要更新表信息
     void RegionManager::drop_region(const proto::MetaManagerRequest &request,
                                     const int64_t apply_index,
                                     braft::Closure *done) {
@@ -253,8 +252,8 @@ namespace EA {
         }
         auto ret = MetaRocksdb::get_instance()->delete_meta_info(drop_region_keys);
         if (ret < 0) {
-            DB_WARNING("drop region fail, region_info：%s",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("drop region fail, region_info：{}",
+                       request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -288,7 +287,7 @@ namespace EA {
         put_incremental_regioninfo(apply_index, region_infos);
         TableManager::get_instance()->delete_region_ids(result_table_ids, result_partition_ids, result_region_ids);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop region success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop region success, request:{}", request.ShortDebugString());
     }
 
     void RegionManager::split_region(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -309,12 +308,12 @@ namespace EA {
         // write date to rocksdb
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_max_region_id_key(), max_region_id_value);
         if (ret != 0) {
-            DB_WARNING("add max_region_id to rocksdb fail when split region:%s",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("add max_region_id to rocksdb fail when split region:{}",
+                       request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        DB_WARNING("generate %d region_id: [%ld, %ld]", new_region_num, new_region_start_id, new_region_end_id);
+        TLOG_WARN("generate {} region_id: [{}, {}]", new_region_num, new_region_start_id, new_region_end_id);
         //更新内存
         set_max_region_id(new_region_end_id);
         if (done && ((MetaServerClosure *) done)->response) {
@@ -337,9 +336,9 @@ namespace EA {
             }
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        DB_NOTICE(
-                "split region success, _max_region_id:%ld, new_region_start_id: %ld, new_region_end_id: %ld, request:%s",
-                _max_region_id, new_region_start_id, new_region_end_id, request.ShortDebugString().c_str());
+        TLOG_INFO(
+                "split region success, _max_region_id:{}, new_region_start_id: {}, new_region_end_id: {}, request:{}",
+                _max_region_id, new_region_start_id, new_region_end_id, request.ShortDebugString());
     }
 
     void RegionManager::send_remove_region_request(const std::vector<int64_t> &drop_region_ids) {
@@ -362,13 +361,13 @@ namespace EA {
                     proto::StoreRes response;
                     auto ret = store_interact.send_request("remove_region", request, response);
                     if (ret < 0) {
-                        DB_FATAL("drop region fail, peer: %s, drop_region_id: %ld", peer.c_str(), drop_region_id);
+                        TLOG_ERROR("drop region fail, peer: {}, drop_region_id: {}", peer, drop_region_id);
                         return;
                     }
-                    DB_WARNING("send remove region request:%s, response:%s, peer_address:%s, region_id:%ld",
-                               request.ShortDebugString().c_str(),
-                               response.ShortDebugString().c_str(),
-                               peer.c_str(),
+                    TLOG_WARN("send remove region request:{}, response:{}, peer_address:{}, region_id:{}",
+                               request.ShortDebugString(),
+                               response.ShortDebugString(),
+                               peer,
                                drop_region_id);
                 };
                 Bthread bth;
@@ -393,11 +392,11 @@ namespace EA {
                                            InstanceStateInfo status) {
         IdcInfo instance_idc;
         if (ClusterManager::get_instance()->get_instance_idc(instance, instance_idc) < 0) {
-            DB_FATAL("instance: %s get idc fail", instance.c_str());
+            TLOG_ERROR("instance: {} get idc fail", instance);
             return;
         }
-        DB_WARNING("add peer all region for migrate store start, store:%s, idc: %s",
-                   instance.c_str(), instance_idc.to_string().c_str());
+        TLOG_WARN("add peer all region for migrate store start, store: {}, idc: {}",
+                   instance, instance_idc.to_string());
         const std::string &resource_tag = instance_idc.resource_tag;
         const std::string &logical_room = instance_idc.logical_room;
         int64_t instance_count = ClusterManager::get_instance()->get_instance_count(resource_tag, logical_room);
@@ -420,7 +419,7 @@ namespace EA {
                 proto::InstanceInfo *instance_info = request.mutable_instance();
                 instance_info->set_address(instance);
                 ClusterManager::get_instance()->process_cluster_info(nullptr, &request, nullptr, nullptr);
-                DB_WARNING("dead instance has no region, drop instance:%s", instance.c_str());
+                TLOG_WARN("dead instance has no region, drop instance: {}", instance);
             }
             return;
         }
@@ -431,14 +430,14 @@ namespace EA {
             instance_count > 3 &&
             leader_count > 10 &&
             leader_count > 2 * (int64_t) region_ids.size() / instance_count) {
-            DB_WARNING("instance migrate wait, instance:%s, instance_count:%ld, leader_count:%ld, region_size:%lu",
-                       instance.c_str(), instance_count, leader_count, region_ids.size());
+            TLOG_WARN("instance migrate wait, instance:{}, instance_count:{}, leader_count:{}, region_size:{}",
+                       instance, instance_count, leader_count, region_ids.size());
             return;
         }
         {
             BAIDU_SCOPED_LOCK(_doing_mutex);
             if (_doing_migrate.find(instance) != _doing_migrate.end()) {
-                DB_WARNING("instance: %s is doing migrating", instance.c_str());
+                TLOG_WARN("instance: {} is doing migrating", instance);
                 return;
             } else {
                 _doing_migrate.insert(instance);
@@ -457,10 +456,10 @@ namespace EA {
                             StoreInteract store_interact(leader.c_str());
                             proto::StoreRes response;
                             auto ret = store_interact.send_request("add_peer", add_peer_request, response);
-                            DB_WARNING("send add peer leader: %s, request:%s, response:%s, ret: %d",
-                                       leader.c_str(),
-                                       add_peer_request.ShortDebugString().c_str(),
-                                       response.ShortDebugString().c_str(), ret);
+                            TLOG_WARN("send add peer leader: {}, request: {}, response: {}, ret: {}",
+                                       leader,
+                                       add_peer_request.ShortDebugString(),
+                                       response.ShortDebugString(), ret);
                             bthread_usleep(5 * 1000 * 1000LL);
                         };
                         sub_bth.run(add_peer_fun);
@@ -472,7 +471,7 @@ namespace EA {
             concur_bth.join();
             BAIDU_SCOPED_LOCK(_doing_mutex);
             _doing_migrate.erase(instance);
-            DB_WARNING("add all region for migrate store end, store:%s", instance.c_str());
+            TLOG_WARN("add all region for migrate store end, store:{}", instance);
         };
         Bthread bth;
         bth.run(asyn_add_peer);
@@ -481,14 +480,14 @@ namespace EA {
     void RegionManager::add_all_learner_for_store(const std::string &instance,
                                                   const IdcInfo &idc,
                                                   const std::vector<int64_t> &learner_ids) {
-        DB_WARNING("add all learner for store instance %s, idc: %s", instance.c_str(), idc.to_string().c_str());
+        TLOG_WARN("add all learner for store instance {}, idc: {}", instance, idc.to_string());
         const std::string resource_tag = idc.resource_tag;
         std::vector<std::pair<std::string, proto::InitRegion>> add_learner_requests;
         for (auto &region_id: learner_ids) {
-            DB_WARNING("process instance %s region_id %ld", instance.c_str(), region_id);
+            TLOG_WARN("process instance {} region_id {}", instance, region_id);
             auto ptr_region = get_region_info(region_id);
             if (ptr_region == nullptr) {
-                DB_WARNING("region %ld is null.", region_id);
+                TLOG_WARN("region {} is null.", region_id);
                 continue;
             }
             const static int64_t learner_replica_num = 1;
@@ -500,7 +499,7 @@ namespace EA {
                     // region只有一个peer的时候暂缓加learner
                     add_learner_peer(region_id, add_learner_requests, ptr_region.get(), resource_tag);
                 } else {
-                    DB_WARNING("region_id %ld can`t add learner peer_size: %d", region_id, ptr_region->peers_size());
+                    TLOG_WARN("region_id {} can`t add learner peer_size: {}", region_id, ptr_region->peers_size());
                 }
 
             }
@@ -511,12 +510,12 @@ namespace EA {
                 StoreInteract store_interact(request.first);
                 proto::StoreRes response;
                 auto ret = store_interact.send_request("init_region", request.second, response);
-                DB_WARNING("send %s add learn request:%s, response:%s, ret: %d",
-                           request.first.c_str(),
-                           request.second.ShortDebugString().c_str(),
-                           response.ShortDebugString().c_str(), ret);
+                TLOG_WARN("send {} add learn request: {}, response: {}, ret: {}",
+                           request.first,
+                           request.second.ShortDebugString(),
+                           response.ShortDebugString(), ret);
                 if (ret != 0) {
-                    DB_WARNING("add learner node error.");
+                    TLOG_WARN("add learner node error.");
                 }
             };
             add_learner_bth.run(add_learner_peer_fun);
@@ -530,11 +529,11 @@ namespace EA {
                                                     InstanceStateInfo status) {
         IdcInfo instance_idc;
         if (ClusterManager::get_instance()->get_instance_idc(instance, instance_idc) < 0) {
-            DB_FATAL("instance: %s get idc fail", instance.c_str());
+            TLOG_ERROR("instance: {} get idc fail", instance);
             return;
         }
-        DB_WARNING("delete all region for dead store start, dead_store:%s, idc:%s",
-                   instance.c_str(), instance_idc.to_string().c_str());
+        TLOG_WARN("delete all region for dead store start, dead_store: {}, idc: {}",
+                   instance, instance_idc.to_string());
         std::vector<int64_t> learner_ids;
         get_learner_ids(instance, learner_ids);
         if (learner_ids.size() > 0) {
@@ -552,7 +551,7 @@ namespace EA {
                 proto::InstanceInfo *instance_info = request.mutable_instance();
                 instance_info->set_address(instance);
                 ClusterManager::get_instance()->process_cluster_info(nullptr, &request, nullptr, nullptr);
-                DB_WARNING("dead instance has no region, drop instance:%s", instance.c_str());
+                TLOG_WARN("dead instance has no region, drop instance:{}", instance);
             }
             return;
         }
@@ -565,15 +564,15 @@ namespace EA {
                 StoreInteract store_interact(request.new_leader().c_str());
                 proto::RaftControlResponse response;
                 store_interact.send_request_for_leader("region_raft_control", request, response);
-                DB_WARNING("send remove peer request:%s, response:%s",
-                           request.ShortDebugString().c_str(),
-                           response.ShortDebugString().c_str());
+                TLOG_WARN("send remove peer request:{}, response:{}",
+                           request.ShortDebugString(),
+                           response.ShortDebugString());
             };
             remove_peer_bth.run(remove_peer_fun);
             bthread_usleep(1000 * 10);
         }
         remove_peer_bth.join();
-        DB_WARNING("delete all region for dead store end, dead_store:%s", instance.c_str());
+        TLOG_WARN("delete all region for dead store end, dead_store:{}", instance);
     }
 
     void RegionManager::pre_process_remove_peer_for_store(const std::string &instance,
@@ -608,8 +607,8 @@ namespace EA {
             std::string leader = ptr_region->leader();
             // 尝试add_peer
             if (ret < 0 || ptr_region->peers_size() < replica_num) {
-                DB_WARNING("region_info: %s peers less than replica_num, can not been remove, instance%s",
-                           ptr_region->ShortDebugString().c_str(), instance.c_str());
+                TLOG_WARN("region_info: {} peers less than replica_num, can not been remove, instance: {}",
+                           ptr_region->ShortDebugString(), instance);
                 std::string new_instance;
                 std::set<std::string> peers;
                 for (auto &peer: ptr_region->peers()) {
@@ -625,8 +624,8 @@ namespace EA {
                         peers,
                         new_instance);
                 if (ret < 0) {
-                    DB_FATAL("select store from cluster fail, region_id:%ld, idc: %s", region_id,
-                             new_peer_idc.to_string().c_str());
+                    TLOG_ERROR("select store from cluster fail, region_id: {}, idc: {}", region_id,
+                             new_peer_idc.to_string());
                     return;
                 }
                 proto::AddPeer add_peer;
@@ -642,10 +641,10 @@ namespace EA {
                             StoreInteract store_interact(leader.c_str());
                             proto::StoreRes response;
                             auto ret = store_interact.send_request("add_peer", add_peer, response);
-                            DB_WARNING("send add peer leader: %s, request:%s, response:%s, ret: %d",
-                                       leader.c_str(),
-                                       add_peer.ShortDebugString().c_str(),
-                                       response.ShortDebugString().c_str(), ret);
+                            TLOG_WARN("send add peer leader: {}, request: {}, response: {}, ret: {}",
+                                       leader,
+                                       add_peer.ShortDebugString(),
+                                       response.ShortDebugString(), ret);
                         };
                 bth.run(add_peer_fun);
                 continue;
@@ -653,8 +652,8 @@ namespace EA {
             proto::Status status = proto::NORMAL;
             ret = get_region_status(region_id, status);
             if (ret < 0 || status != proto::NORMAL) {
-                DB_WARNING("region_id:%ld status:%s is not normal, can not been remove, instance:%s",
-                           region_id, proto::Status_Name(status).c_str(), instance.c_str());
+                TLOG_WARN("region_id: {} status: {} is not normal, can not been remove, instance: {}",
+                           region_id, proto::Status_Name(status), instance);
                 continue;
             }
             proto::RaftControlRequest request;
@@ -685,8 +684,8 @@ namespace EA {
             int64_t replica_num;
             auto ret = TableManager::get_instance()->get_replica_num(table_id, replica_num);
             if (ret < 0 || ptr_region->peers_size() > replica_num) {
-                DB_WARNING("region_id: %ld has been added peer, region_info: %s",
-                           region_id, ptr_region->ShortDebugString().c_str());
+                TLOG_WARN("region_id: {} has been added peer, region_info: {}",
+                           region_id, ptr_region->ShortDebugString());
                 continue;
             }
 
@@ -722,8 +721,8 @@ namespace EA {
                     peers,
                     new_instance);
             if (ret < 0) {
-                DB_FATAL("select store from cluster fail, region_id:%ld, idc: %s", region_id,
-                         new_peer_idc.to_string().c_str());
+                TLOG_ERROR("select store from cluster fail, region_id: {}, idc: {}", region_id,
+                         new_peer_idc.to_string());
                 continue;
             }
             proto::AddPeer add_peer;
@@ -735,7 +734,7 @@ namespace EA {
             add_peer.add_new_peers(new_instance);
             std::string leader = ptr_region->leader();
             add_peer_requests[leader].push_back(add_peer);
-            DB_WARNING("add peer request: %s", add_peer.ShortDebugString().c_str());
+            TLOG_WARN("add peer request: {}", add_peer.ShortDebugString());
         }
     }
 
@@ -779,8 +778,8 @@ namespace EA {
         std::string instance = request->instance_info().address();
         auto instance_status = ClusterManager::get_instance()->get_instance_status(instance);
         if (instance_status == proto::MIGRATE || instance_status == proto::SLOW) {
-            DB_WARNING("instance: %s status: %s skip main_logical_room check", instance.c_str(),
-                       proto::Status_Name(instance_status).c_str());
+            TLOG_WARN("instance: {} status: {} skip main_logical_room check", instance,
+                       proto::Status_Name(instance_status));
             return;
         }
         for (auto &leader_region: request->leader_regions()) {
@@ -790,7 +789,7 @@ namespace EA {
             if (table_replica.find(table_id) == table_replica.end()) {
                 auto ret = TableManager::get_instance()->get_replica_num(table_id, replica_num);
                 if (ret < 0) {
-                    DB_WARNING("table_id: %ld region_id: %ld", table_id, region_id);
+                    TLOG_WARN("table_id: {} region_id: {}", table_id, region_id);
                     continue;
                 }
                 table_replica[table_id] = replica_num;
@@ -802,7 +801,7 @@ namespace EA {
                 IdcInfo idc;
                 int ret = TableManager::get_instance()->get_main_logical_room(table_id, idc);
                 if (ret < 0) {
-                    DB_WARNING("table_id: %ld region_id: %ld, get main_logical_room fail", table_id, region_id);
+                    TLOG_WARN("table_id: {} region_id: {}, get main_logical_room fail", table_id, region_id);
                     continue;
                 }
                 table_main_idc[table_id] = idc;
@@ -821,8 +820,8 @@ namespace EA {
             }
 
             // leader在主机房直接跳过
-            //DB_WARNING("instance: %s region_id:%ld do main_logical_room check leader_logical_room:%s main_logical_room:%s",
-            //    instance.c_str(), region_id, leader_logical_room.c_str(), main_logical_room.c_str());
+            //TLOG_WARN("instance: {} region_id:{} do main_logical_room check leader_logical_room:{} main_logical_room:{}",
+            //    instance, region_id, leader_logical_room, main_logical_room);
             if (leader_idc.match(main_idc)) {
                 continue;
             }
@@ -835,14 +834,14 @@ namespace EA {
                 }
                 IdcInfo peer_idc;
                 if (ClusterManager::get_instance()->get_instance_idc(peer, peer_idc) < 0) {
-                    DB_WARNING("instance: %s get idc fail", peer.c_str());
+                    TLOG_WARN("instance: {} get idc fail", peer);
                     continue;
                 }
                 proto::Status st = ClusterManager::get_instance()->get_instance_status(peer);
                 if (st != proto::NORMAL) {
                     candicate_instances.clear();
-                    DB_WARNING("region_id:%ld instance: %s peer: %s not NORMAL not transfer leader",
-                               region_id, instance.c_str(), peer.c_str());
+                    TLOG_WARN("region_id:{} instance: {} peer: {} not NORMAL not transfer leader",
+                               region_id, instance, peer);
                     break;
                 }
                 if (peer_idc.match(main_idc)) {
@@ -861,21 +860,21 @@ namespace EA {
                 add_leader_count(selected_instance, table_id);
                 trans_leader_region_ids.emplace(region_id);
                 *(response->add_trans_leader()) = transfer_request;
-                DB_WARNING("instance: %s region_id:%ld do leader transfer leader_idc: %s, main_idc:%s "
-                           "transfer_request:%s", instance.c_str(), region_id,
-                           leader_idc.to_string().c_str(),
-                           main_idc.to_string().c_str(),
-                           transfer_request.ShortDebugString().c_str());
+                TLOG_WARN("instance: {} region_id:{} do leader transfer leader_idc: {}, main_idc:{} "
+                           "transfer_request:{}", instance, region_id,
+                           leader_idc.to_string(),
+                           main_idc.to_string(),
+                           transfer_request.ShortDebugString());
             }
         }
     }
 
-/*
- * table_total_instance_counts:     计算平均leader数的store数量，和是否设置主机房有关
- * pk_prefix_leader_region_map:     table_id -> pk_prefix_key -> region_id List
- * trans_leader_region_ids:         之前check主机房，决定要trans leader的region_id
- * table_transfer_leader_count:     按照表维度决定要trans leader的数量
- */
+    /*
+     * table_total_instance_counts:     计算平均leader数的store数量，和是否设置主机房有关
+     * pk_prefix_leader_region_map:     table_id -> pk_prefix_key -> region_id List
+     * trans_leader_region_ids:         之前check主机房，决定要trans leader的region_id
+     * table_transfer_leader_count:     按照表维度决定要trans leader的数量
+     */
     void RegionManager::leader_load_balance_on_pk_prefix(const std::string &instance,
                                                          const proto::StoreHeartBeatRequest *request,
                                                          std::unordered_map<int64_t, int64_t> &table_total_instance_counts,
@@ -897,13 +896,13 @@ namespace EA {
             if (table_total_instance_counts.find(table_id) == table_total_instance_counts.end()
                 || table_replica.find(table_id) == table_replica.end()
                 || table_main_idc.find(table_id) == table_main_idc.end()) {
-                DB_WARNING("get_instance_count fail for table_id: %ld", table_id);
+                TLOG_WARN("get_instance_count fail for table_id: {}", table_id);
                 continue;
             }
             int64_t replica_num = table_replica[table_id];
             int64_t instance_count = table_total_instance_counts[table_id];
             if (replica_num <= 0 || instance_count <= 0) {
-                DB_WARNING("get table_replica/total_intance fail for table_id: %ld", table_id);
+                TLOG_WARN("get table_replica/total_instance fail for table_id: {}", table_id);
                 continue;
             }
             for (auto &pk_prefix_region_pair: table_pk_prefix_pair.second) {
@@ -926,9 +925,9 @@ namespace EA {
                 pk_prefix_trans_leader_count = leader_count - average_leader_count;
                 pk_prefix_average_leader_counts[pk_prefix_region_pair.first] = average_leader_count;
                 // 随机从pk_prefix对应的region列表中选择连续transfer_leader_count个region进行transfer leader
-                DB_DEBUG("pk_prefix: %s, peer_count: %lu, replica_num: %lu, instance_count: %lu, leader_count: %lu, "
-                         "average_leader_count: %lu, transfer leader count: %lu",
-                         pk_prefix_region_pair.first.c_str(), peer_count, replica_num, instance_count,
+                TLOG_DEBUG("pk_prefix: {}, peer_count: {}, replica_num: {}, instance_count: {}, leader_count: {}, "
+                         "average_leader_count: {}, transfer leader count: {}",
+                         pk_prefix_region_pair.first, peer_count, replica_num, instance_count,
                          leader_count, average_leader_count, pk_prefix_trans_leader_count);
                 size_t index = butil::fast_rand() % leader_count;
                 for (size_t i = 0; i < leader_count; ++i, ++index) {
@@ -944,13 +943,13 @@ namespace EA {
                     // pk_prefix维度决定要trans leader的region_id, 及其对应的pk_prefix key
                     trans_region_pk_prefix_map[table_id][region_id] = pk_prefix_region_pair.first;
                     --pk_prefix_trans_leader_count;
-                    DB_WARNING("pk_prefix: %s decide transfer leader for region_id %lu",
-                               pk_prefix_region_pair.first.c_str(), region_id);
+                    TLOG_WARN("pk_prefix: {} decide transfer leader for region_id {}",
+                               pk_prefix_region_pair.first, region_id);
                 }
             }
         }
         if (trans_region_pk_prefix_map.empty()) {
-            DB_WARNING("instance: %s has been leader_load_balance on pk_prefix, no need transfer", instance.c_str());
+            TLOG_WARN("instance: {} has been leader_load_balance on pk_prefix, no need transfer", instance);
             return;
         }
         for (auto &leader_region: request->leader_regions()) {
@@ -964,7 +963,7 @@ namespace EA {
             }
             int64_t replica_num = table_replica[table_id];
             if (replica_num <= 0) {
-                DB_WARNING("table_id: %ld region_id: %ld", table_id, region_id);
+                TLOG_WARN("table_id: {} region_id: {}", table_id, region_id);
                 continue;
             }
 
@@ -1013,8 +1012,8 @@ namespace EA {
                 add_leader_count(transfer_to_peer, table_id);
                 table_trans_leader_count_on_pk[table_id]++;
                 pk_prefix_leader_count[pk_prefix_key]--;
-                DB_WARNING("instance: %s region_id:%ld do leader transfer transfer_request:%s",
-                           instance.c_str(), region_id, transfer_request.ShortDebugString().c_str());
+                TLOG_WARN("instance: {} region_id:{} do leader transfer transfer_request:{}",
+                           instance, region_id, transfer_request.ShortDebugString());
             }
         }
         for (auto table_trans_count: table_trans_leader_count_on_pk) {
@@ -1049,7 +1048,7 @@ namespace EA {
         // leader机房信息
         IdcInfo leader_idc;
         if (ClusterManager::get_instance()->get_instance_idc(instance, leader_idc) < 0) {
-            DB_WARNING("instance: %s can not find idc", instance.c_str());
+            TLOG_WARN("instance: {} can not find idc", instance);
             return;
         }
 
@@ -1083,18 +1082,18 @@ namespace EA {
         }
         std::string resource_tag = request->instance_info().resource_tag();
         if (!whether_can_decide) {
-            DB_WARNING("meta state machine can not decide, resource_tag: %s, instance: %s",
-                       resource_tag.c_str(), instance.c_str());
+            TLOG_WARN("meta state machine can not decide, resource_tag: {}, instance: {}",
+                       resource_tag, instance);
             return;
         }
 
         if (!load_balance) {
-            DB_WARNING("meta state machine close leader load balance, resource_tag: %s, instance: %s",
-                       resource_tag.c_str(), instance.c_str());
+            TLOG_WARN("meta state machine close leader load balance, resource_tag: {}, instance: {}",
+                       resource_tag, instance);
             return;
         }
-        DB_WARNING("leader load balance, resource_tag: %s, instance: %s",
-                   resource_tag.c_str(), instance.c_str());
+        TLOG_WARN("leader load balance, resource_tag: {}, instance: {}",
+                   resource_tag, instance);
         std::unordered_map<int64_t, std::set<int64_t>> table_region_ids;
         get_region_ids(instance, table_region_ids);
         //记录以表的维度出发，每个表应该transfer leader的数量
@@ -1135,17 +1134,17 @@ namespace EA {
             }
             if (instance_count != 0 && instance_status == proto::MIGRATE) {
                 average_leader_count = table_region_ids[table_id].size() / instance_count;
-                DB_WARNING("MIGRATE transfer lead for instance: %s, table_id: %ld,"
-                           " region_size: %lu, instance_count: %ld, average_leader_count: %ld, table_leader_count: %ld",
-                           instance.c_str(), table_id, table_region_ids[table_id].size(), instance_count,
+                TLOG_WARN("MIGRATE transfer lead for instance: {}, table_id: {},"
+                           " region_size: {}, instance_count: {}, average_leader_count: {}, table_leader_count: {}",
+                           instance, table_id, table_region_ids[table_id].size(), instance_count,
                            average_leader_count, table_leader_count.second);
             }
             // 慢实例会leader全部迁走
             if (instance_status == proto::SLOW) {
                 average_leader_count = 0;
-                DB_WARNING("SLOW transfer lead for instance: %s, table_id: %ld, instance_count: %ld,"
-                           " average_leader_count: %ld, table_leader_count: %ld",
-                           instance.c_str(), table_id, instance_count,
+                TLOG_WARN("SLOW transfer lead for instance: {}, table_id: {}, instance_count: {},"
+                           " average_leader_count: {}, table_leader_count: {}",
+                           instance, table_id, instance_count,
                            average_leader_count, table_leader_count.second);
             }
             average_leader_counts[table_id] = average_leader_count;
@@ -1174,13 +1173,13 @@ namespace EA {
         for (auto &table_count: transfer_leader_count) {
             response->add_trans_leader_table_id(table_count.first);
             response->add_trans_leader_count(table_count.second / 2);
-            DB_WARNING("transfer lead for instance: %s, table_id: %ld,"
-                       " average_leader_count: %ld, should transfer leader count: %ld",
-                       instance.c_str(), table_count.first,
+            TLOG_WARN("transfer lead for instance: {}, table_id: {},"
+                       " average_leader_count: {}, should transfer leader count: {}",
+                       instance, table_count.first,
                        average_leader_counts[table_count.first], table_count.second);
         }
         if (transfer_leader_count.size() == 0) {
-            DB_WARNING("instance: %s has been leader_load_balance, no need transfer", instance.c_str());
+            TLOG_WARN("instance: {} has been leader_load_balance, no need transfer", instance);
             return;
         }
         //todo 缺点是迁移总在前边几台机器上进行，待改进
@@ -1252,21 +1251,21 @@ namespace EA {
                 *(response->add_trans_leader()) = transfer_request;
                 add_leader_count(transfer_to_peer, table_id);
                 table_leader_counts[table_id]--;
-                DB_WARNING("instance: %s region_id:%ld do leader transfer transfer_request:%s",
-                           instance.c_str(), region_id, transfer_request.ShortDebugString().c_str());
+                TLOG_WARN("instance: {} region_id:{} do leader transfer transfer_request:{}",
+                           instance, region_id, transfer_request.ShortDebugString());
             }
         }
     }
 
-/*
- * pk_prefix_add_peer_counts:   pk_prefix_key -> 需要add peer的数量
- * pk_prefix_regions:           pk_prefix_key -> region_id list
- * instance:                    上报心跳的store
- * resource_tag:                所属集群
- * logical_rooms:               table_id -> (replica_dist是当前机房，否则是""）
- * pk_prefix_average_counts:    pk_prefix_key -> pk_prefix下每个store上平均拥有的region数量
- * table_average_counts:        table_id -> table在每个store上平均拥有的region数量
- */
+    /*
+     * pk_prefix_add_peer_counts:   pk_prefix_key -> 需要add peer的数量
+     * pk_prefix_regions:           pk_prefix_key -> region_id list
+     * instance:                    上报心跳的store
+     * resource_tag:                所属集群
+     * logical_rooms:               table_id -> (replica_dist是当前机房，否则是""）
+     * pk_prefix_average_counts:    pk_prefix_key -> pk_prefix下每个store上平均拥有的region数量
+     * table_average_counts:        table_id -> table在每个store上平均拥有的region数量
+     */
     void
     RegionManager::pk_prefix_load_balance(const std::unordered_map<std::string, int64_t> &pk_prefix_add_peer_counts,
                                           std::unordered_map<std::string, std::vector<int64_t>> &pk_prefix_regions,
@@ -1291,7 +1290,7 @@ namespace EA {
                 int64_t replica_num = 0;
                 auto ret = TableManager::get_instance()->get_replica_num(table_id, replica_num);
                 if (ret < 0) {
-                    DB_WARNING("table_id: %ld not exist", table_id);
+                    TLOG_WARN("table_id: {} not exist", table_id);
                     continue;
                 }
                 table_replica_nums[table_id] = replica_num;
@@ -1326,7 +1325,7 @@ namespace EA {
                 proto::Status status = proto::NORMAL;
                 auto ret = get_region_status(candidate_region, status);
                 if (ret < 0 || status != proto::NORMAL) {
-                    DB_WARNING("region status is not normal, region_id: %ld", candidate_region);
+                    TLOG_WARN("region status is not normal, region_id: {}", candidate_region);
                     continue;
                 }
                 std::set<std::string> exclude_stores;
@@ -1377,12 +1376,12 @@ namespace EA {
                         StoreInteract store_interact(request.first.c_str());
                         proto::StoreRes response;
                         auto ret = store_interact.send_request("add_peer", request.second, response);
-                        DB_WARNING("instance: %s pk_prefix peer load balance, send add peer leader: %s, "
-                                   "request:%s, response:%s, ret: %d",
-                                   instance.c_str(),
-                                   request.first.c_str(),
-                                   request.second.ShortDebugString().c_str(),
-                                   response.ShortDebugString().c_str(), ret);
+                        TLOG_WARN("instance: {} pk_prefix peer load balance, send add peer leader: {}, "
+                                   "request:{}, response:{}, ret: {}",
+                                   instance,
+                                   request.first,
+                                   request.second.ShortDebugString(),
+                                   response.ShortDebugString(), ret);
                         if (ret == 0) {
                             auto iter = region_idc.find(request.second.region_id());
                             if (iter != region_idc.end()) {
@@ -1394,8 +1393,8 @@ namespace EA {
         bth.run(add_peer_fun);
     }
 
-// add_peer_count: 每个表需要add_peer的region数量, key: table_id
-// instance_regions： add_peer的region从这个候选集中选择, key: table_id
+    // add_peer_count: 每个表需要add_peer的region数量, key: table_id
+    // instance_regions： add_peer的region从这个候选集中选择, key: table_id
     void RegionManager::peer_load_balance(const std::unordered_map<int64_t, int64_t> &add_peer_counts,
                                           std::unordered_map<int64_t, std::vector<int64_t>> &instance_regions,
                                           const std::string &instance,
@@ -1410,7 +1409,7 @@ namespace EA {
             int64_t replica_num = 0;
             auto ret = TableManager::get_instance()->get_replica_num(table_id, replica_num);
             if (ret < 0) {
-                DB_WARNING("table_id: %ld not exist", table_id);
+                TLOG_WARN("table_id: {} not exist", table_id);
                 continue;
             }
             if (table_balance_idc.find(table_id) == table_balance_idc.end()) {
@@ -1446,7 +1445,7 @@ namespace EA {
                 proto::Status status = proto::NORMAL;
                 auto ret = get_region_status(candicate_region, status);
                 if (ret < 0 || status != proto::NORMAL) {
-                    DB_WARNING("region status is not normal, region_id: %ld", candicate_region);
+                    TLOG_WARN("region status is not normal, region_id: {}", candicate_region);
                     continue;
                 }
                 std::set<std::string> exclude_stores;
@@ -1467,7 +1466,7 @@ namespace EA {
                                                                          table_pk_prefix_dimension[table_id],
                                                                          master_region_info->start_key(),
                                                                          key)) {
-                        DB_WARNING("decode pk_prefix_key fail, table_id: %lu, region_id: %lu",
+                        TLOG_WARN("decode pk_prefix_key fail, table_id: {}, region_id: {}",
                                    table_id, master_region_info->region_id());
                         continue;
                     }
@@ -1518,12 +1517,12 @@ namespace EA {
                         StoreInteract store_interact(request.first.c_str());
                         proto::StoreRes response;
                         auto ret = store_interact.send_request("add_peer", request.second, response);
-                        DB_WARNING(
-                                "instance: %s peer load balance, send add peer leader: %s, request:%s, response:%s, ret: %d",
-                                instance.c_str(),
-                                request.first.c_str(),
-                                request.second.ShortDebugString().c_str(),
-                                response.ShortDebugString().c_str(), ret);
+                        TLOG_WARN(
+                                "instance: {} peer load balance, send add peer leader: {}, request:{}, response:{}, ret: {}",
+                                instance,
+                                request.first,
+                                request.second.ShortDebugString(),
+                                response.ShortDebugString(), ret);
                     }
                 };
         bth.run(add_peer_fun);
@@ -1564,7 +1563,7 @@ namespace EA {
                 proto::Status status = proto::NORMAL;
                 auto ret = get_region_status(candicate_region, status);
                 if (ret < 0 || status != proto::NORMAL) {
-                    DB_WARNING("region status is not normal, region_id: %ld", candicate_region);
+                    TLOG_WARN("region status is not normal, region_id: {}", candicate_region);
                     continue;
                 }
                 std::set<std::string> exclude_stores;
@@ -1581,7 +1580,7 @@ namespace EA {
                 proto::InitRegion request;
                 *(request.mutable_region_info()) = *master_region_info;
                 request.mutable_region_info()->set_is_learner(true);
-                DB_DEBUG("add learner request : %s", request.DebugString().c_str());
+                TLOG_DEBUG("add learner request : {}", request.DebugString());
                 add_learner_requests.emplace_back(new_instance, request);
                 --count;
                 if (count <= 0) {
@@ -1600,11 +1599,11 @@ namespace EA {
                         StoreInteract store_interact(request.first);
                         proto::StoreRes response;
                         auto ret = store_interact.send_request("init_region", request.second, response);
-                        DB_WARNING("send add learn request:%s, response:%s, ret: %d",
-                                   request.second.ShortDebugString().c_str(),
-                                   response.ShortDebugString().c_str(), ret);
+                        TLOG_WARN("send add learn request:{}, response:{}, ret: {}",
+                                   request.second.ShortDebugString(),
+                                   response.ShortDebugString(), ret);
                         if (ret != 0) {
-                            DB_WARNING("add learner node error.");
+                            TLOG_WARN("add learner node error.");
                         }
                     }
                 };
@@ -1649,7 +1648,7 @@ namespace EA {
             // 将 learner 节点更新进_region_learner_peer_state_map，后续方便判断该learner是否正常上报心跳。
             auto master_region_info = get_region_info(region_id);
             if (master_region_info == nullptr) {
-                DB_WARNING("master region info is nullptr when update learner region %ld.", region_id);
+                TLOG_WARN("master region info is nullptr when update learner region {}.", region_id);
                 continue;
             }
             if (master_region_info->learners().size() == 0) {
@@ -1769,7 +1768,7 @@ namespace EA {
             int64_t region_id = learner_region_info.region_id();
             auto master_region_info = get_region_info(region_id);
             if (master_region_info == nullptr) {
-                DB_WARNING("master region info is nullptr when update learner region %ld.", region_id);
+                TLOG_WARN("master region info is nullptr when update learner region {}.", region_id);
                 remove_learner_peer(region_id, remove_learner_requests, instance);
                 continue;
             }
@@ -1782,7 +1781,7 @@ namespace EA {
                         std::set<std::string> candicate_remove_peers;
                         candicate_remove_peers.insert(addr);
                         if (master_region_info->learners_size() > 0) {
-                            DB_WARNING("region_id %ld remove learner, STATUS_ERROR", region_id);
+                            TLOG_WARN("region_id {} remove learner, STATUS_ERROR", region_id);
                             remove_learner_peer(region_id, remove_learner_requests, master_region_info.get(),
                                                 candicate_remove_peers);
                         }
@@ -1808,7 +1807,7 @@ namespace EA {
                 if (leader_region_info.start_key().empty() &&
                     leader_region_info.end_key().empty()) {
                     //该region为第一个region直接添加
-                    DB_WARNING("region_info: %s is new ", leader_region_info.ShortDebugString().c_str());
+                    TLOG_WARN("region_info: {} is new ", leader_region_info.ShortDebugString());
                     proto::MetaManagerRequest request;
                     request.set_op_type(proto::OP_UPDATE_REGION);
                     *(request.add_region_infos()) = leader_region_info;
@@ -1817,15 +1816,15 @@ namespace EA {
                                                        leader_region_info.start_key(),
                                                        leader_region_info.end_key(),
                                                        leader_region_info.partition_id())) {
-                    DB_WARNING("region_info: %s is exist ", leader_region_info.ShortDebugString().c_str());
+                    TLOG_WARN("region_info: {} is exist ", leader_region_info.ShortDebugString());
                     proto::MetaManagerRequest request;
                     request.set_op_type(proto::OP_UPDATE_REGION);
                     request.set_add_delete_region(true);
                     *(request.add_region_infos()) = leader_region_info;
                     SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
                 } else {
-                    DB_WARNING("region_info: %s is new ",
-                               leader_region_info.ShortDebugString().c_str());
+                    TLOG_WARN("region_info: {} is new ",
+                               leader_region_info.ShortDebugString());
                     TableManager::get_instance()->add_new_region(leader_region_info);
                 }
                 continue;
@@ -1864,7 +1863,7 @@ namespace EA {
                     continue;
                 }
                 if (ret < 0) {
-                    DB_WARNING("get learners idc fail: %s, region: %ld", request->instance_info().address().c_str(),
+                    TLOG_WARN("get learners idc fail: {}, region: {}", request->instance_info().address(),
                                region_id);
                 }
                 for (const auto &idc: learner_local_idc) {
@@ -1880,11 +1879,11 @@ namespace EA {
                             add_learner_peer(region_id, add_learner_requests, master_region_info.get(),
                                              learner_resource);
                         } else {
-                            DB_WARNING("region_id %ld can`t add learner peer_size: %d", region_id,
+                            TLOG_WARN("region_id {} can`t add learner peer_size: {}", region_id,
                                        master_region_info->peers_size());
                         }
                     } else if (current_resource_learners.size() > learner_replica_num) {
-                        DB_WARNING("region_id %ld remove learner", region_id);
+                        TLOG_WARN("region_id {} remove learner", region_id);
                         remove_learner_peer(region_id, remove_learner_requests, master_region_info.get(),
                                             current_resource_learners);
                     } else {
@@ -1903,7 +1902,7 @@ namespace EA {
                                         add_learner_peer(region_id, add_learner_requests, master_region_info.get(),
                                                          learner_resource);
                                     } else {
-                                        DB_WARNING("region_id %ld can`t add learner peer_size: %d", region_id,
+                                        TLOG_WARN("region_id {} can`t add learner peer_size: {}", region_id,
                                                    master_region_info->peers_size());
                                     }
                                 }
@@ -1925,7 +1924,7 @@ namespace EA {
                 }
 
                 if (master_region_info->learners_size() > 0) {
-                    DB_WARNING("region_id %ld remove learner", region_id);
+                    TLOG_WARN("region_id {} remove learner", region_id);
                     remove_learner_peer(region_id, remove_learner_requests, master_region_info.get(),
                                         candicate_remove_peers);
                 }
@@ -1939,11 +1938,11 @@ namespace EA {
                         StoreInteract store_interact(request.first);
                         proto::StoreRes response;
                         auto ret = store_interact.send_request("init_region", request.second, response);
-                        DB_WARNING("send add learn request:%s, response:%s, ret: %d, instance %s",
-                                   request.second.ShortDebugString().c_str(),
-                                   response.ShortDebugString().c_str(), ret, request.first.c_str());
+                        TLOG_WARN("send add learn request:{}, response:{}, ret: {}, instance {}",
+                                   request.second.ShortDebugString(),
+                                   response.ShortDebugString(), ret, request.first);
                         if (ret != 0) {
-                            DB_WARNING("add learner node error.");
+                            TLOG_WARN("add learner node error.");
                         }
                     }
                 };
@@ -1953,11 +1952,11 @@ namespace EA {
                         StoreInteract store_interact(remove_req.first);
                         proto::StoreRes response;
                         auto ret = store_interact.send_request("remove_region", remove_req.second, response);
-                        DB_WARNING("send remove learn request:%s, response:%s, ret: %d",
-                                   remove_req.second.ShortDebugString().c_str(),
-                                   response.ShortDebugString().c_str(), ret);
+                        TLOG_WARN("send remove learn request:{}, response:{}, ret: {}",
+                                   remove_req.second.ShortDebugString(),
+                                   response.ShortDebugString(), ret);
                         if (ret != 0) {
-                            DB_WARNING("remove learner node error.");
+                            TLOG_WARN("remove learner node error.");
                         }
 
                         proto::MetaManagerRequest request;
@@ -1966,7 +1965,7 @@ namespace EA {
                         int64_t region_id = remove_req.second.region_id();
                         auto ptr_region = get_region_info(region_id);
                         if (ptr_region == nullptr) {
-                            DB_WARNING("master region %ld ptr is nullptr.", region_id);
+                            TLOG_WARN("master region {} ptr is nullptr.", region_id);
                             continue;
                         }
                         *region_iter = *ptr_region;
@@ -1997,9 +1996,9 @@ namespace EA {
                         StoreInteract store_interact(request.second.new_leader().c_str());
                         proto::RaftControlResponse response;
                         auto ret = store_interact.send_request("region_raft_control", request.second, response);
-                        DB_WARNING("send remove peer request:%s, response:%s, ret: %d",
-                                   request.second.ShortDebugString().c_str(),
-                                   response.ShortDebugString().c_str(), ret);
+                        TLOG_WARN("send remove peer request:{}, response:{}, ret: {}",
+                                   request.second.ShortDebugString(),
+                                   response.ShortDebugString(), ret);
                         if (ret == 0) {
                             proto::RemoveRegion remove_region_request;
                             // 负载均衡及时删除
@@ -2010,10 +2009,10 @@ namespace EA {
                             proto::StoreRes remove_region_response;
                             ret = store_interact.send_request("remove_region", remove_region_request,
                                                               remove_region_response);
-                            DB_WARNING("send remove region to store:%s request: %s, resposne: %s, ret: %d",
-                                       request.first.c_str(),
-                                       remove_region_request.ShortDebugString().c_str(),
-                                       remove_region_response.ShortDebugString().c_str(), ret);
+                            TLOG_WARN("send remove region to store:{} request: {}, response: {}, ret: {}",
+                                       request.first,
+                                       remove_region_request.ShortDebugString(),
+                                       remove_region_response.ShortDebugString(), ret);
                         }
                     }
                 };
@@ -2026,8 +2025,8 @@ namespace EA {
                                                     const SmartRegionInfo &master_region_info) {
         const proto::RegionInfo &leader_region_info = leader_region.region();
         if (leader_region_info.log_index() < master_region_info->log_index()) {
-            DB_WARNING("leader: %s log_index:%ld in heart is less than in master:%ld, region_id: %ld",
-                       leader_region_info.leader().c_str(),
+            TLOG_WARN("leader: {} log_index:{} in heart is less than in master:{}, region_id: {}",
+                       leader_region_info.leader(),
                        leader_region_info.log_index(),
                        master_region_info->log_index(),
                        region_id);
@@ -2037,10 +2036,10 @@ namespace EA {
         if (leader_region_info.version() == master_region_info->version()
             && (leader_region_info.start_key() != master_region_info->start_key()
                 || leader_region_info.end_key() != master_region_info->end_key())) {
-            DB_FATAL("version not change, but start_key or end_key change,"
-                     " old_region_info: %s, new_region_info: %s",
-                     master_region_info->ShortDebugString().c_str(),
-                     leader_region_info.ShortDebugString().c_str());
+            TLOG_ERROR("version not change, but start_key or end_key change,"
+                     " old_region_info: {}, new_region_info: {}",
+                     master_region_info->ShortDebugString(),
+                     leader_region_info.ShortDebugString());
             return;
         }
         bool version_changed = false;
@@ -2074,7 +2073,7 @@ namespace EA {
             tmp_region_info->set_used_size(leader_region_info.used_size());
             tmp_region_info->set_log_index(leader_region_info.log_index());
             tmp_region_info->set_conf_version(master_region_info->conf_version());
-            DB_WARNING("region_id: %ld, peer_changed: %d, version_changed:%d",
+            TLOG_WARN("region_id: {}, peer_changed: {}, version_changed:{}",
                        region_id, peer_changed, version_changed);
             SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
         } else {
@@ -2100,10 +2099,10 @@ namespace EA {
                                             proto::RegionInfo *master_region_info,
                                             const std::set<std::string> &candicate_remove_learners) {
         if (!can_modify_learner(region_id)) {
-            DB_WARNING("region_id: %ld can't modify learner", region_id);
+            TLOG_WARN("region_id: {} can't modify learner", region_id);
             return;
         }
-        DB_WARNING("process remove_learner_peer region %ld", region_id);
+        TLOG_WARN("process remove_learner_peer region {}", region_id);
         std::string remove_learner;
         int32_t max_peer_count = 0;
         int64_t table_id = master_region_info->table_id();
@@ -2115,11 +2114,11 @@ namespace EA {
             //先判断这些peer中是否有peer所在的实例状态不是NORMAL
             if (status != proto::NORMAL) {
                 abnormal_remove_learners.emplace_back(candicate_remove_learner);
-                DB_WARNING("abnormal peer: %s because of peers_size:%d status is: %s, region_info: %s",
-                           candicate_remove_learner.c_str(),
+                TLOG_WARN("abnormal peer: {} because of peers_size:{} status is: {}, region_info: {}",
+                           candicate_remove_learner,
                            leader_region_info.peers_size(),
-                           proto::Status_Name(status).c_str(),
-                           leader_region_info.ShortDebugString().c_str());
+                           proto::Status_Name(status),
+                           leader_region_info.ShortDebugString());
             }
         }
         if (!abnormal_remove_learners.empty()) {
@@ -2137,8 +2136,8 @@ namespace EA {
         if (remove_learner.empty()) {
             for (auto &learner: candicate_remove_learners) {
                 int64_t peer_count = ClusterManager::get_instance()->get_peer_count(learner, table_id);
-                DB_WARNING("cadidate remove peer, peer_count: %ld, instance: %s, table_id: %ld",
-                           peer_count, learner.c_str(), table_id);
+                TLOG_WARN("cadidate remove peer, peer_count: {}, instance: {}, table_id: {}",
+                           peer_count, learner, table_id);
                 if (peer_count >= max_peer_count) {
                     remove_learner = learner;
                     max_peer_count = peer_count;
@@ -2150,8 +2149,8 @@ namespace EA {
             remove_region_request.set_need_delay_drop(false);
             remove_region_request.set_force(true);
             remove_region_request.set_region_id(region_id);
-            DB_WARNING("remove learner peer %s instance %s", remove_region_request.ShortDebugString().c_str(),
-                       remove_learner.c_str());
+            TLOG_WARN("remove learner peer {} instance {}", remove_region_request.ShortDebugString(),
+                       remove_learner);
             remove_learner_requests.emplace_back(remove_learner, remove_region_request);
 
         }
@@ -2164,8 +2163,8 @@ namespace EA {
         remove_region_request.set_need_delay_drop(false);
         remove_region_request.set_force(true);
         remove_region_request.set_region_id(region_id);
-        DB_WARNING("remove learner peer %s instance %s", remove_region_request.ShortDebugString().c_str(),
-                   remove_learner.c_str());
+        TLOG_WARN("remove learner peer {} instance {}", remove_region_request.ShortDebugString(),
+                   remove_learner);
         remove_learner_requests.emplace_back(remove_learner, remove_region_request);
     }
 
@@ -2174,7 +2173,7 @@ namespace EA {
                                          proto::RegionInfo *master_region_info,
                                          const std::string &learner_resource_tag) {
         if (!can_modify_learner(region_id)) {
-            DB_WARNING("region_id: %ld can't modify learner", region_id);
+            TLOG_WARN("region_id: {} can't modify learner", region_id);
             return;
         }
         std::string new_instance;
@@ -2183,9 +2182,9 @@ namespace EA {
                 std::set<std::string>(),
                 new_instance);
         if (ret < 0) {
-            DB_FATAL("select store from cluster fail, region_id:%ld, learner_resource_tag: %s, "
-                     "peer_size:%d",
-                     region_id, learner_resource_tag.c_str(),
+            TLOG_ERROR("select store from cluster fail, region_id:{}, learner_resource_tag: {}, "
+                     "peer_size:{}",
+                     region_id, learner_resource_tag,
                      master_region_info->peers_size());
             return;
         }
@@ -2195,7 +2194,7 @@ namespace EA {
         // 与 add_peer 保持一致。
         request.mutable_region_info()->set_version(0);
         request.mutable_region_info()->set_can_add_peer(true);
-        DB_NOTICE("add learner request : %s new instance %s", request.ShortDebugString().c_str(), new_instance.c_str());
+        TLOG_INFO("add learner request : {} new instance {}", request.ShortDebugString(), new_instance);
         add_learner_requests.push_back({new_instance, request});
     }
 
@@ -2213,7 +2212,7 @@ namespace EA {
         int64_t table_id = leader_region_info.table_id();
         if (table_replica_nums.find(table_id) == table_replica_nums.end()
             || table_replica_dists_maps.find(table_id) == table_replica_dists_maps.end()) {
-            DB_WARNING("table_id: %ld not exist, may be delete", table_id);
+            TLOG_WARN("table_id: {} not exist, may be delete", table_id);
             return;
         }
         int64_t replica_num = table_replica_nums[table_id];
@@ -2231,7 +2230,7 @@ namespace EA {
         if (ret < 0) {
             // meta找不到peer，可以等下一轮上报
             // 否则会导致resource_tag_count[table_resource_tag]不足
-            DB_WARNING("get peers idc fail, region: %ld", region_id);
+            TLOG_WARN("get peers idc fail, region: {}", region_id);
             return;
         }
         for (const auto &peer: peers_local_idc) {
@@ -2249,18 +2248,18 @@ namespace EA {
             }
             // 不在机房分布拓扑里的，可以直接被删掉
             peer_not_in_replica_dist.emplace_back(peer.first);
-            DB_WARNING("table_id: %ld, region_id: %lu, peer: %s, idc: %s not in replicaDist",
-                       table_id, region_id, peer.first.c_str(), peer.second.to_string().c_str());
+            TLOG_WARN("table_id: {}, region_id: {}, peer: {}, idc: {} not in replicaDist",
+                       table_id, region_id, peer.first, peer.second.to_string());
         }
         for (const auto &replica_idc: table_replica_dist) {
             if (table_replica_idc_2_peers[replica_idc.first].size() < replica_idc.second) {
                 need_add_peer = true;
                 candidate_idc = replica_idc.first;
-                DB_WARNING(
-                        "table_id: %ld, region_id: %lu, need add peer, candidate_idc: %s, need_count: %d, peer count: %lu",
+                TLOG_WARN(
+                        "table_id: {}, region_id: {}, need add peer, candidate_idc: {}, need_count: {}, peer count: {}",
                         table_id,
                         region_id,
-                        candidate_idc.c_str(),
+                        candidate_idc,
                         replica_idc.second,
                         table_replica_idc_2_peers[replica_idc.first].size());
                 break;
@@ -2281,12 +2280,12 @@ namespace EA {
                     new_instance);
             if (ret < 0) {
                 if (leader_region_info.peers_size() <= replica_num) {
-                    DB_FATAL("select store from cluster fail, region_id:%ld, "
-                             "peer_size:%d, replica_num:%ld candidate_idc: %s",
+                    TLOG_ERROR("select store from cluster fail, region_id:{}, "
+                             "peer_size:{}, replica_num:{} candidate_idc: {}",
                              region_id,
                              leader_region_info.peers_size(),
                              replica_num,
-                             candidate_idc.c_str());
+                             candidate_idc);
                     return;
                 }
             } else {
@@ -2297,7 +2296,7 @@ namespace EA {
                     add_peer->add_new_peers(peer);
                 }
                 add_peer->add_new_peers(new_instance);
-                DB_WARNING("add_peer request:%s", add_peer->ShortDebugString().c_str());
+                TLOG_WARN("add_peer request:{}", add_peer->ShortDebugString());
                 return;
             }
         }
@@ -2320,11 +2319,11 @@ namespace EA {
                 //先判断这些peer中是否有peer所在的实例状态不是NORMAL
                 if (status != proto::NORMAL) {
                     abnormal_remove_peers.emplace_back(candicate_remove_peer);
-                    DB_WARNING("abnormal peer: %s because of peers_size:%d status is: %s, region_info: %s",
-                               candicate_remove_peer.c_str(),
+                    TLOG_WARN("abnormal peer: {} because of peers_size:{} status is: {}, region_info: {}",
+                               candicate_remove_peer,
                                leader_region_info.peers_size(),
-                               proto::Status_Name(status).c_str(),
-                               leader_region_info.ShortDebugString().c_str());
+                               proto::Status_Name(status),
+                               leader_region_info.ShortDebugString());
                     continue;
                 }
             }
@@ -2337,8 +2336,8 @@ namespace EA {
             if (remove_peer.empty() && !peer_not_in_replica_dist.empty()) {
                 int64_t rand = butil::fast_rand() % peer_not_in_replica_dist.size();
                 remove_peer = peer_not_in_replica_dist[rand];
-                DB_WARNING("table_id: %ld, region_id: %ld, remove peer: %s, because of not in replicaDist.",
-                           table_id, region_id, remove_peer.c_str());
+                TLOG_WARN("table_id: {}, region_id: {}, remove peer: {}, because of not in replicaDist.",
+                           table_id, region_id, remove_peer);
             }
             // 按照用户指定的副本分布来做remove_peer
             int64_t max_peer_count = 0;
@@ -2347,8 +2346,8 @@ namespace EA {
                     if (table_replica_idc_2_peers[replica_idc.first].size() > replica_idc.second) {
                         candidate_idc = replica_idc.first;
                         candidate_remove_peers = table_replica_idc_2_peers[replica_idc.first];
-                        DB_WARNING("table_id: %ld, region_id: %ld, candicate remove idc: %s, peer count: %ld",
-                                   table_id, region_id, replica_idc.first.c_str(),
+                        TLOG_WARN("table_id: {}, region_id: {}, candicate remove idc: {}, peer count: {}",
+                                   table_id, region_id, replica_idc.first,
                                    table_replica_idc_2_peers[replica_idc.first].size());
                         break;
                     }
@@ -2389,8 +2388,8 @@ namespace EA {
                         continue;
                     }*/
                         int64_t peer_count = ClusterManager::get_instance()->get_peer_count(peer, table_id);
-                        DB_WARNING("candidate remove peer, peer_count: %ld, instance: %s, table_id: %ld",
-                                   peer_count, peer.c_str(), table_id);
+                        TLOG_WARN("candidate remove peer, peer_count: {}, instance: {}, table_id: {}",
+                                   peer_count, peer, table_id);
                         if (peer_count >= max_peer_count) {
                             remove_peer = peer;
                             max_peer_count = peer_count;
@@ -2412,13 +2411,13 @@ namespace EA {
                 transfer_request->set_region_id(region_id);
                 transfer_request->set_old_leader(remove_peer);
                 transfer_request->set_new_leader(new_leader);
-                DB_WARNING(
-                        "trans leader before remove peer, peer_count: %ld, instance: %s, table_id: %ld, new_leader:%s",
-                        max_peer_count, remove_peer.c_str(), table_id, new_leader.c_str());
+                TLOG_WARN(
+                        "trans leader before remove peer, peer_count: {}, instance: {}, table_id: {}, new_leader:{}",
+                        max_peer_count, remove_peer, table_id, new_leader);
                 return;
             }
-            DB_WARNING("remove peer, peer_count: %ld, instance: %s, table_id: %ld, region_info:%s",
-                       max_peer_count, remove_peer.c_str(), table_id, leader_region_info.ShortDebugString().c_str());
+            TLOG_WARN("remove peer, peer_count: {}, instance: {}, table_id: {}, region_info:{}",
+                       max_peer_count, remove_peer, table_id, leader_region_info.ShortDebugString());
             for (auto &peer: leader_region_info.peers()) {
                 remove_peer_request.add_old_peers(peer);
                 if (peer != remove_peer) {
@@ -2454,22 +2453,22 @@ namespace EA {
                     && !peer_info.start_key().empty()
                     && !peer_info.end_key().empty()) {
                     if (peer_info.start_key() == peer_info.end_key()) {
-                        DB_WARNING("region_id:%ld is none peer, "
-                                   " master_peer_info: null, peer_info:%s, peer_address:%s should be delete",
+                        TLOG_WARN("region_id:{} is none peer, "
+                                   " master_peer_info: null, peer_info:{}, peer_address:{} should be delete",
                                    region_id,
-                                   peer_info.ShortDebugString().c_str(),
-                                   instance.c_str());
+                                   peer_info.ShortDebugString(),
+                                   instance);
                         response->add_delete_region_ids(region_id);
                         _region_peer_state_map.erase(region_id);
                     }
                 }
                 // learner添加由meta发起，合法的learner在meta上region一定存在
                 if (peer_info.is_learner()) {
-                    DB_WARNING("region_id:%ld is illegal learner peer, "
-                               " master_peer_info: null, peer_info:%s, peer_address:%s should be delete",
+                    TLOG_WARN("region_id:{} is illegal learner peer, "
+                               " master_peer_info: null, peer_info:{}, peer_address:{} should be delete",
                                region_id,
-                               peer_info.ShortDebugString().c_str(),
-                               instance.c_str());
+                               peer_info.ShortDebugString(),
+                               instance);
                     response->add_delete_region_ids(region_id);
                 }
                 continue;
@@ -2481,7 +2480,7 @@ namespace EA {
             int64_t replica_num = 0;
             auto ret = TableManager::get_instance()->get_replica_num(table_id, replica_num);
             if (ret < 0) {
-                DB_WARNING("table_id: %ld not exist", table_id);
+                TLOG_WARN("table_id: {} not exist", table_id);
                 continue;
             }
             auto check_legal_peer = [&instance](SmartRegionInfo master) -> bool {
@@ -2496,12 +2495,12 @@ namespace EA {
                 //判断该实例上的peer是不是该region的有效peer，如不是，则删除
                 bool legal_peer = check_legal_peer(master_region_info);
                 if (!legal_peer) {
-                    DB_WARNING("region_id:%ld is not legal peer, log_index:%ld,"
-                               " master_peer_info: %s, peer_info:%s, peer_address:%s should be delete",
+                    TLOG_WARN("region_id:{} is not legal peer, log_index:{},"
+                               " master_peer_info: {}, peer_info:{}, peer_address:{} should be delete",
                                region_id, master_region_info->log_index(),
-                               master_region_info->ShortDebugString().c_str(),
-                               peer_info.ShortDebugString().c_str(),
-                               instance.c_str());
+                               master_region_info->ShortDebugString(),
+                               peer_info.ShortDebugString(),
+                               instance);
                     response->add_delete_region_ids(region_id);
                     _region_peer_state_map.erase(region_id);
                 } else {
@@ -2535,12 +2534,12 @@ namespace EA {
                 && !peer_info.end_key().empty()) {
                 if (peer_info.start_key() == peer_info.end_key()
                     && master_region_info->start_key() == master_region_info->end_key()) {
-                    DB_WARNING("region_id:%ld is none peer, log_index:%ld,"
-                               " master_peer_info: %s, peer_info:%s, peer_address:%s should be delete",
+                    TLOG_WARN("region_id:{} is none peer, log_index:{},"
+                               " master_peer_info: {}, peer_info:{}, peer_address:{} should be delete",
                                region_id, master_region_info->log_index(),
-                               master_region_info->ShortDebugString().c_str(),
-                               peer_info.ShortDebugString().c_str(),
-                               instance.c_str());
+                               master_region_info->ShortDebugString(),
+                               peer_info.ShortDebugString(),
+                               instance);
                     response->add_delete_region_ids(region_id);
                     _region_peer_state_map.erase(region_id);
                 }
@@ -2549,7 +2548,7 @@ namespace EA {
             // peer没有leader
             if (peer_info.has_exist_leader() && !peer_info.exist_leader()) {
                 //&& (master_region_info->log_index() <= peer_info.log_index())) {
-                DB_WARNING("region_id:%ld meta_log:%ld peer_log:%ld", region_id, master_region_info->log_index(),
+                TLOG_WARN("region_id:{} meta_log:{} peer_log:{}", region_id, master_region_info->log_index(),
                            peer_info.log_index());
                 bool legal_peer = check_legal_peer(master_region_info);
                 if (!legal_peer) {
@@ -2599,7 +2598,7 @@ namespace EA {
     int RegionManager::load_region_snapshot(const std::string &value) {
         proto::RegionInfo region_pb;
         if (!region_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load region snapshot, value: %s", value.c_str());
+            TLOG_ERROR("parse from pb fail when load region snapshot, value: {}", value);
             return -1;
         }
         if (region_pb.start_key() == region_pb.end_key()
@@ -2648,8 +2647,8 @@ namespace EA {
         for (auto region_id: region_ids) {
              turbo::FormatAppend(&regions_string, "{}:", region_id);
         }
-        DB_FATAL("instance used size exceed 60%% of capacity, please migirate,"
-                 "instance:%s, regions:%s", instance.c_str(), regions_string.c_str());
+        TLOG_ERROR("instance used size exceed 60%% of capacity, please migirate,"
+                 "instance:{}, regions:{}", instance, regions_string);
     }
 
 //报警，需要人工处理
@@ -2675,13 +2674,13 @@ namespace EA {
             if (region_info->start_key() == region_info->end_key()
                 && !region_info->start_key().empty()) {
                 //长时间没有收到空region的心跳，说明store已经删除，此时meta也可删除
-                DB_WARNING("region_id:%ld, table_id: %ld leader:%s maybe erase",
-                           region_id, region_info->table_id(), region_info->leader().c_str());
+                TLOG_WARN("region_id:{}, table_id: {} leader:{} maybe erase",
+                           region_id, region_info->table_id(), region_info->leader());
                 drop_region_ids.push_back(region_id);
                 continue;
             }
-            DB_WARNING("region_id:%ld not recevie heartbeat for a long time, table_id: %ld leader:%s",
-                       region_id, region_info->table_id(), region_info->leader().c_str());
+            TLOG_WARN("region_id:{} not recevie heartbeat for a long time, table_id: {} leader:{}",
+                       region_id, region_info->table_id(), region_info->leader());
             // 长时间未上报心跳的region，特别是所有副本都被误删的情况
             RegionPeerState peer_state = _region_peer_state_map.get(region_id);
             for (auto &peer: region_info->peers()) {
@@ -2738,7 +2737,7 @@ namespace EA {
             for (auto &learner_state: learner_map.learner_state_map) {
                 if (butil::gettimeofday_us() - learner_state.second.timestamp() >
                     FLAGS_store_heart_beat_interval_us * FLAGS_region_faulty_interval_times * 4) {
-                    DB_DEBUG("region %ld learner not heartbeat instance %s", region_id, learner_state.first.c_str());
+                    TLOG_DEBUG("region {} learner not heartbeat instance {}", region_id, learner_state.first);
                     learner_state.second.set_peer_status(proto::STATUS_NOT_HEARTBEAT);
                 } else {
                     learner_state.second.set_peer_status(proto::STATUS_NORMAL);
@@ -2766,7 +2765,7 @@ namespace EA {
         for (auto &region_id: region_ids) {
             SmartRegionInfo region_ptr = _region_info_map.get(region_id);
             if (region_ptr == nullptr) {
-                DB_WARNING("region_id: %ld not exist", region_id);
+                TLOG_WARN("region_id: {} not exist", region_id);
                 continue;
             }
             region_infos.push_back(region_ptr);
@@ -2835,7 +2834,7 @@ namespace EA {
         std::string resource_tag;
         int ret = TableManager::get_instance()->get_resource_tag(table_id, resource_tag);
         if (ret < 0) {
-            DB_WARNING("tag not exist table_id:%ld", table_id);
+            TLOG_WARN("tag not exist table_id:{}", table_id);
             return false;
         }
         if (resource_tags.size() > 0 && (resource_tags.count(resource_tag) == 0)) {
@@ -2851,7 +2850,7 @@ namespace EA {
                                           std::vector<proto::PeerStateInfo> &recover_region_way) {
         SmartRegionInfo region_ptr = _region_info_map.get(region_id);
         if (region_ptr == nullptr) {
-            DB_WARNING("region_id:%ld not found when remove_error_peer", region_id);
+            TLOG_WARN("region_id:{} not found when remove_error_peer", region_id);
             return;
         }
         if (!check_table_in_resource_tags(region_ptr->table_id(), resource_tags)) {
@@ -2868,9 +2867,9 @@ namespace EA {
             StoreInteract store_interact(peer, req_options);
             proto::StoreRes res;
             auto ret = store_interact.send_request("get_applied_index", store_request, res);
-            DB_WARNING("send get_applied_index to %s request:%s, response:%s", peer.c_str(),
-                       store_request.ShortDebugString().c_str(),
-                       res.ShortDebugString().c_str());
+            TLOG_WARN("send get_applied_index to {} request:{}, response:{}", peer,
+                       store_request.ShortDebugString(),
+                       res.ShortDebugString());
             if (ret == 0 && res.region_status() == proto::STATUS_NORMAL) {
                 health_peers.emplace_back(peer);
                 if (res.leader() != "0.0.0.0:0") {
@@ -2882,7 +2881,7 @@ namespace EA {
             return;
         }
         if (health_peers.size() + 1 != peers.size()) {
-            DB_FATAL("region_id:%ld error peer more than one, need manual operation", region_id);
+            TLOG_ERROR("region_id:{} error peer more than one, need manual operation", region_id);
             return;
         }
         proto::RaftControlRequest request;
@@ -2900,9 +2899,9 @@ namespace EA {
         StoreInteract store_interact(leader, req_options);
         proto::RaftControlResponse response;
         int ret = store_interact.send_request_for_leader("region_raft_control", request, response);
-        DB_WARNING("send SetPeer request:%s, response:%s",
-                   request.ShortDebugString().c_str(),
-                   response.ShortDebugString().c_str());
+        TLOG_WARN("send SetPeer request:{}, response:{}",
+                   request.ShortDebugString(),
+                   response.ShortDebugString());
         if (ret == 0) {
             proto::PeerStateInfo peer_status;
             peer_status.set_region_id(region_id);
@@ -2920,7 +2919,7 @@ namespace EA {
                                             std::vector<proto::PeerStateInfo> &recover_region_way) {
         SmartRegionInfo region_ptr = _region_info_map.get(region_id);
         if (region_ptr == nullptr) {
-            DB_WARNING("region_id:%ld not found when remove_illegal_peer", region_id);
+            TLOG_WARN("region_id:{} not found when remove_illegal_peer", region_id);
             return;
         }
         if (!check_table_in_resource_tags(region_ptr->table_id(), resource_tags)) {
@@ -2936,10 +2935,10 @@ namespace EA {
             StoreInteract store_interact(peer, req_options);
             proto::StoreRes remove_region_response;
             int ret = store_interact.send_request("remove_region", remove_region_request, remove_region_response);
-            DB_WARNING("send remove region to store:%s request: %s, resposne: %s, ret: %d",
-                       peer.c_str(),
-                       remove_region_request.ShortDebugString().c_str(),
-                       remove_region_response.ShortDebugString().c_str(), ret);
+            TLOG_WARN("send remove region to store:{} request: {}, response: {}, ret: {}",
+                       peer,
+                       remove_region_request.ShortDebugString(),
+                       remove_region_response.ShortDebugString(), ret);
             if (ret == 0) {
                 proto::PeerStateInfo peer_status;
                 peer_status.set_region_id(region_id);
@@ -2966,7 +2965,7 @@ namespace EA {
             }
             int ret = TableManager::get_instance()->get_resource_tag(region_ptr->table_id(), resource_tag);
             if (ret < 0) {
-                DB_WARNING("tag not exist table_id:%ld region_id:%ld", region_ptr->table_id(), region_id);
+                TLOG_WARN("tag not exist table_id:{} region_id:{}", region_ptr->table_id(), region_id);
                 return;
             }
             if (resource_tags.size() > 0 && (resource_tags.count(resource_tag) == 0)) {
@@ -2979,7 +2978,7 @@ namespace EA {
                 peer_str += peer;
                 peer_str += ";";
             }
-            DB_WARNING("region_id:%ld not found in meta peer_str:%s", region_id, peer_str.c_str());
+            TLOG_WARN("region_id:{} not found in meta peer_str:{}", region_id, peer_str);
             // TODO meta没有region信息如何处理
             return;
         }
@@ -2995,9 +2994,9 @@ namespace EA {
             StoreInteract store_interact(peer, req_options);
             proto::StoreRes res;
             auto ret = store_interact.send_request("get_applied_index", store_request, res);
-            DB_WARNING("send get_applied_index request:%s, response:%s",
-                       store_request.ShortDebugString().c_str(),
-                       res.ShortDebugString().c_str());
+            TLOG_WARN("send get_applied_index request:{}, response:{}",
+                       store_request.ShortDebugString(),
+                       res.ShortDebugString());
             if (ret == 0 && res.region_status() == proto::STATUS_NORMAL) {
                 if (max_applied_index <= res.applied_index()) {
                     max_applied_index = res.applied_index();
@@ -3006,7 +3005,7 @@ namespace EA {
                 }
                 // 有leader不操作
                 if (res.leader() != "0.0.0.0:0") {
-                    DB_WARNING("region_id:%ld has leader:%s no need recovery", region_id, res.leader().c_str());
+                    TLOG_WARN("region_id:{} has leader:{} no need recovery", region_id, res.leader());
                     return;
                 }
             }
@@ -3022,9 +3021,9 @@ namespace EA {
             StoreInteract store_interact(selected_peer, req_options);
             proto::RaftControlResponse response;
             int ret = store_interact.send_request_for_leader("region_raft_control", request, response);
-            DB_WARNING("send SetPeer request:%s, response:%s",
-                       request.ShortDebugString().c_str(),
-                       response.ShortDebugString().c_str());
+            TLOG_WARN("send SetPeer request:{}, response:{}",
+                       request.ShortDebugString(),
+                       response.ShortDebugString());
             if (ret == 0) {
                 // 重置meta记录的log_index以便心跳上报更新
                 region_ptr->set_log_index(max_applied_index);
@@ -3037,12 +3036,12 @@ namespace EA {
                 BAIDU_SCOPED_LOCK(_doing_mutex);
                 recover_region_way.emplace_back(peer_status);
             } else {
-                DB_FATAL("send SetPeer failed, request:%s, response:%s",
-                         request.ShortDebugString().c_str(),
-                         response.ShortDebugString().c_str());
+                TLOG_ERROR("send SetPeer failed, request:{}, response:{}",
+                         request.ShortDebugString(),
+                         response.ShortDebugString());
             }
         } else {
-            DB_WARNING("region_id:%ld not alive peer need query all instance", region_id);
+            TLOG_WARN("region_id: {} not alive peer need query all instance", region_id);
             BAIDU_SCOPED_LOCK(_doing_mutex);
             not_alive_regions[resource_tag].insert(region_id);
         }
@@ -3063,7 +3062,7 @@ namespace EA {
             }
         }
         if (health_instances.size() == 0) {
-            DB_WARNING("all instance is DEAD");
+            TLOG_WARN("all instance is DEAD");
             return;
         }
         // 1. 查询所有store确认region没有
@@ -3075,10 +3074,10 @@ namespace EA {
                 StoreInteract store_interact(instance.address);
                 proto::StoreRes res;
                 store_interact.send_request("query_region", query_region_request, res);
-                DB_WARNING("send query_region to %s request:%s", instance.address.c_str(),
-                           query_region_request.ShortDebugString().c_str());
+                TLOG_WARN("send query_region to {} request:{}", instance.address,
+                           query_region_request.ShortDebugString());
                 for (auto region: res.regions()) {
-                    DB_WARNING("region_id: %ld exist in instance: %s", region.region_id(), instance.address.c_str());
+                    TLOG_WARN("region_id: {} exist in instance: {}", region.region_id(), instance.address);
                     exist_regions[region.region_id()][instance.address] = region;
                 }
             };
@@ -3089,19 +3088,19 @@ namespace EA {
         for (int64_t region_id: region_ids) {
             SmartRegionInfo region_ptr = _region_info_map.get(region_id);
             if (region_ptr == nullptr) {
-                DB_WARNING("region_id: %ld not found in meta", region_id);
+                TLOG_WARN("region_id: {} not found in meta", region_id);
                 continue;
             }
             proto::RegionInfo select_info;
             auto iter = exist_regions.find(region_id);
             if (iter != exist_regions.end()) {
-                DB_WARNING("region_id:%ld has %lu peer alive ", region_id, iter->second.size());
+                TLOG_WARN("region_id:{} has {} peer alive ", region_id, iter->second.size());
                 int64_t max_log_index = 0;
                 bool has_leader = false;
                 for (auto region_info_pair: iter->second) {
                     if (region_info_pair.second.leader() != "0.0.0.0:0") {
-                        DB_WARNING("region_id:%ld has leader:%s", region_id,
-                                   region_info_pair.second.ShortDebugString().c_str());
+                        TLOG_WARN("region_id:{} has leader:{}", region_id,
+                                   region_info_pair.second.ShortDebugString());
                         has_leader = true;
                         break;
                     } else if (region_info_pair.second.log_index() > max_log_index) {
@@ -3123,9 +3122,9 @@ namespace EA {
                     StoreInteract store_interact(select_info.leader());
                     proto::RaftControlResponse response;
                     int ret = store_interact.send_request_for_leader("region_raft_control", request, response);
-                    DB_WARNING("send SetPeer request:%s, response:%s max_log_index:%ld",
-                               request.ShortDebugString().c_str(),
-                               response.ShortDebugString().c_str(),
+                    TLOG_WARN("send SetPeer request:{}, response:{} max_log_index:{}",
+                               request.ShortDebugString(),
+                               response.ShortDebugString(),
                                max_log_index);
                     if (ret == 0) {
                         region_ptr->set_log_index(max_log_index);
@@ -3138,9 +3137,9 @@ namespace EA {
                         BAIDU_SCOPED_LOCK(_doing_mutex);
                         recover_region_way.emplace_back(peer_status);
                     } else {
-                        DB_FATAL("send SetPeer failed, request:%s, response:%s",
-                                 request.ShortDebugString().c_str(),
-                                 response.ShortDebugString().c_str());
+                        TLOG_ERROR("send SetPeer failed, request:{}, response:{}",
+                                 request.ShortDebugString(),
+                                 response.ShortDebugString());
                     }
                 };
                 query_bth.run(send_set_peer_func);
@@ -3166,12 +3165,12 @@ namespace EA {
                         StoreInteract store_interact(init_region_request.region_info().leader().c_str());
                         proto::StoreRes res;
                         auto ret = store_interact.send_request("init_region", init_region_request, res);
-                        DB_WARNING("send init_region request:%s, response:%s",
-                                   init_region_request.ShortDebugString().c_str(),
-                                   res.ShortDebugString().c_str());
+                        TLOG_WARN("send init_region request:{}, response:{}",
+                                   init_region_request.ShortDebugString(),
+                                   res.ShortDebugString());
                         if (ret < 0) {
-                            DB_FATAL("init region fail, address:%s, region_id: %ld",
-                                     init_region_request.region_info().leader().c_str(), region_id);
+                            TLOG_ERROR("init region fail, address:{}, region_id: {}",
+                                     init_region_request.region_info().leader(), region_id);
                             retry_time++;
                         } else {
                             _region_peer_state_map.erase(region_id);
@@ -3199,7 +3198,7 @@ namespace EA {
             response->set_errcode(proto::IN_PROCESS);
             response->set_op_type(request.op_type());
             response->set_errmsg("doing recovery, try later");
-            DB_WARNING("doing recovery, try later");
+            TLOG_WARN("doing recovery, try later");
             return;
         }
         if ((butil::gettimeofday_us() - _last_opt_times) < (FLAGS_store_heart_beat_interval_us)) {
@@ -3207,7 +3206,7 @@ namespace EA {
             response->set_op_type(request.op_type());
             response->set_errmsg("too frequently, wait a minute");
             _doing_recovery = false;
-            DB_WARNING("opt too frequently, wait a minute");
+            TLOG_WARN("opt too frequently, wait a minute");
             return;
         }
         ON_SCOPE_EXIT([this]() {
@@ -3227,7 +3226,7 @@ namespace EA {
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 response->set_op_type(request.op_type());
                 response->set_errmsg(resource_tag + "not exist");
-                DB_WARNING("resource_tag: %s not exist", resource_tag.c_str());
+                TLOG_WARN("resource_tag: {} not exist", resource_tag);
                 return;
             }
             resource_tags.insert(resource_tag);
@@ -3258,8 +3257,8 @@ namespace EA {
                         region_peers[region_id].insert(peer_state.peer_id());
                         if (peer_state.peer_status() == proto::STATUS_ERROR) {
                             has_error = true;
-                            DB_WARNING("region_id:%ld peer:%s is error", region_id,
-                                       peer_state.ShortDebugString().c_str());
+                            TLOG_WARN("region_id:{} peer:{} is error", region_id,
+                                       peer_state.ShortDebugString());
                         }
                     }
                     if (has_error) {
@@ -3273,8 +3272,8 @@ namespace EA {
                     for (auto &peer_state: region_state.ilegal_peers_state) {
                         region_peers_map[region_id].insert(peer_state.peer_id());
                         if (peer_state.peer_status() == proto::STATUS_ILLEGAL_PEER) {
-                            DB_WARNING("region_id:%ld peer:%s is illegal", region_id,
-                                       peer_state.ShortDebugString().c_str());
+                            TLOG_WARN("region_id: {} peer: {} is illegal", region_id,
+                                       peer_state.ShortDebugString());
                         }
                     }
                     return;

@@ -25,6 +25,7 @@
 
 TURBO_DISABLE_GCC_WARNING(-Wstrict-aliasing)
 namespace EA {
+
     class MessageHelper {
         using FieldDescriptor = google::protobuf::FieldDescriptor;
         using Message = google::protobuf::Message;
@@ -41,7 +42,7 @@ namespace EA {
         static int get_int32(const FieldDescriptor *field, Message *message, int32_t &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%u", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetInt32(*message, field);
@@ -56,7 +57,7 @@ namespace EA {
         static int get_uint32(const FieldDescriptor *field, Message *message, uint32_t &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetUInt32(*message, field);
@@ -71,7 +72,7 @@ namespace EA {
         static int get_int64(const FieldDescriptor *field, Message *message, int64_t &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetInt64(*message, field);
@@ -86,7 +87,7 @@ namespace EA {
         static int get_uint64(const FieldDescriptor *field, Message *message, uint64_t &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetUInt64(*message, field);
@@ -101,7 +102,7 @@ namespace EA {
         static int get_float(const FieldDescriptor *field, Message *message, float &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetFloat(*message, field);
@@ -116,7 +117,7 @@ namespace EA {
         static int get_double(const FieldDescriptor *field, Message *message, double &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetDouble(*message, field);
@@ -131,7 +132,7 @@ namespace EA {
         static int get_string(const FieldDescriptor *field, Message *message, std::string &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetString(*message, field);
@@ -146,7 +147,7 @@ namespace EA {
         static int get_boolean(const FieldDescriptor *field, Message *message, bool &val) {
             const Reflection *reflection = message->GetReflection();
             if (!reflection->HasField(*message, field)) {
-                DB_WARNING("missing field-value idx=%d", field->number());
+                TLOG_WARN("missing field-value idx={}", field->number());
                 return -2;
             }
             val = reflection->GetBool(*message, field);
@@ -280,7 +281,7 @@ namespace EA {
             switch (field_type) {
                 case proto::INT8: {
                     if (sizeof(int8_t) > in.size()) {
-                        DB_WARNING("int8_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("int8_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetInt32(message, field, *reinterpret_cast<int8_t *>(c));
@@ -288,7 +289,7 @@ namespace EA {
                     break;
                 case proto::INT16: {
                     if (sizeof(int16_t) > in.size()) {
-                        DB_WARNING("int16_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("int16_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetInt32(message, field, static_cast<int16_t>(
@@ -298,7 +299,7 @@ namespace EA {
                 case proto::TIME:
                 case proto::INT32: {
                     if (sizeof(int32_t) > in.size()) {
-                        DB_WARNING("int32_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("int32_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetInt32(message, field, static_cast<int32_t>(
@@ -307,7 +308,7 @@ namespace EA {
                     break;
                 case proto::INT64: {
                     if (sizeof(int64_t) > in.size()) {
-                        DB_WARNING("int64_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("int64_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetInt64(message, field, static_cast<int64_t>(
@@ -316,7 +317,7 @@ namespace EA {
                     break;
                 case proto::UINT8: {
                     if (sizeof(uint8_t) > in.size()) {
-                        DB_WARNING("uint8_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("uint8_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetUInt32(message, field, *reinterpret_cast<uint8_t *>(c));
@@ -324,7 +325,7 @@ namespace EA {
                     break;
                 case proto::UINT16: {
                     if (sizeof(uint16_t) > in.size()) {
-                        DB_WARNING("uint16_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("uint16_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetUInt32(message, field,
@@ -335,7 +336,7 @@ namespace EA {
                 case proto::DATE:
                 case proto::UINT32: {
                     if (sizeof(uint32_t) > in.size()) {
-                        DB_WARNING("uint32_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("uint32_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetUInt32(message, field,
@@ -345,7 +346,7 @@ namespace EA {
                 case proto::DATETIME:
                 case proto::UINT64: {
                     if (sizeof(uint64_t) > in.size()) {
-                        DB_WARNING("uint64_t out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("uint64_t out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetUInt64(message, field,
@@ -354,7 +355,7 @@ namespace EA {
                     break;
                 case proto::FLOAT: {
                     if (sizeof(float) > in.size()) {
-                        DB_WARNING("float out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("float out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     uint32_t val = KeyEncoder::to_little_endian_u32(*reinterpret_cast<uint32_t *>(c));
@@ -363,7 +364,7 @@ namespace EA {
                     break;
                 case proto::DOUBLE: {
                     if (sizeof(double) > in.size()) {
-                        DB_WARNING("double out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("double out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     uint64_t val = KeyEncoder::to_little_endian_u64(*reinterpret_cast<uint64_t *>(c));
@@ -372,7 +373,7 @@ namespace EA {
                     break;
                 case proto::BOOL: {
                     if (sizeof(uint8_t) > in.size()) {
-                        DB_WARNING("bool out of bound: %d %zu", field->number(), in.size());
+                        TLOG_WARN("bool out of bound: {} {}", field->number(), in.size());
                         return -2;
                     }
                     reflection->SetBool(message, field, *reinterpret_cast<uint8_t *>(c));
@@ -383,7 +384,7 @@ namespace EA {
                 }
                     break;
                 default: {
-                    DB_WARNING("un-supported field type: %d, %d", field->number(), field_type);
+                    TLOG_WARN("un-supported field type: {}, {}", field->number(), field_type);
                     return -1;
                 }
                     break;
@@ -392,5 +393,5 @@ namespace EA {
         }
 
     };
-}
+}  // namespace EA
 TURBO_RESTORE_GCC_WARNING()

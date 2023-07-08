@@ -65,10 +65,10 @@ namespace EA {
         options.snapshot_uri = FLAGS_snapshot_uri + _file_path;
         int ret = _node.init(options);
         if (ret < 0) {
-            DB_FATAL("raft node init fail");
+            TLOG_ERROR("raft node init fail");
             return ret;
         }
-        DB_WARNING("raft init success, meat state machine init success");
+        TLOG_WARN("raft init success, meat state machine init success");
         return 0;
     }
 
@@ -81,7 +81,7 @@ namespace EA {
             return;
         }
         if (!_is_healty) {
-            DB_FATAL("TSO has wrong status, retry later");
+            TLOG_ERROR("TSO has wrong status, retry later");
             response->set_errcode(proto::RETRY_LATER);
             response->set_errmsg("timestamp not ok, retry later");
             return;
@@ -99,11 +99,11 @@ namespace EA {
                         _tso_obj.current_timestamp.set_logical(new_logical);
                         need_retry = false;
                     } else {
-                        DB_WARNING("logical part outside of max logical interval, retry later, please check ntp time");
+                        TLOG_WARN("logical part outside of max logical interval, retry later, please check ntp time");
                         need_retry = true;
                     }
                 } else {
-                    DB_WARNING("timestamp not ok physical == 0, retry later");
+                    TLOG_WARN("timestamp not ok physical == 0, retry later");
                     need_retry = true;
                 }
             }
@@ -116,10 +116,10 @@ namespace EA {
         if (need_retry) {
             response->set_errcode(proto::EXEC_FAIL);
             response->set_errmsg("gen tso failed");
-            DB_FATAL("gen tso failed");
+            TLOG_ERROR("gen tso failed");
             return;
         }
-        //DB_WARNING("gen tso current: (%ld, %ld)", current.physical(), current.logical());
+        //TLOG_WARN("gen tso current: ({}, {})", current.physical(), current.logical());
         auto timestamp = response->mutable_start_timestamp();
         timestamp->CopyFrom(current);
         response->set_count(count);
@@ -154,7 +154,7 @@ namespace EA {
             response->set_errmsg("not leader");
             response->set_op_type(request->op_type());
             response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
-            DB_WARNING("state machine not leader, request: %s remote_side:%s log_id:%lu",
+            TLOG_WARN("state machine not leader, request: {} remote_side:{} log_id:{}",
                        request->ShortDebugString().c_str(), remote_side, log_id);
             return;
         }
@@ -190,7 +190,7 @@ namespace EA {
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
             proto::TsoRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
-                DB_FATAL("parse from protobuf fail when on_apply");
+                TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
                     if (((TsoClosure *) done)->response) {
                         ((TsoClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
@@ -213,7 +213,7 @@ namespace EA {
                     break;
                 }
                 default: {
-                    DB_FATAL("unsupport request type, type:%d", request.op_type());
+                    TLOG_ERROR("unsupport request type, type:{}", request.op_type());
                     IF_DONE_SET_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
                 }
             }
@@ -231,7 +231,7 @@ namespace EA {
             if (physical < _tso_obj.last_save_physical
                 || current.physical() < _tso_obj.current_timestamp.physical()) {
                 if (!request.force()) {
-                    DB_WARNING("time fallback save_physical:(%ld, %ld) current:(%ld, %ld, %ld, %ld)",
+                    TLOG_WARN("time fallback save_physical:({}, {}) current:({}, {}, {}, {})",
                                physical, _tso_obj.last_save_physical, current.physical(),
                                _tso_obj.current_timestamp.physical(),
                                current.logical(), _tso_obj.current_timestamp.logical());
@@ -247,7 +247,7 @@ namespace EA {
                 }
             }
             _is_healty = true;
-            DB_WARNING("reset tso save_physical: %ld current: (%ld, %ld)", physical, current.physical(),
+            TLOG_WARN("reset tso save_physical: {} current: ({}, {})", physical, current.physical(),
                        current.logical());
             {
                 BAIDU_SCOPED_LOCK(_tso_mutex);
@@ -272,7 +272,7 @@ namespace EA {
         // 不能回退
         if (physical < _tso_obj.last_save_physical
             || current.physical() < _tso_obj.current_timestamp.physical()) {
-            DB_WARNING("time fallback save_physical:(%ld, %ld) current:(%ld, %ld, %ld, %ld)",
+            TLOG_WARN("time fallback save_physical:({}, {}) current:({}, {}, {}, {})",
                        physical, _tso_obj.last_save_physical, current.physical(), _tso_obj.current_timestamp.physical(),
                        current.logical(), _tso_obj.current_timestamp.logical());
             if (done && ((TsoClosure *) done)->response) {
@@ -306,7 +306,7 @@ namespace EA {
         butil::IOBuf data;
         butil::IOBufAsZeroCopyOutputStream wrapper(&data);
         if (!request.SerializeToZeroCopyStream(&wrapper)) {
-            DB_WARNING("Fail to serialize request");
+            TLOG_WARN("Fail to serialize request");
             return -1;
         }
         BthreadCond sync_cond;
@@ -321,7 +321,7 @@ namespace EA {
         _node.apply(task);
         sync_cond.wait();
         if (response.errcode() != proto::SUCCESS) {
-            DB_FATAL("sync timestamp failed, request:%s response:%s",
+            TLOG_ERROR("sync timestamp failed, request:{} response:{}",
                      request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
             return -1;
         }
@@ -344,7 +344,7 @@ namespace EA {
         }
         int64_t delta = now - prev_physical;
         if (delta < 0) {
-            DB_WARNING("physical time slow now:%ld prev:%ld", now, prev_physical);
+            TLOG_WARN("physical time slow now:{} prev:{}", now, prev_physical);
         }
         int64_t next = now;
         if (delta > tso::update_timestamp_guard_ms) {
@@ -352,7 +352,7 @@ namespace EA {
         } else if (prev_logical > tso::max_logical / 2) {
             next = now + tso::update_timestamp_guard_ms;
         } else {
-            DB_WARNING("don't need update timestamp prev:%ld now:%ld save:%ld", prev_physical, now, last_save);
+            TLOG_WARN("don't need update timestamp prev:{} now:{} save:{}", prev_physical, now, last_save);
             return;
         }
         int64_t save = last_save;
@@ -367,7 +367,7 @@ namespace EA {
 
     void TSOStateMachine::on_leader_start() {
         start_check_bns();
-        DB_WARNING("tso leader start");
+        TLOG_WARN("tso leader start");
         int64_t now = tso::clock_realtime_ms();
         proto::TsoTimestamp current;
         current.set_physical(now);
@@ -378,13 +378,13 @@ namespace EA {
             last_save = now + tso::save_interval_ms;
         }
         auto func = [this, last_save, current]() {
-            DB_WARNING("leader_start current(phy:%ld,log:%ld) save:%ld", current.physical(),
+            TLOG_WARN("leader_start current(phy:{},log:{}) save:{}", current.physical(),
                        current.logical(), last_save);
             int ret = sync_timestamp(current, last_save);
             if (ret < 0) {
                 _is_healty = false;
             }
-            DB_WARNING("sync timestamp ok");
+            TLOG_WARN("sync timestamp ok");
             _is_leader.store(true);
             _tso_update_timer.start();
         };
@@ -394,12 +394,12 @@ namespace EA {
 
     void TSOStateMachine::on_leader_stop() {
         _tso_update_timer.stop();
-        DB_WARNING("leader stop");
+        TLOG_WARN("leader stop");
         BaseStateMachine::on_leader_stop();
     }
 
     void TSOStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {
-        DB_WARNING("start on snapshot save");
+        TLOG_WARN("start on snapshot save");
         std::string sto_str = std::to_string(_tso_obj.last_save_physical);
         Bthread bth(&BTHREAD_ATTR_SMALL);
         std::function<void()> save_snapshot_function = [this, done, writer, sto_str]() {
@@ -420,22 +420,22 @@ namespace EA {
         extra_fs.close();
         if (writer->add_file(SNAPSHOT_TSO_FILE_WITH_SLASH) != 0) {
             done->status().set_error(EINVAL, "Fail to add file");
-            DB_WARNING("Error while adding file to writer");
+            TLOG_WARN("Error while adding file to writer");
             return;
         }
-        DB_WARNING("save physical string:%s when snapshot", sto_str.c_str());
+        TLOG_WARN("save physical string:{} when snapshot", sto_str.c_str());
     }
 
     int TSOStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
-        DB_WARNING("start on snapshot load");
+        TLOG_WARN("start on snapshot load");
         std::vector<std::string> files;
         reader->list_files(&files);
         for (auto &file: files) {
-            DB_WARNING("snapshot load file:%s", file.c_str());
+            TLOG_WARN("snapshot load file:{}", file.c_str());
             if (file == SNAPSHOT_TSO_FILE_WITH_SLASH) {
                 std::string tso_file = reader->get_path() + SNAPSHOT_TSO_FILE_WITH_SLASH;
                 if (load_tso(tso_file) != 0) {
-                    DB_WARNING("load tso fail");
+                    TLOG_WARN("load tso fail");
                     return -1;
                 }
                 break;
@@ -452,15 +452,15 @@ namespace EA {
         try {
             _tso_obj.last_save_physical = std::stol(extra);
         } catch (std::invalid_argument &) {
-            DB_WARNING("Invalid_argument: %s", extra.c_str());
+            TLOG_WARN("Invalid_argument: {}", extra.c_str());
             return -1;
         }
         catch (std::out_of_range &) {
-            DB_WARNING("Out of range: %s", extra.c_str());
+            TLOG_WARN("Out of range: {}", extra.c_str());
             return -1;
         }
         catch (...) {
-            DB_WARNING("error happen: %s", extra.c_str());
+            TLOG_WARN("error happen: {}", extra.c_str());
             return -1;
         }
         return 0;

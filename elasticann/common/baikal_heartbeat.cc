@@ -148,7 +148,7 @@ namespace EA {
             response.last_updated_index() > factory->last_updated_index()) {
             factory->set_last_updated_index(response.last_updated_index());
         }
-        DB_NOTICE("sync time:%ld", cost.get_time());
+        TLOG_INFO("sync time: {}", cost.get_time());
     }
 
 // BaseBaikalHeartBeat
@@ -163,7 +163,7 @@ namespace EA {
         do {
             ret = heartbeat(true);
             if (ret != 0) {
-                DB_WARNING("heartbeat sync failed, retry_times: %d", retry);
+                TLOG_WARN("heartbeat sync failed, retry_times: {}", retry);
                 ++retry;
                 bthread_usleep(30 * 1000 * 1000);
                 continue;
@@ -172,14 +172,14 @@ namespace EA {
         } while (retry < RETRY_TIMES);
 
         if (ret != 0) {
-            DB_FATAL("heartbeat sync failed, over retry_times: %d", retry);
+            TLOG_ERROR("heartbeat sync failed, over retry_times: {}", retry);
             return -1;
         }
 
         _heartbeat_bth.run([this]() { report_heartbeat(); });
 
         _is_inited = true;
-        DB_NOTICE("Succ to init BaseBaikalHeartBeat");
+        TLOG_INFO("Succ to init BaseBaikalHeartBeat");
 
         return 0;
     }
@@ -195,7 +195,7 @@ namespace EA {
         for (const auto &full_table_table: _table_names) {
             auto *heartbeat_table = request.add_heartbeat_tables();
             if (heartbeat_table == nullptr) {
-                DB_WARNING("baikal_heartbeat_table is nullptr");
+                TLOG_WARN("baikal_heartbeat_table is nullptr");
                 return -1;
             }
             heartbeat_table->set_namespace_name(full_table_table.namespace_name);
@@ -208,15 +208,15 @@ namespace EA {
         if (MetaServerInteract::get_instance()->send_request("baikal_heartbeat", request, response) == 0) {
             if (is_sync) {
                 BaikalHeartBeat::process_heart_beat_response_sync(response);
-                DB_WARNING("sync report_heartbeat, construct_req_cost:%ld, process_res_cost:%ld",
+                TLOG_WARN("sync report_heartbeat, construct_req_cost:{}, process_res_cost: {}",
                            construct_req_cost, cost.get_time());
             } else {
                 BaikalHeartBeat::process_heart_beat_response(response);
-                DB_WARNING("async report_heartbeat, construct_req_cost:%ld, process_res_cost:%ld",
+                TLOG_WARN("async report_heartbeat, construct_req_cost:{}, process_res_cost: {}",
                            construct_req_cost, cost.get_time());
             }
         } else {
-            DB_WARNING("Send heart beat request to meta server fail");
+            TLOG_WARN("Send heart beat request to meta server fail");
             return -1;
         }
 
@@ -230,7 +230,7 @@ namespace EA {
         }
     }
 
-//binlog network
+    //binlog network
     bool BinlogNetworkServer::init() {
         // init val
         TimeCost cost;
@@ -246,7 +246,7 @@ namespace EA {
             std::string db_table_name = info.second.table_name;
             std::vector<std::string> split_vec = turbo::StrSplit(db_table_name, '.', turbo::SkipEmpty());
             if (split_vec.size() != 2) {
-                DB_FATAL("get table_name[%s] fail", db_table_name.c_str());
+                TLOG_ERROR("get table_name[{}] fail", db_table_name);
                 continue;
             }
             const std::string &database = split_vec[0];
@@ -254,7 +254,7 @@ namespace EA {
 
             auto *heartbeat_table = request.add_heartbeat_tables();
             if (heartbeat_table == nullptr) {
-                DB_WARNING("baikal_heartbeat_table is nullptr");
+                TLOG_WARN("baikal_heartbeat_table is nullptr");
                 return -1;
             }
             heartbeat_table->set_namespace_name(_namespace);
@@ -266,9 +266,9 @@ namespace EA {
         if (MetaServerInteract::get_instance()->send_request("baikal_heartbeat", request, response) == 0) {
             //处理心跳
             return process_heart_beat_response_sync(response);
-            //DB_WARNING("req:%s  \nres:%s", request.DebugString().c_str(), response.DebugString().c_str());
+            //TLOG_WARN("req:{}  \nres:{}", request.DebugString(), response.DebugString());
         } else {
-            DB_FATAL("send heart beat request to meta server fail");
+            TLOG_ERROR("send heart beat request to meta server fail");
             return false;
         }
 
@@ -289,7 +289,7 @@ namespace EA {
                 std::string db_table_name = info.second.table_name;
                 std::vector<std::string> split_vec = turbo::StrSplit(db_table_name, '.', turbo::SkipEmpty());
                 if (split_vec.size() != 2) {
-                    DB_FATAL("get table_name[%s] fail", db_table_name.c_str());
+                    TLOG_ERROR("get table_name[{}] fail", db_table_name);
                     continue;
                 }
                 const std::string &database = split_vec[0];
@@ -297,7 +297,7 @@ namespace EA {
 
                 auto *heartbeat_table = request.add_heartbeat_tables();
                 if (heartbeat_table == nullptr) {
-                    DB_WARNING("baikal_heartbeat_table is nullptr");
+                    TLOG_WARN("baikal_heartbeat_table is nullptr");
                     return;
                 }
                 heartbeat_table->set_namespace_name(_namespace);
@@ -311,17 +311,17 @@ namespace EA {
             if (MetaServerInteract::get_instance()->send_request("baikal_heartbeat", request, response) == 0) {
                 //处理心跳
                 process_heart_beat_response(response);
-                DB_WARNING("report_heart_beat, construct_req_cost:%ld, process_res_cost:%ld",
+                TLOG_WARN("report_heart_beat, construct_req_cost:{}, process_res_cost:{}",
                            construct_req_cost, cost.get_time());
             } else {
-                DB_WARNING("send heart beat request to meta server fail");
+                TLOG_WARN("send heart beat request to meta server fail");
             }
             bthread_usleep_fast_shutdown(FLAGS_baikal_heartbeat_interval_us, _shutdown);
         }
     }
 
     void BinlogNetworkServer::process_heart_beat_response(const proto::BaikalHeartBeatResponse &response) {
-        DB_DEBUG("response %s", response.ShortDebugString().c_str());
+        TLOG_DEBUG("response {}", response.ShortDebugString());
         SchemaFactory *factory = SchemaFactory::get_instance();
 
         for (auto &info: response.schema_change_info()) {
@@ -334,7 +334,7 @@ namespace EA {
         auto &region_change_info = response.region_change_info();
         for (auto &region_info: region_change_info) {
             if (_binlog_id != region_info.table_id()) {
-                DB_WARNING("skip region info table_id %ld", region_info.table_id());
+                TLOG_WARN("skip region info table_id {}", region_info.table_id());
                 continue;
             }
             *rv.Add() = region_info;
@@ -365,7 +365,7 @@ namespace EA {
             if (db_table_name.find("*") != db_table_name.npos) {
                 std::vector<std::string> vec = turbo::StrSplit(db_table_name, '.', turbo::SkipEmpty());
                 if (vec.size() != 2 || vec[1] != "*") {
-                    DB_FATAL("get star table[%s.%s] fail", _namespace.c_str(), db_table_name.c_str());
+                    TLOG_ERROR("get star table[{}.{}] fail", _namespace, db_table_name);
                     continue;
                 }
                 std::vector<SmartTable> tmp_table_ptrs;
@@ -377,37 +377,37 @@ namespace EA {
                     // FC_Word.*模式下monitor_fields清掉，任何列变更都下发
                     names.monitor_fields.clear();
                     table_ptrs.emplace_back(t);
-                    DB_NOTICE("get table_name[%s.%s] table_id[%ld]", _namespace.c_str(), t->name.c_str(), t->id);
+                    TLOG_INFO("get table_name[{}.{}] table_id[{}]", _namespace, t->name, t->id);
                 }
             } else {
                 SmartTable t = factory->get_table_info_ptr_by_name(_namespace + "." + db_table_name);
                 if (t == nullptr) {
-                    DB_FATAL("get table[%s.%s] fail", _namespace.c_str(), db_table_name.c_str());
+                    TLOG_ERROR("get table[{}.{}] fail", _namespace, db_table_name);
                     continue;
                 }
                 table_id_names_map[t->id] = info.second;
                 table_ptrs.emplace_back(t);
-                DB_NOTICE("get table_name[%s.%s] table_id[%ld]", _namespace.c_str(), db_table_name.c_str(), t->id);
+                TLOG_INFO("get table_name[{}.{}] table_id[{}]", _namespace, db_table_name, t->id);
             }
         }
         std::map<int64_t, SubTableIds> tmp_table_ids;
         for (SmartTable table: table_ptrs) {
             if (!table->is_linked) {
                 if (table->name != "baidu_dba.heartbeat") {
-                    DB_FATAL("table[%s.%s] not linked", table->namespace_.c_str(), table->name.c_str());
+                    TLOG_ERROR("table[{}.{}] not linked", table->namespace_, table->name);
                 }
                 continue;
             }
 
             if (_binlog_id != -1) {
                 if (table->binlog_id != _binlog_id) {
-                    DB_FATAL("table[%s.%s] has different binlog id %ld", table->namespace_.c_str(), table->name.c_str(),
+                    TLOG_ERROR("table[{}.{}] has different binlog id {}", table->namespace_, table->name,
                              table->binlog_id);
                     continue;
                 }
             } else {
-                DB_NOTICE("insert table[%s.%s] table_id: %ld, binlog table id %ld",
-                          table->namespace_.c_str(), table->name.c_str(), table->id, table->binlog_id);
+                TLOG_INFO("insert table[{}.{}] table_id: {}, binlog table id {}",
+                          table->namespace_, table->name, table->id, table->binlog_id);
                 _binlog_id = table->binlog_id;
             }
 
@@ -417,7 +417,7 @@ namespace EA {
             for (const std::string &field_name: names.fields) {
                 int id = table->get_field_id_by_short_name(field_name);
                 if (id < 0) {
-                    DB_FATAL("table[%s] cant find field[%s]", table->name.c_str(), field_name.c_str());
+                    TLOG_ERROR("table[{}] cant find field[{}]", table->name, field_name);
                     find_all_fields = false;
                     break;
                 }
@@ -427,7 +427,7 @@ namespace EA {
             for (const std::string &field_name: names.monitor_fields) {
                 int id = table->get_field_id_by_short_name(field_name);
                 if (id < 0) {
-                    DB_FATAL("table[%s] cant find field[%s]", table->name.c_str(), field_name.c_str());
+                    TLOG_ERROR("table[{}] cant find field[{}]", table->name, field_name);
                     find_all_fields = false;
                     break;
                 }
@@ -440,7 +440,7 @@ namespace EA {
         }
 
         if (_binlog_id == -1) {
-            DB_FATAL("get binlog id error.");
+            TLOG_ERROR("get binlog id error.");
             return -1;
         }
 
@@ -451,7 +451,7 @@ namespace EA {
     }
 
     bool BinlogNetworkServer::process_heart_beat_response_sync(const proto::BaikalHeartBeatResponse &response) {
-        DB_DEBUG("response %s", response.ShortDebugString().c_str());
+        TLOG_DEBUG("response {}", response.ShortDebugString());
         TimeCost cost;
         SchemaFactory *factory = SchemaFactory::get_instance();
         SchemaVec sv;
@@ -473,7 +473,7 @@ namespace EA {
         auto &region_change_info = response.region_change_info();
         for (auto &region_info: region_change_info) {
             if (_binlog_id != region_info.table_id()) {
-                DB_DEBUG("skip region info table_id %ld", region_info.table_id());
+                TLOG_DEBUG("skip region info table_id {}", region_info.table_id());
                 continue;
             }
             *rv.Add() = region_info;
@@ -488,7 +488,7 @@ namespace EA {
             response.last_updated_index() > factory->last_updated_index()) {
             factory->set_last_updated_index(response.last_updated_index());
         }
-        DB_NOTICE("sync time:%ld", cost.get_time());
+        TLOG_INFO("sync time:{}", cost.get_time());
         return true;
     }
 }

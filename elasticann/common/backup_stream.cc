@@ -23,7 +23,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
     size_t current_index = 0;
     switch (_state) {
     case ReceiverState::RS_LOG_INDEX: {
-        DB_NOTICE("get rs_log_index id[%lu]", id);
+        TLOG_INFO("get rs_log_index id[{}]", id);
         multi_iobuf_action(id, messages, size, &current_index, 
             [](butil::IOBuf *const message, size_t size) -> size_t {
                 butil::IOBuf buf;
@@ -38,7 +38,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
         }
     }
     case ReceiverState::RS_FILE_NUM: {
-        DB_NOTICE("get file num id[%lu]", id);
+        TLOG_INFO("get file num id[{}]", id);
         multi_iobuf_action(id, messages, size, &current_index,
             [this](butil::IOBuf *const message, size_t size) {
                 return message->cutn((char*)(&_file_num) + 
@@ -46,7 +46,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
             }, &_to_process_size);
 
         if (_to_process_size == 0) {
-            DB_NOTICE("id[%lu] file number %d", id, _file_num);
+            TLOG_INFO("id[{}] file number {}", id, _file_num);
             _state = ReceiverState::RS_META_FILE_SIZE;
             _to_process_size = sizeof(int64_t);
         } else {
@@ -54,7 +54,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
         }
     }
     case ReceiverState::RS_META_FILE_SIZE: {
-        DB_NOTICE("get meta file size id[%lu]", id);
+        TLOG_INFO("get meta file size id[{}]", id);
         multi_iobuf_action(id, messages, size, &current_index, 
             [this](butil::IOBuf *const message, size_t size) -> size_t {
                 return message->cutn((char*)(&_meta_file_size) + 
@@ -62,7 +62,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
             }, &_to_process_size);
 
         if (_to_process_size == 0) {
-            DB_DEBUG("id[%lu] get meta file size %ld", id, _meta_file_size);
+            TLOG_DEBUG("id[{}] get meta file size {}", id, _meta_file_size);
             _state = ReceiverState::RS_META_FILE;
             _to_process_size = _meta_file_size;
         } else {
@@ -70,7 +70,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
         }
     }
     case ReceiverState::RS_META_FILE: {
-        DB_NOTICE("get meta file id[%lu]", id);
+        TLOG_INFO("get meta file id[{}]", id);
         multi_iobuf_action(id, messages, size, &current_index, 
             [this](butil::IOBuf *const message, size_t size) -> size_t {
                 butil::IOBuf buf;
@@ -80,7 +80,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
             }, &_to_process_size);
 
         if (_to_process_size == 0) {
-            DB_NOTICE("id[%lu] get meta file size %ld", id, _meta_file_size);
+            TLOG_INFO("id[{}] get meta file size {}", id, _meta_file_size);
             _state = ReceiverState::RS_DATA_FILE_SIZE;
             _to_process_size = sizeof(int64_t);
             if (_file_num == 1) {
@@ -94,7 +94,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
         }
     }
     case ReceiverState::RS_DATA_FILE_SIZE: {
-        DB_NOTICE("get data file size id[%lu]", id);
+        TLOG_INFO("get data file size id[{}]", id);
         multi_iobuf_action(id, messages, size, &current_index, 
             [this](butil::IOBuf *const message, size_t size) -> size_t {
                 return message->cutn((char*)(&_data_file_size) + 
@@ -103,14 +103,14 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
 
         if (_to_process_size == 0) {
             _state = ReceiverState::RS_DATA_FILE;
-            DB_NOTICE("id[%lu] get data file size %ld", id, _data_file_size);
+            TLOG_INFO("id[{}] get data file size {}", id, _data_file_size);
             _to_process_size = _data_file_size;
         } else {
             break;
         }
     }
     case ReceiverState::RS_DATA_FILE: {
-        DB_DEBUG("stream_%lu get data file, process size_%zu", id, _to_process_size);
+        TLOG_DEBUG("stream_{} get data file, process size_{}", id, _to_process_size);
         multi_iobuf_action(id, messages, size, &current_index, 
             [this](butil::IOBuf *const message, size_t size) -> size_t {
                 butil::IOBuf buf;
@@ -120,7 +120,7 @@ int StreamReceiver::on_received_messages(brpc::StreamId id,
             }, &_to_process_size);
 
         if (_to_process_size == 0) {
-            DB_NOTICE("id[%lu] get data_size[%ld] all_size[%ld]", 
+            TLOG_INFO("id[{}] get data_size[{}] all_size[{}]",
                 id, _data_file_size, _data_file_size + _meta_file_size + 25);
             _meta_file_streaming.flush();
             _data_file_streaming.flush();

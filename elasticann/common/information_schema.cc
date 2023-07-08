@@ -386,7 +386,8 @@ namespace EA {
                     if (field_id == 5) {
                         binlog_table_name = expr->children(1)->get_value(nullptr).get_string();
                     } else if (field_id == 2) {
-                        input_partition_id = strtoll(expr->children(1)->get_value(nullptr).get_string().c_str(), nullptr,
+                        input_partition_id = strtoll(expr->children(1)->get_value(nullptr).get_string().c_str(),
+                                                     nullptr,
                                                      10);
                     }
                 }
@@ -399,7 +400,7 @@ namespace EA {
                                                                         table_id_partition_binlogs);
             query_regions_concurrency(table_id_to_query_info, table_id_partition_binlogs);
             process_binlogs_region_info(result_rows, table_id_to_query_info);
-            DB_WARNING("binlog_table_name: %s, input_partition_id : %ld", binlog_table_name.c_str(),
+            TLOG_WARN("binlog_table_name: {}, input_partition_id : {}", binlog_table_name,
                        input_partition_id);
             for (const auto &result_row: result_rows) {
                 if (result_row.size() != 10) {
@@ -574,7 +575,7 @@ namespace EA {
                     }
                 }
             }
-            DB_WARNING("database_name: %s, table_name: %s", database_name.c_str(), table_name.c_str());
+            TLOG_WARN("database_name: {}, table_name: {}", database_name, table_name);
             auto *factory = SchemaFactory::get_instance();
             std::vector<int64_t> condition_table_ids;
             std::map<int64_t, std::string> condition_table_id_db_map;
@@ -649,7 +650,7 @@ namespace EA {
                     }
                     StoreInteract interact(store_addr);
                     interact.send_request("query_region", req, res);
-                    DB_WARNING("store_addr: %s, req_size: %d, res_size: %d", store_addr.c_str(), req.region_ids_size(),
+                    TLOG_WARN("store_addr: {}, req_size: {}, res_size: {}", store_addr, req.region_ids_size(),
                                res.extra_res().infos_size());
                     std::lock_guard<bthread::Mutex> l(lock);
                     for (const auto &info: res.extra_res().infos()) {
@@ -719,7 +720,7 @@ namespace EA {
                     req.set_query_apply_index(true);
                     StoreInteract interact(store_addr);
                     interact.send_request("query_region", req, res);
-                    DB_WARNING("store_addr: %s, req_size: %d, res_size: %d", store_addr.c_str(), req.region_ids_size(),
+                    TLOG_WARN("store_addr: {}, req_size: {}, res_size: {}", store_addr, req.region_ids_size(),
                                res.extra_res().infos_size());
                     std::lock_guard<bthread::Mutex> l(lock);
                     for (const auto &info: res.extra_res().infos()) {
@@ -777,7 +778,7 @@ namespace EA {
         };
     }
 
-// MYSQL兼容表
+    // MYSQL兼容表
     void InformationSchema::init_columns() {
         // 定义字段信息
         FieldVec fields{

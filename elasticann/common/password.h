@@ -16,10 +16,11 @@
 
 
 #pragma once
+
 #include <sys/types.h>
 #include "elasticann/common/common.h"
 
 namespace EA {
-void scramble(uint8_t* to, const char* message, const char* password);
+    void scramble(uint8_t *to, const char *message, const char *password);
 
 } //namespace EA

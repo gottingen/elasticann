@@ -26,7 +26,7 @@ namespace EA {
         auto &namespace_info = const_cast<proto::NameSpaceInfo &>(request.namespace_info());
         std::string namespace_name = namespace_info.namespace_name();
         if (_namespace_id_map.find(namespace_name) != _namespace_id_map.end()) {
-            DB_WARNING("request namespace:%s has been existed", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} has been existed", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace already existed");
             return;
         }
@@ -40,7 +40,7 @@ namespace EA {
 
         std::string namespace_value;
         if (!namespace_info.SerializeToString(&namespace_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -62,14 +62,14 @@ namespace EA {
         set_namespace_info(namespace_info);
         set_max_namespace_id(tmp_namespcae_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("create namespace success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("create namespace success, request:{}", request.ShortDebugString());
     }
 
     void NamespaceManager::drop_namespace(const proto::MetaManagerRequest &request, braft::Closure *done) {
         auto &namespace_info = request.namespace_info();
         std::string namespace_name = namespace_info.namespace_name();
         if (_namespace_id_map.find(namespace_name) == _namespace_id_map.end()) {
-            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} not exist", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
@@ -77,7 +77,7 @@ namespace EA {
         //判断namespace下是否存在database，存在则不能删除namespace
         int64_t namespace_id = _namespace_id_map[namespace_name];
         if (!_database_ids[namespace_id].empty()) {
-            DB_WARNING("request namespace:%s has database", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} has database", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace has table");
             return;
         }
@@ -94,14 +94,14 @@ namespace EA {
         //更新内存值
         erase_namespace_info(namespace_name);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop namespace success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop namespace success, request:{}", request.ShortDebugString());
     }
 
     void NamespaceManager::modify_namespace(const proto::MetaManagerRequest &request, braft::Closure *done) {
         auto &namespace_info = request.namespace_info();
         std::string namespace_name = namespace_info.namespace_name();
         if (_namespace_id_map.find(namespace_name) == _namespace_id_map.end()) {
-            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} not exist", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
@@ -134,7 +134,7 @@ namespace EA {
         //持久化新的namespace信息
         std::string namespace_value;
         if (!tmp_info.SerializeToString(&namespace_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -148,16 +148,16 @@ namespace EA {
         //更新内存值
         set_namespace_info(tmp_info);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("modify namespace success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("modify namespace success, request:{}", request.ShortDebugString());
     }
 
     int NamespaceManager::load_namespace_snapshot(const std::string &value) {
         proto::NameSpaceInfo namespace_pb;
         if (!namespace_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load namespace snapshot, value: %s", value.c_str());
+            TLOG_ERROR("parse from pb fail when load namespace snapshot, value: {}", value);
             return -1;
         }
-        DB_WARNING("namespace snapshot:%s", namespace_pb.ShortDebugString().c_str());
+        TLOG_WARN("namespace snapshot:{}", namespace_pb.ShortDebugString());
         set_namespace_info(namespace_pb);
         return 0;
     }

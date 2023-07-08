@@ -15,7 +15,7 @@
 //
 
 
-#include "auto_incr_state_machine.h"
+#include "elasticann/meta_server/auto_incr_state_machine.h"
 #include <fstream>
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/reader.h"
@@ -39,7 +39,7 @@ namespace EA {
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
             proto::MetaManagerRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
-                DB_FATAL("parse from protobuf fail when on_apply");
+                TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
                     if (((MetaServerClosure *) done)->response) {
                         ((MetaServerClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
@@ -52,7 +52,7 @@ namespace EA {
             if (done && ((MetaServerClosure *) done)->response) {
                 ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             }
-            DB_DEBUG("on applye, term:%ld, index:%ld, request op_type:%s",
+            TLOG_DEBUG("on apply, term:{}, index:{}, request op_type:{}",
                      iter.term(), iter.index(),
                      proto::OpType_Name(request.op_type()).c_str());
             switch (request.op_type()) {
@@ -73,7 +73,7 @@ namespace EA {
                     break;
                 }
                 default: {
-                    DB_FATAL("unsupport request type, type:%d", request.op_type());
+                    TLOG_ERROR("unsupport request type, type:{}", request.op_type());
                     IF_DONE_SET_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
                 }
             }
@@ -90,7 +90,7 @@ namespace EA {
         uint64_t start_id = increment_info.start_id();
         if (_auto_increment_map.find(table_id) != _auto_increment_map.end()) {
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table id has exist");
-            DB_FATAL("table_id: %ld has exist when add table id for auto increment", table_id);
+            TLOG_ERROR("table_id: {} has exist when add table id for auto increment", table_id);
             return;
         }
         _auto_increment_map[table_id] = start_id;
@@ -100,7 +100,7 @@ namespace EA {
             ((MetaServerClosure *) done)->response->set_start_id(start_id);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        DB_NOTICE("add table id for auto_increment success, request:%s",
+        TLOG_INFO("add table id for auto_increment success, request:{}",
                   request.ShortDebugString().c_str());
     }
 
@@ -110,7 +110,7 @@ namespace EA {
         int64_t table_id = increment_info.table_id();
         if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table id not exist");
-            DB_WARNING("table_id: %ld not exist when drop table id for auto increment", table_id);
+            TLOG_WARN("table_id: {} not exist when drop table id for auto increment", table_id);
             return;
         }
         _auto_increment_map.erase(table_id);
@@ -119,8 +119,8 @@ namespace EA {
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        DB_NOTICE("drop table id for auto_increment success, request:%s",
-                  request.ShortDebugString().c_str());
+        TLOG_INFO("drop table id for auto_increment success, request:{}",
+                  request.ShortDebugString());
     }
 
     void AutoIncrStateMachine::gen_id(const proto::MetaManagerRequest &request,
@@ -128,7 +128,7 @@ namespace EA {
         auto &increment_info = request.auto_increment();
         int64_t table_id = increment_info.table_id();
         if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
-            DB_WARNING("table id:%ld has no auto_increment field", table_id);
+            TLOG_WARN("table id:{} has no auto_increment field", table_id);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table has no auto increment");
             return;
         }
@@ -144,8 +144,8 @@ namespace EA {
             ((MetaServerClosure *) done)->response->set_end_id(_auto_increment_map[table_id]);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        DB_DEBUG("gen_id for auto_increment success, request:%s",
-                 request.ShortDebugString().c_str());
+        TLOG_DEBUG("gen_id for auto_increment success, request:{}",
+                 request.ShortDebugString());
     }
 
     void AutoIncrStateMachine::update(const proto::MetaManagerRequest &request,
@@ -153,18 +153,18 @@ namespace EA {
         auto &increment_info = request.auto_increment();
         int64_t table_id = increment_info.table_id();
         if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
-            DB_WARNING("table id:%ld has no auto_increment field", table_id);
+            TLOG_WARN("table id:{} has no auto_increment field", table_id);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table has no auto increment");
             return;
         }
         if (!increment_info.has_start_id() && !increment_info.has_increment_id()) {
-            DB_WARNING("star_id or increment_id all not exist, table_id:%ld", table_id);
+            TLOG_WARN("star_id or increment_id all not exist, table_id:{}", table_id);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
                                  "star_id or increment_id all not exist");
             return;
         }
         if (increment_info.has_start_id() && increment_info.has_increment_id()) {
-            DB_WARNING("star_id and increment_id all exist, table_id:%ld", table_id);
+            TLOG_WARN("star_id and increment_id all exist, table_id:{}", table_id);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
                                  "star_id and increment_id all exist");
             return;
@@ -174,8 +174,8 @@ namespace EA {
         if (increment_info.has_start_id()
             && old_start_id > increment_info.start_id() + 1
             && (!increment_info.has_force() || increment_info.force() == false)) {
-            DB_WARNING("request not ilegal, max_id not support back, table_id:%ld", table_id);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "not support rollbak");
+            TLOG_WARN("request not illegal, max_id not support back, table_id:{}", table_id);
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "not support rollback");
             return;
         }
         if (increment_info.has_start_id()) {
@@ -189,12 +189,12 @@ namespace EA {
             ((MetaServerClosure *) done)->response->set_start_id(_auto_increment_map[table_id]);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        DB_NOTICE("update start_id for auto_increment success, request:%s",
-                  request.ShortDebugString().c_str());
+        TLOG_INFO("update start_id for auto_increment success, request:{}",
+                  request.ShortDebugString());
     }
 
     void AutoIncrStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {
-        DB_WARNING("start on snapshot save");
+        TLOG_WARN("start on snapshot save");
         std::string max_id_string;
         save_auto_increment(max_id_string);
         Bthread bth(&BTHREAD_ATTR_SMALL);
@@ -205,15 +205,15 @@ namespace EA {
     }
 
     int AutoIncrStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
-        DB_WARNING("start on snapshot load");
+        TLOG_WARN("start on snapshot load");
         std::vector<std::string> files;
         reader->list_files(&files);
         for (auto &file: files) {
-            DB_WARNING("snapshot load file:%s", file.c_str());
+            TLOG_WARN("snapshot load file:%s", file.c_str());
             if (file == "/max_id.json") {
                 std::string max_id_file = reader->get_path() + "/max_id.json";
                 if (load_auto_increment(max_id_file) != 0) {
-                    DB_WARNING("load auto increment max_id fail");
+                    TLOG_WARN("load auto increment max_id fail");
                     return -1;
                 }
             }
@@ -240,7 +240,7 @@ namespace EA {
         rapidjson::Writer<rapidjson::StringBuffer> json_writer(buffer);
         root.Accept(json_writer);
         max_id_string = buffer.GetString();
-        DB_WARNING("max id string:%s when snapshot", max_id_string.c_str());
+        TLOG_WARN("max id string:{} when snapshot", max_id_string);
     }
 
     void AutoIncrStateMachine::save_snapshot(braft::Closure *done,
@@ -255,7 +255,7 @@ namespace EA {
         extra_fs.close();
         if (writer->add_file("/max_id.json") != 0) {
             done->status().set_error(EINVAL, "Fail to add file");
-            DB_WARNING("Error while adding file to writer");
+            TLOG_WARN("Error while adding file to writer");
             return;
         }
     }
@@ -274,17 +274,17 @@ namespace EA {
             root.Parse<0>(json_string.c_str());
             if (root.HasParseError()) {
                 rapidjson::ParseErrorCode code = root.GetParseError();
-                DB_WARNING("parse extra file error [code:%d][%s]", code, json_string.c_str());
+                TLOG_WARN("parse extra file error [code:{}][{}]", code, json_string);
                 return -1;
             }
         } catch (...) {
-            DB_WARNING("parse extra file error [%s]", json_string.c_str());
+            TLOG_WARN("parse extra file error [{}]", json_string);
             return -1;
         }
         for (auto json_iter = root.MemberBegin(); json_iter != root.MemberEnd(); ++json_iter) {
             int64_t table_id = turbo::Atoi<int64_t>(json_iter->name.GetString()).value();
             uint64_t max_id = json_iter->value.GetUint64();
-            DB_WARNING("load auto increment, table_id:%ld, max_id:%lu", table_id, max_id);
+            TLOG_WARN("load auto increment, table_id:{}, max_id:{}", table_id, max_id);
             _auto_increment_map[table_id] = max_id;
         }
         return 0;

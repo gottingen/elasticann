@@ -36,7 +36,7 @@
 #include "elasticann/common/expr_value.h"
 
 namespace EA {
-namespace hll {
+    namespace hll {
 
 /* The Redis HyperLogLog implementation is based on the following ideas:
  *
@@ -183,39 +183,39 @@ namespace hll {
  * configured via the define server.hll_sparse_max_bytes.
  */
 
-static constexpr int hll_sparse_max_bytes = 3000;
+        static constexpr int hll_sparse_max_bytes = 3000;
 
-struct hllhdr {
-    char magic[4];      // "HYLL" 
-    uint8_t encoding;    // HLL_DENSE or HLL_SPARSE. 
-    uint8_t notused[3];  // Reserved for future use, must be zero. 
-    uint8_t card[8];     // Cached cardinality, little endian. 
-    uint8_t registers[];  // Data bytes. 
-};
+        struct hllhdr {
+            char magic[4];      // "HYLL"
+            uint8_t encoding;    // HLL_DENSE or HLL_SPARSE.
+            uint8_t notused[3];  // Reserved for future use, must be zero.
+            uint8_t card[8];     // Cached cardinality, little endian.
+            uint8_t registers[];  // Data bytes.
+        };
 
 /* The cached cardinality MSB is used to signal validity of the cached value. */
 #define HLL_INVALIDATE_CACHE(hdr) (hdr)->card[7] |= (1<<7)
 #define HLL_VALID_CACHE(hdr) (((hdr)->card[7] & (1<<7)) == 0)
 
-static constexpr int HLL_P = 14; /* The greater is P, the smaller the error. */
-static constexpr int HLL_Q = 64-HLL_P; /* The number of bits of the hash value used for
+        static constexpr int HLL_P = 14; /* The greater is P, the smaller the error. */
+        static constexpr int HLL_Q = 64 - HLL_P; /* The number of bits of the hash value used for
                             determining the number of leading zeros. */
-static constexpr int HLL_REGISTERS = (1<<HLL_P); /* With P=14, 16384 registers. */
-static constexpr int HLL_P_MASK = (HLL_REGISTERS-1); /* Mask to index register. */
-static constexpr int HLL_BITS = 6; /* Enough to count up to 63 leading zeroes. */
-static constexpr int HLL_REGISTER_MAX = ((1<<HLL_BITS)-1);
-static constexpr int HLL_HDR_SIZE = sizeof(struct hllhdr);
-static constexpr int HLL_DENSE_SIZE = (HLL_HDR_SIZE+((HLL_REGISTERS*HLL_BITS+7)/8));
-static constexpr int HLL_DENSE = 0; /* Dense encoding. */
-static constexpr int HLL_SPARSE = 1; /* Sparse encoding. */
-static constexpr int HLL_RAW = 255; /* Only used internally, never exposed. */
-static constexpr int HLL_MAX_ENCODING = 1;
+        static constexpr int HLL_REGISTERS = (1 << HLL_P); /* With P=14, 16384 registers. */
+        static constexpr int HLL_P_MASK = (HLL_REGISTERS - 1); /* Mask to index register. */
+        static constexpr int HLL_BITS = 6; /* Enough to count up to 63 leading zeroes. */
+        static constexpr int HLL_REGISTER_MAX = ((1 << HLL_BITS) - 1);
+        static constexpr int HLL_HDR_SIZE = sizeof(struct hllhdr);
+        static constexpr int HLL_DENSE_SIZE = (HLL_HDR_SIZE + ((HLL_REGISTERS * HLL_BITS + 7) / 8));
+        static constexpr int HLL_DENSE = 0; /* Dense encoding. */
+        static constexpr int HLL_SPARSE = 1; /* Sparse encoding. */
+        static constexpr int HLL_RAW = 255; /* Only used internally, never exposed. */
+        static constexpr int HLL_MAX_ENCODING = 1;
 
-static std::string invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
+        static std::string invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
 
 /* Store the value of the register at position 'regnum' into variable 'target'.
  * 'p' is an array of unsigned bytes. */
-#define HLL_DENSE_GET_REGISTER(target,p,regnum) do { \
+#define HLL_DENSE_GET_REGISTER(target, p, regnum) do { \
     uint8_t *_p = (uint8_t*) p; \
     unsigned long _byte = regnum*HLL_BITS/8; \
     unsigned long _fb = regnum*HLL_BITS&7; \
@@ -227,7 +227,7 @@ static std::string invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\
 
 /* Set the value of the register at position 'regnum' to 'val'.
  * 'p' is an array of unsigned bytes. */
-#define HLL_DENSE_SET_REGISTER(p,regnum,val) do { \
+#define HLL_DENSE_SET_REGISTER(p, regnum, val) do { \
     uint8_t *_p = (uint8_t*) p; \
     unsigned long _byte = regnum*HLL_BITS/8; \
     unsigned long _fb = regnum*HLL_BITS&7; \
@@ -254,46 +254,62 @@ static std::string invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\
 #define HLL_SPARSE_VAL_MAX_LEN 4
 #define HLL_SPARSE_ZERO_MAX_LEN 64
 #define HLL_SPARSE_XZERO_MAX_LEN 16384
-#define HLL_SPARSE_VAL_SET(p,val,len) do { \
+#define HLL_SPARSE_VAL_SET(p, val, len) do { \
     *(p) = (((val)-1)<<2|((len)-1))|HLL_SPARSE_VAL_BIT; \
 } while (0)
-#define HLL_SPARSE_ZERO_SET(p,len) do { \
+#define HLL_SPARSE_ZERO_SET(p, len) do { \
     *(p) = (len)-1; \
 } while (0)
-#define HLL_SPARSE_XZERO_SET(p,len) do { \
+#define HLL_SPARSE_XZERO_SET(p, len) do { \
     int _l = (len)-1; \
     *(p) = (_l>>8) | HLL_SPARSE_XZERO_BIT; \
     *((p)+1) = (_l&0xff); \
 } while (0)
 #define HLL_ALPHA_INF 0.721347520444481703680 /* constant for 0.5/ln(2) */
 
-extern int hll_add(std::string& hll, uint64_t hash_value);
-extern ExprValue& hll_add(ExprValue& hll, uint64_t hash_value);
-extern void hll_add(std::string* hll, uint64_t hash_value);
-extern uint64_t hll_estimate(const std::string& hll, bool* invalid);
-extern uint64_t hll_estimate(const ExprValue& hll);
-extern uint64_t hll_estimate(const std::string& hll);
-extern int hll_merge_agg(std::string& hll1, std::string& hll2);
-inline ExprValue& hll_merge_agg(ExprValue& hll1, ExprValue& hll2) {
-    hll_merge_agg(hll1.str_val, hll2.str_val);
-    return hll1;
-}
-extern int hll_sparse_to_dense(std::string& hll);
-extern int hll_raw_to_sparse(std::string& hll);
-inline int hll_merge_agg(std::string* hll1, std::string* hll2) {
-    return hll_merge_agg(*hll1, *hll2);
-}
-extern int hll_merge(std::string& hll1, std::string& hll2);
-inline ExprValue& hll_merge(ExprValue& hll1, ExprValue& hll2) {
-    hll_merge(hll1.str_val, hll2.str_val);
-    return hll1;
-}
-inline int hll_merge(std::string* hll1, std::string* hll2) {
-    return hll_merge(*hll1, *hll2);
-}
-extern void hll_sparse_init(std::string& val);
-extern ExprValue hll_init();
-extern ExprValue hll_row_init();
+        extern int hll_add(std::string &hll, uint64_t hash_value);
 
-} // namespace hll
+        extern ExprValue &hll_add(ExprValue &hll, uint64_t hash_value);
+
+        extern void hll_add(std::string *hll, uint64_t hash_value);
+
+        extern uint64_t hll_estimate(const std::string &hll, bool *invalid);
+
+        extern uint64_t hll_estimate(const ExprValue &hll);
+
+        extern uint64_t hll_estimate(const std::string &hll);
+
+        extern int hll_merge_agg(std::string &hll1, std::string &hll2);
+
+        inline ExprValue &hll_merge_agg(ExprValue &hll1, ExprValue &hll2) {
+            hll_merge_agg(hll1.str_val, hll2.str_val);
+            return hll1;
+        }
+
+        extern int hll_sparse_to_dense(std::string &hll);
+
+        extern int hll_raw_to_sparse(std::string &hll);
+
+        inline int hll_merge_agg(std::string *hll1, std::string *hll2) {
+            return hll_merge_agg(*hll1, *hll2);
+        }
+
+        extern int hll_merge(std::string &hll1, std::string &hll2);
+
+        inline ExprValue &hll_merge(ExprValue &hll1, ExprValue &hll2) {
+            hll_merge(hll1.str_val, hll2.str_val);
+            return hll1;
+        }
+
+        inline int hll_merge(std::string *hll1, std::string *hll2) {
+            return hll_merge(*hll1, *hll2);
+        }
+
+        extern void hll_sparse_init(std::string &val);
+
+        extern ExprValue hll_init();
+
+        extern ExprValue hll_row_init();
+
+    } // namespace hll
 } // namespace EA

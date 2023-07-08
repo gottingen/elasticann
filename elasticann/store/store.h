@@ -63,48 +63,48 @@ namespace EA {
 
         //新建region，新建table 、add_peer(心跳返回)、split三个场景会调用
         //新建region，初始化raft, 并且写入到rocksdb中
-        virtual void init_region(google::protobuf::RpcController *controller,
+        void init_region(google::protobuf::RpcController *controller,
                                  const proto::InitRegion *request,
                                  proto::StoreRes *response,
-                                 google::protobuf::Closure *done);
+                                 google::protobuf::Closure *done) override;
 
         //raft control method
-        virtual void region_raft_control(google::protobuf::RpcController *controller,
+        void region_raft_control(google::protobuf::RpcController *controller,
                                          const proto::RaftControlRequest *request,
                                          proto::RaftControlResponse *response,
-                                         google::protobuf::Closure *done);
+                                         google::protobuf::Closure *done) override;
 
-        virtual void health_check(google::protobuf::RpcController *controller,
+        void health_check(google::protobuf::RpcController *controller,
                                   const proto::HealthCheck *request,
                                   proto::StoreRes *response,
-                                  google::protobuf::Closure *done);
+                                  google::protobuf::Closure *done) override;
 
-        virtual void query(google::protobuf::RpcController *controller,
+        void query(google::protobuf::RpcController *controller,
                            const proto::StoreReq *request,
                            proto::StoreRes *response,
-                           google::protobuf::Closure *done);
+                           google::protobuf::Closure *done) override;
 
         void async_apply_log_entry(google::protobuf::RpcController *controller,
                                    const proto::BatchStoreReq *request,
                                    proto::BatchStoreRes *response,
-                                   google::protobuf::Closure *done);
+                                   google::protobuf::Closure *done) override;
 
-        virtual void query_binlog(google::protobuf::RpcController *controller,
+        void query_binlog(google::protobuf::RpcController *controller,
                                   const proto::StoreReq *request,
                                   proto::StoreRes *response,
-                                  google::protobuf::Closure *done);
+                                  google::protobuf::Closure *done) override;
 
         //删除region和region中的数据
-        virtual void remove_region(google::protobuf::RpcController *controller,
+        void remove_region(google::protobuf::RpcController *controller,
                                    const proto::RemoveRegion *request,
                                    proto::StoreRes *response,
-                                   google::protobuf::Closure *done);
+                                   google::protobuf::Closure *done) override;
 
         //恢复延迟删除的region
-        virtual void restore_region(google::protobuf::RpcController *controller,
+        void restore_region(google::protobuf::RpcController *controller,
                                     const proto::RegionIds *request,
                                     proto::StoreRes *response,
-                                    google::protobuf::Closure *done);
+                                    google::protobuf::Closure *done) override;
 
         virtual void add_peer(google::protobuf::RpcController *controller,
                               const proto::AddPeer *request,

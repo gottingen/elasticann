@@ -21,30 +21,35 @@
 
 namespace EA {
 
-inline std::string get_task_id(const proto::RegionDdlWork& work) {
-    return std::to_string(work.table_id()) + "_" + std::to_string(work.region_id());
-}
+    inline std::string get_task_id(const proto::RegionDdlWork &work) {
+        return std::to_string(work.table_id()) + "_" + std::to_string(work.region_id());
+    }
 
-inline std::string get_task_id(const proto::DdlWorkInfo& work) {
-    return std::to_string(work.table_id());
-}
+    inline std::string get_task_id(const proto::DdlWorkInfo &work) {
+        return std::to_string(work.table_id());
+    }
 
-template<typename TaskType>
-class TaskFactory : public Singleton<TaskFactory<TaskType>> {
-public:
-    int fetch_task(TaskType& task);
-    int finish_task(const TaskType& task);
-    int process_ddl_work(const TaskType& work);
-    int process_heartbeat(const proto::BaikalHeartBeatResponse& response,
-        const google::protobuf::RepeatedPtrField<TaskType>& (proto::BaikalHeartBeatResponse::*method)() const);
-    int construct_heartbeat(proto::BaikalHeartBeatRequest& request, TaskType* (proto::BaikalHeartBeatRequest::*method)());
+    template<typename TaskType>
+    class TaskFactory : public Singleton<TaskFactory<TaskType>> {
+    public:
+        int fetch_task(TaskType &task);
 
-private:
-    std::unordered_map<std::string, TaskType> _todo_tasks; 
-    std::unordered_map<std::string, TaskType> _doing_tasks; 
-    std::unordered_map<std::string, TaskType> _done_tasks; 
-    bthread::Mutex _mutex;
-};
+        int finish_task(const TaskType &task);
+
+        int process_ddl_work(const TaskType &work);
+
+        int process_heartbeat(const proto::BaikalHeartBeatResponse &response,
+                              const google::protobuf::RepeatedPtrField<TaskType> &(proto::BaikalHeartBeatResponse::*method)() const);
+
+        int construct_heartbeat(proto::BaikalHeartBeatRequest &request,
+                                TaskType *(proto::BaikalHeartBeatRequest::*method)());
+
+    private:
+        std::unordered_map<std::string, TaskType> _todo_tasks;
+        std::unordered_map<std::string, TaskType> _doing_tasks;
+        std::unordered_map<std::string, TaskType> _done_tasks;
+        bthread::Mutex _mutex;
+    };
 }
 
 #include "task_fetcher.hpp"

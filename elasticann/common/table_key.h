@@ -22,150 +22,158 @@
 #include "elasticann/common/schema_factory.h"
 
 namespace EA {
-inline int end_key_compare(rocksdb::Slice key1, rocksdb::Slice key2) {
-    if (key1 == key2) {
-        return 0;
-    }
-    if (key1.empty()) {
-        return 1;
-    }
-    if (key2.empty()) {
-        return -1;
-    }
-    return key1.compare(key2);
-}
-class TableRecord;
-class MutTableKey;
-class IndexInfo;
-class TableKey {
-using FieldDescriptor = google::protobuf::FieldDescriptor;
-using Message = google::protobuf::Message;
-using Reflection = google::protobuf::Reflection;
-public:
-    virtual ~TableKey() {}
-    TableKey() : _full(false) {}
-
-    // create TableKey from a slice, use for extract fields
-    TableKey(rocksdb::Slice key, bool full = true) : 
-        _full(full), 
-        _data(key) {}
-
-    TableKey(const TableKey& key) : 
-        _full(key._full),
-        _data(key._data) {}
-
-    TableKey(const MutTableKey& key);
-
-    //TODO
-    void skip_table_prefix(int &pos) {
-        pos += sizeof(int64_t);
+    inline int end_key_compare(rocksdb::Slice key1, rocksdb::Slice key2) {
+        if (key1 == key2) {
+            return 0;
+        }
+        if (key1.empty()) {
+            return 1;
+        }
+        if (key2.empty()) {
+            return -1;
+        }
+        return key1.compare(key2);
     }
 
-    void skip_region_prefix(int &pos) {
-        pos += sizeof(int64_t);
-    }
+    class TableRecord;
 
-    int8_t extract_i8(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::decode_i8(*reinterpret_cast<uint8_t*>(c));
-    }
+    class MutTableKey;
 
-    uint8_t extract_u8(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return *reinterpret_cast<uint8_t*>(c);
-    }
+    class IndexInfo;
 
-    int16_t extract_i16(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::decode_i16(
-            KeyEncoder::to_endian_u16(*reinterpret_cast<uint16_t*>(c)));
-    }
+    class TableKey {
+        using FieldDescriptor = google::protobuf::FieldDescriptor;
+        using Message = google::protobuf::Message;
+        using Reflection = google::protobuf::Reflection;
+    public:
+        virtual ~TableKey() {}
 
-    uint16_t extract_u16(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::to_endian_u16(*reinterpret_cast<uint16_t*>(c));
-    }
+        TableKey() : _full(false) {}
 
-    int32_t extract_i32(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::decode_i32(
-            KeyEncoder::to_endian_u32(*reinterpret_cast<uint32_t*>(c)));
-    }
+        // create TableKey from a slice, use for extract fields
+        TableKey(rocksdb::Slice key, bool full = true) :
+                _full(full),
+                _data(key) {}
 
-    uint32_t extract_u32(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::to_endian_u32(*reinterpret_cast<uint32_t*>(c));
-    }
+        TableKey(const TableKey &key) :
+                _full(key._full),
+                _data(key._data) {}
 
-    int64_t  extract_i64(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::decode_i64(
-            KeyEncoder::to_endian_u64(*reinterpret_cast<uint64_t*>(c)));
-    }
+        TableKey(const MutTableKey &key);
 
-    uint64_t extract_u64(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::to_endian_u64(*reinterpret_cast<uint64_t*>(c));
-    }
+        //TODO
+        void skip_table_prefix(int &pos) {
+            pos += sizeof(int64_t);
+        }
 
-    float extract_float(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::decode_f32(
-            KeyEncoder::to_endian_u32(*reinterpret_cast<uint32_t*>(c)));
-    }
+        void skip_region_prefix(int &pos) {
+            pos += sizeof(int64_t);
+        }
 
-    double extract_double(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return KeyEncoder::decode_f64(
-            KeyEncoder::to_endian_u64(*reinterpret_cast<uint64_t*>(c)));
-    }
+        int8_t extract_i8(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::decode_i8(*reinterpret_cast<uint8_t *>(c));
+        }
 
-    bool extract_boolean(int pos) const {
-        char* c = const_cast<char*>(_data.data_ + pos);
-        return (*reinterpret_cast<uint8_t*>(c)) != 0;
-    }
+        uint8_t extract_u8(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return *reinterpret_cast<uint8_t *>(c);
+        }
 
-    void extract_string(int pos, std::string& out) const {
-        out.assign(_data.data_ + pos);
-        return;
-    }
+        int16_t extract_i16(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::decode_i16(
+                    KeyEncoder::to_endian_u16(*reinterpret_cast<uint16_t *>(c)));
+        }
 
-    void extract_char(int pos, size_t len, std::string& out) {
-        out.assign(_data.data_ + pos, len);
-    }
+        uint16_t extract_u16(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::to_endian_u16(*reinterpret_cast<uint16_t *>(c));
+        }
 
-    int extract_index(IndexInfo& index, TableRecord* record, int& pos);
+        int32_t extract_i32(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::decode_i32(
+                    KeyEncoder::to_endian_u32(*reinterpret_cast<uint32_t *>(c)));
+        }
 
-    void set_full(bool full) {
-        _full = full;
-    }
+        uint32_t extract_u32(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::to_endian_u32(*reinterpret_cast<uint32_t *>(c));
+        }
 
-    bool get_full() const{
-        return _full;
-    }
+        int64_t extract_i64(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::decode_i64(
+                    KeyEncoder::to_endian_u64(*reinterpret_cast<uint64_t *>(c)));
+        }
 
-    size_t size() const {
-        return _data.size();
-    }
+        uint64_t extract_u64(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::to_endian_u64(*reinterpret_cast<uint64_t *>(c));
+        }
 
-    const rocksdb::Slice& data() const {
-        return _data;
-    }
+        float extract_float(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::decode_f32(
+                    KeyEncoder::to_endian_u32(*reinterpret_cast<uint32_t *>(c)));
+        }
 
-    std::string decode_start_key_string(proto::PrimitiveType field_type, int& pos) const;
-    std::string decode_start_key_string(const IndexInfo& index) const;
-    std::string decode_start_key_string(const std::vector<proto::PrimitiveType>& types, int32_t dimension) const;
+        double extract_double(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return KeyEncoder::decode_f64(
+                    KeyEncoder::to_endian_u64(*reinterpret_cast<uint64_t *>(c)));
+        }
 
-    int decode_field(Message* message,
-            const Reflection* reflection,
-            const FieldDescriptor* field, 
-            const FieldInfo& field_info,
-            int& pos) const;
+        bool extract_boolean(int pos) const {
+            char *c = const_cast<char *>(_data.data_ + pos);
+            return (*reinterpret_cast<uint8_t *>(c)) != 0;
+        }
 
-    int skip_field(const FieldInfo& field_info, int& pos) const;
-private:
-    bool             _full;  //full key or just a prefix
-    rocksdb::Slice   _data;
-};
+        void extract_string(int pos, std::string &out) const {
+            out.assign(_data.data_ + pos);
+            return;
+        }
+
+        void extract_char(int pos, size_t len, std::string &out) {
+            out.assign(_data.data_ + pos, len);
+        }
+
+        int extract_index(IndexInfo &index, TableRecord *record, int &pos);
+
+        void set_full(bool full) {
+            _full = full;
+        }
+
+        bool get_full() const {
+            return _full;
+        }
+
+        size_t size() const {
+            return _data.size();
+        }
+
+        const rocksdb::Slice &data() const {
+            return _data;
+        }
+
+        std::string decode_start_key_string(proto::PrimitiveType field_type, int &pos) const;
+
+        std::string decode_start_key_string(const IndexInfo &index) const;
+
+        std::string decode_start_key_string(const std::vector<proto::PrimitiveType> &types, int32_t dimension) const;
+
+        int decode_field(Message *message,
+                         const Reflection *reflection,
+                         const FieldDescriptor *field,
+                         const FieldInfo &field_info,
+                         int &pos) const;
+
+        int skip_field(const FieldInfo &field_info, int &pos) const;
+
+    private:
+        bool _full;  //full key or just a prefix
+        rocksdb::Slice _data;
+    };
 }
 

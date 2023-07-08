@@ -39,7 +39,7 @@ namespace EA {
     DEFINE_int32(pre_split_threashold, 300, "pre_split_threashold for sync create table");
 
     void TableTimer::run() {
-        DB_NOTICE("Table Timer run.");
+        TLOG_INFO("Table Timer run.");
         std::vector<proto::SchemaInfo> delete_schemas;
         delete_schemas.reserve(10);
         std::vector<proto::SchemaInfo> clear_schemas;
@@ -49,7 +49,7 @@ namespace EA {
             proto::MetaManagerRequest request;
             request.set_op_type(proto::OP_DROP_INDEX);
             request.mutable_table_info()->CopyFrom(schema);
-            DB_NOTICE("DDL_LOG drop_index_request req[%s]", request.ShortDebugString().c_str());
+            TLOG_INFO("DDL_LOG drop_index_request req[{}]", request.ShortDebugString());
             SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
         }
         for (auto &schema: clear_schemas) {
@@ -66,7 +66,7 @@ namespace EA {
             ddl_work.set_global(index_info.is_global());
             request.mutable_ddlwork_info()->CopyFrom(ddl_work);
             request.mutable_table_info()->CopyFrom(schema);
-            DB_NOTICE("DDL_LOG clear local_index_request req[%s]", request.ShortDebugString().c_str());
+            TLOG_INFO("DDL_LOG clear local_index_request req[{}]", request.ShortDebugString());
             SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
         }
     }
@@ -75,11 +75,11 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_table_mutex);
         auto table_id = ddl_work.table_id();
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_FATAL("update index table_id [%ld] table_info not exist.", table_id);
+            TLOG_ERROR("update index table_id [{}] table_info not exist.", table_id);
             return;
         }
 
-        DB_DEBUG("DDL_LOG update_index_status req[%s]", ddl_work.ShortDebugString().c_str());
+        TLOG_DEBUG("DDL_LOG update_index_status req[{}]", ddl_work.ShortDebugString());
         proto::MetaManagerRequest request;
         request.set_op_type(proto::OP_UPDATE_INDEX_STATUS);
         request.mutable_ddlwork_info()->CopyFrom(ddl_work);
@@ -91,7 +91,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_table_mutex);
         auto table_id = ddl_work.table_id();
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_FATAL("update index table_id [%ld] table_info not exist.", table_id);
+            TLOG_ERROR("update index table_id [{}] table_info not exist.", table_id);
             return;
         }
         std::string index_name;
@@ -109,7 +109,7 @@ namespace EA {
         request.mutable_table_info()->clear_indexs();
         auto index_to_drop_iter = request.mutable_table_info()->add_indexs();
         index_to_drop_iter->set_index_name(index_name);
-        DB_DEBUG("DDL_LOG drop_index_request req[%s]", request.ShortDebugString().c_str());
+        TLOG_DEBUG("DDL_LOG drop_index_request req[{}]", request.ShortDebugString());
         SchemaManager::get_instance()->process_schema_info(nullptr, &request, nullptr, nullptr);
     }
 
@@ -154,7 +154,7 @@ namespace EA {
                                                                 braft::Closure *done)> update_callback) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
@@ -174,7 +174,7 @@ namespace EA {
         std::vector<proto::SchemaInfo> schema_infos{mem_schema_pb};
         put_incremental_schemainfo(apply_index, schema_infos);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("update table internal success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("update table internal success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::create_table(const proto::MetaManagerRequest &request, const int64_t apply_index,
@@ -197,7 +197,7 @@ namespace EA {
         //校验合法性, 准备数据
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
-            DB_WARNING("request namespace:%s not exist", namespace_name.c_str());
+            TLOG_WARN("request namespace:{} not exist", namespace_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
@@ -205,14 +205,14 @@ namespace EA {
 
         int64_t database_id = DatabaseManager::get_instance()->get_database_id(database_name);
         if (database_id == 0) {
-            DB_WARNING("request database:%s not exist", database_name.c_str());
+            TLOG_WARN("request database:{} not exist", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
             return;
         }
         table_info.set_database_id(database_id);
 
         if (_table_id_map.find(table_name) != _table_id_map.end()) {
-            DB_WARNING("request table_name:%s already exist", table_name.c_str());
+            TLOG_WARN("request table_name:{} already exist", table_name);
             if (table_info.if_exist()) {
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table already exist");
             } else {
@@ -228,15 +228,15 @@ namespace EA {
         table_mem.global_index_id = max_table_id_tmp;
         if (table_mem.whether_level_table) {
             if (_table_id_map.find(upper_table_name) == _table_id_map.end()) {
-                DB_WARNING("request upper_table_name:%s not exist", upper_table_name.c_str());
+                TLOG_WARN("request upper_table_name:{} not exist", upper_table_name);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "upper table not exist");
                 return;
             }
             int64_t upper_table_id = _table_id_map[upper_table_name];
             table_info.set_upper_table_id(upper_table_id);
             if (table_info.has_partition_num()) {
-                DB_WARNING("table：%s is leve, partition num should be equal to upper table",
-                           table_name.c_str());
+                TLOG_WARN("table：{} is leve, partition num should be equal to upper table",
+                           table_name);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table already exist");
                 return;
             }
@@ -262,13 +262,13 @@ namespace EA {
         bool has_auto_increment = false;
         auto ret = alloc_field_id(table_info, has_auto_increment, table_mem);
         if (ret < 0) {
-            DB_WARNING("table:%s 's field info not illegal", table_name.c_str());
+            TLOG_WARN("table:{} 's field info not illegal", table_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field not illegal");
             return;
         }
         ret = alloc_index_id(table_info, table_mem, max_table_id_tmp);
         if (ret < 0) {
-            DB_WARNING("table:%s 's index info not illegal", table_name.c_str());
+            TLOG_WARN("table:{} 's index info not illegal", table_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "index not illegal");
             return;
         }
@@ -279,7 +279,7 @@ namespace EA {
         if (table_info.partition_num() > 1) {
             table_mem.is_partition = true;
             if (!table_info.has_partition_info()) {
-                DB_WARNING("paritition info not found");
+                TLOG_WARN("paritition info not found");
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "paritition info not found");
                 return;
             }
@@ -295,7 +295,7 @@ namespace EA {
                     table_info.mutable_partition_info()->mutable_field_info()->CopyFrom(iter->second);
                     table_info.mutable_partition_info()->set_partition_field(iter->second.field_id());
                 } else {
-                    DB_WARNING("paritition field_name:%s not found.", field_name.c_str());
+                    TLOG_WARN("paritition field_name:{} not found.", field_name);
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "partition field not found.");
                     return;
                 }
@@ -325,7 +325,7 @@ namespace EA {
                 if (table_info.partition_info().has_range_partition_field()) {
                     proto::Expr tmp_expr = table_info.partition_info().range_partition_field();
                     if (0 != set_expr_type_func(tmp_expr)) {
-                        DB_WARNING("paritition init range expr failed.");
+                        TLOG_WARN("paritition init range expr failed.");
                         IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "partition init range expr failed.");
                         return;
                     }
@@ -345,7 +345,7 @@ namespace EA {
                 if (table_info.partition_info().has_hash_expr_value()) {
                     proto::Expr tmp_expr = table_info.partition_info().hash_expr_value();
                     if (0 != set_expr_type_func(tmp_expr)) {
-                        DB_WARNING("paritition init hash expr failed.");
+                        TLOG_WARN("paritition init hash expr failed.");
                         IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "partition init hash expr failed.");
                         return;
                     }
@@ -354,12 +354,12 @@ namespace EA {
                 }
             }
             if (expr_field_ids.size() > 1) {
-                DB_WARNING("paritition multiple fields not support.");
+                TLOG_WARN("paritition multiple fields not support.");
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "partition multiple fields not support.");
                 return;
             }
         }
-        DB_WARNING("paritition %s.", table_info.partition_info().ShortDebugString().c_str());
+        TLOG_WARN("paritition {}.", table_info.partition_info().ShortDebugString());
         for (auto &learner_resource: *table_info.mutable_learner_resource_tags()) {
             table_mem.learner_resource_tag.emplace_back(learner_resource);
         }
@@ -372,7 +372,7 @@ namespace EA {
             ret = write_schema_for_not_level(table_mem, done, max_table_id_tmp, has_auto_increment);
         }
         if (ret != 0) {
-            DB_WARNING("write rocksdb fail when create table, table:%s", table_name.c_str());
+            TLOG_WARN("write rocksdb fail when create table, table:{}", table_name);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -386,7 +386,7 @@ namespace EA {
         DatabaseManager::get_instance()->add_table_id(database_id, table_info.table_id());
         table_mem.print();
         if (table_mem.whether_level_table) {
-            DB_NOTICE("create table completely, _max_table_id:%ld, table_name:%s", _max_table_id, table_name.c_str());
+            TLOG_INFO("create table completely, _max_table_id:{}, table_name:{}", _max_table_id, table_name);
         }
         if (done) {
             ((MetaServerClosure *) done)->whether_level_table = table_mem.whether_level_table;
@@ -423,7 +423,7 @@ namespace EA {
             if (ret == 0) {
                 if (send_create_table_request(namespace_name, database, table_name, init_regions) != 0) {
                     send_drop_table_request(namespace_name, database, table_name);
-                    DB_FATAL("send create_table request fail, table_name: %s", table_name.c_str());
+                    TLOG_ERROR("send create_table request fail, table_name: {}", table_name);
                     SET_RESPONSE(response, proto::INTERNAL_ERROR, "create table fail");
                     return -1;
                 }
@@ -439,15 +439,15 @@ namespace EA {
                 create_table_response->Swap(&create_table_response_tmp);
             } else {
                 send_drop_table_request(namespace_name, database, table_name);
-                DB_FATAL("send add auto incrment request fail, table_name: %s", table_name.c_str());
+                TLOG_ERROR("send add auto incrment request fail, table_name: {}", table_name);
                 SET_RESPONSE(response, proto::INTERNAL_ERROR, "create table fail");
                 return -1;
             }
         }
         SET_RESPONSE(response, proto::SUCCESS, "success");
-        DB_WARNING("create table, table_id: %ld, table_name:%s, alloc start_region_id: %ld, end_region_id: %ld",
+        TLOG_WARN("create table, table_id: {}, table_name:{}, alloc start_region_id: {}, end_region_id: {}",
                    schema_pb.table_id(),
-                   schema_pb.table_name().c_str(),
+                   schema_pb.table_name(),
                    start_region_id,
                    RegionManager::get_instance()->get_max_region_id());
         return 0;
@@ -464,17 +464,17 @@ namespace EA {
                 IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "table not exist");
                 return;
             }
-            DB_WARNING("input table not exit, request: %s", request.ShortDebugString().c_str());
+            TLOG_WARN("input table not exit, request: {}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (check_table_has_ddlwork(drop_table_id)) {
-            DB_WARNING("table is doing ddl , request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl , request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
         if (check_table_is_linked(drop_table_id)) {
-            DB_WARNING("table is linked, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is linked, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is linked binlog table");
             return;
         }
@@ -486,8 +486,8 @@ namespace EA {
         schema_info.set_timestamp(time(nullptr));
         std::string drop_table_value;
         if (!schema_info.SerializeToString(&drop_table_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}",
+                       request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -532,8 +532,8 @@ namespace EA {
             top_schema_pb.set_version(top_schema_pb.version() + 1);
             std::string top_table_value;
             if (!top_schema_pb.SerializeToString(&top_table_value)) {
-                DB_WARNING("request serializeToArray fail when update upper table, request:%s",
-                           top_schema_pb.ShortDebugString().c_str());
+                TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
+                           top_schema_pb.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
                 return;
             }
@@ -544,7 +544,7 @@ namespace EA {
                                                            write_rocksdb_values,
                                                            delete_rocksdb_keys);
         if (ret < 0) {
-            DB_WARNING("drop table fail, request：%s", request.ShortDebugString().c_str());
+            TLOG_WARN("drop table fail, request：{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -561,11 +561,11 @@ namespace EA {
         DatabaseManager::get_instance()->delete_table_id(database_id, drop_table_id);
         if (is_table_in_fast_importer(drop_table_id)) {
             // 正在快速导入，删表把快速导入标志清掉，报警，可能需要人工恢复store rocksdb标志
-            DB_FATAL("drop table: %ld, drop table is in_fast_import", drop_table_id);
+            TLOG_ERROR("drop table: {}, drop table is in_fast_import", drop_table_id);
             cancel_in_fast_importer(drop_table_id);
         }
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop table success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop table success, request:{}", request.ShortDebugString());
         if (done) {
             Bthread bth_remove_region(&BTHREAD_ATTR_SMALL);
             std::function<void()> remove_function = [drop_region_ids]() {
@@ -585,7 +585,7 @@ namespace EA {
 
         int ret = MetaRocksdb::get_instance()->delete_meta_info(delete_rocksdb_keys);
         if (ret < 0) {
-            DB_WARNING("drop table tombstone fail, request：%s", request.ShortDebugString().c_str());
+            TLOG_WARN("drop table tombstone fail, request：{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -593,14 +593,14 @@ namespace EA {
         std::string database_name = request.table_info().namespace_name() + "\001" + request.table_info().database();
         int64_t database_id = DatabaseManager::get_instance()->get_database_id(database_name);
         if (database_id == 0) {
-            DB_WARNING("request database:%s not exist", database_name.c_str());
+            TLOG_WARN("request database:{} not exist", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
             return;
         }
         DatabaseManager::get_instance()->delete_table_id(database_id, table_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop table tombstone success,table_id:%ld, request:%s",
-                  table_id, request.ShortDebugString().c_str());
+        TLOG_INFO("drop table tombstone success,table_id:{}, request:{}",
+                  table_id, request.ShortDebugString());
         if (done) {
             Bthread bth_drop_auto(&BTHREAD_ATTR_SMALL);
             auto drop_function = [this, table_id]() {
@@ -628,8 +628,8 @@ namespace EA {
                     *table = schema_pb;
                     proto::MetaManagerResponse response;
                     MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-                    DB_WARNING("send table tombstone gc,table_id:%ld schema_pb:%s",
-                               schema_pb.table_id(), schema_pb.ShortDebugString().c_str());
+                    TLOG_WARN("send table tombstone gc,table_id:{} schema_pb:{}",
+                               schema_pb.table_id(), schema_pb.ShortDebugString());
                 });
                 break;
             }
@@ -640,14 +640,14 @@ namespace EA {
                                      braft::Closure *done) {
         int64_t table_id = 0;
         if (check_table_exist(request.table_info(), table_id) == 0) {
-            DB_WARNING("check table already exist, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table already exist, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table already exist");
             return;
         }
         TableMem table_mem;
         int ret = find_last_table_tombstone(request.table_info(), &table_mem);
         if (ret < 0) {
-            DB_WARNING("input table not exit in tombstone, request: %s", request.ShortDebugString().c_str());
+            TLOG_WARN("input table not exit in tombstone, request: {}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist in tombstone");
             return;
         }
@@ -661,8 +661,8 @@ namespace EA {
         schema_info.set_version(schema_info.version() + 1);
         std::string table_value;
         if (!schema_info.SerializeToString(&table_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}",
+                       request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -674,7 +674,7 @@ namespace EA {
                                                            write_rocksdb_values,
                                                            delete_rocksdb_keys);
         if (ret < 0) {
-            DB_WARNING("restore table fail, request：%s", request.ShortDebugString().c_str());
+            TLOG_WARN("restore table fail, request：{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -685,22 +685,22 @@ namespace EA {
         std::string database_name = request.table_info().namespace_name() + "\001" + request.table_info().database();
         int64_t database_id = DatabaseManager::get_instance()->get_database_id(database_name);
         if (database_id == 0) {
-            DB_WARNING("request database:%s not exist", database_name.c_str());
+            TLOG_WARN("request database:{} not exist", database_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database not exist");
             return;
         }
         DatabaseManager::get_instance()->add_table_id(database_id, table_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("restore table success, request:%s, info:%s",
-                  request.ShortDebugString().c_str(), schema_info.ShortDebugString().c_str());
+        TLOG_INFO("restore table success, request:{}, info:{}",
+                  request.ShortDebugString(), schema_info.ShortDebugString());
         if (done) {
             Bthread bth_restore_region(&BTHREAD_ATTR_SMALL);
             std::string resource_tag = schema_info.resource_tag();
             std::function<void()> restore_function = [table_id, resource_tag]() {
                 std::set<std::string> instances;
                 ClusterManager::get_instance()->get_instances(resource_tag, instances);
-                DB_WARNING("restore table, resource_tag:%s, instances.size:%lu",
-                           resource_tag.c_str(), instances.size());
+                TLOG_WARN("restore table, resource_tag:{}, instances.size:{}",
+                           resource_tag, instances.size());
                 for (auto &instance: instances) {
                     proto::RegionIds request;
                     request.set_table_id(table_id);
@@ -718,13 +718,13 @@ namespace EA {
                                     braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
 
         if (check_table_has_ddlwork(table_id) || check_table_is_linked(table_id)) {
-            DB_WARNING("table is doing ddl, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -732,13 +732,13 @@ namespace EA {
         std::string database_name = namespace_name + "\001" + request.table_info().database();
         std::string old_table_name = database_name + "\001" + request.table_info().table_name();
         if (!request.table_info().has_new_table_name()) {
-            DB_WARNING("request has no new table_name, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request has no new table_name, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
             return;
         }
         std::string new_table_name = database_name + "\001" + request.table_info().new_table_name();
         if (_table_id_map.count(new_table_name) != 0) {
-            DB_WARNING("table is existed, table_name:%s", new_table_name.c_str());
+            TLOG_WARN("table is existed, table_name:{}", new_table_name);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "new table name already exist");
             return;
         }
@@ -757,7 +757,7 @@ namespace EA {
         put_incremental_schemainfo(apply_index, schema_infos);
         set_new_table_name(old_table_name, new_table_name);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("rename table success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("rename table success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::swap_table(const proto::MetaManagerRequest &request,
@@ -765,7 +765,7 @@ namespace EA {
                                   braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
@@ -776,14 +776,14 @@ namespace EA {
         std::string new_table_name = database_name + "\001" + request.table_info().new_table_name();
         int64_t new_table_id = get_table_id(new_table_name);
         if (new_table_id == 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
 
         if (check_table_has_ddlwork(table_id) || check_table_is_linked(table_id) ||
             check_table_has_ddlwork(new_table_id) || check_table_is_linked(new_table_id)) {
-            DB_WARNING("table is doing ddl, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -796,15 +796,15 @@ namespace EA {
         new_mem_schema_pb.set_version(new_mem_schema_pb.version() + 1);
         std::string table_value;
         if (!mem_schema_pb.SerializeToString(&table_value)) {
-            DB_WARNING("request serializeToArray fail, pb:%s",
-                       mem_schema_pb.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, pb:{}",
+                       mem_schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         std::string new_table_value;
         if (!new_mem_schema_pb.SerializeToString(&new_table_value)) {
-            DB_WARNING("request serializeToArray fail, pb:%s",
-                       new_mem_schema_pb.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, pb:{}",
+                       new_mem_schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -824,7 +824,7 @@ namespace EA {
         put_incremental_schemainfo(apply_index, schema_infos);
         swap_table_name(old_table_name, new_table_name);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("swap table success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("swap table success, request:{}", request.ShortDebugString());
     }
 
     bool TableManager::check_and_update_incremental(const proto::BaikalHeartBeatRequest *request,
@@ -910,14 +910,14 @@ namespace EA {
                               [](const proto::MetaManagerRequest &request, proto::SchemaInfo &mem_schema_pb,
                                  braft::Closure *done) {
                                   const proto::SchemaConf &schema_conf = request.table_info().schema_conf();
-                                  DB_WARNING("request:%s", request.ShortDebugString().c_str());
+                                  TLOG_WARN("request:{}", request.ShortDebugString());
                                   proto::SchemaConf *p_conf = mem_schema_pb.mutable_schema_conf();
                                   if (schema_conf.storage_compute_separate()) {
                                       for (auto &index: mem_schema_pb.indexs()) {
-                                          DB_WARNING("index:%s", index.ShortDebugString().c_str());
+                                          TLOG_WARN("index:{}", index.ShortDebugString());
                                           if (index.index_type() == proto::I_FULLTEXT) {
-                                              DB_WARNING("table has fulltext index, request:%s",
-                                                         request.ShortDebugString().c_str());
+                                              TLOG_WARN("table has fulltext index, request:{}",
+                                                         request.ShortDebugString());
                                               IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
                                                                    "fulltext not support kv mode");
                                               return;
@@ -951,7 +951,7 @@ namespace EA {
         if (request.has_statistics() && request.statistics().has_table_id()) {
             table_id = request.statistics().table_id();
         } else {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
@@ -989,7 +989,7 @@ namespace EA {
         put_incremental_schemainfo(apply_index, schema_infos);
 
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("update table statistics success, request:%s", stat_pb.ShortDebugString().c_str());
+        TLOG_INFO("update table statistics success, request:{}", stat_pb.ShortDebugString());
     }
 
     void TableManager::update_resource_tag(const proto::MetaManagerRequest &request,
@@ -997,14 +997,14 @@ namespace EA {
                                            braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         proto::SchemaInfo mem_schema_pb = _table_info_map[table_id].schema_pb;
         auto resource_tag = request.table_info().resource_tag();
         if (!ClusterManager::get_instance()->check_resource_tag_exist(resource_tag)) {
-            DB_WARNING("check resource_tag exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check resource_tag exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "resource_tag not exist");
             return;
         }
@@ -1019,7 +1019,7 @@ namespace EA {
         std::vector<proto::SchemaInfo> schema_infos{mem_schema_pb};
         put_incremental_schemainfo(apply_index, schema_infos);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("update table internal success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("update table internal success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::update_dists(const proto::MetaManagerRequest &request,
@@ -1078,7 +1078,7 @@ namespace EA {
                                       }
 
                                       if (!can_support_ttl) {
-                                          DB_WARNING("can't support ttl, req: %s", request.ShortDebugString().c_str());
+                                          TLOG_WARN("can't support ttl, req: {}", request.ShortDebugString());
                                           return;
                                       }
                                       int64_t online_ttl_expire_time_us = butil::gettimeofday_us() +
@@ -1087,7 +1087,7 @@ namespace EA {
                                       mem_schema_pb.set_ttl_duration(request.table_info().ttl_duration());
                                       mem_schema_pb.set_online_ttl_expire_time_us(online_ttl_expire_time_us);
                                   } else {
-                                      DB_WARNING("update fail, resuest.ttl_duration:%ld mem_schema_pb.ttl_duration:%ld",
+                                      TLOG_WARN("update fail, resuest.ttl_duration:{} mem_schema_pb.ttl_duration:{}",
                                                  request.table_info().ttl_duration(), mem_schema_pb.ttl_duration());
                                       return;
                                   }
@@ -1123,12 +1123,12 @@ namespace EA {
                                  braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -1138,14 +1138,14 @@ namespace EA {
         std::unordered_map<std::string, int32_t> add_field_id_map;
         for (auto &field: request.table_info().fields()) {
             if (_table_info_map[table_id].field_id_map.count(field.field_name()) != 0) {
-                DB_WARNING("field name:%s has already existed, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} has already existed, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name already exist");
                 return;
             }
             if (field.has_auto_increment() && field.auto_increment()) {
-                DB_WARNING("not support auto increment, field name:%s, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("not support auto increment, field name:{}, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field can not be auto_increment");
                 return;
             }
@@ -1167,7 +1167,7 @@ namespace EA {
         put_incremental_schemainfo(apply_index, schema_infos);
         add_field_mem(table_id, add_field_id_map);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("add field success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("add field success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::drop_field(const proto::MetaManagerRequest &request,
@@ -1175,12 +1175,12 @@ namespace EA {
                                   braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -1188,22 +1188,22 @@ namespace EA {
         std::vector<std::string> drop_field_names;
         for (auto &field: request.table_info().fields()) {
             if (_table_info_map[table_id].field_id_map.count(field.field_name()) == 0) {
-                DB_WARNING("field name:%s not existed, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} not existed, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name not exist");
                 return;
             }
             auto field_id = _table_info_map[table_id].field_id_map[field.field_name()];
             if (check_filed_is_linked(table_id, field_id)) {
-                DB_WARNING("field name:%s is binlog link field, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} is binlog link field, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is binlog link field");
                 return;
             }
             if (mem_schema_pb.has_partition_info()) {
                 if (mem_schema_pb.partition_info().field_info().field_name() == field.field_name()) {
-                    DB_WARNING("field name:%s is partitiion field, request:%s",
-                               field.field_name().c_str(), request.ShortDebugString().c_str());
+                    TLOG_WARN("field name:{} is partitiion field, request:{}",
+                               field.field_name(), request.ShortDebugString());
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is partitiion field");
                     return;
                 }
@@ -1219,8 +1219,8 @@ namespace EA {
                                       drop_field_names.end(),
                                       field_name);
                 if (iter != drop_field_names.end()) {
-                    DB_WARNING("field name:%s is an index column, request:%s",
-                               field_name.c_str(), request.ShortDebugString().c_str());
+                    TLOG_WARN("field name:{} is an index column, request:{}",
+                               field_name, request.ShortDebugString());
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is an index column");
                     return;
                 }
@@ -1246,7 +1246,7 @@ namespace EA {
         put_incremental_schemainfo(apply_index, schema_infos);
         drop_field_mem(table_id, drop_field_names);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop field success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop field success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::rename_field(const proto::MetaManagerRequest &request,
@@ -1254,12 +1254,12 @@ namespace EA {
                                     braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -1269,25 +1269,25 @@ namespace EA {
         std::unordered_map<std::string, int32_t> add_field_id_map;
         for (auto &field: request.table_info().fields()) {
             if (_table_info_map[table_id].field_id_map.count(field.field_name()) == 0) {
-                DB_WARNING("field name:%s not existed, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} not existed, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name not exist");
                 return;
             }
             if (check_filed_is_linked(table_id, _table_info_map[table_id].field_id_map[field.field_name()])) {
-                DB_WARNING("field name:%s is binlog link field, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} is binlog link field, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is binlog link field");
                 return;
             }
             if (!field.has_new_field_name()) {
-                DB_WARNING("request has no new field name, request:%s", request.ShortDebugString().c_str());
+                TLOG_WARN("request has no new field name, request:{}", request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "new field name is null");
                 return;
             }
             if (_table_info_map[table_id].field_id_map.count(field.new_field_name()) != 0) {
-                DB_WARNING("new field name:%s already existed, request:%s",
-                           field.new_field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("new field name:{} already existed, request:{}",
+                           field.new_field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "new field name already exist");
                 return;
             }
@@ -1321,7 +1321,7 @@ namespace EA {
         drop_field_mem(table_id, drop_field_names);
         add_field_mem(table_id, add_field_id_map);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("rename field success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("rename field success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::modify_field(const proto::MetaManagerRequest &request,
@@ -1329,12 +1329,12 @@ namespace EA {
                                     braft::Closure *done) {
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -1343,7 +1343,7 @@ namespace EA {
             int ret = DDLManager::get_instance()->init_column_ddlwork(table_id, request.ddlwork_info(),
                                                                       table_mem.partition_regions);
             if (ret < 0) {
-                DB_WARNING("table_id[%ld] add index init ddlwork failed.", table_id);
+                TLOG_WARN("table_id[{}] add index init ddlwork failed.", table_id);
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "init index ddlwork failed");
             }
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
@@ -1354,15 +1354,15 @@ namespace EA {
         for (auto &field: request.table_info().fields()) {
             std::string field_name = field.field_name();
             if (_table_info_map[table_id].field_id_map.count(field_name) == 0) {
-                DB_WARNING("field name:%s not existed, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} not existed, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name not exist");
                 return;
             }
             auto field_id = _table_info_map[table_id].field_id_map[field_name];
             if (check_filed_is_linked(table_id, field_id)) {
-                DB_WARNING("field name:%s is binlog link field, request:%s",
-                           field.field_name().c_str(), request.ShortDebugString().c_str());
+                TLOG_WARN("field name:{} is binlog link field, request:{}",
+                           field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is binlog link field");
                 return;
             }
@@ -1422,7 +1422,7 @@ namespace EA {
         std::vector<proto::SchemaInfo> schema_infos{mem_schema_pb};
         put_incremental_schemainfo(apply_index, schema_infos);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("modify field type success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("modify field type success, request:{}", request.ShortDebugString());
     }
 
     void TableManager::process_schema_heartbeat_for_store(
@@ -1436,10 +1436,10 @@ namespace EA {
                    < table_info_map.second.schema_pb.version()) {
                 proto::SchemaInfo *new_table_info = response->add_schema_change_info();
                 *new_table_info = table_info_map.second.schema_pb;
-                DB_DEBUG("table_id[%ld] add schema info [%s] ", table_id,
-                         new_table_info->ShortDebugString().c_str());
-                //DB_WARNING("add or update table_name:%s, table_id:%ld",
-                //            new_table_info->table_name().c_str(), new_table_info->table_id());
+                TLOG_DEBUG("table_id[{}] add schema info [{}] ", table_id,
+                         new_table_info->ShortDebugString());
+                //TLOG_WARN("add or update table_name:{}, table_id:{}",
+                //            new_table_info->table_name(), new_table_info->table_id());
             }
         }
         for (auto &store_table_id: store_table_id_version) {
@@ -1450,8 +1450,8 @@ namespace EA {
                 new_table_info->set_table_name("deleted");
                 new_table_info->set_database("deleted");
                 new_table_info->set_namespace_name("deleted");
-                //DB_WARNING("delete table_info:%s, table_id: %ld",
-                //        new_table_info->table_name().c_str(), new_table_info->table_id());
+                //TLOG_WARN("delete table_info:{}, table_id: {}",
+                //        new_table_info->table_name(), new_table_info->table_id());
             }
         }
     }
@@ -1529,14 +1529,14 @@ namespace EA {
                 continue;
             }
             if (response->ByteSizeLong() + stat_pb.ByteSizeLong() > FLAGS_statistics_heart_beat_bytesize) {
-                DB_WARNING("response size: %lu, statistics size: %lu, big than %ld; count: %d",
+                TLOG_WARN("response size: {}, statistics size: {}, big than {}; count: {}",
                            response->ByteSizeLong(), stat_pb.ByteSizeLong(), FLAGS_statistics_heart_beat_bytesize,
                            upd_cnt);
                 break;
             }
             upd_cnt++;
             response->add_statistics()->Swap(&stat_pb);
-            DB_WARNING("update statistics, table_id:%ld, version:%ld", iter.first, iter.second);
+            TLOG_WARN("update statistics, table_id:{}, version:{}", iter.first, iter.second);
         }
     }
 
@@ -1545,12 +1545,12 @@ namespace EA {
         std::string stat_value;
         int ret = MetaRocksdb::get_instance()->get_meta_info(construct_statistics_key(table_id), &stat_value);
         if (ret < 0) {
-            DB_WARNING("get statistics info from rocksdb fail, table_id: %ld", table_id);
+            TLOG_WARN("get statistics info from rocksdb fail, table_id: {}", table_id);
             return -1;
         }
 
         if (!stat_pb.ParseFromString(stat_value)) {
-            DB_FATAL("parse statistics failed, table_id: %ld", table_id);
+            TLOG_ERROR("parse statistics failed, table_id: {}", table_id);
             return -1;
         }
 
@@ -1582,7 +1582,7 @@ namespace EA {
             }
             for (auto &partition_region: table_info_pair.second.partition_regions) {
                 for (auto &region_id: partition_region.second) {
-                    //DB_WARNING("new add region id: %ld", region_id);
+                    //TLOG_WARN("new add region id: {}", region_id);
                     new_add_region_ids.push_back(region_id);
                 }
             }
@@ -1638,10 +1638,10 @@ namespace EA {
     int TableManager::load_table_snapshot(const std::string &value) {
         proto::SchemaInfo table_pb;
         if (!table_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load table snapshot, key: %s", value.c_str());
+            TLOG_ERROR("parse from pb fail when load table snapshot, key: {}", value);
             return -1;
         }
-        DB_WARNING("table snapshot:%s, size:%lu", table_pb.ShortDebugString().c_str(), value.size());
+        TLOG_WARN("table snapshot:{}, size:{}", table_pb.ShortDebugString(), value.size());
         TableMem table_mem;
         table_mem.schema_pb = table_pb;
         table_mem.whether_level_table = table_pb.has_upper_table_name();
@@ -1711,7 +1711,7 @@ namespace EA {
     int TableManager::load_ddl_snapshot(const std::string &value) {
         proto::DdlWorkInfo work_info_pb;
         if (!work_info_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load ddl snapshot, key: %s", value.c_str());
+            TLOG_ERROR("parse from pb fail when load ddl snapshot, key: {}", value);
             return -1;
         }
         DDLManager::get_instance()->load_table_ddl_snapshot(work_info_pb);
@@ -1721,14 +1721,14 @@ namespace EA {
     int TableManager::load_statistics_snapshot(const std::string &value) {
         proto::Statistics stat_pb;
         if (!stat_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load statistics snapshot, key: %s", value.c_str());
+            TLOG_ERROR("parse from pb fail when load statistics snapshot, key: {}", value);
             return -1;
         }
-        DB_WARNING("statistics snapshot, tbale_id:%ld, version:%ld", stat_pb.table_id(), stat_pb.version());
+        TLOG_WARN("statistics snapshot, tbale_id:{}, version:{}", stat_pb.table_id(), stat_pb.version());
         {
             BAIDU_SCOPED_LOCK(_table_mutex);
             if (_table_info_map.count(stat_pb.table_id()) < 1) {
-                DB_FATAL("cant find table id:%ld", stat_pb.table_id());
+                TLOG_ERROR("cant find table id:{}", stat_pb.table_id());
                 return 0;
             }
             _table_info_map[stat_pb.table_id()].statistics_version = stat_pb.version();
@@ -1767,7 +1767,7 @@ namespace EA {
         std::unordered_map<std::string, int64_t> global_index;
         for (auto &index: table_mem.schema_pb.indexs()) {
             if (index.index_type() == proto::I_PRIMARY || index.is_global()) {
-                DB_WARNING("index_name: %s is global", index.index_name().c_str());
+                TLOG_WARN("index_name: {} is global", index.index_name());
                 global_index[index.index_name()] = index.index_id();
             }
         }
@@ -1785,7 +1785,7 @@ namespace EA {
                     region_info->set_region_id(++tmp_max_region_id);
                     region_info->set_table_id(global_index[index_name]);
                     processed_index_name.push_back(index_name);
-                    DB_NOTICE("set table id %ld", global_index[index_name]);
+                    TLOG_INFO("set table id {}", global_index[index_name]);
                     region_info->set_main_table_id(main_table_id);
                     region_info->set_table_name(table_mem.schema_pb.table_name());
                     construct_common_region(region_info, table_mem.schema_pb.replica_num());
@@ -1832,7 +1832,7 @@ namespace EA {
                 *(init_region_request.mutable_schema_info()) = simple_table_info;
                 init_region_request.set_snapshot_times(2);
                 init_regions->push_back(init_region_request);
-                DB_WARNING("init_region_request: %s", init_region_request.ShortDebugString().c_str());
+                TLOG_WARN("init_region_request: {}", init_region_request.ShortDebugString());
                 ++instance_count;
             }
         }
@@ -1847,8 +1847,8 @@ namespace EA {
         int64_t table_id = table_mem.schema_pb.table_id();
         std::string table_value;
         if (!simple_table_info.SerializeToString(&table_value)) {
-            DB_WARNING("request serializeToArray fail when create not level table, request:%s",
-                       simple_table_info.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail when create not level table, request:{}",
+                       simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -1857,8 +1857,8 @@ namespace EA {
 
         int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values);
         if (ret < 0) {
-            DB_WARNING("add new not level table:%s to rocksdb fail",
-                       simple_table_info.ShortDebugString().c_str());
+            TLOG_WARN("add new not level table:{} to rocksdb fail",
+                       simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -1900,15 +1900,15 @@ namespace EA {
                                 send_create_table_request(namespace_name, database, table_name, init_regions);
                             } else {
                                 send_drop_table_request(namespace_name, database, table_name);
-                                DB_FATAL("send add auto incrment request fail, table_name: %s", table_name.c_str());
+                                TLOG_ERROR("send add auto incrment request fail, table_name: {}", table_name);
                             }
                         };
                 bth.run(create_table_fun);
             }
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-            DB_WARNING("create table, table_id:%ld, table_name:%s, max_table_id: %ld"
-                       " alloc start_region_id:%ld, end_region_id :%ld",
-                       table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name().c_str(),
+            TLOG_WARN("create table, table_id:{}, table_name:{}, max_table_id: {}"
+                       " alloc start_region_id:{}, end_region_id :{}",
+                       table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name(),
                        max_table_id_tmp,
                        start_region_id,
                        RegionManager::get_instance()->get_max_region_id());
@@ -1919,14 +1919,14 @@ namespace EA {
     int TableManager::send_auto_increment_request(const proto::MetaManagerRequest &request) {
         MetaServerInteract meta_server_interact;
         if (meta_server_interact.init() != 0) {
-            DB_FATAL("meta server interact init fail when send auto increment %s",
-                     request.ShortDebugString().c_str());
+            TLOG_ERROR("meta server interact init fail when send auto increment {}",
+                     request.ShortDebugString());
             return -1;
         }
         proto::MetaManagerResponse response;
         if (meta_server_interact.send_request("meta_manager", request, response) != 0) {
-            DB_WARNING("send_auto_increment_request fail, response:%s",
-                       response.ShortDebugString().c_str());
+            TLOG_WARN("send_auto_increment_request fail, response:{}",
+                       response.ShortDebugString());
             return -1;
         }
         return 0;
@@ -1950,13 +1950,13 @@ namespace EA {
                 proto::StoreRes res;
                 auto ret = store_interact.send_request(log_id, "init_region", init_region_request, res);
                 if (ret < 0) {
-                    DB_FATAL("create table fail, address:%s, region_id: %ld",
-                             init_region_request.region_info().leader().c_str(),
+                    TLOG_ERROR("create table fail, address:{}, region_id: {}",
+                             init_region_request.region_info().leader(),
                              region_id);
                     success = false;
                     return;
                 }
-                DB_NOTICE("new region_id: %ld success, table_name:%s", region_id, full_table_name.c_str());
+                TLOG_INFO("new region_id: {} success, table_name:{}", region_id, full_table_name);
             };
             if (!success) {
                 break;
@@ -1968,13 +1968,13 @@ namespace EA {
         }
         concurrency_cond.wait(-FLAGS_concurrency_num);
         if (!success) {
-            DB_FATAL("create table:%s fail",
-                     (namespace_name + "." + database + "." + table_name).c_str());
+            TLOG_ERROR("create table:{} fail",
+                     (namespace_name + "." + database + "." + table_name));
             send_drop_table_request(namespace_name, database, table_name);
             return -1;
         }
-        DB_NOTICE("create table:%s success",
-                  (namespace_name + "." + database + "." + table_name).c_str());
+        TLOG_INFO("create table:{} success",
+                  (namespace_name + "." + database + "." + table_name));
         return 0;
     }
 
@@ -1996,7 +1996,7 @@ namespace EA {
             auto_incr->set_start_id(init_value);
             auto ret = send_auto_increment_request(request);
             if (ret < 0) {
-                DB_FATAL("send add auto incrment request fail, table_id: %ld", table_id);
+                TLOG_ERROR("send add auto incrment request fail, table_id: {}", table_id);
                 return -1;
             }
         }
@@ -2006,8 +2006,8 @@ namespace EA {
         //持久化表信息
         std::string table_value;
         if (!table_mem.schema_pb.SerializeToString(&table_value)) {
-            DB_WARNING("request serializeToArray fail when create table, request:%s",
-                       table_mem.schema_pb.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail when create table, request:{}",
+                       table_mem.schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -2027,8 +2027,8 @@ namespace EA {
         top_table.add_lower_table_ids(table_mem.schema_pb.table_id());
         top_table.set_version(table_mem.schema_pb.version() + 1);
         if (!top_table.SerializeToString(&top_table_value)) {
-            DB_WARNING("request serializeToArray fail when update upper table, request:%s",
-                       top_table.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
+                       top_table.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -2062,15 +2062,15 @@ namespace EA {
 
         std::string table_value;
         if (!schema_info.SerializeToString(&table_value)) {
-            DB_WARNING("request serializeToArray fail when update upper table, request:%s",
-                       schema_info.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
+                       schema_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
         int ret = MetaRocksdb::get_instance()->put_meta_info(construct_table_key(table_id), table_value);
         if (ret < 0) {
-            DB_WARNING("update schema info to rocksdb fail, request：%s",
-                       schema_info.ShortDebugString().c_str());
+            TLOG_WARN("update schema info to rocksdb fail, request：{}",
+                       schema_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -2083,15 +2083,15 @@ namespace EA {
 
         std::string stat_value;
         if (!stat_info.SerializeToString(&stat_value)) {
-            DB_WARNING("request serializeToArray fail when update upper table, request:%s",
-                       stat_info.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
+                       stat_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
         int ret = MetaRocksdb::get_instance()->put_meta_info(construct_statistics_key(table_id), stat_value);
         if (ret < 0) {
-            DB_WARNING("update statistics info to rocksdb fail, request：%s",
-                       stat_info.ShortDebugString().c_str());
+            TLOG_WARN("update statistics info to rocksdb fail, request：{}",
+                       stat_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -2103,7 +2103,7 @@ namespace EA {
                                                const std::string &table_name) {
         MetaServerInteract meta_server_interact;
         if (meta_server_interact.init() != 0) {
-            DB_FATAL("meta server interact init fail when drop table:%s", table_name.c_str());
+            TLOG_ERROR("meta server interact init fail when drop table:{}", table_name);
             return;
         }
         proto::MetaManagerRequest request;
@@ -2114,11 +2114,11 @@ namespace EA {
         table_info->set_database(database);
         proto::MetaManagerResponse response;
         if (meta_server_interact.send_request("meta_manager", request, response) != 0) {
-            DB_WARNING("drop table fail, response:%s", response.ShortDebugString().c_str());
+            TLOG_WARN("drop table fail, response:{}", response.ShortDebugString());
             return;
         }
-        DB_WARNING("drop table success, namespace:%s, database:%s, table_name:%s",
-                   namespace_name.c_str(), database.c_str(), table_name.c_str());
+        TLOG_WARN("drop table success, namespace:{}, database:{}, table_name:{}",
+                   namespace_name, database, table_name);
     }
 
     void TableManager::check_table_exist_for_peer(const proto::StoreHeartBeatRequest *request,
@@ -2133,14 +2133,14 @@ namespace EA {
             auto table_iter = _table_info_map.find(main_table_id);
             if (global_index_id != main_table_id && table_iter != _table_info_map.end()) {
                 if (!table_iter->second.exist_global_index(global_index_id)) {
-                    DB_WARNING("drop global index region %ld", peer_info.region_id());
+                    TLOG_WARN("drop global index region {}", peer_info.region_id());
                     response->add_delete_region_ids(peer_info.region_id());
                 }
             }
             if (_table_tombstone_map.find(main_table_id) != _table_tombstone_map.end()) {
-                DB_WARNING("table id:%ld has be deleted, drop region_id:%ld not exit, store_address:%s",
+                TLOG_WARN("table id:{} has be deleted, drop region_id:{} not exit, store_address:{}",
                            main_table_id, peer_info.region_id(),
-                           request->instance_info().address().c_str());
+                           request->instance_info().address());
                 response->add_delete_region_ids(peer_info.region_id());
                 continue;
             } else if (table_iter != _table_info_map.end()) {
@@ -2148,12 +2148,12 @@ namespace EA {
             }
 
             // 老逻辑，使用墓碑删除，后续可以删掉这段逻辑
-            DB_WARNING("table id:%ld according to region_id:%ld not exit, drop region_id, store_address:%s",
+            TLOG_WARN("table id:{} according to region_id:{} not exit, drop region_id, store_address:{}",
                        main_table_id, peer_info.region_id(),
-                       request->instance_info().address().c_str());
+                       request->instance_info().address());
             //为了安全暂时关掉这个删除region的功能，后续稳定再打开，目前先报fatal(todo)
             if (SchemaManager::get_instance()->get_unsafe_decision()) {
-                DB_WARNING("store response add delete region according to table id no exist, region_id: %ld",
+                TLOG_WARN("store response add delete region according to table id no exist, region_id: {}",
                            peer_info.region_id());
                 response->add_delete_region_ids(peer_info.region_id());
             }
@@ -2169,17 +2169,17 @@ namespace EA {
         std::string table_name = database_name + "\001" + schema_info.table_name();
         namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
-            DB_WARNING("namespace not exit, table_name:%s", table_name.c_str());
+            TLOG_WARN("namespace not exit, table_name:{}", table_name);
             return -1;
         }
         database_id = DatabaseManager::get_instance()->get_database_id(database_name);
         if (database_id == 0) {
-            DB_WARNING("database not exit, table_name:%s", table_name.c_str());
+            TLOG_WARN("database not exit, table_name:{}", table_name);
             return -1;
         }
         table_id = get_table_id(table_name);
         if (table_id == 0) {
-            DB_WARNING("table not exit, table_name:%s", table_name.c_str());
+            TLOG_WARN("table not exit, table_name:{}", table_name);
             return -1;
         }
         return 0;
@@ -2194,7 +2194,7 @@ namespace EA {
             if (table_mem.field_id_map.count(field_name) == 0) {
                 table_mem.field_id_map[field_name] = field_id;
             } else {
-                DB_WARNING("table:%s has duplicate field %s", table_name.c_str(), field_name.c_str());
+                TLOG_WARN("table:{} has duplicate field {}", table_name, field_name);
                 return -1;
             }
             if (!table_info.fields(i).has_auto_increment()
@@ -2203,8 +2203,8 @@ namespace EA {
             }
             //一个表只能有一个自增列
             if (has_auto_increment == true) {
-                DB_WARNING("table:%s has one more auto_increment field, field %s",
-                           table_name.c_str(), field_name.c_str());
+                TLOG_WARN("table:{} has one more auto_increment field, field {}",
+                           table_name, field_name);
                 return -1;
             }
             proto::PrimitiveType data_type = table_info.fields(i).mysql_type();
@@ -2216,13 +2216,13 @@ namespace EA {
                 && data_type != proto::UINT16
                 && data_type != proto::UINT32
                 && data_type != proto::UINT64) {
-                DB_WARNING("table:%s auto_increment field not interger, field %s",
-                           table_name.c_str(), field_name.c_str());
+                TLOG_WARN("table:{} auto_increment field not interger, field {}",
+                           table_name, field_name);
                 return -1;
             }
             if (table_info.fields(i).can_null()) {
-                DB_WARNING("table:%s auto_increment field can not null, field %s",
-                           table_name.c_str(), field_name.c_str());
+                TLOG_WARN("table:{} auto_increment field can not null, field {}",
+                           table_name, field_name);
                 return -1;
             }
             has_auto_increment = true;
@@ -2240,16 +2240,16 @@ namespace EA {
             for (auto j = 0; j < table_info.indexs(i).field_names_size(); ++j) {
                 std::string field_name = table_info.indexs(i).field_names(j);
                 if (table_mem.field_id_map.find(field_name) == table_mem.field_id_map.end()) {
-                    DB_WARNING("filed name:%s of index was not exist in table:%s",
-                               field_name.c_str(),
-                               table_name.c_str());
+                    TLOG_WARN("filed name:{} of index was not exist in table:{}",
+                               field_name,
+                               table_name);
                     return -1;
                 }
                 int32_t field_id = table_mem.field_id_map[field_name];
                 table_info.mutable_indexs(i)->add_field_ids(field_id);
             }
             if (table_info.indexs(i).index_type() == proto::I_NONE) {
-                DB_WARNING("invalid index type: %d", table_info.indexs(i).index_type());
+                TLOG_WARN("invalid index type: {}", table_info.indexs(i).index_type());
                 return -1;
             }
 
@@ -2262,7 +2262,7 @@ namespace EA {
             }
             //只能有一个primary key
             if (has_primary_key) {
-                DB_WARNING("table:%s has one more primary key", table_name.c_str());
+                TLOG_WARN("table:{} has one more primary key", table_name);
                 return -1;
             }
             has_primary_key = true;
@@ -2271,7 +2271,7 @@ namespace EA {
             /*
         if (!table_mem.whether_level_table && table_info.partition_num() != 1) {
             if (table_info.indexs(i).field_names_size() > 1) {
-                DB_WARNING("table:%s has partition_num, but not meet our rule", table_name.c_str());
+                TLOG_WARN("table:{} has partition_num, but not meet our rule", table_name);
                 return -1;
             }
             //而且，带partiton_num的表主键必须是设置了auto_increment属性
@@ -2279,7 +2279,7 @@ namespace EA {
             for (auto i = 0; i < table_info.fields_size(); ++i) {
                 if (table_info.fields(i).field_name() == primary_field
                         && table_info.fields(i).auto_increment() == false) {
-                        DB_WARNING("table:%s not auto increment", table_name.c_str());
+                        TLOG_WARN("table:{} not auto increment", table_name);
                         return -1;
                 }
             }
@@ -2297,30 +2297,30 @@ namespace EA {
                                            const std::string &start_key, int64_t partition) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return -1;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition];
         if (startkey_regiondesc_map.size() <= 0) {
-            DB_WARNING("table_id:%ld map empty", table_id);
+            TLOG_WARN("table_id:{} map empty", table_id);
             return -1;
         }
         auto iter = startkey_regiondesc_map.lower_bound(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            DB_WARNING("table_id:%ld can`t find region id start_key:%s",
-                       table_id, str_to_hex(start_key).c_str());
+            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
+                       table_id, str_to_hex(start_key));
         } else if (iter->first == start_key) {
-            DB_WARNING("table_id:%ld start_key:%s exist", table_id, str_to_hex(start_key).c_str());
+            TLOG_WARN("table_id:{} start_key:{} exist", table_id, str_to_hex(start_key));
             return -1;
         }
 
         if (iter == startkey_regiondesc_map.begin()) {
-            DB_WARNING("iter is the first");
+            TLOG_WARN("iter is the first");
             return -1;
         }
         --iter;
-        DB_WARNING("table_id:%ld start_key:%s region_id:%ld",
-                   table_id, str_to_hex(start_key).c_str(), iter->second.region_id);
+        TLOG_WARN("table_id:{} start_key:{} region_id:{}",
+                   table_id, str_to_hex(start_key), iter->second.region_id);
         return iter->second.region_id;
     }
 
@@ -2328,45 +2328,45 @@ namespace EA {
                                                 const std::string &start_key, int64_t partition) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return -2;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition];
         if (startkey_regiondesc_map.size() <= 0) {
-            DB_WARNING("table_id:%ld map empty", table_id);
+            TLOG_WARN("table_id:{} map empty", table_id);
             return -2;
         }
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            DB_WARNING("table_id:%ld can`t find region id start_key:%s",
-                       table_id, str_to_hex(start_key).c_str());
+            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
+                       table_id, str_to_hex(start_key));
             return -1;
         }
-        DB_WARNING("table_id:%ld start_key:%s region_id:%ld",
-                   table_id, str_to_hex(start_key).c_str(), iter->second.region_id);
+        TLOG_WARN("table_id:{} start_key:{} region_id:{}",
+                   table_id, str_to_hex(start_key), iter->second.region_id);
         return iter->second.region_id;
     }
 
     int TableManager::erase_region(int64_t table_id, int64_t region_id, std::string start_key, int64_t partition) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return -1;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition];
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            DB_WARNING("table_id:%ld can`t find region id start_key:%s",
-                       table_id, str_to_hex(start_key).c_str());
+            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
+                       table_id, str_to_hex(start_key));
             return -1;
         }
         if (iter->second.region_id != region_id) {
-            DB_WARNING("table_id:%ld diff region_id(%ld, %ld)",
+            TLOG_WARN("table_id:{} diff region_id({}, {})",
                        table_id, iter->second.region_id, region_id);
             return -1;
         }
         startkey_regiondesc_map.erase(start_key);
-        DB_WARNING("table_id:%ld erase region_id:%ld",
+        TLOG_WARN("table_id:{} erase region_id:{}",
                    table_id, region_id);
         return 0;
     }
@@ -2375,43 +2375,43 @@ namespace EA {
                                              std::string end_key, int64_t partition) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return -1;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition];
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            DB_WARNING("table_id:%ld can`t find region id start_key:%s",
-                       table_id, str_to_hex(start_key).c_str());
+            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
+                       table_id, str_to_hex(start_key));
             return -1;
         }
         auto src_iter = iter;
         auto dst_iter = ++iter;
         if (dst_iter == startkey_regiondesc_map.end()) {
-            DB_WARNING("table_id:%ld can`t find region id start_key:%s",
-                       table_id, str_to_hex(end_key).c_str());
+            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
+                       table_id, str_to_hex(end_key));
             return -1;
         }
         if (dst_iter->first != end_key) {
-            DB_WARNING("table_id:%ld start key nonsequence %s vs %s", table_id,
-                       str_to_hex(dst_iter->first).c_str(), str_to_hex(end_key).c_str());
+            TLOG_WARN("table_id:{} start key nonsequence {} vs {}", table_id,
+                       str_to_hex(dst_iter->first), str_to_hex(end_key));
             return -1;
         }
         if (src_iter->second.merge_status == MERGE_IDLE
             && dst_iter->second.merge_status == MERGE_IDLE) {
             src_iter->second.merge_status = MERGE_SRC;
             dst_iter->second.merge_status = MERGE_DST;
-            DB_WARNING("table_id:%ld merge src region_id:%ld, dst region_id:%ld",
+            TLOG_WARN("table_id:{} merge src region_id:{}, dst region_id:{}",
                        table_id, src_iter->second.region_id, dst_iter->second.region_id);
             return dst_iter->second.region_id;
         } else if (src_iter->second.merge_status == MERGE_SRC
                    && dst_iter->second.merge_status == MERGE_DST) {
-            DB_WARNING("table_id:%ld merge again src region_id:%ld, dst region_id:%ld",
+            TLOG_WARN("table_id:{} merge again src region_id:{}, dst region_id:{}",
                        table_id, src_iter->second.region_id, dst_iter->second.region_id);
             return dst_iter->second.region_id;
         } else {
-            DB_WARNING("table_id:%ld merge get next region fail, src region_id:%ld, "
-                       "merge_status:%d; dst region_id:%ld, merge_status:%d",
+            TLOG_WARN("table_id:{} merge get next region fail, src region_id:{}, "
+                       "merge_status:{}; dst region_id:{}, merge_status:{}",
                        table_id, src_iter->second.region_id, src_iter->second.merge_status,
                        dst_iter->second.region_id, dst_iter->second.merge_status);
             return -1;
@@ -2433,14 +2433,14 @@ namespace EA {
                         auto first_region = RegionManager::get_instance()->
                                 get_region_info(iter->second.region_id);
                         if (first_region == nullptr) {
-                            DB_FATAL("table_id:%ld, can`t find region_id:%ld start_key:%s, in region info map",
-                                     table_id, iter->second.region_id, str_to_hex(iter->first).c_str());
+                            TLOG_ERROR("table_id:{}, can`t find region_id:{} start_key:{}, in region info map",
+                                     table_id, iter->second.region_id, str_to_hex(iter->first));
                             continue;
                         }
-                        DB_WARNING("table_id:%ld, first region_id:%ld, version:%ld, key(%s, %s)",
+                        TLOG_WARN("table_id:{}, first region_id:{}, version:{}, key({}, {})",
                                    table_id, first_region->region_id(), first_region->version(),
-                                   str_to_hex(first_region->start_key()).c_str(),
-                                   str_to_hex(first_region->end_key()).c_str());
+                                   str_to_hex(first_region->start_key()),
+                                   str_to_hex(first_region->end_key()));
                         pre_region = first_region;
                         is_first_region = false;
                         continue;
@@ -2448,21 +2448,21 @@ namespace EA {
                     auto cur_region = RegionManager::get_instance()->
                             get_region_info(iter->second.region_id);
                     if (cur_region == nullptr) {
-                        DB_FATAL("table_id:%ld, can`t find region_id:%ld start_key:%s, in region info map",
-                                 table_id, iter->second.region_id, str_to_hex(iter->first).c_str());
+                        TLOG_ERROR("table_id:{}, can`t find region_id:{} start_key:{}, in region info map",
+                                 table_id, iter->second.region_id, str_to_hex(iter->first));
                         is_first_region = true;
                         continue;
                     }
                     if (pre_region->end_key() != cur_region->start_key()) {
-                        DB_FATAL("table_id:%ld, key nonsequence (region_id, version, "
-                                 "start_key, end_key) pre vs cur (%ld, %ld, %s, %s) vs "
-                                 "(%ld, %ld, %s, %s)", table_id,
+                        TLOG_ERROR("table_id:{}, key nonsequence (region_id, version, "
+                                 "start_key, end_key) pre vs cur ({}, {}, {}, {}) vs "
+                                 "({}, {}, {}, {})", table_id,
                                  pre_region->region_id(), pre_region->version(),
-                                 str_to_hex(pre_region->start_key()).c_str(),
-                                 str_to_hex(pre_region->end_key()).c_str(),
+                                 str_to_hex(pre_region->start_key()),
+                                 str_to_hex(pre_region->end_key()),
                                  cur_region->region_id(), cur_region->version(),
-                                 str_to_hex(cur_region->start_key()).c_str(),
-                                 str_to_hex(cur_region->end_key()).c_str());
+                                 str_to_hex(cur_region->start_key()),
+                                 str_to_hex(cur_region->end_key()));
                         is_first_region = true;
                         continue;
                     }
@@ -2470,7 +2470,7 @@ namespace EA {
                 }
             }
         }
-        DB_WARNING("check finish timecost:%ld", time_cost.get_time());
+        TLOG_WARN("check finish timecost:{}", time_cost.get_time());
         return 0;
     }
 
@@ -2480,13 +2480,13 @@ namespace EA {
         int64_t partition_id = region_info.partition_id();
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return -1;
         }
         if (region_info.start_key() == region_info.end_key()
             && !region_info.start_key().empty()) {
-            DB_WARNING("table_id: %ld, region_id: %ld, start_key: %s is empty",
-                       table_id, region_id, str_to_hex(region_info.start_key()).c_str());
+            TLOG_WARN("table_id: {}, region_id: {}, start_key: {} is empty",
+                       table_id, region_id, str_to_hex(region_info.start_key()));
             return 0;
         }
         RegionDesc region;
@@ -2500,13 +2500,13 @@ namespace EA {
             int64_t origin_region_id = key_region_map[partition_id][region_info.start_key()].region_id;
             RegionManager *region_manager = RegionManager::get_instance();
             auto origin_region = region_manager->get_region_info(origin_region_id);
-            DB_FATAL("table_id:%ld two regions has same start key (%ld, %s, %s) vs (%ld, %s, %s)",
+            TLOG_ERROR("table_id:{} two regions has same start key ({}, {}, {}) vs ({}, {}, {})",
                      table_id, origin_region->region_id(),
-                     str_to_hex(origin_region->start_key()).c_str(),
-                     str_to_hex(origin_region->end_key()).c_str(),
+                     str_to_hex(origin_region->start_key()),
+                     str_to_hex(origin_region->end_key()),
                      region_id,
-                     str_to_hex(region_info.start_key()).c_str(),
-                     str_to_hex(region_info.end_key()).c_str());
+                     str_to_hex(region_info.start_key()),
+                     str_to_hex(region_info.end_key()));
             return 0;
         }
         return 0;
@@ -2518,21 +2518,21 @@ namespace EA {
                                                           std::map<std::string, RegionDesc> &partition_region_map) {
         if (partition_region_map.size() == 0) {
             //首个region
-            DB_WARNING("table_id:%ld min_start_key:%s, max_end_key:%s", table_id,
-                       str_to_hex(min_start_key).c_str(), str_to_hex(max_end_key).c_str());
+            TLOG_WARN("table_id:{} min_start_key:{}, max_end_key:{}", table_id,
+                       str_to_hex(min_start_key), str_to_hex(max_end_key));
             return true;
         }
         auto iter = partition_region_map.find(min_start_key);
         if (iter == partition_region_map.end()) {
-            DB_FATAL("table_id:%ld can`t find min_start_key:%s",
-                     table_id, str_to_hex(min_start_key).c_str());
+            TLOG_ERROR("table_id:{} can`t find min_start_key:{}",
+                     table_id, str_to_hex(min_start_key));
             return false;
         }
         if (!max_end_key.empty()) {
             auto endkey_iter = partition_region_map.find(max_end_key);
             if (endkey_iter == partition_region_map.end()) {
-                DB_FATAL("table_id:%ld can`t find max_end_key:%s",
-                         table_id, str_to_hex(max_end_key).c_str());
+                TLOG_ERROR("table_id:{} can`t find max_end_key:{}",
+                         table_id, str_to_hex(max_end_key));
                 return false;
             }
         }
@@ -2544,7 +2544,7 @@ namespace EA {
                                                 std::map<int64_t, std::string> &max_end_key) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return false;
         }
 
@@ -2553,14 +2553,14 @@ namespace EA {
             auto &partition_startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition_id];
             auto max_pid_key = max_end_key.find(partition_id);
             if (max_pid_key == max_end_key.end()) {
-                DB_WARNING("not find partition %ld, init", partition_id);
+                TLOG_WARN("not find partition {}, init", partition_id);
                 continue;
             }
             if (!partition_check_region_when_update(table_id, start_pid_key.second,
                                                     max_pid_key->second, partition_startkey_regiondesc_map)) {
-                DB_FATAL("table_id:%ld, min_start_key:%s, max_end_key:%s check fail",
-                         table_id, str_to_hex(start_pid_key.second).c_str(),
-                         str_to_hex(max_pid_key->second).c_str());
+                TLOG_ERROR("table_id:{}, min_start_key:{}, max_end_key:{} check fail",
+                         table_id, str_to_hex(start_pid_key.second),
+                         str_to_hex(max_pid_key->second));
                 return false;
             }
         }
@@ -2571,7 +2571,7 @@ namespace EA {
                                                            std::map<int64_t, std::map<std::string, int64_t>> &key_id_map) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map;
@@ -2582,8 +2582,8 @@ namespace EA {
                 region.region_id = key_id.second;
                 region.merge_status = MERGE_IDLE;
                 startkey_regiondesc_map[partition][key_id.first] = region;
-                DB_WARNING("table_id:%ld, startkey:%s region_id:%ld insert",
-                           table_id, str_to_hex(key_id.first).c_str(), key_id.second);
+                TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
+                           table_id, str_to_hex(key_id.first), key_id.second);
             }
         }
     }
@@ -2600,15 +2600,15 @@ namespace EA {
                 region.region_id = key_id.second;
                 region.merge_status = MERGE_IDLE;
                 startkey_regiondesc_map[key_id.first] = region;
-                DB_WARNING("table_id:%ld, startkey:%s region_id:%ld insert",
-                           table_id, str_to_hex(key_id.first).c_str(), key_id.second);
+                TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
+                           table_id, str_to_hex(key_id.first), key_id.second);
             }
             return;
         }
         auto iter = startkey_regiondesc_map.find(min_start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            DB_FATAL("table_id:%ld can`t find start_key:%s",
-                     table_id, str_to_hex(min_start_key).c_str());
+            TLOG_ERROR("table_id:{} can`t find start_key:{}",
+                     table_id, str_to_hex(min_start_key));
             return;
         }
         int del_count = 0;
@@ -2618,8 +2618,8 @@ namespace EA {
                 break;
             }
             auto delete_iter = iter++;
-            DB_WARNING("table_id:%ld startkey:%s region_id:%ld merge_status:%d, erase",
-                       table_id, str_to_hex(delete_iter->first).c_str(),
+            TLOG_WARN("table_id:{} startkey:{} region_id:{} merge_status:{}, erase",
+                       table_id, str_to_hex(delete_iter->first),
                        delete_iter->second.region_id, delete_iter->second.merge_status);
             tmp_status = delete_iter->second.merge_status;
             startkey_regiondesc_map.erase(delete_iter->first);
@@ -2635,8 +2635,8 @@ namespace EA {
             region.region_id = key_id.second;
             region.merge_status = tmp_status;
             startkey_regiondesc_map[key_id.first] = region;
-            DB_WARNING("table_id:%ld, startkey:%s region_id:%ld insert",
-                       table_id, str_to_hex(key_id.first).c_str(), key_id.second);
+            TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
+                       table_id, str_to_hex(key_id.first), key_id.second);
         }
 
     }
@@ -2646,7 +2646,7 @@ namespace EA {
                                                     std::map<int64_t, std::map<std::string, int64_t>> &key_id_map) {
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map;
@@ -2657,7 +2657,7 @@ namespace EA {
             auto min_start_key_iter = min_start_key.find(partition_id);
             if (max_end_key_iter == max_end_key.end() ||
                 min_start_key_iter == min_start_key.end()) {
-                DB_WARNING("unknown partition %ld", partition_id);
+                TLOG_WARN("unknown partition {}", partition_id);
             } else {
                 partition_update_startkey_regionid_map(table_id, min_start_key_iter->second, max_end_key_iter->second,
                                                        key_id_pair.second, startkey_regiondesc_map[partition_id]);
@@ -2672,7 +2672,7 @@ namespace EA {
         std::string start_key = leader_region_info.start_key();
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id: %ld not exist", table_id);
+            TLOG_WARN("table_id: {} not exist", table_id);
             return;
         }
         _need_apply_raft_table_ids.insert(table_id);
@@ -2681,15 +2681,15 @@ namespace EA {
         if (iter != key_region_map.end()) {
             auto origin_region_info = iter->second;
             if (region_id != origin_region_info->region_id()) {
-                DB_FATAL("two diffrent regions:%ld, %ld has same start_key:%s",
+                TLOG_ERROR("two diffrent regions:{}, {} has same start_key:{}",
                          region_id, origin_region_info->region_id(),
-                         str_to_hex(start_key).c_str());
+                         str_to_hex(start_key));
                 return;
             }
             if (leader_region_info.log_index() < origin_region_info->log_index()) {
-                DB_WARNING("leader: %s log_index:%ld in heart is less than in "
-                           "origin:%ld, region_id:%ld",
-                           leader_region_info.leader().c_str(),
+                TLOG_WARN("leader: {} log_index:{} in heart is less than in "
+                           "origin:{}, region_id:{}",
+                           leader_region_info.leader(),
                            leader_region_info.log_index(),
                            origin_region_info->log_index(),
                            region_id);
@@ -2698,31 +2698,31 @@ namespace EA {
             if (leader_region_info.version() > origin_region_info->version()) {
                 if (end_key_compare(leader_region_info.end_key(), origin_region_info->end_key()) > 0) {
                     //end_key不可能变大
-                    DB_FATAL("region_id:%ld, version %ld to %ld, end_key %s to %s",
+                    TLOG_ERROR("region_id:{}, version {} to {}, end_key {} to {}",
                              region_id, origin_region_info->version(),
                              leader_region_info.version(),
-                             str_to_hex(origin_region_info->end_key()).c_str(),
-                             str_to_hex(leader_region_info.end_key()).c_str());
+                             str_to_hex(origin_region_info->end_key()),
+                             str_to_hex(leader_region_info.end_key()));
                     return;
                 }
                 key_region_map.erase(iter);
                 auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
                 key_region_map[start_key] = ptr_region;
-                DB_WARNING("region_id:%ld has changed (version, start_key, end_key)"
-                           "(%ld, %s, %s) to (%ld, %s, %s)", region_id,
+                TLOG_WARN("region_id:{} has changed (version, start_key, end_key)"
+                           "({}, {}, {}) to ({}, {}, {})", region_id,
                            origin_region_info->version(),
-                           str_to_hex(origin_region_info->start_key()).c_str(),
-                           str_to_hex(origin_region_info->end_key()).c_str(),
+                           str_to_hex(origin_region_info->start_key()),
+                           str_to_hex(origin_region_info->end_key()),
                            leader_region_info.version(),
-                           str_to_hex(leader_region_info.start_key()).c_str(),
-                           str_to_hex(leader_region_info.end_key()).c_str());
+                           str_to_hex(leader_region_info.start_key()),
+                           str_to_hex(leader_region_info.end_key()));
             }
         } else {
             auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
             key_region_map[start_key] = ptr_region;
-            DB_WARNING("table_id:%ld add new region_id:%ld, key:(%s, %s) version:%ld",
-                       table_id, region_id, str_to_hex(start_key).c_str(),
-                       str_to_hex(leader_region_info.end_key()).c_str(),
+            TLOG_WARN("table_id:{} add new region_id:{}, key:({}, {}) version:{}",
+                       table_id, region_id, str_to_hex(start_key),
+                       str_to_hex(leader_region_info.end_key()),
                        leader_region_info.version());
         }
     }
@@ -2732,7 +2732,7 @@ namespace EA {
         int64_t region_id = leader_region_info.region_id();
         BAIDU_SCOPED_LOCK(_table_mutex);
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("table_id:%ld not exist", table_id);
+            TLOG_WARN("table_id:{} not exist", table_id);
             return;
         }
         _need_apply_raft_table_ids.insert(table_id);
@@ -2746,9 +2746,9 @@ namespace EA {
         if (iter != id_region_map->end()) {
             auto origin_region_info = iter->second;
             if (leader_region_info.log_index() < origin_region_info->log_index()) {
-                DB_WARNING("leader: %s log_index:%ld in heart is less than in "
-                           "origin:%ld, region_id:%ld",
-                           leader_region_info.leader().c_str(),
+                TLOG_WARN("leader: {} log_index:{} in heart is less than in "
+                           "origin:{}, region_id:{}",
+                           leader_region_info.leader(),
                            leader_region_info.log_index(),
                            origin_region_info->log_index(),
                            region_id);
@@ -2758,23 +2758,23 @@ namespace EA {
                 id_region_map->erase(iter);
                 auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
                 id_region_map->insert(std::make_pair(region_id, ptr_region));
-                DB_WARNING("table_id:%ld, region_id:%ld has changed (version, start_key, end_key)"
-                           "(%ld, %s, %s) to (%ld, %s, %s)", table_id, region_id,
+                TLOG_WARN("table_id:{}, region_id:{} has changed (version, start_key, end_key)"
+                           "({}, {}, {}) to ({}, {}, {})", table_id, region_id,
                            origin_region_info->version(),
-                           str_to_hex(origin_region_info->start_key()).c_str(),
-                           str_to_hex(origin_region_info->end_key()).c_str(),
+                           str_to_hex(origin_region_info->start_key()),
+                           str_to_hex(origin_region_info->end_key()),
                            leader_region_info.version(),
-                           str_to_hex(leader_region_info.start_key()).c_str(),
-                           str_to_hex(leader_region_info.end_key()).c_str());
+                           str_to_hex(leader_region_info.start_key()),
+                           str_to_hex(leader_region_info.end_key()));
             }
         } else {
             auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
             id_region_map->insert(std::make_pair(region_id, ptr_region));
-            DB_WARNING("table_id:%ld, region_id:%ld (version, start_key, end_key)"
-                       "(%ld, %s, %s)", table_id, region_id,
+            TLOG_WARN("table_id:{}, region_id:{} (version, start_key, end_key)"
+                       "({}, {}, {})", table_id, region_id,
                        leader_region_info.version(),
-                       str_to_hex(leader_region_info.start_key()).c_str(),
-                       str_to_hex(leader_region_info.end_key()).c_str());
+                       str_to_hex(leader_region_info.start_key()),
+                       str_to_hex(leader_region_info.end_key()));
         }
     }
 
@@ -2794,9 +2794,9 @@ namespace EA {
         for (auto region_iter = partition_region_map.find(new_start_key);
              region_iter != partition_region_map.end(); region_iter++) {
             if (region_iter->first > origin_start_key) {
-                DB_WARNING("table_id:%ld region_id:%ld start_key:%s bigger than end_key:%s",
-                           table_id, region_iter->second.region_id, str_to_hex(region_iter->first).c_str(),
-                           str_to_hex(origin_start_key).c_str());
+                TLOG_WARN("table_id:{} region_id:{} start_key:{} bigger than end_key:{}",
+                           table_id, region_iter->second.region_id, str_to_hex(region_iter->first),
+                           str_to_hex(origin_start_key));
                 return -1;
             }
             if (region_iter->first == origin_start_key) {
@@ -2806,11 +2806,11 @@ namespace EA {
             auto iter = id_noneregion_map.find(region_id);
             if (iter != id_noneregion_map.end()) {
                 regions.push_back(iter->second);
-                DB_WARNING("table_id:%ld, find region_id:%ld in id_noneregion_map"
-                           "start_key:%s", table_id, region_id,
-                           str_to_hex(region_iter->first).c_str());
+                TLOG_WARN("table_id:{}, find region_id:{} in id_noneregion_map"
+                           "start_key:{}", table_id, region_id,
+                           str_to_hex(region_iter->first));
             } else {
-                DB_WARNING("table_id:%ld, can`t find region_id:%ld in id_noneregion_map",
+                TLOG_WARN("table_id:{}, can`t find region_id:{} in id_noneregion_map",
                            table_id, region_id);
                 return -1;
             }
@@ -2833,23 +2833,23 @@ namespace EA {
              region_iter != key_newregion_map.end(); region_iter++) {
             SmartRegionInfo ptr_region = region_iter->second;
             if (key != ptr_region->start_key()) {
-                DB_WARNING("table_id:%ld can`t find start_key:%s, in key_region_map",
-                           table_id, str_to_hex(key).c_str());
+                TLOG_WARN("table_id:{} can`t find start_key:{}, in key_region_map",
+                           table_id, str_to_hex(key));
                 return -1;
             }
-            DB_WARNING("table_id:%ld, find region_id:%ld in key_region_map"
-                       "start_key:%s, end_key:%s", table_id, ptr_region->region_id(),
-                       str_to_hex(ptr_region->start_key()).c_str(),
-                       str_to_hex(ptr_region->end_key()).c_str());
+            TLOG_WARN("table_id:{}, find region_id:{} in key_region_map"
+                       "start_key:{}, end_key:{}", table_id, ptr_region->region_id(),
+                       str_to_hex(ptr_region->start_key()),
+                       str_to_hex(ptr_region->end_key()));
             regions.push_back(ptr_region);
             if (ptr_region->end_key() == origin_end_key) {
                 return 0;
             }
             if (end_key_compare(ptr_region->end_key(), origin_end_key) > 0) {
-                DB_FATAL("table_id:%ld region_id:%ld end_key:%s bigger than end_key:%s",
+                TLOG_ERROR("table_id:{} region_id:{} end_key:{} bigger than end_key:{}",
                          table_id, ptr_region->region_id(),
-                         str_to_hex(ptr_region->end_key()).c_str(),
-                         str_to_hex(origin_end_key).c_str());
+                         str_to_hex(ptr_region->end_key()),
+                         str_to_hex(origin_end_key));
                 return -1;
             }
             key = ptr_region->end_key();
@@ -2866,8 +2866,8 @@ namespace EA {
              region_iter != key_newregion_map.end(); region_iter++) {
             SmartRegionInfo ptr_region = region_iter->second;
             if (key != ptr_region->start_key()) {
-                DB_WARNING("table_id:%ld can`t find start_key:%s, in key_region_map",
-                           table_id, str_to_hex(key).c_str());
+                TLOG_WARN("table_id:{} can`t find start_key:{}, in key_region_map",
+                           table_id, str_to_hex(key));
                 return -1;
             }
             region_cnt++;
@@ -2878,7 +2878,7 @@ namespace EA {
             }
             key = ptr_region->end_key();
         }
-        DB_WARNING("table_id: %ld, region_cnt: %d", table_id, region_cnt);
+        TLOG_WARN("table_id: {}, region_cnt: {}", table_id, region_cnt);
         if (region_cnt == 0) {
             return -1;
         }
@@ -2905,19 +2905,19 @@ namespace EA {
             int64_t partition_id = ptr_region->partition_id();
             auto master_region = RegionManager::get_instance()->get_region_info(region_id);
             if (master_region == nullptr) {
-                DB_WARNING("can`t find region_id:%ld in region info map", region_id);
+                TLOG_WARN("can`t find region_id:{} in region info map", region_id);
                 continue;
             }
-            DB_WARNING("table_id:%ld, region_id:%ld key has changed "
-                       "(version, start_key, end_key),(%ld, %s, %s)->(%ld, %s, %s)",
+            TLOG_WARN("table_id:{}, region_id:{} key has changed "
+                       "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
                        table_id, region_id, master_region->version(),
-                       str_to_hex(master_region->start_key()).c_str(),
-                       str_to_hex(master_region->end_key()).c_str(),
+                       str_to_hex(master_region->start_key()),
+                       str_to_hex(master_region->end_key()),
                        ptr_region->version(),
-                       str_to_hex(ptr_region->start_key()).c_str(),
-                       str_to_hex(ptr_region->end_key()).c_str());
+                       str_to_hex(ptr_region->start_key()),
+                       str_to_hex(ptr_region->end_key()));
             if (ptr_region->version() <= master_region->version()) {
-                DB_WARNING("table_id:%ld, region_id:%ld, version too small need erase",
+                TLOG_WARN("table_id:{}, region_id:{}, version too small need erase",
                            table_id, region_id);
                 id_keyregion_map.erase(cur_iter);
                 continue;
@@ -2936,7 +2936,7 @@ namespace EA {
                                     master_region->start_key(),
                                     startkey_regiondesc_map, id_noneregion_map, regions, partition_id);
             if (ret < 0) {
-                DB_WARNING("table_id:%ld, region_id:%ld get merge region failed",
+                TLOG_WARN("table_id:{}, region_id:{} get merge region failed",
                            table_id, region_id);
                 continue;
             }
@@ -2945,7 +2945,7 @@ namespace EA {
                                     master_region->end_key(),
                                     key_newregion_map[ptr_region->partition_id()], regions);
             if (ret < 0) {
-                DB_WARNING("table_id:%ld, region_id:%ld get split region failed",
+                TLOG_WARN("table_id:{}, region_id:{} get split region failed",
                            table_id, region_id);
                 continue;
             }
@@ -2976,19 +2976,19 @@ namespace EA {
                     auto ptr_region = cur_iter->second;
                     auto master_region = RegionManager::get_instance()->get_region_info(region_id);
                     if (master_region == nullptr) {
-                        DB_WARNING("can`t find region_id: %ld in region info map", region_id);
+                        TLOG_WARN("can`t find region_id: {} in region info map", region_id);
                         continue;
                     }
                     if (ptr_region->version() <= master_region->version()) {
                         id_keyregion_map.erase(cur_iter);
-                        DB_WARNING("table_id: %ld, region_id:%ld key has changed "
-                                   "(version, start_key, end_key),(%ld, %s, %s)->(%ld, %s, %s)",
+                        TLOG_WARN("table_id: {}, region_id:{} key has changed "
+                                   "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
                                    table_info.first, region_id, master_region->version(),
-                                   str_to_hex(master_region->start_key()).c_str(),
-                                   str_to_hex(master_region->end_key()).c_str(),
+                                   str_to_hex(master_region->start_key()),
+                                   str_to_hex(master_region->end_key()),
                                    ptr_region->version(),
-                                   str_to_hex(ptr_region->start_key()).c_str(),
-                                   str_to_hex(ptr_region->end_key()).c_str());
+                                   str_to_hex(ptr_region->start_key()),
+                                   str_to_hex(ptr_region->end_key()));
                         continue;
                     }
                 }
@@ -3012,7 +3012,7 @@ namespace EA {
                         if (key_newregion_map.size() != 0 || id_noneregion_map.size() != 0) {
                             key_newregion_map[partition_key].clear();
                             id_noneregion_map.clear();
-                            DB_WARNING("table_id: %ld partition_key: %ld tmp map clear", table_info.first,
+                            TLOG_WARN("table_id: {} partition_key: {} tmp map clear", table_info.first,
                                        partition_key);
                         }
                     }
@@ -3037,7 +3037,7 @@ namespace EA {
             }
             for (auto table_id: _need_apply_raft_table_ids) {
                 if (_table_info_map.find(table_id) == _table_info_map.end()) {
-                    DB_WARNING("table_id: %ld not exist", table_id);
+                    TLOG_WARN("table_id: {} not exist", table_id);
                     continue;
                 }
                 auto &table_info = _table_info_map[table_id];
@@ -3078,21 +3078,21 @@ namespace EA {
     void TableManager::drop_index(const proto::MetaManagerRequest &request, const int64_t apply_index,
                                   braft::Closure *done) {
         //检查参数有效性
-        DB_NOTICE("drop index, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop index, request:{}", request.ShortDebugString());
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (request.table_info().indexs_size() != 1) {
-            DB_WARNING("check index info fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check index info fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "index info fail");
             return;
         }
 
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl , request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl , request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
@@ -3118,10 +3118,10 @@ namespace EA {
                     //meta内存中虚拟索引影响面记录删除
                     BAIDU_SCOPED_LOCK(_load_virtual_to_memory_mutex);
                     //将删除的info存入TableManager管理的内存
-                    DB_NOTICE(
-                            "DDL_LOG drop_virtual_index_id [%ld], index_name [%s], database_name [%s], table_name[%s]",
+                    TLOG_INFO(
+                            "DDL_LOG drop_virtual_index_id [{}], index_name [{}], database_name [{}], table_name[{}]",
                             index_to_del->index_id(),
-                            index_name.c_str(), database_name.c_str(), table_name.c_str());
+                            index_name, database_name, table_name);
                     _just_add_virtual_index_info.erase(index_to_del->index_id());
                     _virtual_index_sql_map.erase(delete_virtual_indx_info);
                 }
@@ -3132,7 +3132,7 @@ namespace EA {
                 int ret = DDLManager::get_instance()->init_del_index_ddlwork(table_id, *index_to_del);
                 if (ret != 0) {
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "delete index init error.");
-                    DB_WARNING("DDL_LOG delete index init error index [%s].", index_to_del->index_name().c_str());
+                    TLOG_WARN("DDL_LOG delete index init error index [{}].", index_to_del->index_name());
                 } else {
                     IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
                 }
@@ -3140,7 +3140,7 @@ namespace EA {
             }
         } else {
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "index not found");
-            DB_WARNING("DDL_LOG drop_index can't find index [%s].", index_req.index_name().c_str());
+            TLOG_WARN("DDL_LOG drop_index can't find index [{}].", index_req.index_name());
         }
     }
 
@@ -3148,22 +3148,22 @@ namespace EA {
                                  const int64_t apply_index,
                                  braft::Closure *done) {
         int ret = 0;
-        DB_DEBUG("DDL_LOG[add_index] add index, request:%s", request.ShortDebugString().c_str());
+        TLOG_DEBUG("DDL_LOG[add_index] add index, request:{}", request.ShortDebugString());
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0 &&
             request.table_info().table_id() == table_id) {
-            DB_WARNING("DDL_LOG[add_index] check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("DDL_LOG[add_index] check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl , request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl , request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
         //检查field有效性
         if (request.table_info().indexs_size() != 1) {
-            DB_WARNING("DDL_LOG[add_index] check index info fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("DDL_LOG[add_index] check index info fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "index info fail");
             return;
         }
@@ -3176,13 +3176,13 @@ namespace EA {
                 }
         );
         if (!all_fields_exist) {
-            DB_WARNING("DDL_LOG[add_index] check fields info fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("DDL_LOG[add_index] check fields info fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "fields info fail");
             return;
         }
-        DB_DEBUG("DDL_LOG[add_index] check field success.");
+        TLOG_DEBUG("DDL_LOG[add_index] check field success.");
         if (_table_info_map.find(table_id) == _table_info_map.end()) {
-            DB_WARNING("DDL_LOG[add_index] table not in table_info_map, request:%s", request.DebugString().c_str());
+            TLOG_WARN("DDL_LOG[add_index] table not in table_info_map, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not in table_info_map");
             return;
         }
@@ -3192,11 +3192,11 @@ namespace EA {
                                     _table_info_map[table_id].schema_pb, index_id);
 
         if (index_ret == -1) {
-            DB_WARNING("check index info fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check index info fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "index info fail");
             return;
         }
-        DB_DEBUG("DDL_LOG[add_index] check index info success.");
+        TLOG_DEBUG("DDL_LOG[add_index] check index info success.");
 
         if (index_ret == 2) {
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
@@ -3217,22 +3217,22 @@ namespace EA {
             //RocksDB更新
             ret = MetaRocksdb::get_instance()->put_meta_info(construct_max_table_id_key(), max_table_id_value);
             if (ret < 0) {
-                DB_WARNING("update max_table_id to rocksdb fail.");
+                TLOG_WARN("update max_table_id to rocksdb fail.");
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
                 return;
             }
-            DB_NOTICE("alloc new index_id[%ld]", tmp_max_table_id);
+            TLOG_INFO("alloc new index_id[{}]", tmp_max_table_id);
         }
 
         for (const auto &field_name: index_info.field_names()) {
             auto field_id_iter = _table_info_map[table_id].field_id_map.find(field_name);
             if (field_id_iter == _table_info_map[table_id].field_id_map.end()) {
-                DB_WARNING("field_id not found field_name[%s] in field_id_map.", field_name.c_str());
+                TLOG_WARN("field_id not found field_name[{}] in field_id_map.", field_name);
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "get field id error");
                 return;
             } else {
                 index_info.add_field_ids(field_id_iter->second);
-                DB_DEBUG("DDL_LOG add field id[%d] field_name[%s]", field_id_iter->second, field_name.c_str());
+                TLOG_DEBUG("DDL_LOG add field id[{}] field_name[{}]", field_id_iter->second, field_name);
             }
         }
 
@@ -3244,7 +3244,7 @@ namespace EA {
             ret = do_add_index(request, apply_index, done, table_id, index_info);
         }
         if (ret != 0) {
-            DB_WARNING("add global|local index error.");
+            TLOG_WARN("add global|local index error.");
             return;
         }
         //update schema
@@ -3252,7 +3252,7 @@ namespace EA {
         auto index_iter = mem_schema_pb.mutable_indexs()->begin();
         for (; index_iter != mem_schema_pb.mutable_indexs()->end();) {
             if (index_info.index_id() == index_iter->index_id()) {
-                DB_NOTICE("DDL_LOG udpate_index delete index [%ld].", index_iter->index_id());
+                TLOG_INFO("DDL_LOG udpate_index delete index [{}].", index_iter->index_id());
                 mem_schema_pb.mutable_indexs()->erase(index_iter);
             } else {
                 index_iter++;
@@ -3279,9 +3279,9 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        DB_DEBUG("DDL_LOG add_index index_info [%s]", add_index->ShortDebugString().c_str());
-        DB_NOTICE("DDL_LOG add_index schema_info [%s] apply_index %ld",
-                  _table_info_map[table_id].schema_pb.ShortDebugString().c_str(), apply_index);
+        TLOG_DEBUG("DDL_LOG add_index index_info [{}]", add_index->ShortDebugString());
+        TLOG_INFO("DDL_LOG add_index schema_info [{}] apply_index {}",
+                  _table_info_map[table_id].schema_pb.ShortDebugString(), apply_index);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
     }
 
@@ -3335,7 +3335,7 @@ namespace EA {
             *(init_region_request.mutable_schema_info()) = simple_table_info;
             init_region_request.set_snapshot_times(2);
             init_regions->emplace_back(init_region_request);
-            DB_WARNING("init_region_request: %s", init_region_request.DebugString().c_str());
+            TLOG_WARN("init_region_request: {}", init_region_request.DebugString());
             ++instance_count;
         }
         //持久化region_id
@@ -3348,16 +3348,16 @@ namespace EA {
         //持久化schema_info
         std::string table_value;
         if (!simple_table_info.SerializeToString(&table_value)) {
-            DB_WARNING("request serializeToArray fail when create not level table, request:%s",
-                       simple_table_info.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail when create not level table, request:{}",
+                       simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
 
         int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values);
         if (ret < 0) {
-            DB_WARNING("add new not level table:%s to rocksdb fail",
-                       simple_table_info.ShortDebugString().c_str());
+            TLOG_WARN("add new not level table:{} to rocksdb fail",
+                       simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -3385,7 +3385,7 @@ namespace EA {
         auto &table_mem = _table_info_map[table_id];
         int64_t start_region_id = RegionManager::get_instance()->get_max_region_id();
         if (index_info.is_global() && init_global_index_region(table_mem, done, index_info) != 0) {
-            DB_WARNING("table_id[%ld] add global index init global region failed.", table_id);
+            TLOG_WARN("table_id[{}] add global index init global region failed.", table_id);
             if (done) {
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "init global region failed");
             }
@@ -3394,16 +3394,16 @@ namespace EA {
 
         int ret = DDLManager::get_instance()->init_index_ddlwork(table_id, index_info, table_mem.partition_regions);
         if (ret < 0) {
-            DB_WARNING("table_id[%ld] add index init ddlwork failed.", table_id);
+            TLOG_WARN("table_id[{}] add index init ddlwork failed.", table_id);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "init index ddlwork failed");
             return -1;
         }
         if (done) {
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
         }
-        DB_WARNING("create index, table_id:%ld, table_name:%s, "
-                   " alloc start_region_id:%ld, end_region_id :%ld",
-                   table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name().c_str(),
+        TLOG_WARN("create index, table_id:{}, table_name:{}, "
+                   " alloc start_region_id:{}, end_region_id :{}",
+                   table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name(),
                    start_region_id + 1,
                    RegionManager::get_instance()->get_max_region_id());
         return 0;
@@ -3413,7 +3413,7 @@ namespace EA {
                                          int64_t table_id) {
         auto table_mem_iter = _table_info_map.find(table_id);
         if (table_mem_iter == _table_info_map.end()) {
-            DB_WARNING("table_id:[%ld] not exist.", table_id);
+            TLOG_WARN("table_id:[{}] not exist.", table_id);
             return false;
         }
         auto &&table_mem = table_mem_iter->second;
@@ -3429,7 +3429,7 @@ namespace EA {
         /*
     for (const auto& index_info : schema_info.indexs()) {
         if (index_info.storage_type() != index_info_to_check.storage_type()) {
-            DB_WARNING("diff fulltext index type.");
+            TLOG_WARN("diff fulltext index type.");
             return -1;
         }
     }
@@ -3452,24 +3452,24 @@ namespace EA {
                 if (index_info.state() == proto::IS_NONE || index_info.state() == proto::IS_DELETE_ONLY) {
                     if (same_index(index_info, index_info_to_check)) {
                         index_id = index_info.index_id();
-                        DB_NOTICE("DDL_LOG rebuild index[%ld]", index_id);
+                        TLOG_INFO("DDL_LOG rebuild index[{}]", index_id);
                         return 1;
                     } else {
-                        DB_WARNING("DDL_LOG same index name, diff fields.");
+                        TLOG_WARN("DDL_LOG same index name, diff fields.");
                         return -1;
                     }
                 } else {
                     if (same_index(index_info, index_info_to_check)) {
-                        DB_WARNING("DDL_LOG same index name, same fields.");
+                        TLOG_WARN("DDL_LOG same index name, same fields.");
                         return 2;
                     }
-                    DB_WARNING("DDL_LOG rebuild index failed, index state not satisfy.");
+                    TLOG_WARN("DDL_LOG rebuild index failed, index state not satisfy.");
                     return -1;
                 }
             } else {
                 /*
             if (same_index(index_info, index_info_to_check)) {
-               DB_WARNING("DDL_LOG diff index name, same fields.");
+               TLOG_WARN("DDL_LOG diff index name, same fields.");
                 return -1;
             }
             */
@@ -3491,15 +3491,15 @@ namespace EA {
                                           if (request_index_info.job_state() != proto::IS_DELETE_LOCAL &&
                                               request_index_info.deleted()) {
                                               //删除索引
-                                              DB_NOTICE("DDL_LOG udpate_index_status delete index [%s].",
-                                                        request_index_info.ShortDebugString().c_str());
+                                              TLOG_INFO("DDL_LOG udpate_index_status delete index [{}].",
+                                                        request_index_info.ShortDebugString());
                                               update_op_version(mem_schema_pb.mutable_schema_conf(),
                                                                 "drop index " + index_iter->index_name());
                                               mem_schema_pb.mutable_indexs()->erase(index_iter);
                                           } else {
                                               //改变索引状态
-                                              DB_NOTICE("DDL_LOG set state index state to [%s]",
-                                                        request_index_info.ShortDebugString().c_str());
+                                              TLOG_INFO("DDL_LOG set state index state to [{}]",
+                                                        request_index_info.ShortDebugString());
                                               index_iter->set_state(request_index_info.job_state());
                                               if (request_index_info.op_type() == proto::OP_DROP_INDEX &&
                                                   index_iter->hint_status() == proto::IHS_NORMAL) {
@@ -3525,39 +3525,39 @@ namespace EA {
     }
 
     void TableManager::delete_ddlwork(const proto::MetaManagerRequest &request, braft::Closure *done) {
-        DB_NOTICE("delete ddlwork %s is_global[%d]", request.ShortDebugString().c_str(),
+        TLOG_INFO("delete ddlwork {} is_global[{}]", request.ShortDebugString(),
                   request.ddlwork_info().global());
         DDLManager::get_instance()->delete_ddlwork(request, done);
     }
 
     void TableManager::link_binlog(const proto::MetaManagerRequest &request, const int64_t apply_index,
                                    braft::Closure *done) {
-        DB_DEBUG("link binlog, request:%s", request.ShortDebugString().c_str());
+        TLOG_DEBUG("link binlog, request:{}", request.ShortDebugString());
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (!request.has_binlog_info()) {
-            DB_WARNING("check binlog info fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check binlog info fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "no binlog info");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl , request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl , request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
         int64_t binlog_table_id;
         if (check_table_exist(request.binlog_info(), binlog_table_id) != 0) {
-            DB_WARNING("check binlog table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check binlog table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "binlog table not exist");
             return;
         }
         if (_table_info_map.find(table_id) == _table_info_map.end() ||
             _table_info_map.find(binlog_table_id) == _table_info_map.end()) {
-            DB_WARNING("table not in table_info_map, request:%s", request.DebugString().c_str());
+            TLOG_WARN("table not in table_info_map, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not in table_info_map");
             return;
         }
@@ -3565,7 +3565,7 @@ namespace EA {
         auto &table_mem = _table_info_map[table_id];
         auto &binlog_table_mem = _table_info_map[binlog_table_id];
         if (table_mem.is_linked) {
-            DB_WARNING("table already linked, request:%s", request.DebugString().c_str());
+            TLOG_WARN("table already linked, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table already linked");
             return;
         }
@@ -3582,23 +3582,23 @@ namespace EA {
                     }
                 }
                 if (!get_field_info) {
-                    DB_WARNING("link field info error, request:%s", request.DebugString().c_str());
+                    TLOG_WARN("link field info error, request:{}", request.DebugString());
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "link field info error");
                     return;
                 }
             } else {
-                DB_WARNING("table no link field info, request:%s", request.DebugString().c_str());
+                TLOG_WARN("table no link field info, request:{}", request.DebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "no link field info");
                 return;
             }
         }
 
         if (!binlog_table_mem.is_binlog) {
-            DB_WARNING("table is not binlog, request:%s", request.DebugString().c_str());
+            TLOG_WARN("table is not binlog, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is not binlog");
             return;
         }
-        DB_NOTICE("link binlog tableid[%ld] binlog_table_id[%ld]", table_id, binlog_table_id);
+        TLOG_INFO("link binlog tableid[{}] binlog_table_id[{}]", table_id, binlog_table_id);
         table_mem.is_linked = true;
         table_mem.binlog_id = binlog_table_id;
         binlog_table_mem.binlog_target_ids.insert(table_id);
@@ -3634,45 +3634,45 @@ namespace EA {
 
     void TableManager::unlink_binlog(const proto::MetaManagerRequest &request, const int64_t apply_index,
                                      braft::Closure *done) {
-        DB_DEBUG("link binlog, request:%s", request.ShortDebugString().c_str());
+        TLOG_DEBUG("link binlog, request:{}", request.ShortDebugString());
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
         if (!request.has_binlog_info()) {
-            DB_WARNING("check binlog info fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check binlog info fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "no binlog info");
             return;
         }
         if (check_table_has_ddlwork(table_id)) {
-            DB_WARNING("table is doing ddl , request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("table is doing ddl , request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is doing ddl");
             return;
         }
         int64_t binlog_table_id;
         if (check_table_exist(request.binlog_info(), binlog_table_id) != 0) {
-            DB_WARNING("check binlog table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check binlog table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "binlog table not exist");
             return;
         }
         if (_table_info_map.find(table_id) == _table_info_map.end() ||
             _table_info_map.find(binlog_table_id) == _table_info_map.end()) {
-            DB_WARNING("table not in table_info_map, request:%s", request.DebugString().c_str());
+            TLOG_WARN("table not in table_info_map, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not in table_info_map");
             return;
         }
-        DB_NOTICE("unlink binlog tableid[%ld] binlog_table_id[%ld]", table_id, binlog_table_id);
+        TLOG_INFO("unlink binlog tableid[{}] binlog_table_id[{}]", table_id, binlog_table_id);
         auto &table_mem = _table_info_map[table_id];
         auto &binlog_table_mem = _table_info_map[binlog_table_id];
         if (!table_mem.is_linked) {
-            DB_WARNING("table not linked, request:%s", request.DebugString().c_str());
+            TLOG_WARN("table not linked, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not linked");
             return;
         }
         if (!binlog_table_mem.is_binlog || binlog_table_mem.binlog_target_ids.count(table_id) == 0) {
-            DB_WARNING("table is not binlog or not correct binlog table, request:%s", request.DebugString().c_str());
+            TLOG_WARN("table is not binlog or not correct binlog table, request:{}", request.DebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table is not binlog");
             return;
         }
@@ -3758,8 +3758,8 @@ namespace EA {
                                                                  FLAGS_table_tombstone_gc_time_s * 1000 * 1000LL;
                                                   }
                                                   index_iter->set_drop_timestamp(due_time);
-                                                  DB_NOTICE("set index hint status schema %s",
-                                                            mem_schema_pb.ShortDebugString().c_str());
+                                                  TLOG_INFO("set index hint status schema {}",
+                                                            mem_schema_pb.ShortDebugString());
                                                   break;
                                               }
                                           }
@@ -3783,8 +3783,8 @@ namespace EA {
                                                   index_iter->index_name() == index_info.index_name() &&
                                                   index_iter->index_type() != proto::I_PRIMARY) {
                                                   mem_schema_pb.mutable_indexs()->erase(index_iter);
-                                                  DB_NOTICE("set index hint status schema %s",
-                                                            mem_schema_pb.ShortDebugString().c_str());
+                                                  TLOG_INFO("set index hint status schema {}",
+                                                            mem_schema_pb.ShortDebugString());
                                                   break;
                                               }
                                           }
@@ -3797,11 +3797,11 @@ namespace EA {
     void TableManager::add_learner(const proto::MetaManagerRequest &request, const int64_t apply_index,
                                    braft::Closure *done) {
         int ret = 0;
-        DB_DEBUG("request:%s", request.ShortDebugString().c_str());
+        TLOG_DEBUG("request:{}", request.ShortDebugString());
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0 &&
             request.table_info().table_id() == table_id) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
@@ -3810,14 +3810,14 @@ namespace EA {
         proto::SchemaInfo mem_schema_pb = table_mem.schema_pb;
 
         if (request.resource_tags().size() < 1 || request.resource_tags(0) == mem_schema_pb.resource_tag()) {
-            DB_WARNING("learner resource tag can`t be the same as origin table resouce %s.",
-                       table_mem.schema_pb.ShortDebugString().c_str());
+            TLOG_WARN("learner resource tag can`t be the same as origin table resouce {}.",
+                       table_mem.schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "same resource tag.");
             return;
         }
         for (auto &learner_resource: mem_schema_pb.learner_resource_tags()) {
             if (learner_resource == request.resource_tags(0)) {
-                DB_WARNING("already has learner schema %s.", table_mem.schema_pb.ShortDebugString().c_str());
+                TLOG_WARN("already has learner schema {}.", table_mem.schema_pb.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "already has learner");
                 return;
             }
@@ -3835,19 +3835,19 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        DB_NOTICE("add_learner schema_info [%s] apply_index %ld",
-                  _table_info_map[table_id].schema_pb.ShortDebugString().c_str(), apply_index);
+        TLOG_INFO("add_learner schema_info [{}] apply_index {}",
+                  _table_info_map[table_id].schema_pb.ShortDebugString(), apply_index);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
     }
 
     void TableManager::drop_learner(const proto::MetaManagerRequest &request, const int64_t apply_index,
                                     braft::Closure *done) {
         int ret = 0;
-        DB_DEBUG("request:%s", request.ShortDebugString().c_str());
+        TLOG_DEBUG("request:{}", request.ShortDebugString());
         int64_t table_id;
         if (check_table_exist(request.table_info(), table_id) != 0 &&
             request.table_info().table_id() == table_id) {
-            DB_WARNING("check table exist fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
@@ -3855,14 +3855,14 @@ namespace EA {
         auto &table_mem = _table_info_map[table_id];
         proto::SchemaInfo mem_schema_pb = table_mem.schema_pb;
         if (table_mem.learner_resource_tag.size() == 0 || request.resource_tags().size() < 1) {
-            DB_WARNING("not learner schema %s.", table_mem.schema_pb.ShortDebugString().c_str());
+            TLOG_WARN("not learner schema {}.", table_mem.schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "not learner table");
             return;
         }
         auto iter = std::find(table_mem.learner_resource_tag.begin(),
                               table_mem.learner_resource_tag.end(), request.resource_tags(0));
         if (iter == table_mem.learner_resource_tag.end()) {
-            DB_WARNING("can`t find learner resource tag %s.", table_mem.schema_pb.ShortDebugString().c_str());
+            TLOG_WARN("can`t find learner resource tag {}.", table_mem.schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "can`t find learner resource tag");
             return;
         }
@@ -3886,8 +3886,8 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        DB_NOTICE("drop_learner schema_info [%s] apply_index %ld",
-                  _table_info_map[table_id].schema_pb.ShortDebugString().c_str(), apply_index);
+        TLOG_INFO("drop_learner schema_info [{}] apply_index {}",
+                  _table_info_map[table_id].schema_pb.ShortDebugString(), apply_index);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
     }
 
@@ -3902,7 +3902,7 @@ namespace EA {
         std::vector<std::string> write_rocksdb_values;
 
         if (_table_info_map.find(drop_index_id) == _table_info_map.end()) {
-            DB_WARNING("drop table error. table not exist.");
+            TLOG_WARN("drop table error. table not exist.");
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "global index not in table info map.");
             return;
         }
@@ -3920,11 +3920,11 @@ namespace EA {
                                                            write_rocksdb_values,
                                                            delete_rocksdb_keys);
         if (ret < 0) {
-            DB_WARNING("drop index fail, request：%s", request.ShortDebugString().c_str());
+            TLOG_WARN("drop index fail, request：{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        DB_NOTICE("drop index success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop index success, request:{}", request.ShortDebugString());
         if (done) {
             Bthread bth_remove_region(&BTHREAD_ATTR_SMALL);
             std::function<void()> remove_function = [drop_region_ids]() {

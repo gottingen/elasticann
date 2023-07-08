@@ -297,7 +297,7 @@ namespace EA {
                             google::protobuf::Closure *done) {
         TimeCost time_cost;
         brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl = static_cast<brpc::Controller *>(controller);
+        auto *cntl = static_cast<brpc::Controller *>(controller);
         if (!_factory) {
             cntl->SetFailed(EINVAL, "record encoder not set");
             return;
