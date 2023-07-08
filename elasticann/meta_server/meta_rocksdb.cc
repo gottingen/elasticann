@@ -24,16 +24,16 @@ namespace EA {
     int MetaRocksdb::init() {
         _rocksdb = RocksWrapper::get_instance();
         if (!_rocksdb) {
-            DB_FATAL("create rocksdb handler failed");
+            TLOG_ERROR("create rocksdb handler failed");
             return -1;
         }
         int ret = _rocksdb->init(FLAGS_db_path);
         if (ret != 0) {
-            DB_FATAL("rocksdb init failed: code:%d", ret);
+            TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return -1;
         }
         _handle = _rocksdb->get_meta_info_handle();
-        DB_WARNING("rocksdb init success, db_path:%s", FLAGS_db_path.c_str());
+        TLOG_WARN("rocksdb init success, db_path:{}", FLAGS_db_path);
         return 0;
     }
 
@@ -42,8 +42,8 @@ namespace EA {
         write_option.disableWAL = true;
         auto status = _rocksdb->put(write_option, _handle, rocksdb::Slice(key), rocksdb::Slice(value));
         if (!status.ok()) {
-            DB_WARNING("put rocksdb fail, err_msg: %s, key: %s, value: %s",
-                       status.ToString().c_str(), key.c_str(), value.c_str());
+            TLOG_WARN("put rocksdb fail, err_msg: {}, key: {}, value: {}",
+                       status.ToString(), key, value);
             return -1;
         }
         return 0;
@@ -52,7 +52,7 @@ namespace EA {
     int MetaRocksdb::put_meta_info(const std::vector<std::string> &keys,
                                    const std::vector<std::string> &values) {
         if (keys.size() != values.size()) {
-            DB_WARNING("input keys'size is not equal to values' size");
+            TLOG_WARN("input keys'size is not equal to values' size");
             return -1;
         }
         rocksdb::WriteOptions write_option;
@@ -63,8 +63,8 @@ namespace EA {
         }
         auto status = _rocksdb->write(write_option, &batch);
         if (!status.ok()) {
-            DB_WARNING("put batch to rocksdb fail, err_msg: %s",
-                       status.ToString().c_str());
+            TLOG_WARN("put batch to rocksdb fail, err_msg: {}",
+                       status.ToString());
             return -1;
         }
         return 0;
@@ -88,7 +88,7 @@ namespace EA {
         }
         auto status = _rocksdb->write(write_option, &batch);
         if (!status.ok()) {
-            DB_WARNING("delete batch to rocksdb fail, err_msg: %s", status.ToString().c_str());
+            TLOG_WARN("delete batch to rocksdb fail, err_msg: {}", status.ToString());
             return -1;
         }
         return 0;
@@ -98,7 +98,7 @@ namespace EA {
                                      const std::vector<std::string> &put_values,
                                      const std::vector<std::string> &delete_keys) {
         if (put_keys.size() != put_values.size()) {
-            DB_WARNING("input keys'size is not equal to values' size");
+            TLOG_WARN("input keys'size is not equal to values' size");
             return -1;
         }
         rocksdb::WriteOptions write_option;
@@ -112,7 +112,7 @@ namespace EA {
         }
         auto status = _rocksdb->write(write_option, &batch);
         if (!status.ok()) {
-            DB_WARNING("write batch to rocksdb fail,  %s", status.ToString().c_str());
+            TLOG_WARN("write batch to rocksdb fail,  {}", status.ToString());
             return -1;
         }
         return 0;

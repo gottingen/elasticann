@@ -130,7 +130,7 @@ namespace EA {
         } else if (input_namespace_name.size() == 0
                    || input_database.size() == 0
                    || input_table_name.size() == 0) {
-            DB_WARNING("input is invalid query, request: %s", request->ShortDebugString().c_str());
+            TLOG_WARN("input is invalid query, request: {}", request->ShortDebugString());
             return;
         } else {
             std::string full_table_name = input_namespace_name + "\001"
@@ -141,11 +141,11 @@ namespace EA {
 
         std::vector<SmartRegionInfo> region_infos;
         for (auto &region_id: query_region_ids) {
-            DB_WARNING("region_id: %ld", region_id);
+            TLOG_WARN("region_id: {}", region_id);
         }
         manager->get_region_info(query_region_ids, region_infos);
         for (auto &region_info: region_infos) {
-            DB_WARNING("region_info: %s", region_info->ShortDebugString().c_str());
+            TLOG_WARN("region_info: {}", region_info->ShortDebugString());
         }
 
         std::map<std::string, std::multimap<std::string, proto::QueryRegion>> table_regions;
@@ -206,7 +206,7 @@ namespace EA {
                 change_info->set_num_table_lines(region_info->num_table_lines());
             }
         }
-        DB_NOTICE("mutex_time:%ld process_time:%ld", mutex_time, step_time_cost.get_time());
+        TLOG_INFO("mutex_time: {} process_time: {}", mutex_time, step_time_cost.get_time());
     }
 
     void QueryRegionManager::get_region_info(const proto::QueryRequest *request,
@@ -449,7 +449,7 @@ namespace EA {
         turbo::Trim(&new_leader);
         int64_t region_id = request->region_ids_size() == 1 ? request->region_ids(0) : 0;
         if (region_id == 0 || old_leader.size() == 0 || new_leader.size() == 0) {
-            DB_FATAL("input param error, request:%s", request->ShortDebugString().c_str());
+            TLOG_ERROR("input param error, request: {}", request->ShortDebugString());
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             response->set_errmsg("input param error");
             return;
@@ -462,8 +462,8 @@ namespace EA {
         StoreInteract store_interact(old_leader);
         auto ret = store_interact.send_request("region_raft_control", raft_control_request, raft_control_response);
         if (ret < 0) {
-            DB_FATAL("transfer leader fail, old_leader: %s, new_leader: %s, region_id: %ld",
-                     old_leader.c_str(), new_leader.c_str(), region_id);
+            TLOG_ERROR("transfer leader fail, old_leader: {}, new_leader: {}, region_id: {}",
+                     old_leader, new_leader, region_id);
         }
         response->set_errcode(raft_control_response.errcode());
         response->set_errmsg(raft_control_response.errmsg());
@@ -479,7 +479,7 @@ namespace EA {
         turbo::Trim(&old_peers);
         int64_t region_id = request->region_ids_size() == 1 ? request->region_ids(0) : 0;
         if (region_id == 0 || new_peers.size() == 0 || old_peers.size() == 0 || leader.size() == 0) {
-            DB_FATAL("input param error, request:%s", request->ShortDebugString().c_str());
+            TLOG_ERROR("input param error, request: {}", request->ShortDebugString());
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             response->set_errmsg("input param error");
             return;
@@ -493,7 +493,7 @@ namespace EA {
             turbo::Trim(&new_peer);
         }
         if (list_old_peers.size() == list_new_peers.size()) {
-            DB_FATAL("input old peers size equal to new old peers");
+            TLOG_ERROR("input old peers size equal to new old peers");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             response->set_errmsg("input param error");
             return;
@@ -514,7 +514,7 @@ namespace EA {
             for (auto &new_peer: list_new_peers) {
                 auto iter = std::find(list_old_peers.begin(), list_old_peers.end(), new_peer);
                 if (iter == list_old_peers.end()) {
-                    DB_FATAL("input old peers size equal to new old peers");
+                    TLOG_ERROR("input old peers size equal to new old peers");
                     response->set_errcode(proto::INPUT_PARAM_ERROR);
                     response->set_errmsg("input param error");
                     return;
@@ -525,9 +525,9 @@ namespace EA {
             StoreInteract store_interact(leader);
             auto ret = store_interact.send_request("region_raft_control", raft_control_request, raft_control_response);
             if (ret < 0) {
-                DB_FATAL("remove peer fail, request: %s, new_leader: %s, region_id: %ld",
-                         raft_control_request.ShortDebugString().c_str(),
-                         leader.c_str(), region_id);
+                TLOG_ERROR("remove peer fail, request: {}, new_leader: {}, region_id: {}",
+                         raft_control_request.ShortDebugString(),
+                         leader, region_id);
             }
             response->set_errcode(raft_control_response.errcode());
             response->set_errmsg(raft_control_response.errmsg());
@@ -559,9 +559,9 @@ namespace EA {
             StoreInteract store_interact(leader);
             auto ret = store_interact.send_request("add_peer", add_peer_request, add_peer_response);
             if (ret < 0) {
-                DB_FATAL("add peer fail, request: %s, new_leader: %s, region_id: %ld",
-                         add_peer_request.ShortDebugString().c_str(),
-                         leader.c_str(), region_id);
+                TLOG_ERROR("add peer fail, request: {}, new_leader: {}, region_id: {}",
+                         add_peer_request.ShortDebugString(),
+                         leader, region_id);
             }
             response->set_errcode(add_peer_response.errcode());
             response->set_errmsg(add_peer_response.errmsg());
@@ -580,9 +580,9 @@ namespace EA {
         StoreInteract store_interact(instance_address);
         auto ret = store_interact.send_request("remove_region", remove_region, response);
         if (ret < 0) {
-            DB_FATAL("remove region fail, request: %s, instance_address: %s, region_id: %ld",
-                     remove_region.ShortDebugString().c_str(),
-                     instance_address.c_str(),
+            TLOG_ERROR("remove region fail, request: {}, instance_address: {}, region_id: {}",
+                     remove_region.ShortDebugString(),
+                     instance_address,
                      region_id);
         }
     }

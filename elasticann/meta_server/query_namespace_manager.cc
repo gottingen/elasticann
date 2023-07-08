@@ -34,7 +34,7 @@ namespace EA {
             } else {
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 response->set_errmsg("namespace not exist");
-                DB_FATAL("namespace: %s  not exist", namespace_name.c_str());
+                TLOG_ERROR("namespace: {}  not exist", namespace_name.c_str());
             }
         }
     }

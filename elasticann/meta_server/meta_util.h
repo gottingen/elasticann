@@ -70,7 +70,7 @@ namespace EA {
 
 #define ERROR_SET_RESPONSE(response, errcode, err_message, op_type, log_id) \
     do {\
-        DB_FATAL("request op_type:%d, %s ,log_id:%lu",\
+        TLOG_ERROR("request op_type:{}, {} ,log_id:{}",\
                 op_type, err_message, log_id);\
         if (response != nullptr) {\
             response->set_errcode(errcode);\
@@ -81,7 +81,7 @@ namespace EA {
 
 #define ERROR_SET_RESPONSE_WARN(response, errcode, err_message, op_type, log_id) \
     do {\
-        DB_WARNING("request op_type:%d, %s ,log_id:%lu",\
+        TLOG_WARN("request op_type:{}, {} ,log_id:{}",\
                 op_type, err_message, log_id);\
         if (response != nullptr) {\
             response->set_errcode(errcode);\
@@ -109,7 +109,7 @@ namespace EA {
 #define RETURN_IF_NOT_INIT(init, response, log_id) \
     do {\
         if (!init) {\
-            DB_WARNING("have not init, log_id:%lu", log_id);\
+            TLOG_WARN("have not init, log_id:{}", log_id);\
             response->set_errcode(proto::HAVE_NOT_INIT);\
             response->set_errmsg("have not init");\
             return;\

@@ -48,7 +48,7 @@ namespace EA {
                 response->set_errmsg("not leader");
                 response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
             }
-            DB_WARNING("meta state machine is not leader, request: %s", request->ShortDebugString().c_str());
+            TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
             return;
         }
         uint64_t log_id = 0;
@@ -63,7 +63,7 @@ namespace EA {
             if (response != nullptr && response->errcode() != proto::SUCCESS) {
                 const auto &remote_side_tmp = butil::endpoint2str(cntl->remote_side());
                 const char *remote_side = remote_side_tmp.c_str();
-                DB_WARNING("response error, remote_side:%s, log_id:%lu", remote_side, log_id);
+                TLOG_WARN("response error, remote_side:{}, log_id:{}", remote_side, log_id);
             }
         }));
         switch (request->op_type()) {
@@ -323,7 +323,7 @@ namespace EA {
         RegionManager::get_instance()->check_whether_illegal_peer(request, response);
         int64_t illegal_peer_time = step_time_cost.get_time();
         step_time_cost.get_time();
-        DB_NOTICE("process peer hearbeat, table_exist_time: %ld, ilegal_peer_time: %ld, log_id: %lu",
+        TLOG_INFO("process peer hearbeat, table_exist_time: {}, ilegal_peer_time: {}, log_id: {}",
                   table_exist_time, illegal_peer_time, log_id);
     }
 
@@ -352,8 +352,8 @@ namespace EA {
                                                            _meta_state_machine->get_load_balance(resource_tag), request,
                                                            response);
         int64_t leader_balance_time = step_time_cost.get_time();
-        DB_NOTICE("store: %s process leader heartbeat, update_status_time: %ld, leader_region_time: %ld"
-                  " leader_balance_time: %ld, log_id: %lu",
+        TLOG_INFO("store: {} process leader heartbeat, update_status_time: {}, leader_region_time: {}"
+                  " leader_balance_time: {}, log_id: {}",
                   request->instance_info().address().c_str(),
                   update_status_time, leader_region_time, leader_balance_time, log_id);
     }
@@ -374,7 +374,7 @@ namespace EA {
         step_time_cost.reset();
 
         if (request == nullptr) {
-            DB_WARNING("request is nullptr");
+            TLOG_WARN("request is nullptr");
             return;
         }
 
@@ -390,7 +390,7 @@ namespace EA {
                     std::set<int64_t> table_ids;
                     int ret = DatabaseManager::get_instance()->get_table_ids(database_id, table_ids);
                     if (ret < 0) {
-                        DB_WARNING("Fail to get_table_ids, database_id : %ld", database_id);
+                        TLOG_WARN("Fail to get_table_ids, database_id : {}", database_id);
                         continue;
                     }
                     heartbeat_table_ids.insert(table_ids.begin(), table_ids.end());
@@ -400,7 +400,7 @@ namespace EA {
                             table_info.table_name();
                     const int64_t table_id = TableManager::get_instance()->get_table_id(full_table_name);
                     if (table_id == 0) {
-                        DB_FATAL("Fail to get table_id, table_name: %s", full_table_name.c_str());
+                        TLOG_ERROR("Fail to get table_id, table_name: {}", full_table_name);
                         continue;
                     }
                     heartbeat_table_ids.insert(table_id);
@@ -413,7 +413,7 @@ namespace EA {
                     proto::SchemaInfo table_info;
                     int ret = TableManager::get_instance()->get_table_info(table_id, table_info);
                     if (ret < 0) {
-                        DB_WARNING("Fail to get_table_info, table_id: %ld", table_id);
+                        TLOG_WARN("Fail to get_table_info, table_id: {}", table_id);
                         continue;
                     }
                     if (table_info.has_binlog_info() && table_info.binlog_info().has_binlog_table_id()) {
@@ -421,7 +421,7 @@ namespace EA {
                     }
                 }
                 if (heartbeat_binlog_table_ids.empty()) {
-                    DB_WARNING("heartbeat_binlog_table_ids is empty");
+                    TLOG_WARN("heartbeat_binlog_table_ids is empty");
                 }
                 // Binlog心跳只需要返回Binlog Table对应的Region
                 std::swap(heartbeat_table_ids, heartbeat_binlog_table_ids);
@@ -437,7 +437,7 @@ namespace EA {
                     request, response, applied_index);
             need_update_region = RegionManager::get_instance()->check_and_update_incremental(
                     request, response, applied_index, heartbeat_table_ids);
-            //DB_WARNING("update  update_incremental last_updated_index:%ld log_id: %lu", last_updated_index, log_id);
+            //TLOG_WARN("update  update_incremental last_updated_index:{} log_id: {}", last_updated_index, log_id);
         }
         int64_t update_incremental_time = step_time_cost.get_time();
         step_time_cost.reset();
@@ -454,7 +454,7 @@ namespace EA {
             step_time_cost.reset();
         }
         if (last_updated_index == 0 || need_update_schema) {
-            //DB_WARNING("DEBUG schema update all applied_index:%ld log_id: %lu", applied_index, log_id);
+            //TLOG_WARN("DEBUG schema update all applied_index:{} log_id: {}", applied_index, log_id);
             response->set_last_updated_index(applied_index);
             //判断上报的表是否已经更新或删除
             TableManager::get_instance()->check_update_or_drop_table(request, response);
@@ -467,7 +467,7 @@ namespace EA {
         int64_t update_table_time = step_time_cost.get_time();
         step_time_cost.reset();
         if (last_updated_index == 0 || need_update_region) {
-            //DB_WARNING("region update all applied_index:%ld log_id: %lu", applied_index, log_id);
+            //TLOG_WARN("region update all applied_index:{} log_id: {}", applied_index, log_id);
             response->set_last_updated_index(applied_index);
             //判断上报的region是否已经更新或删除
             RegionManager::get_instance()->check_update_region(request, response);
@@ -476,8 +476,8 @@ namespace EA {
                     report_table_ids, report_region_ids, request, response, heartbeat_table_ids);
         }
         int64_t update_region_time = step_time_cost.get_time();
-        DB_NOTICE("process schema info for baikal heartbeat, prepare_time: %ld, update_incremental_time:%ld,"
-                  " update_table_time: %ld, update_region_time: %ld, log_id: %lu",
+        TLOG_INFO("process schema info for baikal heartbeat, prepare_time: {}, update_incremental_time:{},"
+                  " update_table_time: {}, update_region_time: {}, log_id: {}",
                   prepare_time, update_incremental_time, update_table_time, update_region_time, log_id);
         //判断是否需要更新内存中虚拟索引影响面信息
         TableManager::get_instance()->load_virtual_indextosqls_to_memory(request);
@@ -487,9 +487,9 @@ namespace EA {
         std::string namespace_name = user_privilege.namespace_name();
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
-            DB_FATAL("namespace not exist, namespace:%s, request：%s",
-                     namespace_name.c_str(),
-                     user_privilege.ShortDebugString().c_str());
+            TLOG_ERROR("namespace not exist, namespace:{}, request：{}",
+                     namespace_name,
+                     user_privilege.ShortDebugString());
             return -1;
         }
         user_privilege.set_namespace_id(namespace_id);
@@ -497,9 +497,9 @@ namespace EA {
             std::string base_name = namespace_name + "\001" + pri_base.database();
             int64_t database_id = DatabaseManager::get_instance()->get_database_id(base_name);
             if (database_id == 0) {
-                DB_FATAL("database:%s not exist, namespace:%s, request：%s",
-                         base_name.c_str(), namespace_name.c_str(),
-                         user_privilege.ShortDebugString().c_str());
+                TLOG_ERROR("database:{} not exist, namespace:{}, request：{}",
+                         base_name, namespace_name,
+                         user_privilege.ShortDebugString());
                 return -1;
             }
             pri_base.set_database_id(database_id);
@@ -509,16 +509,16 @@ namespace EA {
             std::string table_name = base_name + "\001" + pri_table.table_name();
             int64_t database_id = DatabaseManager::get_instance()->get_database_id(base_name);
             if (database_id == 0) {
-                DB_FATAL("database:%s not exist, namespace:%s, request：%s",
-                         base_name.c_str(), namespace_name.c_str(),
-                         user_privilege.ShortDebugString().c_str());
+                TLOG_ERROR("database:{} not exist, namespace:{}, request：{}",
+                         base_name, namespace_name,
+                         user_privilege.ShortDebugString());
                 return -1;
             }
             int64_t table_id = TableManager::get_instance()->get_table_id(table_name);
             if (table_id == 0) {
-                DB_FATAL("table_name:%s not exist, database:%s namespace:%s, request：%s",
-                         table_name.c_str(), base_name.c_str(),
-                         namespace_name.c_str(), user_privilege.ShortDebugString().c_str());
+                TLOG_ERROR("table_name:{} not exist, database:{} namespace:{}, request：{}",
+                         table_name, base_name,
+                         namespace_name, user_privilege.ShortDebugString());
                 return -1;
             }
             pri_table.set_database_id(database_id);
@@ -583,10 +583,10 @@ namespace EA {
             } else if (iter->key().starts_with(index_ddl_region_prefix)) {
                 ret = DDLManager::get_instance()->load_region_ddl_snapshot(iter->value().ToString());
             } else {
-                DB_FATAL("unsupport schema info when load snapshot, key:%s", iter->key().data());
+                TLOG_ERROR("unsupport schema info when load snapshot, key:{}", iter->key().data());
             }
             if (ret != 0) {
-                DB_FATAL("load snapshot fail, key:%s, value:%s",
+                TLOG_ERROR("load snapshot fail, key:{}, value:{}",
                          iter->key().data(),
                          iter->value().data());
                 return -1;
@@ -632,7 +632,7 @@ namespace EA {
             }
             if (index_info.index_type() == proto::I_PRIMARY || index_info.is_global()) {
                 primary_index_name = index_info.index_name();
-                DB_NOTICE("set primary index name %s", primary_index_name.c_str());
+                TLOG_INFO("set primary index name {}", primary_index_name);
             }
             indexs_name.insert(index_info.index_name());
         }
@@ -738,7 +738,7 @@ namespace EA {
         }
         // 目前建表新建region不考虑dist分布
         table_info_ptr->set_resource_tag(resource_tag);
-        DB_WARNING("create table should select instance count: %d", total_region_count);
+        TLOG_WARN("create table should select instance count: {}", total_region_count);
         for (auto i = 0; i < total_region_count; ++i) {
             std::string instance;
             int ret = ClusterManager::get_instance()->select_instance_rolling(
@@ -761,8 +761,8 @@ namespace EA {
         TimeCost time_cost;
         int64_t src_region_id = request->region_merge().src_region_id();
         if (request->region_merge().src_end_key().empty()) {
-            DB_WARNING("src end key is empty request:%s log_id:%lu",
-                       request->ShortDebugString().c_str(), log_id);
+            TLOG_WARN("src end key is empty request:{} log_id:{}",
+                       request->ShortDebugString(), log_id);
             ERROR_SET_RESPONSE_WARN(response, proto::INPUT_PARAM_ERROR,
                                     "src end key is empty", request->op_type(), log_id);
             return -1;
@@ -770,20 +770,20 @@ namespace EA {
         RegionManager *region_manager = RegionManager::get_instance();
         auto src_region = region_manager->get_region_info(src_region_id);
         if (src_region == nullptr) {
-            DB_WARNING("can`t find src region request:%s, src region_id:%ld, log_id:%lu",
-                       request->ShortDebugString().c_str(), src_region_id, log_id);
+            TLOG_WARN("can`t find src region request:{}, src region_id:{}, log_id:{}",
+                       request->ShortDebugString(), src_region_id, log_id);
             ERROR_SET_RESPONSE_WARN(response, proto::INPUT_PARAM_ERROR,
                                     "can not find src region", request->op_type(), log_id);
             return -1;
         }
         if (src_region->start_key() != request->region_merge().src_start_key()
             || src_region->end_key() != request->region_merge().src_end_key()) {
-            DB_WARNING("src region_id:%ld has diff key (satrt_key, end_key), "
-                       "req:(%s, %s), local:(%s, %s)", src_region_id,
-                       str_to_hex(request->region_merge().src_start_key()).c_str(),
-                       str_to_hex(request->region_merge().src_end_key()).c_str(),
-                       str_to_hex(src_region->start_key()).c_str(),
-                       str_to_hex(src_region->end_key()).c_str());
+            TLOG_WARN("src region_id:{} has diff key (start_key, end_key), "
+                       "req:({}, {}), local:({}, {})", src_region_id,
+                       str_to_hex(request->region_merge().src_start_key()),
+                       str_to_hex(request->region_merge().src_end_key()),
+                       str_to_hex(src_region->start_key()),
+                       str_to_hex(src_region->end_key()));
             ERROR_SET_RESPONSE_WARN(response, proto::INPUT_PARAM_ERROR,
                                     "src key diff with local", request->op_type(), log_id);
             return -1;
@@ -798,17 +798,17 @@ namespace EA {
                 table_id, request->region_merge().src_start_key(),
                 request->region_merge().src_end_key(), partition_id);
         if (dst_region_id <= 0) {
-            DB_WARNING("can`t find dst merge region request: %s, src region id:%ld, log_id:%lu",
-                       request->ShortDebugString().c_str(), src_region_id, log_id);
+            TLOG_WARN("can`t find dst merge region request: {}, src region id:{}, log_id:{}",
+                       request->ShortDebugString(), src_region_id, log_id);
             ERROR_SET_RESPONSE_WARN(response, proto::INPUT_PARAM_ERROR,
                                     "dst merge region not exist", request->op_type(), log_id);
             return -1;
         }
         auto dst_region = region_manager->get_region_info(dst_region_id);
         if (dst_region == nullptr) {
-            DB_WARNING("can`t find dst merge region request: %s, src region id:%ld, "
-                       "dst region id:%ld, log_id:%lu",
-                       request->ShortDebugString().c_str(),
+            TLOG_WARN("can`t find dst merge region request: {}, src region id:{}, "
+                       "dst region id:{}, log_id:{}",
+                       request->ShortDebugString(),
                        src_region_id, dst_region_id, log_id);
             ERROR_SET_RESPONSE_WARN(response, proto::INPUT_PARAM_ERROR,
                                     "dst merge region not exist", request->op_type(), log_id);
@@ -823,16 +823,16 @@ namespace EA {
         region_merge->mutable_dst_region()->CopyFrom(*dst_region);
         response->set_errcode(proto::SUCCESS);
         response->set_errmsg("success");
-        DB_WARNING("find dst merge region instance:%s, table_id:%ld, src region id:%ld, "
-                   "dst region_id:%ld, version:%ld, src(%s, %s), dst(%s, %s), "
-                   "time_cost:%ld, log_id:%lu",
-                   response->mutable_merge_response()->dst_instance().c_str(),
+        TLOG_WARN("find dst merge region instance:{}, table_id:{}, src region id:{}, "
+                   "dst region_id:{}, version:{}, src({}, {}), dst({}, {}), "
+                   "time_cost:{}, log_id:{}",
+                   response->mutable_merge_response()->dst_instance(),
                    request->region_merge().table_id(), src_region_id,
                    dst_region_id, response->mutable_merge_response()->version(),
-                   str_to_hex(src_region->start_key()).c_str(),
-                   str_to_hex(src_region->end_key()).c_str(),
-                   str_to_hex(dst_region->start_key()).c_str(),
-                   str_to_hex(dst_region->end_key()).c_str(),
+                   str_to_hex(src_region->start_key()),
+                   str_to_hex(src_region->end_key()),
+                   str_to_hex(dst_region->start_key()),
+                   str_to_hex(dst_region->end_key()),
                    time_cost.get_time(), log_id);
         return 0;
     }
@@ -852,8 +852,8 @@ namespace EA {
                                     "region not stable, cannot split",
                                     request->op_type(),
                                     log_id);
-            DB_WARNING("region cannot split, region not stable, request: %s, region_id: %ld",
-                       request->ShortDebugString().c_str(), region_id);
+            TLOG_WARN("region cannot split, region not stable, request: {}, region_id: {}",
+                       request->ShortDebugString(), region_id);
             return -1;
         }
         int64_t table_id = 0;
@@ -867,8 +867,8 @@ namespace EA {
                                     "region in fast importer, cannot split",
                                     request->op_type(),
                                     log_id);
-            DB_WARNING("region cannot split, region in fast importer, request: %s, region_id: %ld",
-                       request->ShortDebugString().c_str(), region_id);
+            TLOG_WARN("region cannot split, region in fast importer, request: {}, region_id: {}",
+                       request->ShortDebugString(), region_id);
             return -1;
         }
 
@@ -999,13 +999,13 @@ namespace EA {
                 }
             }
             if (response->mutable_split_response()->multi_new_regions_size() != region_num) {
-                DB_FATAL("region_id: %ld, is_tail_split: %d, region_num: %d != multi_new_regions_size: %d",
+                TLOG_ERROR("region_id: {}, is_tail_split: {}, region_num: {} != multi_new_regions_size: {}",
                          region_id, is_tail_split, region_num,
                          response->mutable_split_response()->multi_new_regions_size());
                 return -1;
             }
         } else {
-            DB_FATAL("not support, region_id: %ld, is_tail_split: %d, region_num: %d", region_id, is_tail_split,
+            TLOG_ERROR("not support, region_id: {}, is_tail_split: {}, region_num: {}", region_id, is_tail_split,
                      region_num);
             return -1;
         }
@@ -1019,22 +1019,22 @@ namespace EA {
         int64_t *max_id = (int64_t *) (value.c_str());
         if (max_key == SchemaManager::MAX_NAMESPACE_ID_KEY) {
             NamespaceManager::get_instance()->set_max_namespace_id(*max_id);
-            DB_WARNING("max_namespace_id:%ld", *max_id);
+            TLOG_WARN("max_namespace_id:{}", *max_id);
             return 0;
         }
         if (max_key == SchemaManager::MAX_DATABASE_ID_KEY) {
             DatabaseManager::get_instance()->set_max_database_id(*max_id);
-            DB_WARNING("max_database_id:%ld", *max_id);
+            TLOG_WARN("max_database_id:{}", *max_id);
             return 0;
         }
         if (max_key == SchemaManager::MAX_TABLE_ID_KEY) {
             TableManager::get_instance()->set_max_table_id(*max_id);
-            DB_WARNING("max_table_id:%ld", *max_id);
+            TLOG_WARN("max_table_id:{}", *max_id);
             return 0;
         }
         if (max_key == SchemaManager::MAX_REGION_ID_KEY) {
             RegionManager::get_instance()->set_max_region_id(*max_id);
-            DB_WARNING("max_region_id:%ld", *max_id);
+            TLOG_WARN("max_region_id:{}", *max_id);
             return 0;
         }
         return 0;
@@ -1095,14 +1095,14 @@ namespace EA {
         }
         int64_t table_id = 0;
         if (TableManager::get_instance()->check_table_exist(request->table_info(), table_id) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request->ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request->ShortDebugString());
             ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
                                "table not exist", request->op_type(), log_id);
             return -1;
         }
         proto::SchemaInfo schema_pb;
         if (TableManager::get_instance()->get_table_info(table_id, schema_pb) != 0) {
-            DB_WARNING("check table exist fail, request:%s", request->ShortDebugString().c_str());
+            TLOG_WARN("check table exist fail, request:{}", request->ShortDebugString());
             ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
                                "table not exist", request->op_type(), log_id);
             return -1;
@@ -1118,7 +1118,7 @@ namespace EA {
             }
         }
         if (!found) {
-            DB_WARNING("main_logical_room not match, request:%s", request->ShortDebugString().c_str());
+            TLOG_WARN("main_logical_room not match, request:{}", request->ShortDebugString());
             ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
                                "main_logical_room not match", request->op_type(), log_id);
             return -1;

@@ -79,9 +79,9 @@ namespace EA {
     public:
 
         BaseStateMachine(int64_t dummy_region_id,
-                           const std::string &identify,
-                           const std::string &file_path,
-                           const braft::PeerId &peerId) :
+                         const std::string &identify,
+                         const std::string &file_path,
+                         const braft::PeerId &peerId) :
                 _node(identify, peerId),
                 _is_leader(false),
                 _dummy_region_id(dummy_region_id),

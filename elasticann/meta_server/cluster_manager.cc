@@ -137,7 +137,7 @@ namespace EA {
         //校验合法性,构造rocksdb里的value
         for (auto add_room: request.logical_rooms().logical_rooms()) {
             if (_logical_physical_map.count(add_room)) {
-                DB_WARNING("request logical room:%s has been existed", add_room.c_str());
+                TLOG_WARN("request logical room:{} has been existed", add_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "phyical room already exist");
                 return;
             }
@@ -149,14 +149,14 @@ namespace EA {
         // 构造 rocksdb的key和value
         std::string value;
         if (!pb_logical.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}",
+                      request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_logical_key(), value);
         if (ret < 0) {
-            DB_FATAL("add phyical room:%s to rocksdb fail", request.ShortDebugString().c_str());
+            TLOG_ERROR("add physical room:{} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -166,19 +166,19 @@ namespace EA {
             _logical_physical_map[add_room] = std::set<std::string>();
         }
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("add logical room success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("add logical room success, request: {}", request.ShortDebugString());
     }
 
     void ClusterManager::drop_logical(const proto::MetaManagerRequest &request, braft::Closure *done) {
         auto tmp_map = _logical_physical_map;
         for (auto drop_room: request.logical_rooms().logical_rooms()) {
             if (!_logical_physical_map.count(drop_room)) {
-                DB_WARNING("request logical room:%s not existed", drop_room.c_str());
+                TLOG_WARN("request logical room: {} not existed", drop_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "logical room not exist");
                 return;
             }
             if (_logical_physical_map[drop_room].size() != 0) {
-                DB_WARNING("request logical room:%s has physical room", drop_room.c_str());
+                TLOG_WARN("request logical room: {} has physical room", drop_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "logical has physical");
                 return;
             }
@@ -195,7 +195,7 @@ namespace EA {
         }
         std::string value;
         if (!pb_logical.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request: {}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -204,7 +204,7 @@ namespace EA {
                 std::vector<std::string>{value},
                 drop_logical_keys);
         if (ret < 0) {
-            DB_WARNING("drop logical room:%s to rocksdb fail", request.ShortDebugString().c_str());
+            TLOG_WARN("drop logical room: {} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -212,7 +212,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_physical_mutex);
         _logical_physical_map = tmp_map;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop logical room success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop logical room success, request: {}", request.ShortDebugString());
     }
 
     void ClusterManager::add_physical(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -220,7 +220,7 @@ namespace EA {
         std::string logical_room = logical_physical_room.logical_room();
         //逻辑机房不存在则报错，需要去添加逻辑机房
         if (!_logical_physical_map.count(logical_room)) {
-            DB_WARNING("logical room:%s not exist", logical_room.c_str());
+            TLOG_WARN("logical room: {} not exist", logical_room);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "logical not exist");
             return;
         }
@@ -228,7 +228,7 @@ namespace EA {
         pb_physical.set_logical_room(logical_room);
         for (auto &add_room: logical_physical_room.physical_rooms()) {
             if (_physical_info.find(add_room) != _physical_info.end()) {
-                DB_WARNING("physical room:%s already exist", add_room.c_str());
+                TLOG_WARN("physical room: {} already exist", add_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "physical already exist");
                 return;
             }
@@ -240,14 +240,13 @@ namespace EA {
         //写入rocksdb中
         std::string value;
         if (!pb_physical.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request: %s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request: {}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_physical_key(logical_room), value);
         if (ret < 0) {
-            DB_WARNING("add logical room: %s to rocksdb fail",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("add logical room: {} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -266,7 +265,7 @@ namespace EA {
             }
         }
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("add physical room success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("add physical room success, request: {}", request.ShortDebugString());
     }
 
     void ClusterManager::drop_physical(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -274,7 +273,7 @@ namespace EA {
         std::string logical_room = logical_physical_room.logical_room();
         //逻辑机房不存在则报错
         if (!_logical_physical_map.count(logical_room)) {
-            DB_WARNING("logical room:%s not exist", logical_room.c_str());
+            TLOG_WARN("logical room:{} not exist", logical_room);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "logical not exist");
             return;
         }
@@ -282,20 +281,20 @@ namespace EA {
         for (auto drop_room: logical_physical_room.physical_rooms()) {
             //物理机房不存在
             if (_physical_info.find(drop_room) == _physical_info.end()) {
-                DB_WARNING("physical room:%s not exist", drop_room.c_str());
+                TLOG_WARN("physical room:{} not exist", drop_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "physical not exist");
                 return;
             }
             if (_physical_info[drop_room] != logical_room) {
-                DB_WARNING("physical room:%s not belong to logical_room:%s",
-                           drop_room.c_str(), logical_room.c_str());
+                TLOG_WARN("physical room:{} not belong to logical_room:{}",
+                           drop_room, logical_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "physical not exist");
                 return;
             }
             //物理机房下不能有实例
             if (_physical_instance_map.count(drop_room) > 0
                 && _physical_instance_map[drop_room].size() != 0) {
-                DB_WARNING("physical room:%s has instance", drop_room.c_str());
+                TLOG_WARN("physical room:{} has instance", drop_room);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "physical has instance");
                 return;
             }
@@ -309,15 +308,15 @@ namespace EA {
         //写入rocksdb中
         std::string value;
         if (!pb_physical.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         // write date to rocksdb
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_physical_key(logical_room), value);
         if (ret < 0) {
-            DB_WARNING("add phyical room:%s to rocksdb fail",
-                       request.ShortDebugString().c_str());
+            TLOG_WARN("add physical room:{} to rocksdb fail",
+                       request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -336,10 +335,10 @@ namespace EA {
             }
         }
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop physical room success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop physical room success, request:{}", request.ShortDebugString());
     }
 
-//MetaServer内部自己调用自己的这个接口，也可以作为外部接口使用
+    //MetaServer内部自己调用自己的这个接口，也可以作为外部接口使用
     void ClusterManager::add_instance(const proto::MetaManagerRequest &request, braft::Closure *done) {
         auto &instance_info = const_cast<proto::InstanceInfo &>(request.instance());
         std::string address = instance_info.address();
@@ -347,7 +346,7 @@ namespace EA {
         if (!instance_info.has_physical_room() || instance_info.physical_room().size() == 0) {
             auto ret = get_physical_room(address, physical_room);
             if (ret < 0) {
-                DB_WARNING("get physical room fail when add instance, instance:%s", address.c_str());
+                TLOG_WARN("get physical room fail when add instance, instance:{}", address);
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "instance to hostname fail");
                 return;
             }
@@ -356,36 +355,36 @@ namespace EA {
         if (_physical_info.find(physical_room) != _physical_info.end()) {
             instance_info.set_logical_room(_physical_info[physical_room]);
         } else {
-            DB_FATAL("get logical room for physical room: %s fail", physical_room.c_str());
+            TLOG_ERROR("get logical room for physical room: {} fail", physical_room);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "physical to logical fail");
             return;
         }
         //合法性检查
         //物理机房不存在
         if (_physical_info.find(physical_room) == _physical_info.end()) {
-            DB_WARNING("physical room:%s not exist, instance:%s",
-                       physical_room.c_str(),
-                       address.c_str());
+            TLOG_WARN("physical room:{} not exist, instance:{}",
+                       physical_room,
+                       address);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "physical room not exist");
             return;
         }
         //实例已经存在
         if (_instance_info.find(address) != _instance_info.end()) {
-            DB_WARNING("instance:%s has already exist", address.c_str());
+            TLOG_WARN("instance: {} has already exist", address);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "instance already exist");
             return;
         }
         //写入rocksdb中
         std::string value;
         if (!instance_info.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         // write date to rocksdb
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_instance_key(address), value);
         if (ret < 0) {
-            DB_WARNING("add instance:%s to rocksdb fail", request.ShortDebugString().c_str());
+            TLOG_WARN("add instance:{} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -412,7 +411,7 @@ namespace EA {
         };
         _scheduling_info.Modify(call_func, instance_mem);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("add instance success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("add instance success, request:{}", request.ShortDebugString());
     }
 
     void ClusterManager::drop_instance(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -420,7 +419,7 @@ namespace EA {
         //合法性检查
         //实例不存在
         if (_instance_info.find(address) == _instance_info.end()) {
-            DB_WARNING("instance:%s not exist", address.c_str());
+            TLOG_WARN("instance:{} not exist", address);
             //IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "instance not exist");
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
             return;
@@ -432,7 +431,7 @@ namespace EA {
         auto ret = MetaRocksdb::get_instance()->delete_meta_info(
                 std::vector<std::string>{construct_instance_key(address)});
         if (ret < 0) {
-            DB_WARNING("drop instance:%s to rocksdb fail ", request.ShortDebugString().c_str());
+            TLOG_WARN("drop instance:{} to rocksdb fail ", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -458,14 +457,14 @@ namespace EA {
         };
         _scheduling_info.Modify(call_func, address);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("drop instance success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("drop instance success, request:{}", request.ShortDebugString());
     }
 
     void ClusterManager::update_instance(const proto::MetaManagerRequest &request, braft::Closure *done) {
         std::string address = request.instance().address();
         //实例不存在
         if (_instance_info.find(address) == _instance_info.end()) {
-            DB_WARNING("instance:%s not exist", address.c_str());
+            TLOG_WARN("instance:{} not exist", address);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "instance not exist");
             return;
         }
@@ -485,14 +484,14 @@ namespace EA {
         instance_info.set_logical_room(_physical_info[_instance_info[address].physical_room]);
         std::string value;
         if (!instance_info.SerializeToString(&value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         // write date to rocksdb
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_instance_key(address), value);
         if (ret < 0) {
-            DB_WARNING("add physical room:%s to rocksdb fail", request.ShortDebugString().c_str());
+            TLOG_WARN("add physical room:{} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -527,10 +526,10 @@ namespace EA {
             _scheduling_info.Modify(call_func, address, new_idc);
         }
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("modify tag success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("modify tag success, request:{}", request.ShortDebugString());
     }
 
-// 如果已存在则修改，不存在则新添加
+    // 如果已存在则修改，不存在则新添加
     inline void agg_instance_param(const proto::InstanceParam &old_param, const proto::InstanceParam &new_param,
                                    proto::InstanceParam *out_param) {
         std::map<std::string, proto::ParamDesc> kv_map;
@@ -574,17 +573,17 @@ namespace EA {
                 if (out_param.params_size() > 0) {
                     std::string value;
                     if (!out_param.SerializeToString(&value)) {
-                        DB_FATAL("SerializeToString fail");
+                        TLOG_ERROR("SerializeToString fail");
                         continue;
                     }
                     _instance_param_map[out_param.resource_tag_or_address()] = out_param;
                     keys.emplace_back(construct_instance_param_key(out_param.resource_tag_or_address()));
                     values.emplace_back(value);
-                    DB_WARNING("add instance param:%s", out_param.ShortDebugString().c_str());
+                    TLOG_WARN("add instance param:{}", out_param.ShortDebugString());
                 } else if (old_param.params_size() > 0) {
                     _instance_param_map.erase(out_param.resource_tag_or_address());
                     delete_keys.emplace_back(construct_instance_param_key(out_param.resource_tag_or_address()));
-                    DB_WARNING("erase instance param:%s", old_param.ShortDebugString().c_str());
+                    TLOG_WARN("erase instance param:{}", old_param.ShortDebugString());
                 } else {
                     // 新旧都为空，do nothing
                 }
@@ -593,7 +592,7 @@ namespace EA {
         if (!keys.empty()) {
             int ret = MetaRocksdb::get_instance()->put_meta_info(keys, values);
             if (ret < 0) {
-                DB_WARNING("modify instance param:%s to rocksdb fail", request.ShortDebugString().c_str());
+                TLOG_WARN("modify instance param: {} to rocksdb fail", request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
                 return;
             }
@@ -601,14 +600,14 @@ namespace EA {
         if (!delete_keys.empty()) {
             int ret = MetaRocksdb::get_instance()->delete_meta_info(delete_keys);
             if (ret < 0) {
-                DB_WARNING("modify instance param:%s to rocksdb fail", request.ShortDebugString().c_str());
+                TLOG_WARN("modify instance param:{} to rocksdb fail", request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
                 return;
             }
         }
 
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-        DB_NOTICE("modify instance param success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("modify instance param success, request:{}", request.ShortDebugString());
     }
 
     void ClusterManager::move_physical(const proto::MetaManagerRequest &request, braft::Closure *done) {
@@ -616,23 +615,23 @@ namespace EA {
         std::string new_logical_room = request.move_physical_request().new_logical_room();
         std::string old_logical_room = request.move_physical_request().old_logical_room();
         if (!_logical_physical_map.count(new_logical_room)) {
-            DB_WARNING("new logical room:%s not exist", new_logical_room.c_str());
+            TLOG_WARN("new logical room:{} not exist", new_logical_room);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "logical not exist");
             return;
         }
         if (!_logical_physical_map.count(old_logical_room)) {
-            DB_WARNING("old logical room:%s not exist", old_logical_room.c_str());
+            TLOG_WARN("old logical room:{} not exist", old_logical_room);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "logical not exist");
             return;
         }
         if (!_physical_info.count(physical_room)) {
-            DB_WARNING("physical room:%s not exist", physical_room.c_str());
+            TLOG_WARN("physical room:{} not exist", physical_room);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "physical room not exist");
             return;
         }
         if (_physical_info[physical_room] != old_logical_room) {
-            DB_WARNING("physical room:%s not belong to old logical room:%s",
-                       physical_room.c_str(), old_logical_room.c_str());
+            TLOG_WARN("physical room:{} not belong to old logical room:{}",
+                       physical_room, old_logical_room);
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
                                  "physical room not belong to old logical room");
             return;
@@ -648,7 +647,7 @@ namespace EA {
         }
         std::string old_physical_value;
         if (!old_physical_pb.SerializeToString(&old_physical_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -663,7 +662,7 @@ namespace EA {
         new_physical_pb.add_physical_rooms(physical_room);
         std::string new_physical_value;
         if (!new_physical_pb.SerializeToString(&new_physical_value)) {
-            DB_WARNING("request serializeToArray fail, request:%s", request.ShortDebugString().c_str());
+            TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -672,7 +671,7 @@ namespace EA {
 
         auto ret = MetaRocksdb::get_instance()->put_meta_info(put_keys, put_values);
         if (ret < 0) {
-            DB_WARNING("logic move room:%s to rocksdb fail", request.ShortDebugString().c_str());
+            TLOG_WARN("logic move room: {} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
@@ -681,7 +680,7 @@ namespace EA {
         _physical_info[physical_room] = new_logical_room;
         _logical_physical_map[new_logical_room].insert(physical_room);
         _logical_physical_map[old_logical_room].erase(physical_room);
-        DB_NOTICE("move physical success, request:%s", request.ShortDebugString().c_str());
+        TLOG_INFO("move physical success, request: {}", request.ShortDebugString());
     }
 
     void ClusterManager::set_instance_migrate(const proto::MetaManagerRequest *request,
@@ -696,14 +695,14 @@ namespace EA {
             return;
         }
         if (!request->has_instance()) {
-            DB_WARNING("reuqest no instance");
+            TLOG_WARN("request no instance");
             response->set_errmsg("ALLOWED");
             return;
         }
         std::string instance = request->instance().address();
         auto ret = set_migrate_for_instance(instance);
         if (ret < 0) {
-            DB_WARNING("instance:%s not exist", instance.c_str());
+            TLOG_WARN("instance:{} not exist", instance);
             response->set_errmsg("ALLOWED");
             return;
         }
@@ -713,8 +712,8 @@ namespace EA {
         std::vector<int64_t> learner_ids;
         learner_ids.reserve(100);
         RegionManager::get_instance()->get_learner_ids(instance, learner_ids);
-        DB_WARNING("instance:%s region size:%lu, learner size:%lu",
-                   instance.c_str(), region_ids.size(), learner_ids.size());
+        TLOG_WARN("instance:{} region size:{}, learner size:{}",
+                   instance, region_ids.size(), learner_ids.size());
         if (region_ids.size() == 0 && learner_ids.size() == 0) {
             response->set_errmsg("ALLOWED");
             return;
@@ -726,7 +725,7 @@ namespace EA {
                                              uint64_t log_id) {
         response->set_op_type(request->op_type());
         response->set_errcode(proto::SUCCESS);
-        response->set_errmsg("sucess");
+        response->set_errmsg("success");
         if (_meta_state_machine != nullptr && !_meta_state_machine->is_leader()) {
             ERROR_SET_RESPONSE_WARN(response, proto::NOT_LEADER, "not leader", request->op_type(), log_id)
             response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
@@ -790,7 +789,7 @@ namespace EA {
         process_cluster_info(nullptr, &request, nullptr, nullptr);
     }
 
-// 获取实例参数
+    // 获取实例参数
     void ClusterManager::process_instance_param_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
                                                                     proto::StoreHeartBeatResponse *response) {
         std::string address = request->instance_info().address();
@@ -881,24 +880,24 @@ namespace EA {
             if (pk_prefix_total_count % total_instance_count != 0) {
                 average_peer_count++;
             }
-            DB_DEBUG("handle table_id: %s, key: %s, total_peer: %lu, total_instance_count: %lu, "
-                     "average_peer_count: %lu, heartbeat report: %lu, idc: %s",
-                     pk_prefix_region.first.substr(0, table_id_end).c_str(),
-                     pk_prefix_region.first.c_str(),
+            TLOG_DEBUG("handle table_id: {}, key: {}, total_peer: {}, total_instance_count: {}, "
+                     "average_peer_count: {}, heartbeat report: {}, idc: {}",
+                     pk_prefix_region.first.substr(0, table_id_end),
+                     pk_prefix_region.first,
                      pk_prefix_total_count,
                      total_instance_count,
                      average_peer_count,
                      pk_prefix_region.second,
-                     balance_idc.to_string().c_str());
+                     balance_idc.to_string());
             // 当大户维度已经均衡，进行表维度的load balance，需要pk_prefix_average_counts信息。
             pk_prefix_average_counts[pk_prefix_region.first] = average_peer_count;
             if (pk_prefix_region.second > (size_t) (average_peer_count + average_peer_count * 5 / 100)) {
                 pk_prefix_add_peer_counts[pk_prefix_region.first] = pk_prefix_region.second - average_peer_count;
                 // table如果要做pk_prefix load balance，那么这一轮先不做table维度的peer load balance
                 do_not_peer_balance_table.insert(table_id);
-                DB_DEBUG("table_id: %lu, pk_prefix: %s, need add %lu, average: %lu, table dimension need add: %lu",
+                TLOG_DEBUG("table_id: {}, pk_prefix: {}, need add {}, average: {}, table dimension need add: {}",
                          table_id,
-                         pk_prefix_region.first.c_str(),
+                         pk_prefix_region.first,
                          pk_prefix_add_peer_counts[pk_prefix_region.first],
                          pk_prefix_average_counts[pk_prefix_region.first],
                          table_add_peer_counts[table_id]);
@@ -938,7 +937,7 @@ namespace EA {
                                                                  table_pk_prefix_dimension[peer_info.table_id()],
                                                                  peer_info.start_key(),
                                                                  key)) {
-                DB_WARNING("decode pk_prefix_key fail, table_id: %lu, region_id: %lu",
+                TLOG_WARN("decode pk_prefix_key fail, table_id: {}, region_id: {}",
                            peer_info.table_id(), peer_info.region_id());
                 continue;
             }
@@ -950,26 +949,26 @@ namespace EA {
         }
         set_instance_regions(instance, table_regions, table_region_counts, pk_prefix_region_counts);
         if (!_meta_state_machine->whether_can_decide()) {
-            DB_WARNING("meta state machine can not make decision, resource_tag: %s, instance: %s",
-                       resource_tag.c_str(), instance.c_str());
+            TLOG_WARN("meta state machine can not make decision, resource_tag: {}, instance: {}",
+                       resource_tag, instance);
             return;
         }
         if (!_meta_state_machine->get_load_balance(resource_tag)) {
-            DB_WARNING("meta state machine close peer load balance, resource_tag: %s, instance: %s",
-                       resource_tag.c_str(), instance.c_str());
+            TLOG_WARN("meta state machine close peer load balance, resource_tag: {}, instance: {}",
+                       resource_tag, instance);
             return;
         }
         if (clusters_in_fast_importer.find(resource_tag) != clusters_in_fast_importer.end()) {
-            DB_WARNING("resource_tag: %s in fast importer, stop peer load balance", resource_tag.c_str());
+            TLOG_WARN("resource_tag: {} in fast importer, stop peer load balance", resource_tag);
             return;
         }
         IdcInfo instance_idc;
         if (get_instance_idc(instance, instance_idc) < 0) {
-            DB_FATAL("resource_tag: %s, instance: %s get idc fail", resource_tag.c_str(), instance.c_str());
+            TLOG_ERROR("resource_tag: {}, instance: {} get idc fail", resource_tag, instance);
             return;
         }
-        DB_WARNING("peer load balance, instance_info: %s, idc: %s",
-                   instance.c_str(), instance_idc.to_string().c_str());
+        TLOG_WARN("peer load balance, instance_info: {}, idc: {}",
+                   instance, instance_idc.to_string());
 
         // 现在不同表可能在三个维度进行balance，同集群balance，同逻辑机房balance，同物理机房balance。
         // 获取同集群、同逻辑机房、同物理机房的store实例数
@@ -1009,10 +1008,10 @@ namespace EA {
                 average_peer_count++;
             }
             table_average_counts[table_id] = average_peer_count;
-            DB_DEBUG("process tableid %ld region size %zu average cout %zu, idc: %s, total_count: %ld",
+            TLOG_DEBUG("process table id {} region size {} average count {}, idc: {}, total_count: {}",
                      table_id, table_region.second.size(),
                      (size_t) (average_peer_count + average_peer_count * 5 / 100),
-                     balance_idc.to_string().c_str(), total_instance_count);
+                     balance_idc.to_string(), total_instance_count);
 
             if (table_region.second.size() > (size_t) (average_peer_count + average_peer_count * 5 / 100)) {
                 if (!is_learner_tables[table_id]) {
@@ -1039,15 +1038,15 @@ namespace EA {
                                                                   pk_prefix_average_counts,
                                                                   table_average_counts);
         } else {
-            DB_WARNING("instance: %s has been pk_prefix_load_balance, no need migrate", instance.c_str());
+            TLOG_WARN("instance: {} has been pk_prefix_load_balance, no need migrate", instance);
         }
         for (auto &add_peer_count: add_peer_counts) {
-            DB_WARNING("instance: %s should add peer count for peer_load_balance, "
-                       "table_id: %ld, add_peer_count: %ld, balance_idc: %s",
-                       instance.c_str(),
+            TLOG_INFO("instance: {} should add peer count for peer_load_balance, "
+                       "table_id: {}, add_peer_count: {}, balance_idc: {}",
+                       instance,
                        add_peer_count.first,
                        add_peer_count.second,
-                       table_balance_idc[add_peer_count.first].to_string().c_str());
+                       table_balance_idc[add_peer_count.first].to_string());
         }
         if (add_peer_counts.size() > 0) {
             RegionManager::get_instance()->peer_load_balance(add_peer_counts,
@@ -1058,14 +1057,14 @@ namespace EA {
                                                              table_pk_prefix_dimension,
                                                              pk_prefix_average_counts);
         } else {
-            DB_WARNING("instance: %s has been peer_load_balance, no need migrate", instance.c_str());
+            TLOG_WARN("instance: {} has been peer_load_balance, no need migrate", instance);
         }
 
         for (auto &add_learner_count: add_learner_counts) {
-            DB_WARNING("instance: %s should add learner count for learner_load_balance, "
-                       "table_id: %ld, add_peer_count: %ld, resource_tag: %s",
-                       instance.c_str(), add_learner_count.first, add_learner_count.second,
-                       resource_tag.c_str());
+            TLOG_WARN("instance: {} should add learner count for learner_load_balance, "
+                       "table_id: {}, add_peer_count: {}, resource_tag: {}",
+                       instance, add_learner_count.first, add_learner_count.second,
+                       resource_tag);
         }
         if (add_learner_counts.size() > 0) {
             RegionManager::get_instance()->learner_load_balance(add_learner_counts,
@@ -1074,7 +1073,7 @@ namespace EA {
                                                                 resource_tag,
                                                                 table_average_counts);
         } else {
-            DB_WARNING("instance: %s has been learner_load_balance, no need migrate", instance.c_str());
+            TLOG_WARN("instance: {} has been learner_load_balance, no need migrate", instance);
         }
     }
 
@@ -1101,8 +1100,8 @@ namespace EA {
                     FLAGS_store_heart_beat_interval_us * FLAGS_store_dead_interval_times) {
                     status.state = proto::DEAD;
                     dead_stores[resource_tag].push_back(instance_pair.second);
-                    DB_WARNING("instance:%s is dead DEAD, resource_tag: %s",
-                               instance_pair.first.c_str(), resource_tag.c_str());
+                    TLOG_WARN("instance:{} is dead DEAD, resource_tag: {}",
+                               instance_pair.first, resource_tag);
                     std::vector<int64_t> region_ids;
                     RegionManager::get_instance()->get_region_ids(instance_pair.first, region_ids);
                     if (region_ids.size() != 0) {
@@ -1117,20 +1116,20 @@ namespace EA {
                     RegionManager::get_instance()->set_instance_leader_count(instance_pair.first,
                                                                              std::unordered_map<int64_t, int64_t>(),
                                                                              std::unordered_map<std::string, int64_t>());
-                    DB_WARNING("instance:%s is faulty FAULTY, resource_tag: %s",
-                               instance_pair.first.c_str(), resource_tag.c_str());
+                    TLOG_WARN("instance:{} is faulty FAULTY, resource_tag: {}",
+                               instance_pair.first, resource_tag);
                     faulty_store_num[resource_tag]++;
                     continue;
                 }
                 //如果实例状态都正常的话，再判断是否因为容量问题需要做迁移
                 //if (instance.capacity == 0) {
-                //    DB_FATAL("instance:%s capactiy is 0", instance.address.c_str());
+                //    TLOG_ERROR("instance:{} capactiy is 0", instance.address);
                 //    continue;
                 //}
                 //暂时不考虑容量问题，该检查先关闭(liuhuicong)
                 //if (instance.used_size * 100 / instance.capacity >=
                 //        FLAGS_migrate_percent) {
-                //    DB_WARNING("instance:%s is full", instance_pair.first.c_str());
+                //    TLOG_WARN("instance:{} is full", instance_pair.first);
                 //    full_stores.push_back(instance_pair.second);
                 //}
             }
@@ -1145,8 +1144,8 @@ namespace EA {
             if ((dead_store_num[resource_tag] + faulty_store_num[resource_tag]) * 100
                 / total_store_num[resource_tag] >= FLAGS_error_judge_percent
                 && (dead_store_num[resource_tag] + faulty_store_num[resource_tag]) >= FLAGS_error_judge_number) {
-                DB_FATAL("has too much dead and faulty instance, may be error judge, resource_tag: %s",
-                         resource_tag.c_str());
+                TLOG_ERROR("has too much dead and faulty instance, may be error judge, resource_tag: {}",
+                         resource_tag);
                 for (auto &dead_store: dead_store_pair.second) {
                     RegionManager::get_instance()->print_region_ids(dead_store.address);
                 }
@@ -1158,8 +1157,8 @@ namespace EA {
         //如果store实例死掉，则删除region
         for (auto &store_pair: dead_stores) {
             for (auto &store: store_pair.second) {
-                DB_WARNING("store:%s is dead, resource_tag: %s",
-                           store.address.c_str(), store_pair.first.c_str());
+                TLOG_WARN("store:{} is dead, resource_tag: {}",
+                           store.address, store_pair.first);
                 RegionManager::get_instance()->delete_all_region_for_store(store.address,
                                                                            store.instance_status);
             }
@@ -1180,8 +1179,8 @@ namespace EA {
                     && !TableManager::get_instance()->is_cluster_in_fast_importer(store_pair.first)
                     && store.instance_status.state_duration.get_time() > delay * 1000 * 1000
                     && concurrency-- > 0) {
-                    DB_WARNING("store:%s is migrating, resource_tag: %s",
-                               store.address.c_str(), store_pair.first.c_str());
+                    TLOG_WARN("store:{} is migrating, resource_tag: {}",
+                               store.address, store_pair.first);
                     RegionManager::get_instance()->add_peer_for_store(store.address,
                                                                       store.instance_status);
                 }
@@ -1189,18 +1188,18 @@ namespace EA {
         }
         //若实例满，则做实例迁移
         //for (auto& full_store : full_stores) {
-        //    DB_FATAL("store:%s is full, resource_tag", full_store.second.c_str(),
-        //    full_store.first.c_str());
+        //    TLOG_ERROR("store:{} is full, resource_tag: {}", full_store.second,
+        //    full_store.first);
         //    SchemaManager->migirate_region_for_store(full_store);
         //}
     }
 
-// resource_tag为空，则reset所有resource tag的网段分布
-// reset_prefix，重新从prefix=16开始划分网段
+    // resource_tag为空，则reset所有resource tag的网段分布
+    // reset_prefix，重新从prefix=16开始划分网段
     void ClusterManager::auto_network_segments_division(std::string resource_tag) {
         if (_resource_tag_instance_map.find(resource_tag) == _resource_tag_instance_map.end() ||
             _resource_tag_instance_map[resource_tag].empty()) {
-            DB_WARNING("no such resource tag: %s or no instance in it", resource_tag.c_str());
+            TLOG_WARN("no such resource tag: {} or no instance in it", resource_tag);
             return;
         }
         // 先对resource tag下的store进行划分网段，设置prefix
@@ -1220,7 +1219,7 @@ namespace EA {
             for (auto &address: _resource_tag_instance_map[resource_tag]) {
                 auto instance_iter = _instance_info.find(address);
                 if (instance_iter == _instance_info.end()) {
-                    DB_WARNING("no such instance: %s in _instance_info", address.c_str());
+                    TLOG_WARN("no such instance: {} in _instance_info", address);
                     continue;
                 }
                 auto &instance = instance_iter->second;
@@ -1247,7 +1246,7 @@ namespace EA {
         for (auto &address: _resource_tag_instance_map[resource_tag]) {
             auto instance_iter = _instance_info.find(address);
             if (instance_iter == _instance_info.end()) {
-                DB_WARNING("no such instance: %s in _instance_info", address.c_str());
+                TLOG_WARN("no such instance: {} in _instance_info", address);
                 continue;
             }
             auto &instance = instance_iter->second;
@@ -1256,8 +1255,8 @@ namespace EA {
             }
             network_segments[instance.network_segment].emplace_back(address);
         }
-        DB_WARNING("finish auto network segment division for resource tag: %s, prefix: %d",
-                   resource_tag.c_str(), prefix);
+        TLOG_WARN("finish auto network segment division for resource tag: {}, prefix: {}",
+                   resource_tag, prefix);
     }
 
     int ClusterManager::select_instance_min_on_pk_prefix(const IdcInfo &idc,
@@ -1275,7 +1274,7 @@ namespace EA {
                 std::vector<std::string> &candidate_instances_pk_prefix_dimension) {
             DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
             if (_scheduling_info.Read(&info_iter) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return;
             }
             for (auto &instance: instances) {
@@ -1309,7 +1308,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_instance_mutex);
         if (_resource_tag_instance_map.count(resource_tag) == 0 ||
             _resource_tag_instance_map[resource_tag].empty()) {
-            DB_FATAL("there is no instance, idc: %s", idc.to_string().c_str());
+            TLOG_ERROR("there is no instance, idc: {}", idc.to_string());
             return -1;
         }
         // 同时满足table和pk_prefix两个维度region数小于平均值的候选instance, 如果有候选，优先pick
@@ -1317,7 +1316,7 @@ namespace EA {
         // 只满足pk_prefix维度region数小于平均值的候选instance
         std::vector<std::string> candidate_instances_pk_prefix_dimension;
         if (_resource_tag_instances_by_network.find(resource_tag) == _resource_tag_instances_by_network.end()) {
-            DB_FATAL("no instance in _resource_tag_instances_by_network: %s", idc.to_string().c_str());
+            TLOG_ERROR("no instance in _resource_tag_instances_by_network: {}", idc.to_string());
             return -1;
         }
         min_count << 1;
@@ -1339,7 +1338,7 @@ namespace EA {
                                          candidate_instances_pk_prefix_dimension);
             }
             if (candidate_instances.empty()) {
-                DB_WARNING("min fallback: idc: %s", idc.to_string().c_str());
+                TLOG_WARN("min fallback: idc: {}", idc.to_string());
                 min_fallback_count << 1;
                 for (auto &network_segment: exclude_network_segment) {
                     pick_candidate_instances(instances_by_network[network_segment],
@@ -1367,20 +1366,20 @@ namespace EA {
             return -1;
         }
         add_peer_count_on_pk_prefix(selected_instance, table_id, pk_prefix_key);
-        DB_WARNING("select instance min on pk_prefix dimension, table_id: %ld, idc: %s, "
-                   "pk_prefix_average_count: %ld, table_average_count: %ld, candidate_instance_size: %lu %lu, "
-                   "selected_instance: %s",
-                   table_id, idc.to_string().c_str(),
+        TLOG_WARN("select instance min on pk_prefix dimension, table_id: {}, idc: {}, "
+                   "pk_prefix_average_count: {}, table_average_count: {}, candidate_instance_size: {} {}, "
+                   "selected_instance: {}",
+                   table_id, idc.to_string(),
                    pk_prefix_average_count, table_average_count,
                    candidate_instances.size(), candidate_instances_pk_prefix_dimension.size(),
-                   selected_instance.c_str());
+                   selected_instance);
         return 0;
     }
 
-// 从少于平均peer数量的实例中随机选择一个
-// 如果average_count == 0, 则选择最少数量peer的实例返回
-// 1. peer load_balance, exclude_stores是region三个peer的store address
-// 2. learner load_balance, exclude_stores是心跳上报的store address
+    // 从少于平均peer数量的实例中随机选择一个
+    // 如果average_count == 0, 则选择最少数量peer的实例返回
+    // 1. peer load_balance, exclude_stores是region三个peer的store address
+    // 2. learner load_balance, exclude_stores是心跳上报的store address
     int ClusterManager::select_instance_min(const IdcInfo &idc,
                                             const std::set<std::string> &exclude_stores,
                                             const int64_t &table_id,
@@ -1391,7 +1390,7 @@ namespace EA {
                 std::string &selected_instance, int64_t &max_region_count) -> bool {
             DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
             if (_scheduling_info.Read(&info_iter) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return false;
             }
             for (auto &instance: instances) {
@@ -1432,13 +1431,13 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_instance_mutex);
         if (_resource_tag_instance_map.count(resource_tag) == 0 ||
             _resource_tag_instance_map[resource_tag].empty()) {
-            DB_FATAL("there is no instance, idc: %s", idc.to_string().c_str());
+            TLOG_ERROR("there is no instance, idc: {}", idc.to_string());
             return -1;
         }
         std::vector<std::string> candidate_instances;
         int64_t max_region_count = INT_FAST64_MAX;
         if (_resource_tag_instances_by_network.find(resource_tag) == _resource_tag_instances_by_network.end()) {
-            DB_FATAL("no instance in _resource_tag_instances_by_network, idc: %s", idc.to_string().c_str());
+            TLOG_ERROR("no instance in _resource_tag_instances_by_network, idc: {}", idc.to_string());
             return -1;
         }
         min_count << 1;
@@ -1466,7 +1465,7 @@ namespace EA {
             }
             if (selected_instance.empty() && candidate_instances.empty()) {
                 // fallback, find in overlap network segment
-                DB_WARNING("min fallback: idc: %s", idc.to_string().c_str());
+                TLOG_WARN("min fallback: idc: {}", idc.to_string());
                 min_fallback_count << 1;
                 for (auto &network_segment: exclude_network_segment) {
                     if (instances_by_network.find(network_segment) != instances_by_network.end()) {
@@ -1496,26 +1495,26 @@ namespace EA {
             return -1;
         }
         add_peer_count(selected_instance, table_id);
-        DB_WARNING("select instance min, table_id: %ld, idc: %s,"
-                   " average_count: %ld, candidate_instance_size: %lu, selected_instance: %s",
-                   table_id, idc.to_string().c_str(), average_count,
-                   candidate_instances.size(), selected_instance.c_str());
+        TLOG_WARN("select instance min, table_id: {}, idc: {},"
+                   " average_count: {}, candidate_instance_size: {}, selected_instance: {}",
+                   table_id, idc.to_string(), average_count,
+                   candidate_instances.size(), selected_instance);
         return 0;
     }
 
-//todo, 暂时未考虑机房，后期需要考虑尽量不放在同一个机房
-// 1. dead store下线之前, 选择补副本的instance
-//     1.1 peer: exclude_stores是peer's store address
-//     1.2 learner: exclude_stores是null 
-// 2. store进行迁移
-//     2.1 peer: exclude_stores是peer's store address
-//     2.2 learner: exclude_stores是null 
-// 3. 处理store心跳, 补region peer, exclude_stores是peer's store address
-// 4. 建表, 创建每个region的第一个peer, exclude_store是null 
-// 5. region split
-//     5.1 尾分裂选一个instance，exclude_stores是原region leader's store address
-//     5.2 中间分裂选replica-1个instance，exclude_stores是peer's store address 
-// 6. 添加全局索引, exclude_store是null
+    //todo, 暂时未考虑机房，后期需要考虑尽量不放在同一个机房
+    // 1. dead store下线之前, 选择补副本的instance
+    //     1.1 peer: exclude_stores是peer's store address
+    //     1.2 learner: exclude_stores是null
+    // 2. store进行迁移
+    //     2.1 peer: exclude_stores是peer's store address
+    //     2.2 learner: exclude_stores是null
+    // 3. 处理store心跳, 补region peer, exclude_stores是peer's store address
+    // 4. 建表, 创建每个region的第一个peer, exclude_store是null
+    // 5. region split
+    //     5.1 尾分裂选一个instance，exclude_stores是原region leader's store address
+    //     5.2 中间分裂选replica-1个instance，exclude_stores是peer's store address
+    // 6. 添加全局索引, exclude_store是null
     int ClusterManager::select_instance_rolling(const IdcInfo &idc,
                                                 const std::set<std::string> &exclude_stores,
                                                 std::string &selected_instance) {
@@ -1524,11 +1523,11 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_instance_mutex);
         if (_resource_tag_instance_map.count(resource_tag) == 0 ||
             _resource_tag_instance_map[resource_tag].empty()) {
-            DB_WARNING("there is no instance: idc: %s", idc.to_string().c_str());
+            TLOG_WARN("there is no instance: idc: {}", idc.to_string());
             return -1;
         }
         if (_resource_tag_instances_by_network.find(resource_tag) == _resource_tag_instances_by_network.end()) {
-            DB_WARNING("no instance in _resource_tag_instances_by_network: idc: %s", idc.to_string().c_str());
+            TLOG_WARN("no instance in _resource_tag_instances_by_network: idc: {}", idc.to_string());
             return -1;
         }
         rolling_count << 1;
@@ -1600,7 +1599,7 @@ namespace EA {
         }
         if (selected_instance.empty()) {
             if (fallback_network_segment.empty()) {
-                DB_WARNING("select instance fail, has no legal store, idc:%s", idc.to_string().c_str());
+                TLOG_WARN("select instance fail, has no legal store, idc:{}", idc.to_string());
                 return -1;
             }
             // fallback
@@ -1608,10 +1607,10 @@ namespace EA {
             last_rolling_network = fallback_network_segment;
             last_rolling_position = fallback_position;
             selected_instance = fallback_instance;
-            DB_WARNING("rolling fallback: idc: %s", idc.to_string().c_str());
+            TLOG_WARN("rolling fallback: idc: {}", idc.to_string());
         }
-        DB_WARNING("select instance rolling, idc: %s, selected_instance: %s",
-                   idc.to_string().c_str(), selected_instance.c_str());
+        TLOG_WARN("select instance rolling, idc: {}, selected_instance: {}",
+                   idc.to_string(), selected_instance);
         return 0;
     }
 
@@ -1621,7 +1620,7 @@ namespace EA {
         _instance_physical_map.clear();
         _physical_instance_map.clear();
         _instance_info.clear();
-        DB_WARNING("cluster manager begin load snapshot");
+        TLOG_WARN("cluster manager begin load snapshot");
         {
             auto call_func = [](std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
                 scheduling_info.clear();
@@ -1671,10 +1670,10 @@ namespace EA {
                 ret = load_instance_param_snapshot(instance_param_prefix, iter->key().ToString(),
                                                    iter->value().ToString());
             } else {
-                DB_FATAL("unsupport cluster info when load snapshot, key:%s", iter->key().data());
+                TLOG_ERROR("unsupport cluster info when load snapshot, key:{}", iter->key().data());
             }
             if (ret != 0) {
-                DB_FATAL("ClusterManager load snapshot fail, key:%s", iter->key().data());
+                TLOG_ERROR("ClusterManager load snapshot fail, key:{}", iter->key().data());
                 return -1;
             }
         }
@@ -1719,8 +1718,8 @@ namespace EA {
         }
         if ((_instance_info[candicate_instance].used_size * 100 / _instance_info[candicate_instance].capacity) >
             FLAGS_disk_used_percent) {
-            DB_WARNING("instance:%s left size is not enough, used_size:%ld, capactity:%ld",
-                       candicate_instance.c_str(),
+            TLOG_WARN("instance:{} left size is not enough, used_size:{}, capacity:{}",
+                       candicate_instance,
                        _instance_info[candicate_instance].used_size,
                        _instance_info[candicate_instance].capacity);
             return false;
@@ -1734,10 +1733,10 @@ namespace EA {
         std::string address(key, instance_prefix.size());
         proto::InstanceInfo instance_pb;
         if (!instance_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load instance snapshot, key:%s", key.c_str());
+            TLOG_ERROR("parse from pb fail when load instance snapshot, key:{}", key);
             return -1;
         }
-        DB_WARNING("instance_pb:%s", instance_pb.ShortDebugString().c_str());
+        TLOG_WARN("instance_pb:{}", instance_pb.ShortDebugString());
 
         std::string physical_room = instance_pb.physical_room();
         if (physical_room.size() == 0) {
@@ -1748,7 +1747,7 @@ namespace EA {
                 instance_pb.set_logical_room(_physical_info[physical_room]);
             } else {
                 //TODO 是否需要出错
-                DB_FATAL("get logical room for physical room: %s fail", physical_room.c_str());
+                TLOG_ERROR("get logical room for physical room: {} fail", physical_room);
             }
         }
         {
@@ -1779,13 +1778,13 @@ namespace EA {
         std::string resource_tag_or_address(key, instance_param_prefix.size());
         proto::InstanceParam instance_param_pb;
         if (!instance_param_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load instance param snapshot, key:%s", key.c_str());
+            TLOG_ERROR("parse from pb fail when load instance param snapshot, key:{}", key);
             return -1;
         }
-        DB_WARNING("instance_param_pb:%s", instance_param_pb.ShortDebugString().c_str());
+        TLOG_WARN("instance_param_pb:{}", instance_param_pb.ShortDebugString());
         if (resource_tag_or_address != instance_param_pb.resource_tag_or_address()) {
-            DB_FATAL("diff resource tag: %s vs %s", resource_tag_or_address.c_str(),
-                     instance_param_pb.resource_tag_or_address().c_str());
+            TLOG_ERROR("diff resource tag: {} vs {}", resource_tag_or_address,
+                     instance_param_pb.resource_tag_or_address());
             return -1;
         }
 
@@ -1800,10 +1799,10 @@ namespace EA {
                                                const std::string &value) {
         proto::PhysicalRoom physical_logical_pb;
         if (!physical_logical_pb.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load physical snapshot, key:%s", key.c_str());
+            TLOG_ERROR("parse from pb fail when load physical snapshot, key:{}", key);
             return -1;
         }
-        DB_WARNING("physical_logical_info:%s", physical_logical_pb.ShortDebugString().c_str());
+        TLOG_WARN("physical_logical_info:{}", physical_logical_pb.ShortDebugString());
         BAIDU_SCOPED_LOCK(_physical_mutex);
         std::string logical_room = physical_logical_pb.logical_room();
         std::set<std::string> physical_rooms;
@@ -1821,10 +1820,10 @@ namespace EA {
                                               const std::string &value) {
         proto::LogicalRoom logical_info;
         if (!logical_info.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when load logical snapshot, key:%s", key.c_str());
+            TLOG_ERROR("parse from pb fail when load logical snapshot, key:{}", key);
             return -1;
         }
-        DB_WARNING("logical_info:%s", logical_info.ShortDebugString().c_str());
+        TLOG_WARN("logical_info:{}", logical_info.ShortDebugString());
         BAIDU_SCOPED_LOCK(_physical_mutex);
         for (auto logical_room: logical_info.logical_rooms()) {
             _logical_physical_map[logical_room] = std::set<std::string>{};
@@ -1832,7 +1831,7 @@ namespace EA {
         return 0;
     }
 
-// return -1: add instance -2: update instance
+    // return -1: add instance -2: update instance
     int ClusterManager::update_instance_info(const proto::InstanceInfo &instance_info) {
         std::string instance = instance_info.address();
         if (instance.empty()) {
@@ -1882,8 +1881,8 @@ namespace EA {
                 if (store_rocks_check_cost >= FLAGS_store_rocks_hang_check_timeout_s * 1000 * 1000LL) {
                     status = proto::SLOW;
                     _slow_instances.insert(instance);
-                    DB_WARNING("instance:%s status SLOW, resource_tag: %s,  store_rocks_check_cost: %ld",
-                               instance.c_str(), is.resource_tag.c_str(), store_rocks_check_cost);
+                    TLOG_WARN("instance:{} status SLOW, resource_tag: {},  store_rocks_check_cost: {}",
+                               instance, is.resource_tag, store_rocks_check_cost);
                     return 0;
                 }
             }
@@ -1904,9 +1903,9 @@ namespace EA {
             size_t max_slow_size = cnt * 5 / 100 + 1;
             if (cnt > 5 && is.raft_total_latency > 100 * all_raft_total_latency / cnt &&
                 _slow_instances.size() < max_slow_size) {
-                DB_WARNING("instance:%s status SLOW, resource_tag: %s, raft_total_latency:%ld, dml_latency:%ld, "
-                           "cnt:%ld, avg_raft_total_latency:%ld, avg_dml_latency:%ld",
-                           instance.c_str(), is.resource_tag.c_str(), is.raft_total_latency, is.dml_latency,
+                TLOG_WARN("instance:{} status SLOW, resource_tag: {}, raft_total_latency:{}, dml_latency:{}, "
+                           "cnt:{}, avg_raft_total_latency:{}, avg_dml_latency:{}",
+                           instance, is.resource_tag, is.raft_total_latency, is.dml_latency,
                            cnt, all_raft_total_latency / cnt, all_dml_latency / cnt);
                 status = proto::SLOW;
                 _slow_instances.insert(instance);
@@ -1919,8 +1918,8 @@ namespace EA {
             if (!FLAGS_need_check_slow) {
                 _slow_instances.erase(instance);
                 status = proto::NORMAL;
-                DB_WARNING("instance:%s status NORMAL, resource_tag: %s, store_rocks_check_cost: %ld",
-                           instance.c_str(), is.resource_tag.c_str(), store_rocks_check_cost);
+                TLOG_WARN("instance:{} status NORMAL, resource_tag: {}, store_rocks_check_cost: {}",
+                           instance, is.resource_tag, store_rocks_check_cost);
                 return 0;
             }
             if (is.dml_latency > 0 && is.raft_total_latency / is.dml_latency > 10) {
@@ -1937,16 +1936,16 @@ namespace EA {
                 }
             }
             if (cnt > 0 && is.dml_latency <= 2 * all_dml_latency / cnt) {
-                DB_WARNING("instance:%s status NORMAL, resource_tag: %s, raft_total_latency:%ld, dml_latency:%ld, "
-                           "cnt:%ld, avg_raft_total_latency:%ld, avg_dml_latency:%ld",
-                           instance.c_str(), is.resource_tag.c_str(), is.raft_total_latency, is.dml_latency,
+                TLOG_WARN("instance:{} status NORMAL, resource_tag: {}, raft_total_latency:{}, dml_latency:{}, "
+                           "cnt:{}, avg_raft_total_latency:{}, avg_dml_latency:{}",
+                           instance, is.resource_tag, is.raft_total_latency, is.dml_latency,
                            cnt, all_raft_total_latency / cnt, all_dml_latency / cnt);
                 _slow_instances.erase(instance);
                 status = proto::NORMAL;
             }
         } else if (status != proto::MIGRATE) {
-            DB_WARNING("instance:%s status return NORMAL, resource_tag: %s",
-                       instance.c_str(), is.resource_tag.c_str());
+            TLOG_WARN("instance:{} status return NORMAL, resource_tag: {}",
+                       instance, is.resource_tag);
             status = proto::NORMAL;
         }
         return 0;

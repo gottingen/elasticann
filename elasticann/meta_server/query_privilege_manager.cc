@@ -90,7 +90,7 @@ namespace EA {
                 *privilege_info = user_privilege.second;
             }
         }
-        SELF_TRACE("privilege_info update cost time:%ld", cost.get_time());
+        TLOG_TRACE("privilege_info update cost time: {}", cost.get_time());
     }
 
     void QueryPrivilegeManager::construct_query_response_for_privilege(const proto::UserPrivilege &user_privilege,

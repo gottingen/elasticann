@@ -35,7 +35,7 @@ namespace EA {
             } else {
                 response->set_errmsg("database not exist");
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
-                DB_FATAL("namespace: %s database: %s not exist", namespace_name.c_str(), database.c_str());
+                TLOG_ERROR("namespace: {} database: {} not exist", namespace_name, database);
             }
         }
     }

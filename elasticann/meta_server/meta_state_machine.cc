@@ -53,7 +53,7 @@ namespace EA {
             log_id = cntl->log_id();
         }
         if (!_is_leader.load()) {
-            DB_WARNING("NOT LEADER, logid:%lu", log_id);
+            TLOG_WARN("NOT LEADER, logid:{}", log_id);
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_leader(_node.leader_id().to_string());
@@ -89,13 +89,13 @@ namespace EA {
         int64_t leader_time = step_time_cost.get_time();
         step_time_cost.reset();
         _store_heart_beat << time_cost.get_time();
-        DB_DEBUG("store_heart_beat req[%s]", request->DebugString().c_str());
-        DB_DEBUG("store_heart_beat resp[%s]", response->DebugString().c_str());
+        TLOG_DEBUG("store_heart_beat req[{}]", request->DebugString());
+        TLOG_DEBUG("store_heart_beat resp[{}]", response->DebugString());
 
-        DB_NOTICE("store:%s heart beat, time_cost: %ld, "
-                  "instance_time: %ld, peer_balance_time: %ld, schema_time: %ld,"
-                  " peer_time: %ld, leader_time: %ld, log_id: %lu",
-                  request->instance_info().address().c_str(),
+        TLOG_INFO("store:{} heart beat, time_cost: {}, "
+                  "instance_time: {}, peer_balance_time: {}, schema_time: {},"
+                  " peer_time: {}, leader_time: {}, log_id: {}",
+                  request->instance_info().address(),
                   time_cost.get_time(),
                   instance_time, peer_balance_time, schema_time, peer_time, leader_time, log_id);
     }
@@ -113,20 +113,20 @@ namespace EA {
             log_id = cntl->log_id();
         }
         if (!_is_leader.load()) {
-            DB_WARNING("NOT LEADER, logid:%lu", log_id);
+            TLOG_WARN("NOT LEADER, logid:{}", log_id);
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_leader(_node.leader_id().to_string());
             return;
         }
-        DB_DEBUG("baikaldb request[%s]", request->ShortDebugString().c_str());
+        TLOG_DEBUG("EA request[{}]", request->ShortDebugString());
         TimeCost step_time_cost;
         ON_SCOPE_EXIT([]() {
             Concurrency::get_instance()->baikal_heartbeat_concurrency.decrease_broadcast();
         });
         int ret = Concurrency::get_instance()->baikal_heartbeat_concurrency.increase_timed_wait(10 * 1000 * 1000LL);
         if (ret != 0) {
-            DB_FATAL("baikaldb:%s time_cost: %ld, log_id: %lu",
+            TLOG_ERROR("EA:{} time_cost: {}, log_id: {}",
                      butil::endpoint2str(cntl->remote_side()).c_str(),
                      time_cost.get_time(),
                      log_id);
@@ -152,8 +152,8 @@ namespace EA {
         int64_t ddl_time = step_time_cost.get_time();
         step_time_cost.reset();
         _baikal_heart_beat << time_cost.get_time();
-        DB_NOTICE("baikaldb:%s heart beat, wait_time:%ld, time_cost: %ld, cluster_time: %ld, "
-                  "privilege_time: %ld, schema_time: %ld, ddl_time: %ld, log_id: %lu",
+        TLOG_INFO("EA:{} heart beat, wait_time:{}, time_cost: {}, cluster_time: {}, "
+                  "privilege_time: {}, schema_time: {}, ddl_time: {}, log_id: {}",
                   butil::endpoint2str(cntl->remote_side()).c_str(),
                   wait_time, time_cost.get_time(),
                   cluster_time, privilege_time, schema_time, ddl_time,
@@ -173,7 +173,7 @@ namespace EA {
             log_id = cntl->log_id();
         }
         if (!_is_leader.load()) {
-            DB_WARNING("NOT LEADER, logid:%lu", log_id);
+            TLOG_WARN("NOT LEADER, logid:{}", log_id);
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_leader(_node.leader_id().to_string());
@@ -193,7 +193,7 @@ namespace EA {
         int64_t schema_time = step_time_cost.get_time();
 
 
-        DB_NOTICE("baikaldb:%s heart beat, wait time: %ld, update_cost: %ld, log_id: %lu",
+        TLOG_INFO("baikaldb:{} heart beat, wait time: {}, update_cost: {}, log_id: {}",
                   butil::endpoint2str(cntl->remote_side()).c_str(),
                   wait_time, schema_time, log_id);
     }
@@ -211,7 +211,7 @@ namespace EA {
             log_id = cntl->log_id();
         }
         if (!_is_leader.load()) {
-            DB_WARNING("NOT LEADER, logid:%lu", log_id);
+            TLOG_WARN("NOT LEADER, logid:{}", log_id);
             response->set_errcode(proto::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_leader(_node.leader_id().to_string());
@@ -227,9 +227,9 @@ namespace EA {
         int64_t privilege_time = step_time_cost.get_time();
         step_time_cost.reset();
         QueryTableManager::get_instance()->process_console_heartbeat(request, response, log_id);
-        DB_NOTICE("baikaldb:%s heart beat, time_cost: %ld, "
-                  "cluster_time: %ld, privilege_time: %ld, table_time: %ld"
-                  "log_id: %lu",
+        TLOG_INFO("EA:{} heart beat, time_cost: {}, "
+                  "cluster_time: {}, privilege_time: {}, table_time: {}"
+                  "log_id: {}",
                   butil::endpoint2str(cntl->remote_side()).c_str(),
                   time_cost.get_time(), cluster_time, privilege_time, step_time_cost.get_time(), log_id);
     }
@@ -244,7 +244,7 @@ namespace EA {
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
             proto::MetaManagerRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
-                DB_FATAL("parse from protobuf fail when on_apply");
+                TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
                     if (((MetaServerClosure *) done)->response) {
                         ((MetaServerClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
@@ -257,9 +257,9 @@ namespace EA {
             if (done && ((MetaServerClosure *) done)->response) {
                 ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             }
-            DB_NOTICE("on apply, term:%ld, index:%ld, request op_type:%s",
+            TLOG_INFO("on apply, term:{}, index:{}, request op_type:{}",
                       iter.term(), iter.index(),
-                      proto::OpType_Name(request.op_type()).c_str());
+                      proto::OpType_Name(request.op_type()));
             switch (request.op_type()) {
                 case proto::OP_ADD_LOGICAL: {
                     ClusterManager::get_instance()->add_logical(request, done);
@@ -480,7 +480,7 @@ namespace EA {
                     break;
                 }
                 default: {
-                    DB_FATAL("unsupport request type, type:%d", request.op_type());
+                    TLOG_ERROR("unsupport request type, type:{}", request.op_type());
                     IF_DONE_SET_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
                 }
             }
@@ -492,9 +492,9 @@ namespace EA {
     }
 
     void MetaStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {
-        DB_WARNING("start on snapshot save");
-        DB_WARNING("max_namespace_id: %ld, max_database_id: %ld,"
-                   " max_table_id:%ld, max_region_id:%ld when on snapshot save",
+        TLOG_WARN("start on snapshot save");
+        TLOG_WARN("max_namespace_id: {}, max_database_id: {},"
+                   " max_table_id:{}, max_region_id:{} when on snapshot save",
                    NamespaceManager::get_instance()->get_max_namespace_id(),
                    DatabaseManager::get_instance()->get_max_database_id(),
                    TableManager::get_instance()->get_max_table_id(),
@@ -525,21 +525,21 @@ namespace EA {
         rocksdb::Options option = RocksWrapper::get_instance()->get_options(
                 RocksWrapper::get_instance()->get_meta_info_handle());
         SstFileWriter sst_writer(option);
-        DB_WARNING("snapshot path:%s", snapshot_path.c_str());
+        TLOG_WARN("snapshot path:{}", snapshot_path);
         //Open the file for writing
         auto s = sst_writer.open(sst_file_path);
         if (!s.ok()) {
-            DB_WARNING("Error while opening file %s, Error: %s", sst_file_path.c_str(),
-                       s.ToString().c_str());
+            TLOG_WARN("Error while opening file {}, Error: {}", sst_file_path,
+                       s.ToString());
             done->status().set_error(EINVAL, "Fail to open SstFileWriter");
             return;
         }
         for (; iter->Valid(); iter->Next()) {
             auto res = sst_writer.put(iter->key(), iter->value());
             if (!res.ok()) {
-                DB_WARNING("Error while adding Key: %s, Error: %s",
-                           iter->key().ToString().c_str(),
-                           s.ToString().c_str());
+                TLOG_WARN("Error while adding Key: {}, Error: {}",
+                           iter->key().ToString(),
+                           s.ToString());
                 done->status().set_error(EINVAL, "Fail to write SstFileWriter");
                 return;
             }
@@ -547,20 +547,20 @@ namespace EA {
         //close the file
         s = sst_writer.finish();
         if (!s.ok()) {
-            DB_WARNING("Error while finishing file %s, Error: %s", sst_file_path.c_str(),
-                       s.ToString().c_str());
+            TLOG_WARN("Error while finishing file {}, Error: {}", sst_file_path,
+                       s.ToString());
             done->status().set_error(EINVAL, "Fail to finish SstFileWriter");
             return;
         }
         if (writer->add_file("/meta_info.sst") != 0) {
             done->status().set_error(EINVAL, "Fail to add file");
-            DB_WARNING("Error while adding file to writer");
+            TLOG_WARN("Error while adding file to writer");
             return;
         }
     }
 
     int MetaStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
-        DB_WARNING("start on snapshot load");
+        TLOG_WARN("start on snapshot load");
         //先删除数据
         std::string remove_start_key(MetaServer::CLUSTER_IDENTIFY);
         rocksdb::WriteOptions options;
@@ -570,30 +570,30 @@ namespace EA {
                                                                  MetaServer::MAX_IDENTIFY,
                                                                  false);
         if (!status.ok()) {
-            DB_FATAL("remove_range error when on snapshot load: code=%d, msg=%s",
-                     status.code(), status.ToString().c_str());
+            TLOG_ERROR("remove_range error when on snapshot load: code={}, msg={}",
+                     status.code(), status.ToString());
             return -1;
         } else {
-            DB_WARNING("remove range success when on snapshot load:code:%d, msg=%s",
-                       status.code(), status.ToString().c_str());
+            TLOG_WARN("remove range success when on snapshot load:code:{}, msg={}",
+                       status.code(), status.ToString());
         }
-        DB_WARNING("clear data success");
+        TLOG_WARN("clear data success");
         rocksdb::ReadOptions read_options;
         std::unique_ptr<rocksdb::Iterator> iter(RocksWrapper::get_instance()->new_iterator(read_options,
                                                                                            RocksWrapper::get_instance()->get_meta_info_handle()));
         iter->Seek(MetaServer::CLUSTER_IDENTIFY);
         for (; iter->Valid(); iter->Next()) {
-            DB_WARNING("iter key:%s, iter value:%s when on snapshot load",
-                       iter->key().ToString().c_str(), iter->value().ToString().c_str());
+            TLOG_WARN("iter key:{}, iter value:{} when on snapshot load",
+                       iter->key().ToString(), iter->value().ToString());
         }
         std::vector<std::string> files;
         reader->list_files(&files);
         for (auto &file: files) {
-            DB_WARNING("snapshot load file:%s", file.c_str());
+            TLOG_WARN("snapshot load file:{}", file);
             if (file == "/meta_info.sst") {
                 std::string snapshot_path = reader->get_path();
                 _applied_index = parse_snapshot_index_from_path(snapshot_path, false);
-                DB_WARNING("_applied_index:%ld path:%s", _applied_index, snapshot_path.c_str());
+                TLOG_WARN("_applied_index:{} path:{}", _applied_index, snapshot_path);
                 snapshot_path.append("/meta_info.sst");
 
                 //恢复文件
@@ -603,8 +603,8 @@ namespace EA {
                         {snapshot_path},
                         ifo);
                 if (!res.ok()) {
-                    DB_WARNING("Error while ingest file %s, Error %s",
-                               snapshot_path.c_str(), res.ToString().c_str());
+                    TLOG_WARN("Error while ingest file {}, Error {}",
+                               snapshot_path, res.ToString());
                     return -1;
 
                 }
@@ -612,17 +612,17 @@ namespace EA {
                 int ret = 0;
                 ret = ClusterManager::get_instance()->load_snapshot();
                 if (ret != 0) {
-                    DB_FATAL("ClusterManager loadsnapshot fail");
+                    TLOG_ERROR("ClusterManager load snapshot fail");
                     return -1;
                 }
                 ret = PrivilegeManager::get_instance()->load_snapshot();
                 if (ret != 0) {
-                    DB_FATAL("PrivilegeManager loadsnapshot fail");
+                    TLOG_ERROR("PrivilegeManager load snapshot fail");
                     return -1;
                 }
                 ret = SchemaManager::get_instance()->load_snapshot();
                 if (ret != 0) {
-                    DB_FATAL("SchemaManager loadsnapshot fail");
+                    TLOG_ERROR("SchemaManager load snapshot fail");
                     return -1;
                 }
             }
@@ -632,7 +632,7 @@ namespace EA {
     }
 
     void MetaStateMachine::on_leader_start() {
-        DB_WARNING("leader start at new term");
+        TLOG_WARN("leader start at new term");
         ClusterManager::get_instance()->reset_instance_status();
         RegionManager::get_instance()->reset_region_status();
         _leader_start_timestmap = butil::gettimeofday_us();
@@ -643,7 +643,7 @@ namespace EA {
             _bth.run(fun);
             _healthy_check_start = true;
         } else {
-            DB_FATAL("store check thread has already started");
+            TLOG_ERROR("store check thread has already started");
         }
         BaseStateMachine::on_leader_start();
         DDLManager::get_instance()->on_leader_start();
@@ -652,7 +652,7 @@ namespace EA {
     }
 
     void MetaStateMachine::healthy_check_function() {
-        DB_WARNING("start healthy check function");
+        TLOG_WARN("start healthy check function");
         static int64_t count = 0;
         int64_t sleep_time_count =
                 FLAGS_healthy_check_interval_times * FLAGS_store_heart_beat_interval_us / 1000; //ms为单位
@@ -665,7 +665,7 @@ namespace EA {
                 bthread_usleep(1000);
                 ++time;
             }
-            DB_WARNING("start healthy check(region and store), count: %ld", count);
+            TLOG_WARN("start healthy check(region and store), count: {}", count);
             ++count;
             //store的相关信息目前存在cluster中
             ClusterManager::get_instance()->store_healthy_check_function();
@@ -685,11 +685,11 @@ namespace EA {
         if (_healthy_check_start) {
             _bth.join();
             _healthy_check_start = false;
-            DB_WARNING("healthy check bthread join");
+            TLOG_WARN("healthy check bthread join");
         }
         RegionManager::get_instance()->clear_region_peer_state_map();
         RegionManager::get_instance()->clear_region_learner_peer_state_map();
-        DB_WARNING("leader stop");
+        TLOG_WARN("leader stop");
         BaseStateMachine::on_leader_stop();
         DBManager::get_instance()->clear_all_tasks();
         DDLManager::get_instance()->clear_txn_info();

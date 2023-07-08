@@ -50,8 +50,8 @@ namespace EA {
                 if (manager->_table_id_map.find(table_name) == manager->_table_id_map.end()) {
                     response->set_errmsg("table not exist");
                     response->set_errcode(proto::INPUT_PARAM_ERROR);
-                    DB_WARNING("namespace: %s database: %s table_name: %s not exist",
-                               namespace_name.c_str(), database.c_str(), table_name.c_str());
+                    TLOG_WARN("namespace: {} database: {} table_name: {} not exist",
+                               namespace_name, database, table_name);
                     return;
                 }
                 int64_t main_table_id = manager->_table_id_map[table_name];
@@ -238,7 +238,7 @@ namespace EA {
                     auto table = response->add_flatten_tables();
                     *table = table_info.second;
                 }
-                DB_WARNING("use cache for show table status on db: %s", key.c_str());
+                TLOG_WARN("use cache for show table status on db: {}", key);
                 return;
             }
         }
@@ -358,8 +358,8 @@ namespace EA {
         QueryRegionManager::get_instance()->check_region_and_update(region_version_map, response);
 
         int64_t update_region_time = step_time_cost.get_time();
-        DB_NOTICE("process schema info for console heartbeat, parse_time:%ld, prepare_time: %ld, "
-                  "update_table_time: %ld, update_region_time: %ld, log_id: %lu",
+        TLOG_INFO("process schema info for console heartbeat, parse_time:{}, prepare_time: {}, "
+                  "update_table_time: {}, update_region_time: {}, log_id: {}",
                   parse_time, prepare_time, update_table_time, update_region_time, log_id);
     }
 
