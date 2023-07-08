@@ -281,8 +281,8 @@ namespace EA {
             }
             for (auto &table_id: _instance_region_map[instance]) {
                 for (auto &region_id: table_id.second) {
-                    DB_WARNING("table_id: %ld, region_id: %ld in store: %s",
-                               table_id.first, region_id, instance.c_str());
+                    TLOG_WARN("table_id: {}, region_id: %ld in store: {}",
+                               table_id.first, region_id, instance);
                 }
             }
         }
@@ -324,7 +324,7 @@ namespace EA {
             for (auto &peer_pair: uniq_instance) {
                 bool exist = ClusterManager::get_instance()->instance_exist(peer_pair.first);
                 if (!exist) {
-                    DB_WARNING("peer: %s not exist in meta server", peer_pair.first.c_str());
+                    TLOG_WARN("peer: {} not exist in meta server", peer_pair.first.c_str());
                     add_instances[peer_pair.first] = peer_pair.second;
                 }
             }
@@ -378,7 +378,7 @@ namespace EA {
                     }
                 }
                 for (auto &learner: region_info.learners()) {
-                    DB_DEBUG("set region learner instance %s table_id %ld region_id %ld",
+                    TLOG_DEBUG("set region learner instance {} table_id %ld region_id {}",
                              learner.c_str(), table_id, region_id);
                     _instance_learner_map[learner][table_id].insert(region_id);
                 }
@@ -518,7 +518,7 @@ namespace EA {
             bool can_modify_learner = false;
             bool exist = _region_learner_peer_state_map.init_if_not_exist_else_update(
                     region_id, false, [&can_modify_learner](RegionLearnerState &state) {
-                        DB_DEBUG("check can add learner time %ld", state.tc.get_time());
+                        TLOG_DEBUG("check can add learner time {}", state.tc.get_time());
                         can_modify_learner = state.tc.get_time() > FLAGS_modify_learner_peer_interval_us;
                         if (can_modify_learner) {
                             state.tc.reset();

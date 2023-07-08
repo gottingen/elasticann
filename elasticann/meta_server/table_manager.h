@@ -93,11 +93,11 @@ namespace EA {
         int64_t statistics_version = 0;
 
         void print() {
-            //DB_WARNING("whether_level_table: %d, schema_pb: %s, is_global_index: %d, main_table_id:%ld, global_index_id: %ld",
+            //TLOG_WARN("whether_level_table: {}, schema_pb: {}, is_global_index: {}, main_table_id:{}, global_index_id: {}",
             //            whether_level_table, schema_pb.ShortDebugString().c_str(), is_global_index,  main_table_id, global_index_id);
             //for (auto& partition_region : partition_regions) {
             //    for (auto& region : partition_region.second) {
-            //        DB_WARNING("table_id: %ld region_id: %ld", global_index_id, region);
+            //        TLOG_WARN("table_id: {} region_id: {}", global_index_id, region);
             //    }
             //}
         }
@@ -553,7 +553,7 @@ namespace EA {
         void add_region_id(int64_t table_id, int64_t partition_id, int64_t region_id) {
             BAIDU_SCOPED_LOCK(_table_mutex);
             if (_table_info_map.find(table_id) == _table_info_map.end()) {
-                DB_WARNING("table_id: %ld not exist", table_id);
+                TLOG_WARN("table_id: {} not exist", table_id);
                 return;
             }
             _table_info_map[table_id].partition_regions[partition_id].insert(region_id);
@@ -566,8 +566,8 @@ namespace EA {
             BAIDU_SCOPED_LOCK(_table_mutex);
             if (table_ids.size() != partition_ids.size()
                 || partition_ids.size() != region_ids.size()) {
-                DB_WARNING("input param not legal, "
-                           "table_ids_size:%lu partition_ids_size:%lu, region_ids_size:%lu",
+                TLOG_WARN("input param not legal, "
+                           "table_ids_size:{} partition_ids_size:{}, region_ids_size:{}",
                            table_ids.size(), partition_ids.size(), region_ids.size());
                 return;
             }
@@ -749,7 +749,7 @@ namespace EA {
         void get_clusters_in_fast_importer(std::set <std::string> &clusters_in_fast_importer) {
             DoubleBufferedTableSchedulingInfo::ScopedPtr info;
             if (_table_scheduling_infos.Read(&info) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return;
             }
             for (auto &pair: info->table_in_fast_importer) {
@@ -760,7 +760,7 @@ namespace EA {
         bool is_cluster_in_fast_importer(const std::string &resource_tag) {
             DoubleBufferedTableSchedulingInfo::ScopedPtr info;
             if (_table_scheduling_infos.Read(&info) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return false;
             }
             for (auto &pair: info->table_in_fast_importer) {
@@ -784,7 +784,7 @@ namespace EA {
         bool is_table_in_fast_importer(const int64_t table_id) {
             DoubleBufferedTableSchedulingInfo::ScopedPtr info;
             if (_table_scheduling_infos.Read(&info) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return false;
             }
             if (info->table_in_fast_importer.find(table_id) == info->table_in_fast_importer.end()) {
@@ -796,7 +796,7 @@ namespace EA {
         void get_table_fast_importer_ts(std::unordered_map <int64_t, int64_t> &tables_ts) {
             DoubleBufferedTableSchedulingInfo::ScopedPtr info;
             if (_table_scheduling_infos.Read(&info) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return;
             }
             for (auto &pair: info->table_start_fast_import_ts) {
@@ -859,7 +859,7 @@ namespace EA {
             {
                 DoubleBufferedTableSchedulingInfo::ScopedPtr info;
                 if (_table_scheduling_infos.Read(&info) != 0) {
-                    DB_WARNING("read double_buffer_table error.");
+                    TLOG_WARN("read double_buffer_table error.");
                     return false;
                 }
                 auto iter = info->table_pk_types.find(table_id);
@@ -890,7 +890,7 @@ namespace EA {
                     }
                     for (auto &id: idx.field_ids()) {
                         if (filed_types.find(id) == filed_types.end()) {
-                            DB_WARNING("find PrimitiveType failed, table_id: %ld, field_id: %d", table_id, id);
+                            TLOG_WARN("find PrimitiveType failed, table_id: {}, field_id: {}", table_id, id);
                             return false;
                         }
                         pk_types.emplace_back(filed_types[id]);
@@ -913,7 +913,7 @@ namespace EA {
         void get_pk_prefix_dimensions(std::unordered_map <int64_t, int32_t> &pk_prefix_dimension) {
             DoubleBufferedTableSchedulingInfo::ScopedPtr info;
             if (_table_scheduling_infos.Read(&info) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return;
             }
             pk_prefix_dimension = info->table_pk_prefix_dimension;
@@ -922,7 +922,7 @@ namespace EA {
         bool can_do_pk_prefix_balance() {
             DoubleBufferedTableSchedulingInfo::ScopedPtr info;
             if (_table_scheduling_infos.Read(&info) != 0) {
-                DB_WARNING("read double_buffer_table error.");
+                TLOG_WARN("read double_buffer_table error.");
                 return false;
             }
             return (butil::gettimeofday_us() - info->table_pk_prefix_timestamp) >=
@@ -1131,7 +1131,7 @@ namespace EA {
                         auto index_ptr = delete_schema.add_indexs();
                         index_ptr->CopyFrom(index);
                         index_to_delete.emplace_back(delete_schema);
-                        DB_NOTICE("delete index start %s", delete_schema.ShortDebugString().c_str());
+                        TLOG_INFO("delete index start {}", delete_schema.ShortDebugString());
                         break;
                     } else if (index.hint_status() == proto::IHS_DISABLE &&
                                index.state() == proto::IS_DELETE_LOCAL &&
@@ -1142,7 +1142,7 @@ namespace EA {
                         auto index_ptr = delete_schema.add_indexs();
                         index_ptr->CopyFrom(index);
                         index_to_clear.emplace_back(delete_schema);
-                        DB_NOTICE("clear local index start %s", delete_schema.ShortDebugString().c_str());
+                        TLOG_INFO("clear local index start {}", delete_schema.ShortDebugString());
                         break;
                     }
                 }
@@ -1284,3 +1284,12 @@ namespace EA {
     }; //class
 
 }  // namespace EA
+
+namespace fmt {
+    template<>
+    struct formatter<EA::MergeStatus> : public formatter<int> {
+        auto format(const EA::MergeStatus& a, format_context& ctx) const {
+            return formatter<int>::format(static_cast<int>(a), ctx);
+        }
+    };
+}
