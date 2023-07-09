@@ -17,26 +17,32 @@
 
 // Brief:  the class for handling SQL querys like 'set key=val'
 #pragma once
+
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
 
-class SetKVPlanner : public LogicalPlanner {
-public:
+    class SetKVPlanner : public LogicalPlanner {
+    public:
 
-    SetKVPlanner(QueryContext* ctx) : LogicalPlanner(ctx) {}
-    virtual ~SetKVPlanner() {}
-    virtual int plan();
+        SetKVPlanner(QueryContext *ctx) : LogicalPlanner(ctx) {}
 
-private:
-    int set_autocommit_0();
-    int set_autocommit_1();
-    int set_autocommit(parser::ExprNode* expr);
-    int set_user_variable(const std::string& key, parser::ExprNode* expr);
+        virtual ~SetKVPlanner() {}
 
-private:
-    parser::SetStmt*  _set_stmt;
-};
+        virtual int plan();
+
+    private:
+        int set_autocommit_0();
+
+        int set_autocommit_1();
+
+        int set_autocommit(parser::ExprNode *expr);
+
+        int set_user_variable(const std::string &key, parser::ExprNode *expr);
+
+    private:
+        parser::SetStmt *_set_stmt;
+    };
 } //namespace EA

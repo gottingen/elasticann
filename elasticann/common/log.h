@@ -35,8 +35,6 @@ void DB_NOTICE(const char *fmt, ...) __attribute__((format(printf,1,2)));
 inline void DB_NOTICE(const char *fmt, ...) {}
 #define DB_NOTICE_LONG DB_NOTICE
 
-void SELF_TRACE(const char *fmt, ...) __attribute__((format(printf,1,2)));
-inline void SELF_TRACE(const char *fmt, ...) {}
 void SQL_TRACE(const char *fmt, ...) __attribute__((format(printf,1,2)));
 inline void SQL_TRACE(const char *fmt, ...) {}
 
@@ -61,14 +59,6 @@ void DB_NOTICE_CLIENT(const char *fmt, ...) __attribute__((format(printf,1,2)));
 template <typename T>
 void DB_NOTICE_CLIENT(const char *fmt, ...) {}
 
-template <typename T>
-void DB_WARNING_STATE(T sock, const char *fmt, ...) __attribute__((format(printf,2,3)));
-template <typename T>
-void DB_WARNING_STATE(T sock, const char *fmt, ...) {}
-template <typename T>
-void DB_FATAL_STATE(T sock, const char *fmt, ...) __attribute__((format(printf,2,3)));
-template <typename T>
-void DB_FATAL_STATE(T sock, const char *fmt, ...) {}
 #endif //CHECK_LOG_FORMAT
 
 namespace EA {
@@ -160,13 +150,6 @@ namespace EA {
                 strrchr(__FILE__, '/') + 1, __LINE__, __FUNCTION__, bthread_self(), ##args);\
     } while (0);
 
-#define SELF_TRACE(_fmt_, args...) \
-    do {\
-        if (!FLAGS_enable_self_trace) break; \
-        ::EA::tlog_info_writelog("[%s:%d][%s][%lu]" _fmt_, \
-                strrchr(__FILE__, '/') + 1, __LINE__, __FUNCTION__, bthread_self(), ##args);\
-    } while (0);
-
 #define SQL_TRACE(_fmt_, args...) \
     do {\
         if (!FLAGS_enable_self_trace) break; \
@@ -213,16 +196,6 @@ namespace EA {
             sock->query_ctx->stat_info.error_code, ##args);\
     } while (0);
 
-#define DB_WARNING_STATE(state, _fmt_, args...) \
-    do {\
-        DB_WARNING("log_id: %lu, region_id: %ld, table_id: %ld," _fmt_, \
-                state->log_id(), state->region_id(), state->table_id(), ##args); \
-    } while (0);
-#define DB_FATAL_STATE(state, _fmt_, args...) \
-    do {\
-        DB_FATAL("log_id: %lu, region_id: %ld, table_id: %ld," _fmt_, \
-                state->log_id(), state->region_id(), state->table_id(), ##args); \
-    } while (0);
 #endif //CHECK_LOG_FORMAT
 
     inline int init_log(const char *bin_name) {

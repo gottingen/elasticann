@@ -22,57 +22,66 @@
 #include "elasticann/session/binlog_context.h"
 
 namespace EA {
-class UpdateNode;
+    class UpdateNode;
 
-class UpdateManagerNode : public DmlManagerNode {
-public:
-    UpdateManagerNode() {
-    }
-    virtual ~UpdateManagerNode() {
-        for (auto expr : _update_exprs) {
-             ExprNode::destroy_tree(expr);
+    class UpdateManagerNode : public DmlManagerNode {
+    public:
+        UpdateManagerNode() {
         }
-    }
 
-    virtual int init(const proto::PlanNode& node) override;
-    virtual int open(RuntimeState* state) override;
+        virtual ~UpdateManagerNode() {
+            for (auto expr: _update_exprs) {
+                ExprNode::destroy_tree(expr);
+            }
+        }
 
-    int init_update_info(UpdateNode* update_node);
-    bool affect_global_index() {
-        return _affect_global_index;
-    }
-    const std::vector<int64_t>& global_affected_index_ids() {
-        return _global_affected_index_ids;
-    }
-    const std::vector<int64_t>& local_affected_index_ids() {
-        return _local_affected_index_ids;
-    }
-    bool affect_primary() {
-        return _affect_primary;
-    }
-    int64_t table_id() {
-        return _table_id;
-    }
-    void set_update_exprs(std::vector<ExprNode*>& update_exprs) {
-        _update_exprs = update_exprs;
-    }
+        virtual int init(const proto::PlanNode &node) override;
 
-    int process_binlog(RuntimeState* state, bool is_local);
-    void update_record(RuntimeState* state, SmartRecord record);
+        virtual int open(RuntimeState *state) override;
 
-private:
-    int64_t _table_id = -1;
-    std::vector<proto::SlotDescriptor> _primary_slots;
-    std::vector<proto::SlotDescriptor> _update_slots;
-    std::vector<ExprNode*> _update_exprs;
-    proto::TupleDescriptor* _tuple_desc = nullptr;
-    std::unique_ptr<MemRow> _update_row;
-    bool _affect_primary = true;
-    std::vector<int64_t>     _global_affected_index_ids;
-    std::vector<int64_t>     _local_affected_index_ids;
-    SmartTable               _table_info;
-    bool _affect_global_index = false;
-    proto::TableMutation     _update_binlog;
-    SmartRecord _partition_record;
-};
+        int init_update_info(UpdateNode *update_node);
+
+        bool affect_global_index() {
+            return _affect_global_index;
+        }
+
+        const std::vector<int64_t> &global_affected_index_ids() {
+            return _global_affected_index_ids;
+        }
+
+        const std::vector<int64_t> &local_affected_index_ids() {
+            return _local_affected_index_ids;
+        }
+
+        bool affect_primary() {
+            return _affect_primary;
+        }
+
+        int64_t table_id() {
+            return _table_id;
+        }
+
+        void set_update_exprs(std::vector<ExprNode *> &update_exprs) {
+            _update_exprs = update_exprs;
+        }
+
+        int process_binlog(RuntimeState *state, bool is_local);
+
+        void update_record(RuntimeState *state, SmartRecord record);
+
+    private:
+        int64_t _table_id = -1;
+        std::vector<proto::SlotDescriptor> _primary_slots;
+        std::vector<proto::SlotDescriptor> _update_slots;
+        std::vector<ExprNode *> _update_exprs;
+        proto::TupleDescriptor *_tuple_desc = nullptr;
+        std::unique_ptr<MemRow> _update_row;
+        bool _affect_primary = true;
+        std::vector<int64_t> _global_affected_index_ids;
+        std::vector<int64_t> _local_affected_index_ids;
+        SmartTable _table_info;
+        bool _affect_global_index = false;
+        proto::TableMutation _update_binlog;
+        SmartRecord _partition_record;
+    };
 }

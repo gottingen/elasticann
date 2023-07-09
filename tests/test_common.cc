@@ -114,10 +114,10 @@ namespace EA {
             auto ret = channel.Init(addr.c_str(), &option);
             brpc::Controller cntl;
             if (ret != 0) {
-                DB_WARNING("error");
+                TLOG_WARN("error");
             }
         }
-        DB_WARNING("normal:%ld,%ld,%s", cost.get_time(), butil::gettimeofday_us(),
+        TLOG_WARN("normal:{},{},{}", cost.get_time(), butil::gettimeofday_us(),
                    timestamp_to_str(butil::gettimeofday_us() / 1000 / 1000).c_str());
         cost.reset();
         for (int i = 0; i < 100000; i++) {
@@ -130,14 +130,14 @@ namespace EA {
             auto ret = channel.Init("rr", &option);
             brpc::Controller cntl;
             if (ret != 0) {
-                DB_WARNING("error");
+                TLOG_WARN("error");
             }
             std::string addr = "10.77.22.157:8225";
             brpc::Channel *sub_channel1 = new brpc::Channel;
             sub_channel1->Init(addr.c_str(), &option);
             channel.AddChannel(sub_channel1, NULL);
         }
-        DB_WARNING("selective1:%ld", cost.get_time());
+        TLOG_WARN("selective1:{}", cost.get_time());
         cost.reset();
         for (int i = 0; i < 100000; i++) {
             brpc::SelectiveChannel channel;
@@ -149,7 +149,7 @@ namespace EA {
             auto ret = channel.Init("rr", &option);
             brpc::Controller cntl;
             if (ret != 0) {
-                DB_WARNING("error");
+                TLOG_WARN("error");
             }
             std::string addr = "10.77.22.157:8225";
             brpc::Channel *sub_channel1 = new brpc::Channel;
@@ -160,7 +160,7 @@ namespace EA {
             sub_channel2->Init(addr.c_str(), &option);
             channel.AddChannel(sub_channel2, NULL);
         }
-        DB_WARNING("selective2:%ld", cost.get_time());
+        TLOG_WARN("selective2:{}", cost.get_time());
     }
 
     DOCTEST_TEST_CASE("test_exmaple, case_all") {
@@ -193,12 +193,12 @@ namespace EA {
         std::string sql = "/*{\"ttl_duration\" : 86400}*/select * from t;";
         std::string comment;
         if (!RE2::Extract(sql, reg, "\\1", &comment)) {
-            DB_WARNING("extract commit error.");
+            TLOG_WARN("extract commit error.");
         }
         DOCTEST_CHECK_EQ(comment, "/*{\"ttl_duration\" : 86400}*/");
 
         if (!RE2::Replace(&(sql), reg, "\\2")) {
-            DB_WARNING("extract sql error.");
+            TLOG_WARN("extract sql error.");
         }
         DOCTEST_CHECK_EQ(sql, "select * from t;");
     }
@@ -242,9 +242,9 @@ namespace EA {
                 static thread_local int a;
                 int *b = &a;
                 *b = i;
-                DB_NOTICE("start timer test %d, %d, %p", i, *b, b);
+                TLOG_INFO("start timer test {}, {}, {}", i, *b, turbo::Ptr(b));
                 bthread_usleep(1000 * 1000);
-                DB_NOTICE("end timer test %d, %d, %p %p", i, *b, b, &a);
+                TLOG_INFO("end timer test {}, {}, {} {}", i, *b, turbo::Ptr(b), turbo::Ptr(&a));
             });
             if (i == 7) {
                 tm.stop();
@@ -265,14 +265,14 @@ namespace EA {
                 static thread_local int a;
                 int *b = &a;
                 *b = i;
-                DB_NOTICE("start cond test %d, %d, %p", i, *b, b);
+                TLOG_INFO("start cond test {}, {}, {}", i, *b, turbo::Ptr(b));
                 bthread_usleep(1000 * 1000);
-                DB_NOTICE("end cond test %d, %d, %p %p", i, *b, b, &a);
+                TLOG_INFO("end cond test {}, {}, {} {}", i, *b, turbo::Ptr(b), turbo::Ptr(&a));
                 cond.decrease_signal();
             });
         }
         cond.wait();
-        DB_NOTICE("all bth done");
+        TLOG_INFO("all bth done");
         sleep(1);
         {
             BthreadCond *concurrency_cond = new BthreadCond(-4);
@@ -281,13 +281,13 @@ namespace EA {
                 bth.run([concurrency_cond]() {
                     // increase_wait 放在函数中，需要确保concurrency_cond生命周期不结束
                     concurrency_cond->increase_wait();
-                    DB_NOTICE("concurrency_cond2 entry");
+                    TLOG_INFO("concurrency_cond2 entry");
                     bthread_usleep(1000 * 1000);
-                    DB_NOTICE("concurrency_cond2 out");
+                    TLOG_INFO("concurrency_cond2 out");
                     concurrency_cond->decrease_broadcast();
                 });
             }
-            DB_NOTICE("concurrency_cond2 all bth done");
+            TLOG_INFO("concurrency_cond2 all bth done");
         }
 
         {
@@ -297,14 +297,14 @@ namespace EA {
                 // increase一定要在主线程里
                 concurrency_cond.increase_wait();
                 bth.run([&concurrency_cond]() {
-                    DB_NOTICE("concurrency_cond entry");
+                    TLOG_INFO("concurrency_cond entry");
                     bthread_usleep(1000 * 1000);
-                    DB_NOTICE("concurrency_cond out");
+                    TLOG_INFO("concurrency_cond out");
                     concurrency_cond.decrease_signal();
                 });
             }
             concurrency_cond.wait(-5);
-            DB_NOTICE("concurrency_cond all bth done");
+            TLOG_INFO("concurrency_cond all bth done");
         }
         sleep(1);
 
@@ -315,14 +315,14 @@ namespace EA {
                 // increase一定要在主线程里
                 concurrency_cond.increase_wait(5);
                 bth.run([&concurrency_cond]() {
-                    DB_NOTICE("concurrency_cond entry");
+                    TLOG_INFO("concurrency_cond entry");
                     bthread_usleep(1000 * 1000);
-                    DB_NOTICE("concurrency_cond out");
+                    TLOG_INFO("concurrency_cond out");
                     concurrency_cond.decrease_signal();
                 });
             }
             concurrency_cond.wait();
-            DB_NOTICE("concurrency_cond all bth done");
+            TLOG_INFO("concurrency_cond all bth done");
         }
 
     }
@@ -332,16 +332,16 @@ namespace EA {
         for (int i = 0; i < 10; i++) {
             //auto call = [i] () {
             //    bthread_usleep(1000 * 1000);
-            //    DB_NOTICE("test_ConcurrencyBthread test %d", i);
+            //    TLOG_INFO("test_ConcurrencyBthread test {}", i);
             //};
             //con_bth.run(call);
             con_bth.run([i]() {
                 bthread_usleep(1000 * 1000);
-                DB_NOTICE("test_ConcurrencyBthread test %d", i);
+                TLOG_INFO("test_ConcurrencyBthread test {}", i);
             });
         }
         con_bth.join();
-        DB_NOTICE("all bth done");
+        TLOG_INFO("all bth done");
     }
 
     DOCTEST_TEST_CASE("test_bthread_usleep_fast_shutdown, bthread_usleep_fast_shutdown") {
@@ -349,19 +349,19 @@ namespace EA {
         bool shutdown2{false};
         Bthread bth;
         bth.run([&]() {
-            DB_NOTICE("before sleep");
+            TLOG_INFO("before sleep");
             TimeCost cost;
             bthread_usleep_fast_shutdown(1000000, shutdown);
-            DB_NOTICE("after sleep %ld", cost.get_time());
+            TLOG_INFO("after sleep {}", cost.get_time());
             DOCTEST_REQUIRE_LT(cost.get_time(), 100000);
             cost.reset();
             bthread_usleep_fast_shutdown(1000000, shutdown2);
-            DB_NOTICE("after sleep2 %ld", cost.get_time());
+            TLOG_INFO("after sleep2 {}", cost.get_time());
             DOCTEST_REQUIRE_GE(cost.get_time(), 100000);
             cost.reset();
             bool shutdown3 = false;
             bthread_usleep_fast_shutdown(1000000, shutdown3);
-            DB_NOTICE("after sleep2 %ld", cost.get_time());
+            TLOG_INFO("after sleep2 {}", cost.get_time());
             DOCTEST_REQUIRE_GE(cost.get_time(), 1000000);
         });
         bthread_usleep(20000);
@@ -468,37 +468,37 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
 
     DOCTEST_TEST_CASE("gflags_test, case_all") {
         if (!google::SetCommandLineOption("gflags_test_int64", "1000").empty()) {
-            DB_WARNING("gflags_test_int64:%ld", FLAGS_gflags_test_int64);
+            TLOG_WARN("gflags_test_int64:{}", FLAGS_gflags_test_int64);
         }
         if (!google::SetCommandLineOption("gflags_test_double", "0.123").empty()) {
-            DB_WARNING("gflags_test_double:%f", FLAGS_gflags_test_double);
+            TLOG_WARN("gflags_test_double:{}", FLAGS_gflags_test_double);
         }
         if (!google::SetCommandLineOption("gflags_test_string", "def").empty()) {
-            DB_WARNING("gflags_test_string:%s", FLAGS_gflags_test_string.c_str());
+            TLOG_WARN("gflags_test_string:{}", FLAGS_gflags_test_string.c_str());
         }
         if (!google::SetCommandLineOption("gflags_test_bool", "false").empty()) {
-            DB_WARNING("gflags_test_bool:%d", FLAGS_gflags_test_bool);
+            TLOG_WARN("gflags_test_bool:{}", FLAGS_gflags_test_bool);
         }
         if (!google::SetCommandLineOption("gflags_test_int32", "500").empty()) {
-            DB_WARNING("gflags_test_int32: succ");
+            TLOG_WARN("gflags_test_int32: succ");
         } else {
-            DB_WARNING("gflags_test_int32: failed");
+            TLOG_WARN("gflags_test_int32: failed");
         }
 
         if (!google::SetCommandLineOption("gflags_test_int64", "400.0").empty()) {
-            DB_WARNING("gflags_test_int64: succ");
+            TLOG_WARN("gflags_test_int64: succ");
         } else {
-            DB_WARNING("gflags_test_int64: failed");
+            TLOG_WARN("gflags_test_int64: failed");
         }
         if (!google::SetCommandLineOption("gflags_test_double", "300").empty()) {
-            DB_WARNING("gflags_test_double: succ:%f", FLAGS_gflags_test_double);
+            TLOG_WARN("gflags_test_double: succ:{}", FLAGS_gflags_test_double);
         } else {
-            DB_WARNING("gflags_test_double: failed");
+            TLOG_WARN("gflags_test_double: failed");
         }
         if (!google::SetCommandLineOption("gflags_test_bool", "123").empty()) {
-            DB_WARNING("gflags_test_bool: succ:%d", FLAGS_gflags_test_bool);
+            TLOG_WARN("gflags_test_bool: succ:{}", FLAGS_gflags_test_bool);
         } else {
-            DB_WARNING("gflags_test_bool: failed");
+            TLOG_WARN("gflags_test_bool: failed");
         }
         update_param("gflags_test_double", "600");
         update_param("gflags_test_int32", "600");
@@ -530,7 +530,7 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
         };
         for (const auto &it: mapping) {
             std::string meta_bns = store_or_db_bns_to_meta_bns(it.first);//实例和小的服务群组的对应关系
-            DB_NOTICE("bns to meta_bns: %s => %s", it.first.c_str(), meta_bns.c_str());
+            TLOG_INFO("bns to meta_bns: {} => {}", it.first.c_str(), meta_bns.c_str());
             DOCTEST_REQUIRE_EQ(meta_bns, it.second);
         }
     }
@@ -549,7 +549,7 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
                     host_noah + "/monquery/getlastestitemdata?namespaces=" + it + query_item;
             std::string response = "";
             int res = brpc_with_http(host_noah, url_instance_source_used, response);
-            DB_NOTICE("http get instance db res: %s", response.c_str());
+            TLOG_INFO("http get instance db res: {}", response.c_str());
         }
     }
 
@@ -569,7 +569,7 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
 
             i++;
             count << 1;
-            DB_WARNING("window_count: %d, i : %d, time: %ld", window_count.get_value(), i, time.get_time());
+            TLOG_WARN("window_count: {}, i : {}, time: {}", window_count.get_value(), i, time.get_time());
             bthread_usleep(FLAGS_bvar_test_loop_time_ms * 1000);
         }
     }
@@ -580,7 +580,7 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
         int64_t now_time = butil::gettimeofday_us();
         uint64_t ttl_storage = ttl_encode(now_time);
         char *data = reinterpret_cast<char *>(&ttl_storage);
-        DB_WARNING("now_time: %ld, ttl_storage: %lu, 0x%8x%8x%8x%8x%8x%8x%8x%8x,", now_time, ttl_storage,
+        TLOG_WARN("now_time: {}, ttl_storage: {}, 0x{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x},", now_time, ttl_storage,
                    data[0] & 0xFF, data[1] & 0xFF, data[2] & 0xFF, data[3] & 0xFF, data[4] & 0xFF, data[5] & 0xFF,
                    data[6] & 0xFF, data[7] & 0xFF);
 
@@ -595,16 +595,16 @@ DOCTEST_TEST_CASE("test_gbk_regex, match") {
         tuple_record.verification_fields(0x7FFFFFFF);
 
 
-        DB_WARNING("now_time: %ld, ttl_storage: %lu 0x%8x%8x%8x%8x%8x%8x%8x%8x", now_time, ttl_storage,
+        TLOG_WARN("now_time: {}, ttl_storage: {} 0x{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}", now_time, ttl_storage,
                    data[0] & 0xFF, data[1] & 0xFF, data[2] & 0xFF, data[3] & 0xFF, data[4] & 0xFF, data[5] & 0xFF,
                    data[6] & 0xFF, data[7] & 0xFF);
         data = reinterpret_cast<char *>(&now_time);
-        DB_WARNING("now_time: %ld, 0x%8x%8x%8x%8x%8x%8x%8x%8x", now_time,
+        TLOG_WARN("now_time: {}, 0x{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}", now_time,
                    data[0] & 0xFF, data[1] & 0xFF, data[2] & 0xFF, data[3] & 0xFF, data[4] & 0xFF, data[5] & 0xFF,
                    data[6] & 0xFF, data[7] & 0xFF);
         uint64_t encode = KeyEncoder::to_endian_u64(0xFFFFFFFF00000000);
         data = reinterpret_cast<char *>(&encode);
-        DB_WARNING("encode: %lu, 0x%8x%8x%8x%8x%8x%8x%8x%8x", encode,
+        TLOG_WARN("encode: {}, 0x{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}", encode,
                    data[0] & 0xFF, data[1] & 0xFF, data[2] & 0xFF, data[3] & 0xFF, data[4] & 0xFF, data[5] & 0xFF,
                    data[6] & 0xFF, data[7] & 0xFF);
     }

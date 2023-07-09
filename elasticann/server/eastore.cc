@@ -52,15 +52,15 @@ void sigsegv_handler(int signum, siginfo_t* info, void* ptr) {
     void* buffer[1000];
     char** strings;
     int nptrs = backtrace(buffer, 1000);
-    DB_FATAL("segment fault, backtrace() returned %d addresses", nptrs);
+    TLOG_ERROR("segment fault, backtrace() returned {} addresses", nptrs);
     strings = backtrace_symbols(buffer, nptrs);
     if (strings != nullptr) {
         for (int j = 0; j < nptrs; j++) {
             int status = 0;
             char* name = abi::__cxa_demangle(strings[j], nullptr, nullptr, &status);
-            DB_FATAL("orgin:%s", strings[j]);
+            TLOG_ERROR("orgin:{}", strings[j]);
             if (name != nullptr) {
-                DB_FATAL("%s", name);
+                TLOG_ERROR("{}", name);
             }
         }
     }
@@ -96,11 +96,11 @@ int main(int argc, char **argv) {
         act.sa_sigaction = sigsegv_handler;
         act.sa_flags = SA_SIGINFO;
         if (sigaction(sig, &act, nullptr) < 0) {
-            DB_FATAL("sigaction fail, %m");
+            TLOG_ERROR("sigaction fail, {}");
             exit(1);
         }
     }
-//    DB_WARNING("log file load success; GetMemoryReleaseRate:%f", 
+//    TLOG_WARN("log file load success; GetMemoryReleaseRate:{}",
 //            MallocExtension::instance()->GetMemoryReleaseRate());
     EA::register_myraft_extension();
     int ret = 0;
@@ -118,10 +118,10 @@ int main(int argc, char **argv) {
             std::map<std::string, float> term_map;
             EA::Tokenizer::get_instance()->wordrank(word2, term_map);
             if (i%1000==0) {
-                DB_WARNING("wordrank:%d",i);
+                TLOG_WARN("wordrank:{}",i);
             }
         }
-        DB_WARNING("wordrank:%ld", tt1.get_time());
+        TLOG_WARN("wordrank:{}", tt1.get_time());
     };
     EA::ConcurrencyBthread cb(100);
     for (int i = 0; i < 100; i++) {
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
     // init singleton
     EA::FunctionManager::instance()->init();
     if (EA::SchemaFactory::get_instance()->init() != 0) {
-        DB_FATAL("SchemaFactory init failed");
+        TLOG_ERROR("SchemaFactory init failed");
         return -1;
     }
 
@@ -143,14 +143,14 @@ int main(int argc, char **argv) {
     addr.port = EA::FLAGS_store_port;
     //将raft加入到baidu-rpc server中
     if (0 != braft::add_service(&server, addr)) { 
-        DB_FATAL("Fail to init raft");
+        TLOG_ERROR("Fail to init raft");
         return -1;
     }
-    DB_WARNING("add raft to baidu-rpc server success");
+    TLOG_WARN("add raft to baidu-rpc server success");
     EA::StoreQos* store_qos = EA::StoreQos::get_instance();
     ret = store_qos->init();
     if (ret < 0) {
-        DB_FATAL("store qos init fail");
+        TLOG_ERROR("store qos init fail");
         return -1;
     }
     EA::MemoryGCHandler::get_instance()->init();
@@ -160,48 +160,48 @@ int main(int argc, char **argv) {
     std::vector<std::int64_t> init_region_ids;
     ret = store->init_before_listen(init_region_ids);
     if (ret < 0) {
-        DB_FATAL("Store instance init_before_listen fail");
+        TLOG_ERROR("Store instance init_before_listen fail");
         return -1;
     } 
     if (0 != server.AddService(store, brpc::SERVER_DOESNT_OWN_SERVICE)) {
-        DB_FATAL("Fail to Add StoreService");
+        TLOG_ERROR("Fail to Add StoreService");
         return -1;
     }
     if (server.Start(addr, nullptr) != 0) {
-        DB_FATAL("Fail to start server");
+        TLOG_ERROR("Fail to start server");
         return -1;
     }
-    DB_WARNING("start rpc success");
+    TLOG_WARN("start rpc success");
     ret = store->init_after_listen(init_region_ids);
     if (ret < 0) {
-        DB_FATAL("Store instance init_after_listen fail");
+        TLOG_ERROR("Store instance init_after_listen fail");
         return -1;
     }
     std::ofstream init_fs("init.success", std::ofstream::out | std::ofstream::trunc);
-    DB_WARNING("store instance init success");
+    TLOG_WARN("store instance init success");
     //server.RunUntilAskedToQuit();
     while (!brpc::IsAskedToQuit()) {
         bthread_usleep(1000000L);
     }
-    DB_WARNING("recevie kill signal, begin to quit");
+    TLOG_WARN("recevie kill signal, begin to quit");
     store->shutdown_raft();
     store->close();
-    DB_WARNING("store close success");
+    TLOG_WARN("store close success");
     store_qos->close();
-    DB_WARNING("store qos close success");
+    TLOG_WARN("store qos close success");
     EA::MemoryGCHandler::get_instance()->close();
     EA::MemTrackerPool::get_instance()->close();
     // exit if server.join is blocked
     EA::Bthread bth;
     bth.run([]() {
             bthread_usleep(2 * 60 * 1000 * 1000);
-            DB_FATAL("store forse exit");
+            TLOG_ERROR("store forse exit");
             exit(-1);
         });
     // 需要后关端口
     server.Stop(0);
     server.Join();
-    DB_WARNING("quit success");
+    TLOG_WARN("quit success");
     return 0;
 }
 

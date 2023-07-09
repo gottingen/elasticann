@@ -22,51 +22,56 @@
 #include "elasticann/runtime/runtime_state.h"
 
 namespace EA {
-class InformationSchemaScanNode : public ScanNode {
-public:
-    InformationSchemaScanNode() {
-    }
-    virtual ~InformationSchemaScanNode() {
-    }
-    virtual int init(const proto::PlanNode& node) {
-        int ret = 0;
-        ret = ScanNode::init(node);
-        if (ret < 0) {
-            DB_WARNING("ExecNode::init fail, ret:%d", ret);
-            return ret;
+    class InformationSchemaScanNode : public ScanNode {
+    public:
+        InformationSchemaScanNode() {
         }
-        return 0;
-    }
-    virtual int open(RuntimeState* state) {
-        int ret = 0;
-        ret = ScanNode::open(state);
-        if (ret < 0) {
-            DB_WARNING("ExecNode::open fail, ret:%d", ret);
-            return ret;
+
+        virtual ~InformationSchemaScanNode() {
         }
-        if (get_parent()->is_filter_node()) {
-            _conditions = *static_cast<FilterNode*>(get_parent())->mutable_conjuncts();
-        }
-        return 0;
-    }
-    virtual int get_next(RuntimeState* state, RowBatch* batch, bool* eos) {
-        auto records = InformationSchema::get_instance()->call_table(_table_id, state, _conditions);
-        for (auto& record : records) {
-            std::unique_ptr<MemRow> row = state->mem_row_desc()->fetch_mem_row();
-            for (auto slot : _tuple_desc->slots()) {
-                auto field = record->get_field_by_tag(slot.field_id());
-                row->set_value(slot.tuple_id(), slot.slot_id(),
-                        record->get_value(field));
+
+        virtual int init(const proto::PlanNode &node) {
+            int ret = 0;
+            ret = ScanNode::init(node);
+            if (ret < 0) {
+                TLOG_WARN("ExecNode::init fail, ret:{}", ret);
+                return ret;
             }
-            batch->move_row(std::move(row));
-            ++_num_rows_returned;
+            return 0;
         }
-        *eos = true;
-        return 0;
-    }
-private:
-    std::vector<ExprNode*> _conditions;
-};
+
+        virtual int open(RuntimeState *state) {
+            int ret = 0;
+            ret = ScanNode::open(state);
+            if (ret < 0) {
+                TLOG_WARN("ExecNode::open fail, ret:{}", ret);
+                return ret;
+            }
+            if (get_parent()->is_filter_node()) {
+                _conditions = *static_cast<FilterNode *>(get_parent())->mutable_conjuncts();
+            }
+            return 0;
+        }
+
+        virtual int get_next(RuntimeState *state, RowBatch *batch, bool *eos) {
+            auto records = InformationSchema::get_instance()->call_table(_table_id, state, _conditions);
+            for (auto &record: records) {
+                std::unique_ptr<MemRow> row = state->mem_row_desc()->fetch_mem_row();
+                for (auto slot: _tuple_desc->slots()) {
+                    auto field = record->get_field_by_tag(slot.field_id());
+                    row->set_value(slot.tuple_id(), slot.slot_id(),
+                                   record->get_value(field));
+                }
+                batch->move_row(std::move(row));
+                ++_num_rows_returned;
+            }
+            *eos = true;
+            return 0;
+        }
+
+    private:
+        std::vector<ExprNode *> _conditions;
+    };
 }
 
 /*vim: set ts=4 sw=4 sts=4 tw=100 */

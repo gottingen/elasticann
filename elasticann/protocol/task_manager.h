@@ -5,19 +5,20 @@
 
 namespace EA {
 
-DECLARE_int32(worker_number);
+    DECLARE_int32(worker_number);
 
-class TaskManager : public Singleton<TaskManager> {
-public:
-    int init();
+    class TaskManager : public Singleton<TaskManager> {
+    public:
+        int init();
 
-    void fetch_thread();
+        void fetch_thread();
 
-    void process_ddl_work(proto::RegionDdlWork work);
-    void process_txn_ddl_work(proto::DdlWorkInfo work);
+        void process_ddl_work(proto::RegionDdlWork work);
 
-private:
-    ConcurrencyBthread _workers {FLAGS_worker_number};
-};
-    
+        void process_txn_ddl_work(proto::DdlWorkInfo work);
+
+    private:
+        ConcurrencyBthread _workers{FLAGS_worker_number};
+    };
+
 } // namespace EA

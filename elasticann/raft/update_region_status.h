@@ -16,20 +16,23 @@
 
 
 #pragma once
+
 #include <cstdint>
 
 namespace EA {
-class UpdateRegionStatus {
-public:
-    virtual ~UpdateRegionStatus() {}
+    class UpdateRegionStatus {
+    public:
+        virtual ~UpdateRegionStatus() {}
 
-    static UpdateRegionStatus* get_instance() {
-        static UpdateRegionStatus _instance;
-        return &_instance;
-    }
-    void reset_region_status(int64_t region_id); 
-private:
-    UpdateRegionStatus() {}
-};
+        static UpdateRegionStatus *get_instance() {
+            static UpdateRegionStatus _instance;
+            return &_instance;
+        }
+
+        void reset_region_status(int64_t region_id);
+
+    private:
+        UpdateRegionStatus() {}
+    };
 }
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

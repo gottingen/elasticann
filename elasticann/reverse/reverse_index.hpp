@@ -32,7 +32,7 @@ namespace EA {
 
         _level_1_scan_count = 0;
 
-        //DB_NOTICE("region %ld table %ld merge %d wait time %lu",
+        //TLOG_INFO("region {} table {} merge {} wait time {}",
         //                    _region_id, _index_id, _reverse_prefix, timer.get_time());
         uint8_t prefix = _reverse_prefix;
 
@@ -52,7 +52,7 @@ namespace EA {
         roptions.fill_cache = false;
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         std::unique_ptr<myrocksdb::Iterator> iter(new myrocksdb::Iterator(_rocksdb->new_iterator(roptions, data_cf)));
@@ -64,20 +64,20 @@ namespace EA {
         }
         int64_t seek_time = timer.get_time();
         if (end_flag) {
-            DB_WARNING("seek end merge dowith time:%ld, seek time:%ld, region_id:%ld, cache:%s, "
-                       "seg_cache:%s, prefix:%d,level_1_scan_count:%ld",
-                       timer.get_time(), seek_time, _region_id,
-                       _cache.get_info().c_str(), _seg_cache.get_info().c_str(), prefix, _level_1_scan_count);
+            TLOG_WARN("seek end merge dowith time:{}, seek time:{}, region_id:{}, cache:{}, "
+                      "seg_cache:{}, prefix:{},level_1_scan_count:{}",
+                      timer.get_time(), seek_time, _region_id,
+                      _cache.get_info().c_str(), _seg_cache.get_info().c_str(), prefix, _level_1_scan_count);
             return 0;
         }
         while (true) {
             //第一层数据合并到第二层。
             status = _reverse_merge_to_second_level(iter, prefix);
             if (status == -1) {
-                DB_WARNING("error merge dowith time:%ld, seek time:%ld, region_id:%ld, cache:%s, "
-                           "seg_cache:%s, prefix:%d,level_1_scan_count:%ld",
-                           timer.get_time(), seek_time, _region_id,
-                           _cache.get_info().c_str(), _seg_cache.get_info().c_str(), prefix, _level_1_scan_count);
+                TLOG_WARN("error merge dowith time:{}, seek time:{}, region_id:{}, cache:{}, "
+                          "seg_cache:{}, prefix:{},level_1_scan_count:{}",
+                          timer.get_time(), seek_time, _region_id,
+                          _cache.get_info().c_str(), _seg_cache.get_info().c_str(), prefix, _level_1_scan_count);
                 return -1;
             }
             if (status == 1) {
@@ -92,10 +92,10 @@ namespace EA {
             }
         }
 
-        DB_WARNING("merge dowith time:%ld, seek time:%ld, region_id:%ld, index_id:%ld, cache:%s, "
-                   "seg_cache:%s, prefix:%d,level_1_scan_count:%ld",
-                   timer.get_time(), seek_time, _region_id, _index_id,
-                   _cache.get_info().c_str(), _seg_cache.get_info().c_str(), prefix, _level_1_scan_count);
+        TLOG_WARN("merge dowith time:{}, seek time:{}, region_id:{}, index_id:{}, cache:{}, "
+                  "seg_cache:{}, prefix:{},level_1_scan_count:{}",
+                  timer.get_time(), seek_time, _region_id, _index_id,
+                  _cache.get_info().c_str(), _seg_cache.get_info().c_str(), prefix, _level_1_scan_count);
         return 0;
     }
 
@@ -172,7 +172,7 @@ namespace EA {
         if (ret < 0) {
             return -1;
         }
-        DB_NOTICE("bianli time : %lu", time.get_time());
+        TLOG_INFO("bianli time : {}", time.get_time());
         print_reverse_statistic_log();
         return 0;
     }
@@ -189,7 +189,7 @@ namespace EA {
         roptions.fill_cache = false;
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return 0;
         }
         ItemStatistic tmp_statistic;
@@ -285,7 +285,7 @@ namespace EA {
         int ret = schema_info->schema->create_executor(search_data, mode, _segment_type, _charset);
         schema_info->schema->statistic().bool_engine_time += timer.get_time();
         if (ret < 0) {
-            DB_WARNING("create_executor fail, region:%ld, index:%ld", _region_id, _index_id);
+            TLOG_WARN("create_executor fail, region:{}, index:{}", _region_id, _index_id);
             return -1;
         }
         return 0;
@@ -321,7 +321,7 @@ namespace EA {
         roptions.fill_cache = false;
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         int64_t scan_rows = 0;
@@ -340,8 +340,8 @@ namespace EA {
             //get merge term for debug
             const size_t len = 8 + 8 + 1;
             if (iter->key().size() <= len) {
-                DB_FATAL("region_id: %ld, index_id: %ld, key size: %lu less len: %lu",
-                         _region_id, _index_id, iter->key().size(), len);
+                TLOG_ERROR("region_id: {}, index_id: {}, key size: {} less len: {}",
+                           _region_id, _index_id, iter->key().size(), len);
                 continue;
             }
             std::string merge_term(iter->key().data() + len, iter->key().size() - len);
@@ -351,8 +351,8 @@ namespace EA {
             ReverseListSptr third_level_list(new ReverseList());
             //deserialize
             if (!third_level_list->ParseFromArray(iter->value().data(), iter->value().size())) {
-                DB_FATAL("parse level %d list from pb failed, region_id: %ld, index_id: %ld",
-                         prefix, _region_id, _index_id);
+                TLOG_ERROR("parse level {} list from pb failed, region_id: {}, index_id: {}",
+                           prefix, _region_id, _index_id);
                 return -1;
             }
             ReverseList &third_msg = static_cast<ReverseList &>(*third_level_list);
@@ -363,13 +363,13 @@ namespace EA {
                 std::string last_key = third_msg.reverse_nodes(old_count - 1).key();
                 if (first_key >= _key_range.first &&
                     end_key_compare(last_key, _key_range.second) < 0) {
-                    DB_DEBUG("in range need not remove, region_id: %ld, index_id: %ld, old_count: %d",
-                             _region_id, _index_id, old_count);
+                    TLOG_DEBUG("in range need not remove, region_id: {}, index_id: {}, old_count: {}",
+                               _region_id, _index_id, old_count);
                     continue;
                 }
             } else {
-                DB_WARNING("old_count is 0; region_id: %ld, index_id: %ld, term: %s",
-                           _region_id, _index_id, merge_term.c_str());
+                TLOG_WARN("old_count is 0; region_id: {}, index_id: {}, term: {}",
+                          _region_id, _index_id, merge_term.c_str());
             }
             SecondLevelMSIterator<ReverseNode, ReverseList>
                     second_iter((ReverseList & ) * second_level_list, _key_range);
@@ -380,47 +380,47 @@ namespace EA {
             int result_count = level_merge<ReverseNode, ReverseList>(
                     &second_iter, &third_iter, *new_third_level_list, false);
             if (old_count > 0 && result_count == old_count) {
-                DB_WARNING("need not remove, region_id: %ld, index_id: %ld, old_count: %d",
-                           _region_id, _index_id, old_count);
+                TLOG_WARN("need not remove, region_id: {}, index_id: {}, old_count: {}",
+                          _region_id, _index_id, old_count);
                 continue;
             }
             remove_node_count += old_count - result_count;
             if (result_count == -1) {
-                DB_FATAL("remove_range 2 and 3 failed");
+                TLOG_ERROR("remove_range 2 and 3 failed");
                 return -1;
             }
             std::string value;
             if (!new_third_level_list->SerializeToString(&value)) {
-                DB_FATAL("remove_range serialize failed, region_id: %ld, index_id: %ld, old_count: %d",
-                         _region_id, _index_id, old_count);
+                TLOG_ERROR("remove_range serialize failed, region_id: {}, index_id: {}, old_count: {}",
+                           _region_id, _index_id, old_count);
                 return -1;
             }
             if (result_count > 0) {
                 auto put_res = txn->get_txn()->Put(data_cf, iter->key(), value);
                 if (!put_res.ok()) {
-                    DB_FATAL("region_id: %ld, index_id: %ld, old_count: %d, rocksdb put error: code=%d, msg=%s",
-                             _region_id, _index_id, old_count, put_res.code(), put_res.ToString().c_str());
+                    TLOG_ERROR("region_id: {}, index_id: {}, old_count: {}, rocksdb put error: code={}, msg={}",
+                               _region_id, _index_id, old_count, put_res.code(), put_res.ToString().c_str());
                     return -1;
                 }
             } else {
                 ++remove_rows;
                 auto del_res = txn->get_txn()->Delete(data_cf, iter->key());
                 if (!del_res.ok()) {
-                    DB_FATAL("region_id: %ld, index_id: %ld, old_count: %d, rocksdb del error: code=%d, msg=%s",
-                             _region_id, _index_id, old_count, del_res.code(), del_res.ToString().c_str());
+                    TLOG_ERROR("region_id: {}, index_id: {}, old_count: {}, rocksdb del error: code={}, msg={}",
+                               _region_id, _index_id, old_count, del_res.code(), del_res.ToString().c_str());
                     return -1;
                 }
             }
             auto s = txn->commit();
             if (!s.ok()) {
-                DB_WARNING("remove_range commit failed: %s", s.ToString().c_str());
+                TLOG_WARN("remove_range commit failed: {}", s.ToString().c_str());
                 return -1;
             }
         }
-        DB_WARNING("prefix:%d, _reverse_remove_range_for_third_level, region_id: %ld, index_id: %ld, "
-                   "scan rows: %ld, remove rows: %ld, scan_node_count: %ld, remove_node_count:%ld , cost: %ld",
-                   prefix, _region_id, _index_id, scan_rows, remove_rows, scan_node_count, remove_node_count,
-                   cost.get_time());
+        TLOG_WARN("prefix:{}, _reverse_remove_range_for_third_level, region_id: {}, index_id: {}, "
+                  "scan rows: {}, remove rows: {}, scan_node_count: {}, remove_node_count:{} , cost: {}",
+                  prefix, _region_id, _index_id, scan_rows, remove_rows, scan_node_count, remove_node_count,
+                  cost.get_time());
         return 0;
     }
 
@@ -451,14 +451,14 @@ namespace EA {
         //get second level reverse list
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         std::string value;
         ReverseListSptr second_level_list(new ReverseList());
         status = _get_level_reverse_list(txn->get_txn(), 2, merge_term, second_level_list);
         if (status != 0) {
-            DB_WARNING("get second level list failed");
+            TLOG_WARN("get second level list failed");
             return -1;
         }
         SecondLevelMSIterator<ReverseNode, ReverseList> second_iter(
@@ -468,7 +468,7 @@ namespace EA {
         int result_count = level_merge<ReverseNode, ReverseList>(
                 &first_iter, &second_iter, *new_second_level_list, false);
         if (result_count == -1) {
-            DB_WARNING("merge 1 and 2 failed, term:%s", merge_term.c_str());
+            TLOG_WARN("merge 1 and 2 failed, term:{}", merge_term.c_str());
             return -1;
         }
         int old_second_level_size = static_cast<ReverseList &>(*second_level_list).reverse_nodes_size();
@@ -476,22 +476,22 @@ namespace EA {
         _level_1_scan_count += second_level_size - old_second_level_size;
         //if (second_level_size > 0 && second_level_size < _second_level_length) {
         if (!new_second_level_list->SerializeToString(&value)) {
-            DB_WARNING("serialize failed");
+            TLOG_WARN("serialize failed");
             return -1;
         }
         auto put_res = txn->get_txn()->Put(data_cf, second_level_key, value);
         if (!put_res.ok()) {
-            DB_WARNING("rocksdb put error: code=%d, msg=%s",
-                       put_res.code(), put_res.ToString().c_str());
+            TLOG_WARN("rocksdb put error: code={}, msg={}",
+                      put_res.code(), put_res.ToString().c_str());
             return -1;
         }
         auto s = txn->commit();
         if (!s.ok()) {
-            DB_WARNING("merge commit failed: %s", s.ToString().c_str());
+            TLOG_WARN("merge commit failed: {}", s.ToString().c_str());
             return -1;
         }
         if (second_level_size >= _second_level_length) {
-            //DB_WARNING("merge 2 level to 3");
+            //TLOG_WARN("merge 2 level to 3");
             // 2/3层合并单独开txn处理
             SmartTransaction txn_level2(new Transaction(0, nullptr));
             txn_level2->begin(txn_opt);
@@ -509,11 +509,11 @@ namespace EA {
             int result_count = level_merge<ReverseNode, ReverseList>(
                     &second_iter, &third_iter, *new_third_level_list, true);
             if (result_count == -1) {
-                DB_WARNING("merge 2 and 3 failed");
+                TLOG_WARN("merge 2 and 3 failed");
                 return -1;
             }
             if (!new_third_level_list->SerializeToString(&value)) {
-                DB_WARNING("serialize failed");
+                TLOG_WARN("serialize failed");
                 return -1;
             }
             std::string third_level_key;
@@ -522,26 +522,26 @@ namespace EA {
             if (result_count > 0) {
                 auto put_res = txn_level2->get_txn()->Put(data_cf, third_level_key, value);
                 if (!put_res.ok()) {
-                    DB_WARNING("rocksdb put error: code=%d, msg=%s",
-                               put_res.code(), put_res.ToString().c_str());
+                    TLOG_WARN("rocksdb put error: code={}, msg={}",
+                              put_res.code(), put_res.ToString().c_str());
                     return -1;
                 }
             } else {
                 auto del_res = txn_level2->get_txn()->Delete(data_cf, third_level_key);
                 if (!del_res.ok()) {
-                    DB_WARNING("rocksdb del error: code=%d, msg=%s",
-                               del_res.code(), del_res.ToString().c_str());
+                    TLOG_WARN("rocksdb del error: code={}, msg={}",
+                              del_res.code(), del_res.ToString().c_str());
                     return -1;
                 }
             }
             status = _delete_level_reverse_list(txn_level2->get_txn(), 2, merge_term);
             if (status != 0) {
-                DB_WARNING("delete reverse list failed");
+                TLOG_WARN("delete reverse list failed");
                 return -1;
             }
             auto s = txn_level2->commit();
             if (!s.ok()) {
-                DB_WARNING("merge commit failed: %s", s.ToString().c_str());
+                TLOG_WARN("merge commit failed: {}", s.ToString().c_str());
                 return -1;
             }
             if (_is_over_cache) {
@@ -565,7 +565,7 @@ namespace EA {
         rocksdb::ReadOptions roptions;
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         ItemStatistic *item_statistic = nullptr;
@@ -582,7 +582,7 @@ namespace EA {
             //cache key is same as db key
             if (is_over_cache) {
                 if (_cache.find(key, &list_ptr) == 0) {
-                    DB_WARNING("cached");
+                    TLOG_WARN("cached");
                     if (item_statistic) {
                         item_statistic->is_cache = true;
                     }
@@ -597,7 +597,7 @@ namespace EA {
             //deserialize
             ReverseListSptr tmp_ptr(new ReverseList());
             if (!tmp_ptr->ParseFromString(value)) {
-                DB_FATAL("parse second level list from pb/arrow failed");
+                TLOG_ERROR("parse second level list from pb/arrow failed");
                 return -1;
             }
             if (item_statistic) {
@@ -613,8 +613,8 @@ namespace EA {
             }
         } else if (get_res.IsNotFound()) {
         } else {
-            DB_WARNING("rocksdb get error: code=%d, msg=%s",
-                       get_res.code(), get_res.ToString().c_str());
+            TLOG_WARN("rocksdb get error: code={}, msg={}",
+                      get_res.code(), get_res.ToString().c_str());
             return -1;
         }
         return 0;
@@ -630,13 +630,13 @@ namespace EA {
         key.append(term);
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         auto remove_res = txn->Delete(data_cf, key);
         if (!remove_res.ok()) {
-            DB_WARNING("rocksdb delete error: code=%d, msg=%s",
-                       remove_res.code(), remove_res.ToString().c_str());
+            TLOG_WARN("rocksdb delete error: code={}, msg={}",
+                      remove_res.code(), remove_res.ToString().c_str());
             return -1;
         }
         return 0;
@@ -648,7 +648,7 @@ namespace EA {
             const std::string &term,
             const ReverseNode *node) {
         // 1. create the first level key (regionid + tableid + reverse_prefix + term + \0 + pk)
-        //DB_WARNING("insert node term[%s]", term.c_str());
+        //TLOG_WARN("insert node term[{}]", term.c_str());
         std::string key;
         _create_reverse_key_prefix(_reverse_prefix, key);
         key.append(term);
@@ -662,19 +662,19 @@ namespace EA {
         // 2. create value
         std::string value;
         if (!node->SerializeToString(&value)) {
-            DB_WARNING("serialize failed: table =%lu, region=%lu", _index_id, _region_id);
+            TLOG_WARN("serialize failed: table ={}, region={}", _index_id, _region_id);
             return -1;
         }
         // 3. put to RocksDB
         auto data_cf = _rocksdb->get_data_handle();
         if (data_cf == nullptr) {
-            DB_WARNING("get rocksdb data column family failed");
+            TLOG_WARN("get rocksdb data column family failed");
             return -1;
         }
         auto put_res = txn->Put(data_cf, key, value);
         if (!put_res.ok()) {
-            DB_WARNING("rocksdb put error: code=%d, msg=%s",
-                       put_res.code(), put_res.ToString().c_str());
+            TLOG_WARN("rocksdb put error: code={}, msg={}",
+                      put_res.code(), put_res.ToString().c_str());
             return -1;
         }
         ++g_statistic_insert_key_num;
@@ -799,7 +799,7 @@ namespace EA {
                 }
             }
         } else {
-            DB_WARNING("unknown node type[%s].", fulltext_index_info.ShortDebugString().c_str());
+            TLOG_WARN("unknown node type[{}].", fulltext_index_info.ShortDebugString().c_str());
         }
         return 0;
     }
@@ -816,13 +816,13 @@ namespace EA {
         record->decode(fulltext_index_info.possible_index().ranges(0).left_pb_record());
         auto index_info = SchemaFactory::get_instance()->get_index_info_ptr(index_id);
         if (index_info == nullptr || index_info->id == -1) {
-            DB_WARNING("no index_info found for index id: %ld", index_id);
+            TLOG_WARN("no index_info found for index id: {}", index_id);
             return -1;
         }
         std::string word;
         int ret = record->get_reverse_word(*index_info, word);
         if (ret < 0) {
-            DB_WARNING("index_info to word fail for index_id: %ld", index_id);
+            TLOG_WARN("index_info to word fail for index_id: {}", index_id);
             return ret;
         }
         reverse_iter->create_executor(_txn, _index_info, _table_info, word,

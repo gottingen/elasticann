@@ -119,7 +119,7 @@ namespace EA {
     struct SnapshotClosure : public braft::Closure {
         virtual void Run() {
             if (!status().ok()) {
-                DB_WARNING("region_id: %ld  status:%s, snapshot failed.",
+                TLOG_WARN("region_id: {}  status:{}, snapshot failed.",
                            region->get_region_id(), status().error_cstr());
             }
             // 遇到部分请求报has no applied logs since last snapshot

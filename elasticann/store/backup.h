@@ -134,12 +134,12 @@ namespace EA {
             int64_t all_streaming_size = sizeof(int64_t) * 2 + sizeof(int8_t) + backup_info.meta_info.size + (
                     backup_info.data_info.size == 0 ? 0 : (sizeof(int64_t) + backup_info.data_info.size)
             );
-            DB_NOTICE("region_%ld backup size meta[%ld] data[%ld]",
+            TLOG_INFO("region_{} backup size meta[{}] data[{}]",
                       _region_id, backup_info.meta_info.size, backup_info.data_info.size);
             auto ret = pa->WriteStreamingSize(all_streaming_size);
             if (ret != 0) {
                 char error_buf[21];
-                DB_FATAL("region_%ld write streaming size error[%s] ret[%d]",
+                TLOG_ERROR("region_{} write streaming size error[{}] ret[{}]",
                          _region_id, strerror_r(errno, error_buf, 21), ret);
                 return -1;
             }
@@ -147,7 +147,7 @@ namespace EA {
             ret = pa->Write(reinterpret_cast<char *>(&log_index), sizeof(int64_t));
             if (ret != 0) {
                 char error_buf[21];
-                DB_FATAL("region_%ld write index error[%s] ret[%d]",
+                TLOG_ERROR("region_{} write index error[{}] ret[{}]",
                          _region_id, strerror_r(errno, error_buf, 21), ret);
                 return -1;
             }
@@ -156,7 +156,7 @@ namespace EA {
             ret = pa->Write(reinterpret_cast<char *>(&file_num), sizeof(int8_t));
             if (ret != 0) {
                 char error_buf[21];
-                DB_FATAL("region_%ld write file number error[%s] ret[%d]",
+                TLOG_ERROR("region_{} write file number error[{}] ret[{}]",
                          _region_id, strerror_r(errno, error_buf, 21), ret);
                 return -1;
             }
@@ -164,7 +164,7 @@ namespace EA {
             auto append_file = [&pa, this, &buf](FileInfo &file_info) -> int {
                 butil::File f(butil::FilePath{file_info.path}, butil::File::FLAG_OPEN);
                 if (!f.IsValid()) {
-                    DB_WARNING("file[%s] is not valid.", file_info.path.c_str());
+                    TLOG_WARN("file[{}] is not valid.", file_info.path.c_str());
                     return -1;
                 }
 
@@ -172,7 +172,7 @@ namespace EA {
                 auto ret = pa->Write(reinterpret_cast<char *>(&file_info.size), sizeof(int64_t));
                 if (ret != 0) {
                     char error_buf[21];
-                    DB_FATAL("region_%ld write file size error[%s] ret[%d]",
+                    TLOG_ERROR("region_{} write file size error[{}] ret[{}]",
                              _region_id, strerror_r(errno, error_buf, 21), ret);
                     return -1;
                 }
@@ -181,33 +181,33 @@ namespace EA {
                 do {
                     read_ret = f.Read(read_size, buf.get(), BUF_SIZE);
                     if (read_ret == -1) {
-                        DB_WARNING("read file[%s] error.", file_info.path.c_str());
+                        TLOG_WARN("read file[{}] error.", file_info.path.c_str());
                         return -1;
                     }
                     if (read_ret != 0) {
-                        DB_DEBUG("region_%ld read: %ld", _region_id, read_ret);
+                        TLOG_DEBUG("region_{} read: {}", _region_id, read_ret);
                         ret = pa->Write(buf.get(), read_ret);
                         if (ret != 0) {
                             char error_buf[21];
-                            DB_FATAL("region_%ld write error[%s] ret[%d]",
+                            TLOG_ERROR("region_{} write error[{}] ret[{}]",
                                      _region_id, strerror_r(errno, error_buf, 21), ret);
                             return -1;
                         }
                     }
                     read_size += read_ret;
-                    DB_DEBUG("region_%ld_all: %ld", _region_id, read_size);
+                    TLOG_DEBUG("region_{}_all: {}", _region_id, read_size);
                 } while (read_ret == BUF_SIZE);
                 return 0;
             };
 
             if (append_file(backup_info.meta_info) == -1) {
-                DB_WARNING("backup region[%ld] send meta file[%s] error.",
+                TLOG_WARN("backup region[{}] send meta file[{}] error.",
                            _region_id, backup_info.meta_info.path.c_str());
                 return -1;
             }
             if (backup_info.data_info.size > 0) {
                 if (append_file(backup_info.data_info) == -1) {
-                    DB_WARNING("backup region[%ld] send data file[%s] error.",
+                    TLOG_WARN("backup region[{}] send data file[{}] error.",
                                _region_id, backup_info.data_info.path.c_str());
                     return -1;
                 }

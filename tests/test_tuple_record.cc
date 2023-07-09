@@ -82,7 +82,7 @@ namespace EA {
             DOCTEST_REQUIRE_EQ(pb_data.col12(), pb_decode->col12());
             DOCTEST_REQUIRE_EQ(pb_data.col13(), pb_decode->col13());
             DOCTEST_REQUIRE_EQ(pb_data.col14(), pb_decode->col14());
-            DB_NOTICE("%s", record->debug_string().c_str());
+            TLOG_INFO("{}", record->debug_string().c_str());
         }
     }
 

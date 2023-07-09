@@ -31,59 +31,66 @@
 #include <butil/files/file_enumerator.h>
 
 namespace EA {
-class LoadNode : public ExecNode {
-public:
-    LoadNode() {
-    }
-    virtual ~LoadNode() {
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int open(RuntimeState* state);
-
-private:
-    int ignore_specified_lines(butil::File& file, char* data_buffer, int64_t buf_size);
-    int handle_lines(RuntimeState* state, std::vector<std::string>& row_lines);
-    ExprValue create_field_value(FieldInfo& field_info, std::string& str_val, bool& is_legal);
-    int fill_field_value(SmartRecord record, FieldInfo& field, ExprValue& value);
-
-private:
-    const int64_t    BUFFER_SIZE = 8 * 1024 * 1024ULL; // 8M
-    struct MemBuf : std::streambuf{
-        MemBuf(char* begin, char* end) {
-            this->setg(begin, begin, end);
+    class LoadNode : public ExecNode {
+    public:
+        LoadNode() {
         }
+
+        virtual ~LoadNode() {
+        }
+
+        virtual int init(const proto::PlanNode &node);
+
+        virtual int open(RuntimeState *state);
+
+    private:
+        int ignore_specified_lines(butil::File &file, char *data_buffer, int64_t buf_size);
+
+        int handle_lines(RuntimeState *state, std::vector<std::string> &row_lines);
+
+        ExprValue create_field_value(FieldInfo &field_info, std::string &str_val, bool &is_legal);
+
+        int fill_field_value(SmartRecord record, FieldInfo &field, ExprValue &value);
+
+    private:
+        const int64_t BUFFER_SIZE = 8 * 1024 * 1024ULL; // 8M
+        struct MemBuf : std::streambuf {
+            MemBuf(char *begin, char *end) {
+                this->setg(begin, begin, end);
+            }
+        };
+
+        int64_t _table_id = -1;
+        int32_t _ignore_lines = 0;
+
+        proto::Charset _char_set;
+
+        bool _opt_enclosed = false;
+        std::string _data_path;
+        int64_t _file_size;
+        std::string _terminated;
+        std::string _enclosed;
+        std::string _escaped;
+        std::string _line_starting;
+        std::string _line_terminated;
+        bool _read_eof = false;
+        bool _has_get_line = false;
+        int64_t _file_cur_pos = 0;
+        int64_t _buf_cur_pos = 0;
+
+        std::vector<proto::SlotDescriptor> _set_slots;
+        std::vector<ExprNode *> _set_exprs;
+        std::vector<int32_t> _field_ids;
+        std::set<int32_t> _default_field_ids;
+        std::set<int32_t> _ingore_field_indexes;
+
+        SchemaFactory *_factory = nullptr;
+        SmartTable _table_info;
+        SmartIndex _pri_info;
+
+        InsertManagerNode *_insert_manager = nullptr;
+        int _affected_rows = 0;
     };
-    int64_t _table_id = -1;
-    int32_t _ignore_lines = 0;
-
-    proto::Charset  _char_set;
-
-    bool _opt_enclosed = false;
-    std::string _data_path;
-    int64_t     _file_size;
-    std::string _terminated;
-    std::string _enclosed;
-    std::string _escaped;
-    std::string _line_starting;
-    std::string _line_terminated;
-    bool       _read_eof = false;
-    bool       _has_get_line = false;
-    int64_t    _file_cur_pos = 0;
-    int64_t    _buf_cur_pos = 0;
-
-    std::vector<proto::SlotDescriptor> _set_slots;
-    std::vector<ExprNode*> _set_exprs;
-    std::vector<int32_t> _field_ids;
-    std::set<int32_t> _default_field_ids;
-    std::set<int32_t> _ingore_field_indexes;
-
-    SchemaFactory* _factory = nullptr;
-    SmartTable       _table_info;
-    SmartIndex       _pri_info;
-
-    InsertManagerNode* _insert_manager = nullptr;
-    int    _affected_rows = 0;
-};
 
 }
 

@@ -31,17 +31,17 @@ namespace EA {
                 auto client_index = request_vec[3];
                 log_index = region_ptr->get_data_index();
                 if (client_index == std::to_string(log_index)) {
-                    DB_NOTICE("backup region[%ld] not changed.", _region_id);
+                    TLOG_INFO("backup region[{}] not changed.", _region_id);
                     cntl->http_response().set_status_code(brpc::HTTP_STATUS_NO_CONTENT);
                     return;
                 }
             }
             if (backup_type == SstBackupType::DATA_BACKUP) {
                 backup_datainfo(cntl, log_index);
-                DB_NOTICE("backup datainfo region[%ld]", _region_id);
+                TLOG_INFO("backup datainfo region[{}]", _region_id);
             }
         } else {
-            DB_NOTICE("backup region[%ld] is quit.", _region_id);
+            TLOG_INFO("backup region[{}] is quit.", _region_id);
             cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
         }
     }
@@ -59,14 +59,14 @@ namespace EA {
         }));
 
         if (dump_sst_file(backup_info) != 0) {
-            DB_WARNING("dump sst file error region_%ld", _region_id);
+            TLOG_WARN("dump sst file error region_{}", _region_id);
             cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
             return;
         }
 
         ProgressiveAttachmentWritePolicy pa{cntl->CreateProgressiveAttachment()};
         if (send_file(backup_info, &pa, log_index) != 0) {
-            DB_WARNING("send sst file error region_%ld", _region_id);
+            TLOG_WARN("send sst file error region_{}", _region_id);
             cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
             return;
         }
@@ -78,18 +78,18 @@ namespace EA {
         if (err != 0) {
             if (err == -1) {
                 // dump sst file error
-                DB_WARNING("backup region[%ld] backup to file[%s] error.",
+                TLOG_WARN("backup region[{}] backup to file[{}] error.",
                            _region_id, backup_info.data_info.path.c_str());
                 return -1;
             } else if (err == -2) {
                 //无数据。
-                DB_NOTICE("backup region[%ld] no datainfo.", _region_id);
+                TLOG_INFO("backup region[{}] no datainfo.", _region_id);
             }
         }
 
         err = backup_metainfo_to_file(backup_info.meta_info.path, backup_info.meta_info.size);
         if (err != 0) {
-            DB_WARNING("region[%ld] backup file[%s] error.",
+            TLOG_WARN("region[{}] backup file[{}] error.",
                        _region_id, backup_info.meta_info.path.c_str());
             return -1;
         }
@@ -105,7 +105,7 @@ namespace EA {
         rocksdb::ExternalSstFileInfo sst_file_info;
         auto ret = writer->open(path);
         if (!ret.ok()) {
-            DB_WARNING("open SstFileWrite error, path[%s] error[%s]", path.c_str(), ret.ToString().c_str());
+            TLOG_WARN("open SstFileWrite error, path[{}] error[{}]", path.c_str(), ret.ToString().c_str());
             return -1;
         }
 
@@ -128,7 +128,7 @@ namespace EA {
         for (iter->Seek(prefix); iter->Valid(); iter->Next()) {
             auto s = writer->put(iter->key(), iter->value());
             if (!s.ok()) {
-                DB_WARNING("put key error[%s]", s.ToString().c_str());
+                TLOG_WARN("put key error[{}]", s.ToString().c_str());
                 return -1;
             } else {
                 ++row;
@@ -136,13 +136,13 @@ namespace EA {
         }
 
         if (row == 0) {
-            DB_NOTICE("region[%ld] no data in datainfo.", _region_id);
+            TLOG_INFO("region[{}] no data in datainfo.", _region_id);
             return -2;
         }
 
         ret = writer->finish(&sst_file_info);
         if (!ret.ok()) {
-            DB_WARNING("finish error, path[%s] error[%s]", path.c_str(), ret.ToString().c_str());
+            TLOG_WARN("finish error, path[{}] error[{}]", path.c_str(), ret.ToString().c_str());
             return -1;
         }
 
@@ -159,7 +159,7 @@ namespace EA {
         std::unique_ptr<SstFileWriter> writer(new SstFileWriter(options));
         auto ret = writer->open(path);
         if (!ret.ok()) {
-            DB_WARNING("open SstFileWrite error, path[%s] error[%s]", path.c_str(), ret.ToString().c_str());
+            TLOG_WARN("open SstFileWrite error, path[{}] error[{}]", path.c_str(), ret.ToString().c_str());
             return -1;
         }
 
@@ -175,7 +175,7 @@ namespace EA {
 
             auto s = writer->put(iter->key(), iter->value());
             if (!s.ok()) {
-                DB_WARNING("put key error[%s]", s.ToString().c_str());
+                TLOG_WARN("put key error[{}]", s.ToString().c_str());
                 return -1;
             } else {
                 ++row;
@@ -183,13 +183,13 @@ namespace EA {
         }
 
         if (row == 0) {
-            DB_NOTICE("region[%ld] no data in metainfo.", _region_id);
+            TLOG_INFO("region[{}] no data in metainfo.", _region_id);
             return -2;
         }
 
         ret = writer->finish(&sst_file_info);
         if (!ret.ok()) {
-            DB_WARNING("finish error, path[%s] error[%s]", path.c_str(), ret.ToString().c_str());
+            TLOG_WARN("finish error, path[{}] error[{}]", path.c_str(), ret.ToString().c_str());
             return -1;
         }
         file_size = sst_file_info.file_size;
@@ -221,7 +221,7 @@ namespace EA {
             int ret = region_ptr->_real_writing_cond.timed_wait(FLAGS_disable_write_wait_timeout_us * 10);
             if (ret != 0) {
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
-                DB_FATAL("_real_writing_cond wait timeout, region_id: %ld", _region_id);
+                TLOG_ERROR("_real_writing_cond wait timeout, region_id: {}", _region_id);
                 return -1;
             }
 
@@ -236,70 +236,70 @@ namespace EA {
 
             if (dump_sst_file(latest_backup_info) != 0) {
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_PARTIAL_CONTENT);
-                DB_NOTICE("upload region[%ld] ingest latest sst failed.", _region_id);
+                TLOG_INFO("upload region[{}] ingest latest sst failed.", _region_id);
                 return -1;
             }
 
             ret = region_ptr->ingest_sst_backup(backup_info.data_info.path, backup_info.meta_info.path);
             if (ret != 0) {
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
-                DB_NOTICE("upload region[%ld] ingest failed.", _region_id);
+                TLOG_INFO("upload region[{}] ingest failed.", _region_id);
                 return -1;
             }
 
-            DB_NOTICE("backup region[%ld] ingest_store_latest_sst [%d]", _region_id, int(ingest_store_latest_sst));
+            TLOG_INFO("backup region[{}] ingest_store_latest_sst [{}]", _region_id, int(ingest_store_latest_sst));
             if (!ingest_store_latest_sst) {
-                DB_NOTICE("region[%ld] not ingest lastest sst.", _region_id);
+                TLOG_INFO("region[{}] not ingest lastest sst.", _region_id);
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_OK);
                 return -1;
             }
 
-            DB_NOTICE("region[%ld] ingest latest data.", _region_id);
+            TLOG_INFO("region[{}] ingest latest data.", _region_id);
             ret = region_ptr->ingest_sst_backup(latest_backup_info.data_info.path, latest_backup_info.meta_info.path);
             if (ret == 0) {
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_OK);
-                DB_NOTICE("upload region[%ld] ingest latest sst success.", _region_id);
+                TLOG_INFO("upload region[{}] ingest latest sst success.", _region_id);
                 return 0;
             } else {
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_PARTIAL_CONTENT);
-                DB_NOTICE("upload region[%ld] ingest latest sst failed.", _region_id);
+                TLOG_INFO("upload region[{}] ingest latest sst failed.", _region_id);
                 return -1;
             }
         } else {
             cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
-            DB_WARNING("region_%ld is quit.", _region_id);
+            TLOG_WARN("region_{} is quit.", _region_id);
             return -1;
         }
     }
 
     int Backup::upload_sst_info(brpc::Controller *cntl, BackupInfo &backup_info) {
-        DB_NOTICE("upload datainfo region_id[%ld]", _region_id);
+        TLOG_INFO("upload datainfo region_id[{}]", _region_id);
         auto &request_attachment = cntl->request_attachment();
         int64_t log_index;
         if (request_attachment.cutn(&log_index, sizeof(int64_t)) != sizeof(int64_t)) {
-            DB_WARNING("upload region_%ld sst not enough data for log index", _region_id);
+            TLOG_WARN("upload region_{} sst not enough data for log index", _region_id);
             return -1;
         }
         int8_t file_num;
         if (request_attachment.cutn(&file_num, sizeof(int8_t)) != sizeof(int8_t)) {
-            DB_WARNING("upload region_%ld sst not enough data.", _region_id);
+            TLOG_WARN("upload region_{} sst not enough data.", _region_id);
             return -1;
         }
 
         auto save_sst_file = [this, &request_attachment](FileInfo &fi) -> int {
             if (request_attachment.cutn(&fi.size, sizeof(int64_t)) != sizeof(int64_t)) {
-                DB_WARNING("upload region_%ld sst not enough data.", _region_id);
+                TLOG_WARN("upload region_{} sst not enough data.", _region_id);
                 return -1;
             }
             if (fi.size <= 0) {
-                DB_WARNING("upload region_%ld sst wrong meta_data size [%ld].",
+                TLOG_WARN("upload region_{} sst wrong meta_data size [{}].",
                            _region_id, fi.size);
                 return -1;
             }
 
             butil::IOBuf out_io;
             if (request_attachment.cutn(&out_io, fi.size) != (uint64_t) fi.size) {
-                DB_WARNING("upload region_%ld sst not enough data.", _region_id);
+                TLOG_WARN("upload region_{} sst not enough data.", _region_id);
                 return -1;
             }
             std::ofstream os(fi.path, std::ios::out | std::ios::binary);
@@ -311,7 +311,7 @@ namespace EA {
             return -1;
         }
         if (file_num == 2 && save_sst_file(backup_info.data_info) != 0) {
-            DB_WARNING("region_%ld save data sst file error.", _region_id);
+            TLOG_WARN("region_{} save data sst file error.", _region_id);
             return -1;
         }
         return 0;
@@ -337,7 +337,7 @@ namespace EA {
             stream_options.idle_timeout_ms = FLAGS_streaming_idle_timeout_ms;
             if (brpc::StreamAccept(&sd, *cntl, &stream_options) != 0) {
                 cntl->SetFailed("Fail to accept stream");
-                DB_WARNING("fail to accept stream.");
+                TLOG_WARN("fail to accept stream.");
                 return;
             }
             Bthread streaming_work{&BTHREAD_ATTR_NORMAL};
@@ -348,10 +348,10 @@ namespace EA {
                 receiver->wait();
             });
             response->set_errcode(proto::SUCCESS);
-            DB_NOTICE("backup datainfo region[%ld]", _region_id);
+            TLOG_INFO("backup datainfo region[{}]", _region_id);
         } else {
             response->set_errcode(proto::BACKUP_ERROR);
-            DB_NOTICE("backup datainfo region[%ld] error, region quit.", _region_id);
+            TLOG_INFO("backup datainfo region[{}] error, region quit.", _region_id);
         }
 
     }
@@ -374,13 +374,13 @@ namespace EA {
         }));
 
         if (dump_sst_file(backup_info) != 0) {
-            DB_WARNING("dump sst file error region_%ld", _region_id);
+            TLOG_WARN("dump sst file error region_{}", _region_id);
             return -1;
         }
 
         StreamingWritePolicy sw{sd};
         if (send_file(backup_info, &sw, log_index) != 0) {
-            DB_WARNING("send sst file error region_%ld", _region_id);
+            TLOG_WARN("send sst file error region_{}", _region_id);
             return -1;
         }
         return 0;
@@ -393,19 +393,19 @@ namespace EA {
         int ret = Concurrency::get_instance()->upload_sst_streaming_concurrency.increase_timed_wait(1000 * 1000 * 5);
         if (ret < 0) {
             response->set_errcode(proto::RETRY_LATER);
-            DB_WARNING("upload sst fail, concurrency limit wait timeout, region_id: %lu", _region_id);
+            TLOG_WARN("upload sst fail, concurrency limit wait timeout, region_id: {}", _region_id);
             return;
         }
         bool ingest_stall = RocksWrapper::get_instance()->is_ingest_stall();
         if (ingest_stall) {
             response->set_errcode(proto::RETRY_LATER);
-            DB_WARNING("upload sst fail, level0 sst num limit, region_id: %lu", _region_id);
+            TLOG_WARN("upload sst fail, level0 sst num limit, region_id: {}", _region_id);
             return;
         }
 
         auto region_ptr = _region.lock();
         if (region_ptr == nullptr) {
-            DB_WARNING("upload sst fail, get lock fail, region_id: %lu", _region_id);
+            TLOG_WARN("upload sst fail, get lock fail, region_id: {}", _region_id);
             return;
         }
         int64_t data_sst_to_process_size = request->data_sst_to_process_size();
@@ -413,7 +413,7 @@ namespace EA {
             // sst备份恢复, 将状态置为doing, 恢复后做一次snapshot,否则add peer异常
             if (region_ptr->make_region_status_doing() < 0) {
                 response->set_errcode(proto::RETRY_LATER);
-                DB_WARNING("upload sst fail, make region status doing fail, region_id: %lu", _region_id);
+                TLOG_WARN("upload sst fail, make region status doing fail, region_id: {}", _region_id);
                 return;
             }
         }
@@ -424,7 +424,7 @@ namespace EA {
         backup_info.data_info.path = std::to_string(_region_id) + "." + std::to_string(rand) + ".upload.data.sst";
         std::shared_ptr<StreamReceiver> receiver(new StreamReceiver);
         if (!receiver->set_info(backup_info)) {
-            DB_WARNING("region_%ld set backup info error.", _region_id);
+            TLOG_WARN("region_{} set backup info error.", _region_id);
             if (data_sst_to_process_size == 0) {
                 region_ptr->reset_region_status();
             }
@@ -451,11 +451,11 @@ namespace EA {
         stream_options.idle_timeout_ms = FLAGS_streaming_idle_timeout_ms;
         if (brpc::StreamAccept(&sd, *cntl, &stream_options) != 0) {
             cntl->SetFailed("Fail to accept stream");
-            DB_WARNING("fail to accept stream.");
+            TLOG_WARN("fail to accept stream.");
             return;
         }
         response->set_streaming_id(sd);
-        DB_WARNING("region_id: %ld, data sst size: %ld, path: %s remote_side: %s, stream_id: %lu",
+        TLOG_WARN("region_id: {}, data sst size: {}, path: {} remote_side: {}, stream_id: {}",
                    _region_id, data_sst_to_process_size, backup_info.data_info.path.c_str(),
                    butil::endpoint2str(cntl->remote_side()).c_str(), sd);
         //async
@@ -485,7 +485,7 @@ namespace EA {
         });
         TimeCost time_cost;
         region_ptr->_multi_thread_cond.increase();
-        DB_NOTICE("upload datainfo region_id[%ld]", _region_id);
+        TLOG_INFO("upload datainfo region_id[{}]", _region_id);
 
         bool upload_success = false;
         ON_SCOPE_EXIT(([&backup_info, data_sst_to_process_size, &upload_success, region_ptr]() {
@@ -502,13 +502,13 @@ namespace EA {
 
         while (receiver->get_status() == proto::StreamState::SS_INIT) {
             bthread_usleep(100 * 1000);
-            DB_WARNING("waiting receiver status change region_%lu, stream_id: %lu", _region_id, sd);
+            TLOG_WARN("waiting receiver status change region_{}, stream_id: {}", _region_id, sd);
         }
         auto streaming_status = receiver->get_status();
         brpc::StreamClose(sd);
         receiver->wait();
         if (streaming_status == proto::StreamState::SS_FAIL) {
-            DB_WARNING("streaming error.");
+            TLOG_WARN("streaming error.");
             return -1;
         }
         //设置禁写，新数据写入sst.
@@ -520,7 +520,7 @@ namespace EA {
 
         int ret = region_ptr->_real_writing_cond.timed_wait(FLAGS_disable_write_wait_timeout_us * 10);
         if (ret != 0) {
-            DB_FATAL("upload real_writing_cond wait timeout, region_id: %ld", _region_id);
+            TLOG_ERROR("upload real_writing_cond wait timeout, region_id: {}", _region_id);
             return -1;
         }
         */
@@ -529,12 +529,12 @@ namespace EA {
                 int64_t data_sst_size = turbo::filesystem::file_size(
                         turbo::filesystem::path(backup_info.data_info.path));
                 if (data_sst_size != data_sst_to_process_size) {
-                    DB_FATAL("region_id: %ld, local sst data diff with remote, %ld vs %ld",
+                    TLOG_ERROR("region_id: {}, local sst data diff with remote, {} vs {}",
                              _region_id, data_sst_size, data_sst_to_process_size);
                     return -1;
                 }
             } else {
-                DB_FATAL("region_id: %ld, has no data sst, path: %s", _region_id, backup_info.data_info.path.c_str());
+                TLOG_ERROR("region_id: {}, has no data sst, path: {}", _region_id, backup_info.data_info.path.c_str());
                 return -1;
             }
         }
@@ -552,30 +552,30 @@ namespace EA {
 
         // ingest_store_latest_sst流程，先dump sst，在ingest发来的sst，再把dump的sst ingest
         if (ingest_store_latest_sst && dump_sst_file(latest_backup_info) != 0) {
-            DB_NOTICE("upload region[%ld] ingest latest sst failed.", _region_id);
+            TLOG_INFO("upload region[{}] ingest latest sst failed.", _region_id);
             return -1;
         }
 
         int ret = region_ptr->ingest_sst_backup(backup_info.data_info.path, backup_info.meta_info.path);
         if (ret != 0) {
-            DB_NOTICE("upload region[%ld] ingest failed.", _region_id);
+            TLOG_INFO("upload region[{}] ingest failed.", _region_id);
             return -1;
         }
 
         upload_success = true;
-        DB_NOTICE("backup region[%ld] ingest_store_latest_sst [%d] data sst size [%ld], time_cost [%ld]",
+        TLOG_INFO("backup region[{}] ingest_store_latest_sst [{}] data sst size [{}], time_cost [{}]",
                   _region_id, int(ingest_store_latest_sst), data_sst_to_process_size, time_cost.get_time());
         if (!ingest_store_latest_sst) {
-            DB_NOTICE("region[%ld] not ingest lastest sst.", _region_id);
+            TLOG_INFO("region[{}] not ingest lastest sst.", _region_id);
             return 0;
         }
 
-        DB_NOTICE("region[%ld] ingest latest data.", _region_id);
+        TLOG_INFO("region[{}] ingest latest data.", _region_id);
         ret = region_ptr->ingest_sst_backup(latest_backup_info.data_info.path, latest_backup_info.meta_info.path);
         if (ret == 0) {
-            DB_NOTICE("upload region[%ld] ingest latest sst success.", _region_id);
+            TLOG_INFO("upload region[{}] ingest latest sst success.", _region_id);
         } else {
-            DB_NOTICE("upload region[%ld] ingest latest sst failed.", _region_id);
+            TLOG_INFO("upload region[{}] ingest latest sst failed.", _region_id);
         }
         return 0;
     }

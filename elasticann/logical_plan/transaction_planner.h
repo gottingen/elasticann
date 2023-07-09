@@ -19,22 +19,23 @@
 //         transaction control SQL 
 //         (start transaction/begin/rollback/commit/set autocommit=0/1)
 #pragma once
+
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
 
-class TransactionPlanner : public LogicalPlanner {
-public:
+    class TransactionPlanner : public LogicalPlanner {
+    public:
 
-    TransactionPlanner(QueryContext* ctx) : LogicalPlanner(ctx) {}
+        TransactionPlanner(QueryContext *ctx) : LogicalPlanner(ctx) {}
 
-    virtual ~TransactionPlanner() {}
+        virtual ~TransactionPlanner() {}
 
-    virtual int plan();
+        virtual int plan();
 
-private:
-    
-};
+    private:
+
+    };
 } //namespace EA

@@ -21,33 +21,35 @@
 #include "elasticann/exec/transaction_manager_node.h"
 
 namespace EA {
-class BeginManagerNode : public TransactionManagerNode {
-public:
-    BeginManagerNode() {
-    }
-    virtual ~BeginManagerNode() {
-    }
-    virtual int open(RuntimeState* state) {
-        uint64_t log_id = state->log_id();
-        int ret = 0;
-        auto client_conn = state->client_conn();
-        if (client_conn == nullptr) {
-            DB_WARNING("connection is nullptr: %lu", state->txn_id);
-            return -1;
+    class BeginManagerNode : public TransactionManagerNode {
+    public:
+        BeginManagerNode() {
         }
-        //DB_WARNING("client_conn: %ld, seq_id: %d", client_conn, state->client_conn()->seq_id);
-        ExecNode* begin_node = _children[0];
-        client_conn->seq_id++;
-        //DB_WARNING("client_conn: %ld, seq_id: %d", client_conn, state->client_conn()->seq_id);
-        ret = exec_begin_node(state, begin_node);
-        if (ret < 0) {
-            DB_WARNING("exec begin node fail, log_id: %lu", log_id);
-            return -1;
+
+        virtual ~BeginManagerNode() {
         }
-        _children.clear();
-        return 0;
-    }
-};
+
+        virtual int open(RuntimeState *state) {
+            uint64_t log_id = state->log_id();
+            int ret = 0;
+            auto client_conn = state->client_conn();
+            if (client_conn == nullptr) {
+                TLOG_WARN("connection is nullptr: {}", state->txn_id);
+                return -1;
+            }
+            //TLOG_WARN("client_conn: {}, seq_id: {}", client_conn, state->client_conn()->seq_id);
+            ExecNode *begin_node = _children[0];
+            client_conn->seq_id++;
+            //TLOG_WARN("client_conn: {}, seq_id: {}", client_conn, state->client_conn()->seq_id);
+            ret = exec_begin_node(state, begin_node);
+            if (ret < 0) {
+                TLOG_WARN("exec begin node fail, log_id: {}", log_id);
+                return -1;
+            }
+            _children.clear();
+            return 0;
+        }
+    };
 
 }
 

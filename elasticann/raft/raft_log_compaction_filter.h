@@ -53,9 +53,9 @@ namespace EA {
             }
             uint64_t region_id_tmp = *(uint64_t *) key.data();
             int64_t region_id = KeyEncoder::decode_i64(KeyEncoder::to_endian_u64(region_id_tmp));
-            uint64_t index_tmp = *(uint64_t * )(key.data() + sizeof(int64_t) + 1);
+            uint64_t index_tmp = *(uint64_t *) (key.data() + sizeof(int64_t) + 1);
             int64_t index = KeyEncoder::decode_i64(KeyEncoder::to_endian_u64(index_tmp));
-            //DB_WARNING("filter parse region_id: %ld, index:%ld", region_id, index);
+            //TLOG_INFO("filter parse region_id: {}, index: {}", region_id, index);
             BAIDU_SCOPED_LOCK(_mutex);
             auto iter = _first_index_map.find(region_id);
             if (iter == _first_index_map.end()) {
@@ -70,7 +70,7 @@ namespace EA {
         }
 
         int update_first_index_map(int64_t region_id, int64_t index) {
-            DB_WARNING("update compaction fileter, region_id: %ld, index:%lu",
+            TLOG_INFO("update compaction fileter, region_id: {}, index: {}",
                        region_id, index);
             BAIDU_SCOPED_LOCK(_mutex);
             _first_index_map[region_id] = index;
@@ -78,7 +78,7 @@ namespace EA {
         }
 
         int remove_region_id(int64_t region_id) {
-            DB_WARNING("remove compaction fileter, region_id: %ld", region_id);
+            TLOG_INFO("remove compaction fileter, region_id: {}", region_id);
             BAIDU_SCOPED_LOCK(_mutex);
             _first_index_map.erase(region_id);
             return 0;
@@ -86,7 +86,7 @@ namespace EA {
 
         void print_map() {
             for (auto &iter: _first_index_map) {
-                DB_WARNING("region_id:%ld, first_index:%ld",
+                TLOG_INFO("region_id:{}, first_index:{}",
                            iter.first, iter.second);
             }
         }
@@ -97,7 +97,7 @@ namespace EA {
         }
 
         // key:region_id, value: first_log_index
-        std::unordered_map <int64_t, int64_t> _first_index_map;
+        std::unordered_map<int64_t, int64_t> _first_index_map;
         mutable bthread_mutex_t _mutex;
     };
 }//namespace

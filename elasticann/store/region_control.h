@@ -85,22 +85,22 @@ namespace EA {
             } else {
                 proto::RegionStatus expected_status = proto::DOING;
                 if (!_status.compare_exchange_strong(expected_status, proto::IDLE)) {
-                    DB_WARNING("region status is not doing, region_id: %ld", _region_id);
+                    TLOG_WARN("region status is not doing, region_id: {}", _region_id);
                 }
             }
-            DB_WARNING("region %ld doing cnt: %d", _region_id, _doing_cnt);
+            TLOG_WARN("region {} doing cnt: {}", _region_id, _doing_cnt);
         }
 
         // idle -> doing
         int make_region_status_doing() {
             BAIDU_SCOPED_LOCK(_mutex);
             if (_doing_cnt > 0) {
-                DB_WARNING("region doing is not 0, region_id: %ld, doing cnt: %d", _region_id, _doing_cnt);
+                TLOG_WARN("region doing is not 0, region_id: {}, doing cnt: {}", _region_id, _doing_cnt);
                 return -1;
             }
             proto::RegionStatus expected_status = proto::IDLE;
             if (!_status.compare_exchange_strong(expected_status, proto::DOING)) {
-                DB_WARNING("region status is not idle, region_id: %ld", _region_id);
+                TLOG_WARN("region status is not idle, region_id: {}", _region_id);
                 return -1;
             }
             return 0;
@@ -118,16 +118,16 @@ namespace EA {
                 // idle -> doing
                 // 分裂异步add peer可能是这种情况
                 if (_doing_cnt > 0) {
-                    DB_FATAL("region doing is not 0, region_id: %ld, doing cnt: %d", _region_id, _doing_cnt);
+                    TLOG_ERROR("region doing is not 0, region_id: {}, doing cnt: {}", _region_id, _doing_cnt);
                     return -1;
                 }
                 proto::RegionStatus expected_status = proto::IDLE;
                 if (!_status.compare_exchange_strong(expected_status, proto::DOING)) {
-                    DB_WARNING("region status is not idle when add peer, region_id: %ld", _region_id);
+                    TLOG_WARN("region status is not idle when add peer, region_id: {}", _region_id);
                     return -1;
                 }
             }
-            DB_WARNING("region %ld doing cnt: %d", _region_id, _doing_cnt);
+            TLOG_WARN("region {} doing cnt: {}", _region_id, _doing_cnt);
             return 0;
         }
 

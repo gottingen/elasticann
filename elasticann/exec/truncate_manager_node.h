@@ -21,16 +21,18 @@
 #include "elasticann/exec/exec_node.h"
 
 namespace EA {
-class TruncateManagerNode : public ExecNode {
-public:
-    TruncateManagerNode() {
-    }
-    virtual ~TruncateManagerNode() {
-    }
-    virtual int open(RuntimeState* state) {
-        return 0;
-    }
-};
+    class TruncateManagerNode : public ExecNode {
+    public:
+        TruncateManagerNode() {
+        }
+
+        virtual ~TruncateManagerNode() {
+        }
+
+        virtual int open(RuntimeState *state) {
+            return 0;
+        }
+    };
 
 }
 

@@ -22,38 +22,43 @@
 #include "elasticann/proto/plan.pb.h"
 
 namespace EA {
-class TransactionNode : public ExecNode {
-public:
-    TransactionNode() {
-    }
-    virtual ~TransactionNode() {
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int open(RuntimeState* state);
-    virtual void transfer_pb(int64_t region_id, proto::PlanNode* pb_node);
+    class TransactionNode : public ExecNode {
+    public:
+        TransactionNode() {
+        }
 
-    proto::TxnCmdType txn_cmd() {
-        return _txn_cmd;
-    }
+        virtual ~TransactionNode() {
+        }
 
-    void set_txn_cmd(proto::TxnCmdType cmd) {
-        _txn_cmd = cmd;
-    }
+        virtual int init(const proto::PlanNode &node);
 
-    void set_txn_timeout(int64_t timeout) {
-        _txn_timeout = timeout;
-    }
+        virtual int open(RuntimeState *state);
 
-    void set_txn_lock_timeout(int64_t timeout) {
-        _txn_lock_timeout = timeout;
-    }
+        virtual void transfer_pb(int64_t region_id, proto::PlanNode *pb_node);
 
-    int64_t get_txn_timeout() const {
-        return _txn_timeout;
-    }
-private:
-    proto::TxnCmdType     _txn_cmd = proto::TXN_INVALID;
-    int64_t            _txn_timeout = 0;
-    int64_t            _txn_lock_timeout = -1;
-};
+        proto::TxnCmdType txn_cmd() {
+            return _txn_cmd;
+        }
+
+        void set_txn_cmd(proto::TxnCmdType cmd) {
+            _txn_cmd = cmd;
+        }
+
+        void set_txn_timeout(int64_t timeout) {
+            _txn_timeout = timeout;
+        }
+
+        void set_txn_lock_timeout(int64_t timeout) {
+            _txn_lock_timeout = timeout;
+        }
+
+        int64_t get_txn_timeout() const {
+            return _txn_timeout;
+        }
+
+    private:
+        proto::TxnCmdType _txn_cmd = proto::TXN_INVALID;
+        int64_t _txn_timeout = 0;
+        int64_t _txn_lock_timeout = -1;
+    };
 }

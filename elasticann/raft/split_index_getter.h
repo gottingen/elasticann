@@ -16,21 +16,24 @@
 
 
 #pragma once
+
 #include <cstdint>
 
 namespace EA {
-class SplitIndexGetter {
-public:
-    virtual ~SplitIndexGetter() {}
+    class SplitIndexGetter {
+    public:
+        virtual ~SplitIndexGetter() {}
 
-    static SplitIndexGetter* get_instance() {
-        static SplitIndexGetter _instance;
-        return &_instance;
-    }
-    int64_t get_split_index(int64_t region_id); 
-private:
-    SplitIndexGetter() {}
-};
+        static SplitIndexGetter *get_instance() {
+            static SplitIndexGetter _instance;
+            return &_instance;
+        }
+
+        int64_t get_split_index(int64_t region_id);
+
+    private:
+        SplitIndexGetter() {}
+    };
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

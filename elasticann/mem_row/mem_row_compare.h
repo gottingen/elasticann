@@ -22,35 +22,37 @@
 #include "elasticann/expr/expr_node.h"
 
 namespace EA {
-class MemRowCompare {
-public:
-    MemRowCompare(std::vector<ExprNode*>& slot_order_exprs,
-                  std::vector<bool>& is_asc,
-                  std::vector<bool>& is_null_first) : 
-                  _slot_order_exprs(slot_order_exprs),
-                  _is_asc(is_asc),
-                  _is_null_first(is_null_first) {}
-    bool need_not_compare() {
-        return _slot_order_exprs.size() == 0;
-    }
-    int64_t compare(MemRow* left, MemRow* right);
+    class MemRowCompare {
+    public:
+        MemRowCompare(std::vector<ExprNode *> &slot_order_exprs,
+                      std::vector<bool> &is_asc,
+                      std::vector<bool> &is_null_first) :
+                _slot_order_exprs(slot_order_exprs),
+                _is_asc(is_asc),
+                _is_null_first(is_null_first) {}
 
-    bool less(MemRow* left, MemRow* right) {
-        return compare(left, right) < 0;
-    }
-    
-    std::function<bool(const std::unique_ptr<MemRow>& left, const std::unique_ptr<MemRow>& right)> 
-    get_less_func() {
-        return [this](const std::unique_ptr<MemRow>& left, 
-                const std::unique_ptr<MemRow>& right) {
-            return less(left.get(), right.get());
-        };
-    }
+        bool need_not_compare() {
+            return _slot_order_exprs.size() == 0;
+        }
 
-private:
-    std::vector<ExprNode*>& _slot_order_exprs;
-    std::vector<bool>& _is_asc;
-    std::vector<bool>& _is_null_first;
-};
+        int64_t compare(MemRow *left, MemRow *right);
+
+        bool less(MemRow *left, MemRow *right) {
+            return compare(left, right) < 0;
+        }
+
+        std::function<bool(const std::unique_ptr<MemRow> &left, const std::unique_ptr<MemRow> &right)>
+        get_less_func() {
+            return [this](const std::unique_ptr<MemRow> &left,
+                          const std::unique_ptr<MemRow> &right) {
+                return less(left.get(), right.get());
+            };
+        }
+
+    private:
+        std::vector<ExprNode *> &_slot_order_exprs;
+        std::vector<bool> &_is_asc;
+        std::vector<bool> &_is_null_first;
+    };
 }
 

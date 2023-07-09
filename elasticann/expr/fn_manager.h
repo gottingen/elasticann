@@ -23,20 +23,26 @@
 #include "elasticann/common/object_manager.h"
 
 namespace EA {
-class FunctionManager : public ObjectManager<
-                        std::function<ExprValue(const std::vector<ExprValue>&)>, 
-                        FunctionManager> {
-public:
-    int init();
-    bool swap_op(proto::Function& fn);
-    static int complete_fn(proto::Function& fn, std::vector<proto::PrimitiveType> types);
-    static void complete_common_fn(proto::Function& fn, std::vector<proto::PrimitiveType>& types);
-private:
-    void register_operators();
-    static void complete_fn_simple(proto::Function& fn, int num_args,
-            proto::PrimitiveType arg_type, proto::PrimitiveType ret_type);
-    static void complete_fn(proto::Function& fn, int num_args,
-            proto::PrimitiveType arg_type, proto::PrimitiveType ret_type);
-};
+    class FunctionManager : public ObjectManager<
+            std::function<ExprValue(const std::vector<ExprValue> &)>,
+            FunctionManager> {
+    public:
+        int init();
+
+        bool swap_op(proto::Function &fn);
+
+        static int complete_fn(proto::Function &fn, std::vector<proto::PrimitiveType> types);
+
+        static void complete_common_fn(proto::Function &fn, std::vector<proto::PrimitiveType> &types);
+
+    private:
+        void register_operators();
+
+        static void complete_fn_simple(proto::Function &fn, int num_args,
+                                       proto::PrimitiveType arg_type, proto::PrimitiveType ret_type);
+
+        static void complete_fn(proto::Function &fn, int num_args,
+                                proto::PrimitiveType arg_type, proto::PrimitiveType ret_type);
+    };
 }
 

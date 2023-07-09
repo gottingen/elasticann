@@ -603,7 +603,7 @@ DOCTEST_TEST_CASE("type_merge, type_merge") {
         DOCTEST_CHECK_EQ(ABCSet.size(), 2);
         for (auto& it : ABCSet) {
             for (auto& v : it.vec) {
-                DB_WARNING("value: %u", v._u.uint32_val);
+                TLOG_WARN("value: {}", v._u.uint32_val);
             }
         }
 

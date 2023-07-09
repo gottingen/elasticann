@@ -58,40 +58,40 @@ void f1(Transaction* txn2) {
 
     usleep(1000000);
     //auto s = txn2->GetForUpdate(read_options, "abc", &value);
-    //DB_NOTICE("txn2->GetForUpdate");
+    //TLOG_INFO("txn2->GetForUpdate");
     auto s = txn2->Put("abc", "def");
-    DB_NOTICE("txn2->Put(abc, def)");
+    TLOG_INFO("txn2->Put(abc, def)");
     if (s.IsNotFound()) {
-        DB_NOTICE("txn2->GetForUpdate not found");
+        TLOG_INFO("txn2->GetForUpdate not found");
         //usleep(5000000);
     } else if (s.ok()) {
-        DB_NOTICE("txn2->GetForUpdate ok");
+        TLOG_INFO("txn2->GetForUpdate ok");
         //usleep(5000000);
     } else if (s.IsBusy()) {
-        DB_NOTICE("txn2->GetForUpdate busy: %s", s.ToString().c_str());
+        TLOG_INFO("txn2->GetForUpdate busy: {}", s.ToString().c_str());
         txn2->Rollback();
         return;
     } else if (s.IsTimedOut()) {
-        DB_NOTICE("txn2->GetForUpdate timeout: %s", s.ToString().c_str());
+        TLOG_INFO("txn2->GetForUpdate timeout: {}", s.ToString().c_str());
         txn2->Rollback();
     } else {
-        DB_NOTICE("txn2->GetForUpdate error: %d, %s", s.code(), s.ToString().c_str());
+        TLOG_INFO("txn2->GetForUpdate error: {}, {}", s.code(), s.ToString().c_str());
         txn2->Rollback();
         return;
     }
     // s = txn2->Put("abc", "transaction2_value");
     // if (s.ok()) {
-    //   DB_NOTICE("txn2->Put ok");
+    //   TLOG_INFO("txn2->Put ok");
     // } else {
-    //   DB_NOTICE("txn2->Put failed");
+    //   TLOG_INFO("txn2->Put failed");
     // }   
 
     usleep(2000000);
     s = txn2->Commit();
     if (s.ok()) {
-      DB_NOTICE("txn2->Commit ok");
+      TLOG_INFO("txn2->Commit ok");
     } else {
-      DB_NOTICE("txn2->Commit failed");
+      TLOG_INFO("txn2->Commit failed");
     }
 #ifdef SNAPSHOT
     txn2->ClearSnapshot();
@@ -105,20 +105,20 @@ void f2(Transaction* txn) {
     std::string value;
     auto s = txn->Get(read_options, "abc", &value);
     if (s.IsNotFound()) {
-        DB_NOTICE("txn->Get not found");
+        TLOG_INFO("txn->Get not found");
         //usleep(5000000);
     } else if (s.ok()) {
-        DB_NOTICE("txn2->Get ok");
-        DB_NOTICE("val is: %s", value.c_str());
+        TLOG_INFO("txn2->Get ok");
+        TLOG_INFO("val is: {}", value.c_str());
         //usleep(5000000);
     } else if (s.IsBusy()) {
-        DB_NOTICE("txn->Get busy: %s", s.ToString().c_str());
+        TLOG_INFO("txn->Get busy: {}", s.ToString().c_str());
         txn->Rollback();
         return;
     } else if (s.IsTimedOut()) {
-        DB_NOTICE("txn->Get timeout: %s", s.ToString().c_str());
+        TLOG_INFO("txn->Get timeout: {}", s.ToString().c_str());
     } else {
-        DB_NOTICE("txn->Get error: %d, %s", s.code(), s.ToString().c_str());
+        TLOG_INFO("txn->Get error: {}, {}", s.code(), s.ToString().c_str());
         return;
     }
 }
@@ -134,10 +134,10 @@ void test_txn_recovery(TransactionDB* txn_db) {
   rocksdb::ColumnFamilyOptions cf_options;
   auto s = txn_db->CreateColumnFamily(cf_options, "new_cf", &cf);
   if (!s.ok()) {
-      DB_WARNING("create column family failed, column family: new_cf");
+      TLOG_WARN("create column family failed, column family: new_cf");
       return;
   }
-  DB_WARNING("CF ID: %u", cf->GetID());
+  TLOG_WARN("CF ID: {}", cf->GetID());
 
 	Transaction* txn1 = txn_db->BeginTransaction(write_options, txn_options);
 	txn1->SetName("txn1");
@@ -166,15 +166,15 @@ void test_txn_recovery(TransactionDB* txn_db) {
 
   s = txn_db->DropColumnFamily(cf);
   if (!s.ok()) {
-      DB_FATAL("drop column_family failed, err_message:%s", s.ToString().c_str());
+      TLOG_ERROR("drop column_family failed, err_message:{}", s.ToString().c_str());
       return;
   }
   s = txn_db->CreateColumnFamily(cf_options, "new_cf", &cf);
   if (!s.ok()) {
-      DB_WARNING("create column family failed, column family: new_cf");
+      TLOG_WARN("create column family failed, column family: new_cf");
       return;
   }
-  DB_WARNING("CF ID: %u", cf->GetID());
+  TLOG_WARN("CF ID: {}", cf->GetID());
 
 	Transaction* txn2 = txn_db->BeginTransaction(write_options, txn_options);
   txn2->SetName("txn2");
@@ -182,14 +182,14 @@ void test_txn_recovery(TransactionDB* txn_db) {
 	s = txn2->RebuildFromWriteBatch(&batch2);
 	assert(s.ok());
 
-  DB_NOTICE("txn2 state: %d", txn2->GetState());
+  TLOG_INFO("txn2 state: {}", txn2->GetState());
   s = txn2->Prepare();
   assert(s.ok());
 
 	std::string value1;
 	s = txn2->Get(read_options, cf, "key1", &value1);
 	assert(s.ok());
-	DB_NOTICE("value1: %s", value1.c_str());
+	TLOG_INFO("value1: {}", value1.c_str());
 
 	std::string value2;
 	s = txn2->Get(read_options, cf, "key2", &value2);
@@ -198,18 +198,18 @@ void test_txn_recovery(TransactionDB* txn_db) {
 	std::string value3;
 	s = txn2->Get(read_options, cf, "key3", &value3);
 	assert(s.ok());
-	DB_NOTICE("value3: %s", value3.c_str());
+	TLOG_INFO("value3: {}", value3.c_str());
   
   s = txn2->Commit();
   assert(s.ok());
 
   s = txn_db->Get(read_options, cf, "key1", &value1);
   assert(s.ok());
-  DB_NOTICE("value1: %s", value1.c_str());
+  TLOG_INFO("value1: {}", value1.c_str());
 
   s = txn_db->Get(read_options, cf, "key3", &value3);
   assert(s.ok());
-  DB_NOTICE("value3: %s", value3.c_str());
+  TLOG_INFO("value3: {}", value3.c_str());
 
 	delete txn2;
 	return;
@@ -252,7 +252,7 @@ int main(int argc, char** arvg) {
     Transaction* txn2 = txn_db->BeginTransaction(write_options, txn_options);
     assert(txn2);
 
-    DB_NOTICE("BeginTransaction cost: %lu", cost.get_time());
+    TLOG_INFO("BeginTransaction cost: {}", cost.get_time());
     cost.reset();
 
     //std::thread transaction2(f1, txn2);
@@ -266,34 +266,34 @@ int main(int argc, char** arvg) {
     usleep(2000000);
 
     s = txn->Put("abc", "deff");
-    DB_NOTICE("s = txn->Put(abc, deff);");
+    TLOG_INFO("s = txn->Put(abc, deff);");
 
     // Read a key in this transaction
     s = txn->GetForUpdate(read_options, "abc", &value);
-    DB_NOTICE("txn->GetForUpdate");
+    TLOG_INFO("txn->GetForUpdate");
     if (s.IsNotFound() || s.ok()) {
         if (s.IsNotFound()) {
-            DB_NOTICE("txn->GetForUpdate not found");
+            TLOG_INFO("txn->GetForUpdate not found");
         } else {
-            DB_NOTICE("txn->GetForUpdate ok");
+            TLOG_INFO("txn->GetForUpdate ok");
         }
         //usleep(5000000);
         //Write a key in this transaction
         // s = txn->Put("abc", "transaction1_value");
         // if (s.ok()) {
-        //   DB_NOTICE("txn->Put ok");
+        //   TLOG_INFO("txn->Put ok");
         // } else {
-        //   DB_NOTICE("txn->Put failed");
+        //   TLOG_INFO("txn->Put failed");
         // }
         //////////
     } else if (s.IsBusy()) {
-        DB_NOTICE("txn->GetForUpdate busy: %s", s.ToString().c_str());
+        TLOG_INFO("txn->GetForUpdate busy: {}", s.ToString().c_str());
         txn->Rollback();
     } else if (s.IsTimedOut()) {
-        DB_NOTICE("txn->GetForUpdate timeout: %s", s.ToString().c_str());
+        TLOG_INFO("txn->GetForUpdate timeout: {}", s.ToString().c_str());
         txn->Rollback();
     } else {
-        DB_NOTICE("txn->GetForUpdate error: %d, %s", s.code(), s.ToString().c_str());
+        TLOG_INFO("txn->GetForUpdate error: {}, {}", s.code(), s.ToString().c_str());
         txn->Rollback();
     }
 
@@ -306,19 +306,19 @@ int main(int argc, char** arvg) {
             std::string value;
             auto s = txn->Get(read_options, "abc", &value);
             if (s.IsNotFound()) {
-                DB_NOTICE("txn->Get not found");
+                TLOG_INFO("txn->Get not found");
                 //usleep(5000000);
             } else if (s.ok()) {
-                DB_NOTICE("txn2->Get ok");
-                DB_NOTICE("val is: %s", value.c_str());
+                TLOG_INFO("txn2->Get ok");
+                TLOG_INFO("val is: {}", value.c_str());
                 //usleep(5000000);
             } else if (s.IsBusy()) {
-                DB_NOTICE("txn->Get busy: %s", s.ToString().c_str());
+                TLOG_INFO("txn->Get busy: {}", s.ToString().c_str());
                 txn->Rollback();
             } else if (s.IsTimedOut()) {
-                DB_NOTICE("txn->Get timeout: %s", s.ToString().c_str());
+                TLOG_INFO("txn->Get timeout: {}", s.ToString().c_str());
             } else {
-                DB_NOTICE("txn->Get error: %d, %s", s.code(), s.ToString().c_str());
+                TLOG_INFO("txn->Get error: {}, {}", s.code(), s.ToString().c_str());
             }
             cond.decrease_signal();
         };
@@ -330,12 +330,12 @@ int main(int argc, char** arvg) {
 
     // Commit transaction
     s = txn->Commit();
-    DB_NOTICE("txn->Commit cost: %lu", cost.get_time());
+    TLOG_INFO("txn->Commit cost: {}", cost.get_time());
     cost.reset();
     if (s.ok()) {
-      DB_NOTICE("txn->Commit ok");
+      TLOG_INFO("txn->Commit ok");
     } else {
-      DB_NOTICE("txn->Commit failed");
+      TLOG_INFO("txn->Commit failed");
     }
 
 #ifdef SNAPSHOT
@@ -359,7 +359,7 @@ int main(int argc, char** arvg) {
     //   std::cout << "txn2->Put failed" << std::endl;
     // }
 
-    // DB_NOTICE("txn2->Put cost: %lu", cost.get_time());
+    // TLOG_INFO("txn2->Put cost: {}", cost.get_time());
     // cost.reset();
 
     //transaction2.join();
@@ -373,9 +373,9 @@ int main(int argc, char** arvg) {
     // Read a key OUTSIDE this transaction. Does not affect txn.
     s = txn_db->Get(read_options, "abc", &value);
     if (s.ok()) {
-        DB_NOTICE("value: %s", value.c_str());
+        TLOG_INFO("value: {}", value.c_str());
     } else {
-        DB_NOTICE("value not found");
+        TLOG_INFO("value not found");
     }
 
   ////////////////////////////////////////////////////////

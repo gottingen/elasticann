@@ -31,7 +31,7 @@ namespace EA {
     int DDLPlanner::plan() {
         proto::MetaManagerRequest request;
         if (!_ctx->user_info->allow_ddl()) {
-            DB_WARNING("user: %s has no ddl permission", _ctx->user_info->username.c_str());
+            TLOG_WARN("user: {} has no ddl permission", _ctx->user_info->username.c_str());
             _ctx->stat_info.error_code = ER_PROCACCESS_DENIED_ERROR;
             _ctx->stat_info.error_msg << "user " << _ctx->user_info->username
                                       << " has no ddl permission";
@@ -43,7 +43,7 @@ namespace EA {
             request.set_op_type(proto::OP_CREATE_TABLE);
             proto::SchemaInfo *table = request.mutable_table_info();
             if (0 != parse_create_table(*table)) {
-                DB_WARNING("parser create table command failed");
+                TLOG_WARN("parser create table command failed");
                 return -1;
             }
             error_code = ER_CANT_CREATE_TABLE;
@@ -51,21 +51,21 @@ namespace EA {
             request.set_op_type(proto::OP_DROP_TABLE);
             proto::SchemaInfo *table = request.mutable_table_info();
             if (0 != parse_drop_table(*table)) {
-                DB_WARNING("parser drop table command failed");
+                TLOG_WARN("parser drop table command failed");
                 return -1;
             }
         } else if (_ctx->stmt_type == parser::NT_RESTORE_TABLE) {
             request.set_op_type(proto::OP_RESTORE_TABLE);
             proto::SchemaInfo *table = request.mutable_table_info();
             if (0 != parse_restore_table(*table)) {
-                DB_WARNING("parser restore table command failed");
+                TLOG_WARN("parser restore table command failed");
                 return -1;
             }
         } else if (_ctx->stmt_type == parser::NT_CREATE_DATABASE) {
             request.set_op_type(proto::OP_CREATE_DATABASE);
             proto::DataBaseInfo *database = request.mutable_database_info();
             if (0 != parse_create_database(*database)) {
-                DB_WARNING("parser create database command failed");
+                TLOG_WARN("parser create database command failed");
                 return -1;
             }
             error_code = ER_CANT_CREATE_DB;
@@ -73,18 +73,18 @@ namespace EA {
             request.set_op_type(proto::OP_DROP_DATABASE);
             proto::DataBaseInfo *database = request.mutable_database_info();
             if (0 != parse_drop_database(*database)) {
-                DB_WARNING("parser drop database command failed");
+                TLOG_WARN("parser drop database command failed");
                 return -1;
             }
         } else if (_ctx->stmt_type == parser::NT_ALTER_TABLE) {
             int ret = parse_alter_table(request);
             if (ret == -1) {
-                DB_WARNING("parser alter table command failed");
+                TLOG_WARN("parser alter table command failed");
                 return -1;
             }
             error_code = ER_ALTER_OPERATION_NOT_SUPPORTED;
         } else {
-            DB_WARNING("unsupported DDL command: %d", _ctx->stmt_type);
+            TLOG_WARN("unsupported DDL command: {}", _ctx->stmt_type);
             return -1;
         }
         proto::MetaManagerResponse response;
@@ -93,7 +93,7 @@ namespace EA {
                 _ctx->stat_info.error_code = error_code;
                 _ctx->stat_info.error_msg << response.errmsg();
             }
-            DB_WARNING("send_request fail");
+            TLOG_WARN("send_request fail");
             return -1;
         }
         if (response.errcode() == proto::SUCCESS
@@ -101,7 +101,7 @@ namespace EA {
             if (response.has_create_table_response()) {
                 _factory->update_table(response.create_table_response().schema_info());
                 _factory->update_regions(response.create_table_response().region_infos());
-                DB_WARNING("db process create_table_response: %s",
+                TLOG_WARN("db process create_table_response: {}",
                            response.create_table_response().ShortDebugString().c_str());
             }
         }
@@ -111,17 +111,17 @@ namespace EA {
     int DDLPlanner::add_column_def(proto::SchemaInfo &table, parser::ColumnDef *column) {
         proto::FieldInfo *field = table.add_fields();
         if (column->name == nullptr || column->name->name.empty()) {
-            DB_WARNING("column_name is empty");
+            TLOG_WARN("column_name is empty");
             return -1;
         }
         field->set_field_name(column->name->name.value);
         if (column->type == nullptr) {
-            DB_WARNING("data_type is empty for column: %s", column->name->name.value);
+            TLOG_WARN("data_type is empty for column: {}", column->name->name.value);
             return -1;
         }
         proto::PrimitiveType data_type = to_baikal_type(column->type);
         if (data_type == proto::INVALID_TYPE) {
-            DB_WARNING("data_type is unsupported: %s", column->name->name.value);
+            TLOG_WARN("data_type is unsupported: {}", column->name->name.value);
             return -1;
         }
         field->set_mysql_type(data_type);
@@ -153,14 +153,14 @@ namespace EA {
                         field->set_default_value("(current_timestamp())");
                         continue;
                     } else {
-                        DB_WARNING("invalid default value for '%s'", column->name->name.value);
+                        TLOG_WARN("invalid default value for '{}'", column->name->name.value);
                         _ctx->stat_info.error_code = ER_INVALID_DEFAULT;
                         _ctx->stat_info.error_msg << "invalid default value for '" << column->name->name.value << "'";
                         return -1;
                     }
                 }
                 if (col_option->expr->expr_type != parser::ET_LITETAL) {
-                    DB_WARNING("Invalid default value for '%s'", column->name->name.value);
+                    TLOG_WARN("Invalid default value for '{}'", column->name->name.value);
                     _ctx->stat_info.error_code = ER_INVALID_DEFAULT;
                     _ctx->stat_info.error_msg << "Invalid default value for '" << column->name->name.value << "'";
                     return -1;
@@ -176,7 +176,7 @@ namespace EA {
                                                              return (i >= '0' && i <= '9') || i == '-' || i == '.';
                                                          });
                         if (!is_int_format) {
-                            DB_WARNING("Invalid default value for '%s'", column->name->name.value);
+                            TLOG_WARN("Invalid default value for '{}'", column->name->name.value);
                             _ctx->stat_info.error_code = ER_INVALID_DEFAULT;
                             _ctx->stat_info.error_msg << "Invalid default value for '" << column->name->name.value
                                                       << "'";
@@ -189,7 +189,7 @@ namespace EA {
                                                                          i == '.' || i == ' ' || i == ':';
                                                               });
                         if (!is_datetime_format) {
-                            DB_WARNING("Invalid default value for '%s'", column->name->name.value);
+                            TLOG_WARN("Invalid default value for '{}'", column->name->name.value);
                             _ctx->stat_info.error_code = ER_INVALID_DEFAULT;
                             _ctx->stat_info.error_msg << "Invalid default value for '" << column->name->name.value
                                                       << "'";
@@ -204,7 +204,7 @@ namespace EA {
                 field->set_on_update_value(col_option->expr->to_string());
             } else if (col_option->type == parser::COLUMN_OPT_COLLATE) {
             } else {
-                DB_WARNING("unsupported column option type: %d", col_option->type);
+                TLOG_WARN("unsupported column option type: {}", col_option->type);
                 return -1;
             }
         }
@@ -231,7 +231,7 @@ namespace EA {
         std::set<std::string> index_filed_names;
         for (auto filed: index_fields) {
             if (filed == nullptr) {
-                DB_FATAL("filed nullptr");
+                TLOG_ERROR("filed nullptr");
                 return -1;
             }
             index_filed_names.insert(filed->field_name());
@@ -240,7 +240,7 @@ namespace EA {
         auto fill_other_fileds = [index_fields, index, index_filed_names, pk_index_fields](MutTableKey &key) -> int {
             for (auto i = 1; i < index_fields.size(); ++i) {
                 if (index_fields[i] == nullptr) {
-                    DB_FATAL("%d index_fields is null", i);
+                    TLOG_ERROR("{} index_fields is null", i);
                     return -1;
                 }
                 ExprValue value(index_fields[i]->mysql_type(), "");
@@ -250,7 +250,7 @@ namespace EA {
                 // 不是unique的全局索引，需要补齐其他主键字段
                 for (auto field: pk_index_fields) {
                     if (field == nullptr) {
-                        DB_FATAL("pk_index_fields is null");
+                        TLOG_ERROR("pk_index_fields is null");
                         return -1;
                     }
                     if (index_filed_names.find(field->field_name()) == index_filed_names.end()) {
@@ -275,7 +275,7 @@ namespace EA {
                 int64_t start_value_i = strtoll(start_key.c_str(), nullptr, 10);
                 int64_t end_value_i = strtoll(end_key.c_str(), nullptr, 10);
                 if (region_num <= 0 || end_value_i < start_value_i) {
-                    DB_FATAL("pre split param not valid");
+                    TLOG_ERROR("pre split param not valid");
                     return -1;
                 }
                 int64_t step = (end_value_i - start_value_i) / region_num;
@@ -306,7 +306,7 @@ namespace EA {
                 uint64_t start_value_u = strtoull(start_key.c_str(), nullptr, 10);
                 uint64_t end_value_u = strtoull(end_key.c_str(), nullptr, 10);
                 if (region_num <= 0 || end_value_u < start_value_u) {
-                    DB_FATAL("pre split param not valid");
+                    TLOG_ERROR("pre split param not valid");
                     return -1;
                 }
                 uint64_t step = (end_value_u - start_value_u) / region_num;
@@ -335,7 +335,7 @@ namespace EA {
                 double start_value_d = strtod(start_key.c_str(), nullptr);
                 double end_value_d = strtod(end_key.c_str(), nullptr);
                 if (region_num <= 0 || end_value_d < start_value_d) {
-                    DB_FATAL("pre split param not valid");
+                    TLOG_ERROR("pre split param not valid");
                     return -1;
                 }
                 double step = (end_value_d - start_value_d) / region_num;
@@ -361,7 +361,7 @@ namespace EA {
                 break;
             case proto::STRING: {
                 if (region_num <= 0 || end_key < start_key) {
-                    DB_FATAL("pre split param not valid: start_key: %s, end_key: %s, region_num: %d",
+                    TLOG_ERROR("pre split param not valid: start_key: {}, end_key: {}, region_num: {}",
                              start_key.c_str(), end_key.c_str(), region_num);
                     return -1;
                 }
@@ -379,7 +379,7 @@ namespace EA {
                 if (step <= 0) {
                     return -1;
                 }
-                DB_WARNING("start_uint: %lu, end_uint: %lu, step: %lu, prefix_len: %d, common_prefix: %s",
+                TLOG_WARN("start_uint: {}, end_uint: {}, step: {}, prefix_len: {}, common_prefix: {}",
                            start_uint64, end_uint64, step, prefix_len, common_prefix.c_str());
                 for (; start_uint64 <= end_uint64; start_uint64 += step) {
                     // uint64转string
@@ -390,7 +390,7 @@ namespace EA {
                         val >>= 8;
                     }
                     std::reverse(key.begin(), key.end());
-                    DB_WARNING("uint64: %lu, key: %s", start_uint64, key.c_str());
+                    TLOG_WARN("uint64: {}, key: {}", start_uint64, key.c_str());
                     // 生成key
                     MutTableKey split_key;
                     if (index->is_global()) {
@@ -407,7 +407,7 @@ namespace EA {
             }
                 break;
             default:
-                DB_FATAL("not support type: %d for pre split", index_fields[0]->mysql_type());
+                TLOG_ERROR("not support type: {} for pre split", index_fields[0]->mysql_type());
                 return -1;
         }
         return 0;
@@ -425,7 +425,7 @@ namespace EA {
         std::vector<const proto::FieldInfo *> global_index_fields;
         const proto::IndexInfo *primary_index = nullptr;
         const proto::IndexInfo *gloabal_index = nullptr;
-        DB_WARNING("split_start_key: %s, split_end_key: %s, region_num: %d, pb: %s",
+        TLOG_WARN("split_start_key: {}, split_end_key: {}, region_num: {}, pb: {}",
                    start_key.c_str(), end_key.c_str(), region_num, table.ShortDebugString().c_str());
         for (auto &filed: table.fields()) {
             fields[filed.field_name()] = &filed;
@@ -435,7 +435,7 @@ namespace EA {
                 primary_index = &index_info;
                 for (auto &field_name: index_info.field_names()) {
                     if (fields.find(field_name) == fields.end()) {
-                        DB_WARNING("no matching filed: %s, table: %s", field_name.c_str(),
+                        TLOG_WARN("no matching filed: {}, table: {}", field_name.c_str(),
                                    table.ShortDebugString().c_str());
                         return -1;
                     }
@@ -445,7 +445,7 @@ namespace EA {
                 gloabal_index = &index_info;
                 for (auto &field_name: index_info.field_names()) {
                     if (fields.find(field_name) == fields.end()) {
-                        DB_WARNING("no matching filed: %s, table: %s", field_name.c_str(),
+                        TLOG_WARN("no matching filed: {}, table: {}", field_name.c_str(),
                                    table.ShortDebugString().c_str());
                         return -1;
                     }
@@ -454,20 +454,20 @@ namespace EA {
             }
         }
         if (primary_index_fields.size() == 0) {
-            DB_FATAL("no primary index filed for pre split, table: %s", table.ShortDebugString().c_str());
+            TLOG_ERROR("no primary index filed for pre split, table: {}", table.ShortDebugString().c_str());
             return -1;
         }
 
         int ret = pre_split_index(start_key, end_key, region_num, table, primary_index, primary_index,
                                   primary_index_fields, primary_index_fields);
         if (ret < 0) {
-            DB_WARNING("pre_split_index failed");
+            TLOG_WARN("pre_split_index failed");
             return -1;
         }
         ret = pre_split_index(global_start_key, global_end_key, region_num, table, primary_index, gloabal_index,
                               primary_index_fields, global_index_fields);
         if (ret < 0) {
-            DB_WARNING("pre_split_index failed");
+            TLOG_WARN("pre_split_index failed");
             return -1;
         }
         return 0;
@@ -476,7 +476,7 @@ namespace EA {
     int DDLPlanner::parse_create_table(proto::SchemaInfo &table) {
         parser::CreateTableStmt *stmt = (parser::CreateTableStmt *) (_ctx->stmt);
         if (stmt->table_name == nullptr) {
-            DB_WARNING("error: no table name specified");
+            TLOG_WARN("error: no table name specified");
             return -1;
         }
         if (stmt->table_name->db.empty()) {
@@ -496,11 +496,11 @@ namespace EA {
         for (int idx = 0; idx < columns_len; ++idx) {
             parser::ColumnDef *column = stmt->columns[idx];
             if (column == nullptr) {
-                DB_WARNING("column is nullptr");
+                TLOG_WARN("column is nullptr");
                 return -1;
             }
             if (0 != add_column_def(table, column)) {
-                DB_WARNING("add column to table failed.");
+                TLOG_WARN("add column to table failed.");
                 return -1;
             }
         }
@@ -533,7 +533,7 @@ namespace EA {
                 index->set_index_type(proto::I_FULLTEXT);
                 can_support_ttl = false;
             } else {
-                DB_WARNING("unsupported constraint_type: %d", constraint->type);
+                TLOG_WARN("unsupported constraint_type: {}", constraint->type);
                 return -1;
             }
             if (constraint->index_dist == parser::INDEX_DIST_GLOBAL) {
@@ -543,7 +543,7 @@ namespace EA {
                 index->set_index_name("primary_key");
             } else {
                 if (constraint->name.empty()) {
-                    DB_WARNING("empty index name");
+                    TLOG_WARN("empty index name");
                     return -1;
                 }
                 index->set_index_name(constraint->name.value);
@@ -555,7 +555,7 @@ namespace EA {
                     root.Parse<0>(value);
                     if (root.HasParseError()) {
                         rapidjson::ParseErrorCode code = root.GetParseError();
-                        DB_WARNING("parse create table json comments error [code:%d][%s]",
+                        TLOG_WARN("parse create table json comments error [code:{}][{}]",
                                    code, value);
                         return -1;
                     }
@@ -573,19 +573,19 @@ namespace EA {
                         StorageType_Parse(storage_type, &pb_storage_type);
                     }
                     if (!is_fulltext_type_constraint(pb_storage_type, has_arrow_fulltext, has_pb_fulltext)) {
-                        DB_WARNING("fulltext has two types : pb&arrow");
+                        TLOG_WARN("fulltext has two types : pb&arrow");
                         return -1;
                     }
                     index->set_storage_type(pb_storage_type);
                 } catch (...) {
-                    DB_WARNING("parse create table json comments error [%s]", value);
+                    TLOG_WARN("parse create table json comments error [{}]", value);
                     return -1;
                 }
             }
             for (int col_idx = 0; col_idx < constraint->columns.size(); ++col_idx) {
                 parser::ColumnName *col_name = constraint->columns[col_idx];
                 if (_column_can_null[col_name->name.value] && index->index_type() != proto::I_FULLTEXT) {
-                    DB_WARNING("index column : %s should NOT nullptr", col_name->name.value);
+                    TLOG_WARN("index column : {} should NOT nullptr", col_name->name.value);
                     _ctx->stat_info.error_code = ER_NO_DB_ERROR;
                     _ctx->stat_info.error_msg << "index column : " << col_name->name.value << " should NOT nullptr";
                     return -1;
@@ -629,7 +629,7 @@ namespace EA {
                         // 兼容mysql语法
                         table.set_comment(option->str_value.value);
                         rapidjson::ParseErrorCode code = root.GetParseError();
-                        DB_WARNING("parse create table json comments error [code:%d][%s]",
+                        TLOG_WARN("parse create table json comments error [code:{}][{}]",
                                    code, option->str_value.value);
                         continue;
 //                    return -1;
@@ -638,19 +638,19 @@ namespace EA {
                     if (json_iter != root.MemberEnd()) {
                         table_resource_tag = json_iter->value.GetString();
                         table.set_resource_tag(table_resource_tag);
-                        DB_WARNING("table_resource_tag: %s", table_resource_tag.c_str());
+                        TLOG_WARN("table_resource_tag: {}", table_resource_tag.c_str());
                     }
                     json_iter = root.FindMember("namespace");
                     if (json_iter != root.MemberEnd()) {
                         std::string namespace_ = json_iter->value.GetString();
                         table.set_namespace_name(namespace_);
-                        DB_WARNING("namespace: %s", namespace_.c_str());
+                        TLOG_WARN("namespace: {}", namespace_.c_str());
                     }
                     json_iter = root.FindMember("replica_num");
                     if (json_iter != root.MemberEnd()) {
                         int64_t replica_num = json_iter->value.GetInt64();
                         table.set_replica_num(replica_num);
-                        DB_WARNING("replica_num: %ld", replica_num);
+                        TLOG_WARN("replica_num: {}", replica_num);
                     }
                     json_iter = root.FindMember("dists");
                     std::set<std::string> logical_room_set;
@@ -692,24 +692,24 @@ namespace EA {
                             return -1;
                         }
                         table.set_main_logical_room(main_logical_room);
-                        DB_WARNING("main_logical_room: %s", main_logical_room.c_str());
+                        TLOG_WARN("main_logical_room: {}", main_logical_room.c_str());
                     }
                     json_iter = root.FindMember("region_split_lines");
                     if (json_iter != root.MemberEnd()) {
                         int64_t region_split_lines = json_iter->value.GetInt64();
                         table.set_region_split_lines(region_split_lines);
-                        DB_WARNING("region_split_lines: %ld", region_split_lines);
+                        TLOG_WARN("region_split_lines: {}", region_split_lines);
                     }
                     json_iter = root.FindMember("ttl_duration");
                     if (json_iter != root.MemberEnd()) {
                         if (!can_support_ttl) {
-                            DB_FATAL("fulltext/engine!=rocksdb  can not create ttl table");
+                            TLOG_ERROR("fulltext/engine!=rocksdb  can not create ttl table");
                             return -1;
                         }
                         int64_t ttl_duration = json_iter->value.GetInt64();
                         table.set_ttl_duration(ttl_duration);
                         table.set_online_ttl_expire_time_us(0);
-                        DB_WARNING("ttl_duration: %ld", ttl_duration);
+                        TLOG_WARN("ttl_duration: {}", ttl_duration);
                     }
                     json_iter = root.FindMember("storage_compute_separate");
                     if (json_iter != root.MemberEnd()) {
@@ -720,7 +720,7 @@ namespace EA {
                         } else {
                             schema_conf->set_storage_compute_separate(true);
                         }
-                        DB_WARNING("storage_compute_separate: %ld", separate);
+                        TLOG_WARN("storage_compute_separate: {}", separate);
                     }
                     json_iter = root.FindMember("region_num");
                     if (json_iter != root.MemberEnd() && root["region_num"].IsNumber()) {
@@ -732,7 +732,7 @@ namespace EA {
                     if (json_iter != root.MemberEnd()) {
                         if (root["learner_resource_tag"].IsString()) {
                             if (table.resource_tag() == json_iter->value.GetString()) {
-                                DB_FATAL("learner must use different resource tag.");
+                                TLOG_ERROR("learner must use different resource tag.");
                                 return -1;
                             }
                             table.add_learner_resource_tags(json_iter->value.GetString());
@@ -750,7 +750,7 @@ namespace EA {
                         if (json_iter->value.IsString()) {
                             std::string comment = json_iter->value.GetString();
                             table.set_comment(comment);
-                            DB_WARNING("comment: %s", comment.c_str());
+                            TLOG_WARN("comment: {}", comment.c_str());
                         }
                     }
                     // 预分裂相关参数
@@ -777,7 +777,7 @@ namespace EA {
                 } catch (...) {
                     // 兼容mysql语法
                     table.set_comment(option->str_value.value);
-                    DB_WARNING("parse create table json comments error [%s]", option->str_value.value);
+                    TLOG_WARN("parse create table json comments error [{}]", option->str_value.value);
 //                return -1;
                 }
             } else if (option->type == parser::TABLE_OPT_PARTITION) {
@@ -786,7 +786,7 @@ namespace EA {
                 auto partition_ptr = table.mutable_partition_info();
 
                 if (p_option->expr == nullptr || p_option->expr->to_string().empty()) {
-                    DB_WARNING("partition expr not set.");
+                    TLOG_WARN("partition expr not set.");
                     return -1;
                 }
                 partition_ptr->set_expr_string(p_option->expr->to_string());
@@ -811,7 +811,7 @@ namespace EA {
                     } else {
                         auto expr = partition_ptr->mutable_range_partition_field();
                         if (0 != create_expr_tree(p_option->expr, *expr, expr_options)) {
-                            DB_WARNING("error pasing common expression");
+                            TLOG_WARN("error pasing common expression");
                             return -1;
                         }
                         get_expr_field_name(expr);
@@ -819,7 +819,7 @@ namespace EA {
                     for (int32_t index = 0; index < p_option->range.size(); ++index) {
                         auto range_ptr = partition_ptr->add_range_partition_values();
                         if (0 != create_expr_tree(p_option->range[index]->less_expr, *range_ptr, expr_options)) {
-                            DB_WARNING("error pasing common expression");
+                            TLOG_WARN("error pasing common expression");
                             return -1;
                         }
                     }
@@ -833,7 +833,7 @@ namespace EA {
                     } else {
                         auto expr = partition_ptr->mutable_hash_expr_value();
                         if (0 != create_expr_tree(p_option->expr, *expr, expr_options)) {
-                            DB_WARNING("error pasing common expression");
+                            TLOG_WARN("error pasing common expression");
                             return -1;
                         }
                         get_expr_field_name(expr);
@@ -841,7 +841,7 @@ namespace EA {
                     table.set_partition_num(p_option->partition_num);
                 }
                 if (expr_field_names.size() != 1) {
-                    DB_WARNING("paritition multiple fields not support.");
+                    TLOG_WARN("paritition multiple fields not support.");
                     _ctx->stat_info.error_code = ER_PARTITION_FUNC_NOT_ALLOWED_ERROR;
                     _ctx->stat_info.error_msg << "partition multiple fields not support";
                 }
@@ -856,11 +856,11 @@ namespace EA {
         }
         //set default values if not specified by user
         if (!table.has_byte_size_per_record()) {
-            DB_WARNING("no avg_row_length set in comments, use default:50");
+            TLOG_WARN("no avg_row_length set in comments, use default:50");
             table.set_byte_size_per_record(50);
         }
         if (!table.has_namespace_name()) {
-            DB_WARNING("no namespace set, use default: %s",
+            TLOG_WARN("no namespace set, use default: {}",
                        _ctx->user_info->namespace_.c_str());
             table.set_namespace_name(_ctx->user_info->namespace_);
         }
@@ -887,7 +887,7 @@ namespace EA {
                     }
                 }
                 if (!found && table.engine() != proto::BINLOG) {
-                    DB_WARNING(
+                    TLOG_WARN(
                             "A PRIMARY/UNIQ/GLOBAL KEY must include all columns in the table's partitioning function.");
                     _ctx->stat_info.error_code = ER_INCONSISTENT_PARTITION_INFO_ERROR;
                     _ctx->stat_info.error_msg
@@ -902,12 +902,12 @@ namespace EA {
     int DDLPlanner::parse_drop_table(proto::SchemaInfo &table) {
         parser::DropTableStmt *stmt = (parser::DropTableStmt *) (_ctx->stmt);
         if (stmt->table_names.size() > 1) {
-            DB_WARNING("drop multiple tables is not supported.");
+            TLOG_WARN("drop multiple tables is not supported.");
             return -1;
         }
         parser::TableName *table_name = stmt->table_names[0];
         if (table_name == nullptr) {
-            DB_WARNING("error: no table name specified");
+            TLOG_WARN("error: no table name specified");
             return -1;
         }
         if (table_name->db.empty()) {
@@ -923,7 +923,7 @@ namespace EA {
         table.set_table_name(table_name->table.value);
         table.set_namespace_name(_ctx->user_info->namespace_);
         table.set_if_exist(stmt->if_exist);
-        DB_WARNING("drop table: %s.%s.%s",
+        TLOG_WARN("drop table: {}.{}.{}",
                    table.namespace_name().c_str(), table.database().c_str(), table.table_name().c_str());
         return 0;
     }
@@ -931,12 +931,12 @@ namespace EA {
     int DDLPlanner::parse_restore_table(proto::SchemaInfo &table) {
         parser::RestoreTableStmt *stmt = (parser::RestoreTableStmt *) (_ctx->stmt);
         if (stmt->table_names.size() > 1) {
-            DB_WARNING("restore multiple tables is not supported.");
+            TLOG_WARN("restore multiple tables is not supported.");
             return -1;
         }
         parser::TableName *table_name = stmt->table_names[0];
         if (table_name == nullptr) {
-            DB_WARNING("error: no table name specified");
+            TLOG_WARN("error: no table name specified");
             return -1;
         }
         if (table_name->db.empty()) {
@@ -951,7 +951,7 @@ namespace EA {
         }
         table.set_table_name(table_name->table.value);
         table.set_namespace_name(_ctx->user_info->namespace_);
-        DB_WARNING("restore table: %s.%s.%s",
+        TLOG_WARN("restore table: {}.{}.{}",
                    table.namespace_name().c_str(), table.database().c_str(), table.table_name().c_str());
         return 0;
     }
@@ -987,7 +987,7 @@ namespace EA {
     int DDLPlanner::parse_alter_table(proto::MetaManagerRequest &alter_request) {
         parser::AlterTableStmt *stmt = (parser::AlterTableStmt *) (_ctx->stmt);
         if (stmt->table_name == nullptr) {
-            DB_WARNING("error: no table name specified");
+            TLOG_WARN("error: no table name specified");
             return -1;
         }
         proto::SchemaInfo *table = alter_request.mutable_table_info();
@@ -1046,7 +1046,7 @@ namespace EA {
                         alter_request.set_op_type(proto::OP_UPDATE_TABLE_COMMENT);
                         table->set_comment(table_option->str_value.value);
                         rapidjson::ParseErrorCode code = root.GetParseError();
-                        DB_WARNING("parse create table json comments error [code:%d][%s]",
+                        TLOG_WARN("parse create table json comments error [code:{}][{}]",
                                    code, table_option->str_value.value);
                         return 0;
                     }
@@ -1056,14 +1056,14 @@ namespace EA {
                         if (json_iter->value.IsString()) {
                             std::string comment = json_iter->value.GetString();
                             table->set_comment(comment);
-                            DB_WARNING("comment: %s", comment.c_str());
+                            TLOG_WARN("comment: {}", comment.c_str());
                         }
                     }
                 } catch (...) {
                     // 兼容mysql语法
                     alter_request.set_op_type(proto::OP_UPDATE_TABLE_COMMENT);
                     table->set_comment(table_option->str_value.value);
-                    DB_WARNING("parse alter table json comments error [%s]", table_option->str_value.value);
+                    TLOG_WARN("parse alter table json comments error [{}]", table_option->str_value.value);
                 }
             } else {
                 _ctx->stat_info.error_code = ER_ALTER_OPERATION_NOT_SUPPORTED;;
@@ -1076,11 +1076,11 @@ namespace EA {
             for (int idx = 0; idx < column_len; ++idx) {
                 parser::ColumnDef *column = spec->new_columns[idx];
                 if (column == nullptr) {
-                    DB_WARNING("column is nullptr");
+                    TLOG_WARN("column is nullptr");
                     return -1;
                 }
                 if (0 != add_column_def(*table, column)) {
-                    DB_WARNING("add column to table failed.");
+                    TLOG_WARN("add column to table failed.");
                     return -1;
                 }
             }
@@ -1109,11 +1109,11 @@ namespace EA {
             for (int idx = 0; idx < column_len; ++idx) {
                 parser::ColumnDef *column = spec->new_columns[idx];
                 if (column == nullptr) {
-                    DB_WARNING("column is nullptr");
+                    TLOG_WARN("column is nullptr");
                     return -1;
                 }
                 if (0 != add_column_def(*table, column)) {
-                    DB_WARNING("add column to table failed.");
+                    TLOG_WARN("add column to table failed.");
                     return -1;
                 }
             }
@@ -1152,7 +1152,7 @@ namespace EA {
                 return -1;
             }
             table->set_new_table_name(spec->new_table_name->table.value);
-            DB_DEBUG("DDL_LOG schema_info[%s]", table->DebugString().c_str());
+            TLOG_DEBUG("DDL_LOG schema_info[{}]", table->DebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_SWAP_TABLE) {
             alter_request.set_op_type(proto::OP_SWAP_TABLE);
             std::string new_db_name;
@@ -1172,7 +1172,7 @@ namespace EA {
                 return -1;
             }
             table->set_new_table_name(spec->new_table_name->table.value);
-            DB_DEBUG("DDL_LOG schema_info[%s]", table->DebugString().c_str());
+            TLOG_DEBUG("DDL_LOG schema_info[{}]", table->DebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_ADD_INDEX) {
             alter_request.set_op_type(proto::OP_ADD_INDEX);
             int constraint_len = spec->new_constraints.size();
@@ -1186,7 +1186,7 @@ namespace EA {
             }
             auto tbl_ptr = _factory->get_table_info_ptr(tableid);
             if (tbl_ptr == nullptr) {
-                DB_WARNING("no table found with id: %ld", tableid);
+                TLOG_WARN("no table found with id: {}", tableid);
                 _ctx->stat_info.error_code = ER_NO_SUCH_TABLE;
                 _ctx->stat_info.error_msg << "table: " << table->database() << "." << table->table_name()
                                           << " not exist";
@@ -1204,11 +1204,11 @@ namespace EA {
             for (int idx = 0; idx < constraint_len; ++idx) {
                 parser::Constraint *constraint = spec->new_constraints[idx];
                 if (constraint == nullptr) {
-                    DB_WARNING("constraint is nullptr");
+                    TLOG_WARN("constraint is nullptr");
                     return -1;
                 }
                 if (0 != add_constraint_def(*table, constraint, spec)) {
-                    DB_WARNING("add constraint to table failed.");
+                    TLOG_WARN("add constraint to table failed.");
                     return -1;
                 }
             }
@@ -1217,12 +1217,12 @@ namespace EA {
                 check_partition_key_constraint(*table, tbl_ptr->partition_info.field_info().field_name()) != 0) {
                 return -1;
             }
-            DB_DEBUG("DDL_LOG schema_info[%s]", table->ShortDebugString().c_str());
+            TLOG_DEBUG("DDL_LOG schema_info[{}]", table->ShortDebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_DROP_INDEX) {
-            DB_NOTICE("prepare to delete index");
+            TLOG_INFO("prepare to delete index");
             //drop index 转换成屏蔽
             if (spec->index_name.empty()) {
-                DB_WARNING("index_name is null.");
+                TLOG_WARN("index_name is null.");
                 return -1;
             }
             proto::IndexInfo *index = table->add_indexs();
@@ -1242,26 +1242,26 @@ namespace EA {
                 alter_request.set_op_type(proto::OP_SET_INDEX_HINT_STATUS);
                 index->set_hint_status(proto::IHS_DISABLE);//设置为不可见
             }
-            DB_NOTICE("drop index schema_info[%s]", table->ShortDebugString().c_str());
+            TLOG_INFO("drop index schema_info[{}]", table->ShortDebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_RESTORE_INDEX) {
             //restore index 解除屏蔽
             alter_request.set_op_type(proto::OP_SET_INDEX_HINT_STATUS);
             if (spec->index_name.empty()) {
-                DB_WARNING("index_name is null.");
+                TLOG_WARN("index_name is null.");
                 return -1;
             }
             proto::IndexInfo *index = table->add_indexs();
             index->set_index_name(spec->index_name.value);
             index->set_hint_status(proto::IHS_NORMAL);
-            DB_NOTICE("restore index schema_info[%s]", table->ShortDebugString().c_str());
+            TLOG_INFO("restore index schema_info[{}]", table->ShortDebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_ADD_LEARNER) {
             alter_request.set_op_type(proto::OP_ADD_LEARNER);
             alter_request.add_resource_tags(spec->resource_tag.value);
-            DB_NOTICE("add learner schema_info[%s]", table->ShortDebugString().c_str());
+            TLOG_INFO("add learner schema_info[{}]", table->ShortDebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_DROP_LEARNER) {
             alter_request.set_op_type(proto::OP_DROP_LEARNER);
             alter_request.add_resource_tags(spec->resource_tag.value);
-            DB_NOTICE("drop learner schema_info[%s]", table->ShortDebugString().c_str());
+            TLOG_INFO("drop learner schema_info[{}]", table->ShortDebugString().c_str());
         } else if (spec->spec_type == parser::ALTER_SPEC_MODIFY_COLUMN) {
             alter_request.set_op_type(proto::OP_MODIFY_FIELD);
             return parse_modify_column(alter_request, stmt->table_name, spec);
@@ -1284,7 +1284,7 @@ namespace EA {
         std::set<int> index_field_ids;
         auto iter = _plan_table_ctx->table_info.begin();
         if (iter == _plan_table_ctx->table_info.end()) {
-            DB_WARNING("no table found");
+            TLOG_WARN("no table found");
             return -1;
         }
         auto table_ptr = iter->second;
@@ -1313,12 +1313,12 @@ namespace EA {
         update_slots.reserve(2);
         for (int idx = 0; idx < set_list.size(); ++idx) {
             if (set_list[idx] == nullptr) {
-                DB_WARNING("set item is nullptr");
+                TLOG_WARN("set item is nullptr");
                 return -1;
             }
             std::string alias_name = get_field_alias_name(set_list[idx]->name);
             if (alias_name.empty()) {
-                DB_WARNING("get_field_alias_name failed: %s", set_list[idx]->name->to_string().c_str());
+                TLOG_WARN("get_field_alias_name failed: {}", set_list[idx]->name->to_string().c_str());
                 return -1;
             }
             std::string full_name = alias_name;
@@ -1326,7 +1326,7 @@ namespace EA {
             full_name += set_list[idx]->name->name.to_lower();
             FieldInfo *field_info = nullptr;
             if (nullptr == (field_info = get_field_info_ptr(full_name))) {
-                DB_WARNING("invalid field name in");
+                TLOG_WARN("invalid field name in");
                 return -1;
             }
             if (index_field_ids.count(field_info->id) > 0) {
@@ -1339,10 +1339,10 @@ namespace EA {
             update_slots.emplace_back(slot);
             proto::Expr value_expr;
             if (0 != create_expr_tree(set_list[idx]->expr, value_expr, CreateExprOptions())) {
-                DB_WARNING("create update value expr failed");
+                TLOG_WARN("create update value expr failed");
                 return -1;
             }
-            DB_WARNING("value_expr:%s", value_expr.ShortDebugString().c_str());
+            TLOG_WARN("value_expr:{}", value_expr.ShortDebugString().c_str());
             ExprNode *value_node = nullptr;
             ret = ExprNode::create_tree(value_expr, &value_node);
             if (ret < 0) {
@@ -1363,13 +1363,13 @@ namespace EA {
         if (alter_spec->where != nullptr) {
             std::vector<proto::Expr> where_filters;
             if (0 != flatten_filter(alter_spec->where, where_filters, CreateExprOptions())) {
-                DB_WARNING("flatten_filter failed");
+                TLOG_WARN("flatten_filter failed");
                 return -1;
             }
             std::vector<ExprNode *> conjuncts;
             conjuncts.reserve(2);
             for (auto &expr: where_filters) {
-                DB_WARNING("where_expr:%s", expr.ShortDebugString().c_str());
+                TLOG_WARN("where_expr:{}", expr.ShortDebugString().c_str());
                 ExprNode *conjunct = nullptr;
                 ret = ExprNode::create_tree(expr, &conjunct);
                 if (ret < 0) {
@@ -1387,7 +1387,7 @@ namespace EA {
         for (auto &tuple: _ctx->tuple_descs()) {
             column_ddl_info->add_tuples()->CopyFrom(tuple);
         }
-        DB_WARNING("alter_request:%s", alter_request.DebugString().c_str());
+        TLOG_WARN("alter_request:{}", alter_request.DebugString().c_str());
         return 0;
     }
 
@@ -1474,7 +1474,7 @@ namespace EA {
             }
                 break;
             default : {
-                DB_WARNING("unsupported item type: %d", field_type->type);
+                TLOG_WARN("unsupported item type: {}", field_type->type);
                 return proto::INVALID_TYPE;
             }
         }
@@ -1501,17 +1501,17 @@ namespace EA {
             case parser::CONSTRAINT_FULLTEXT:
                 index_type = proto::I_FULLTEXT;
                 if (constraint->columns.size() > 1) {
-                    DB_WARNING("fulltext index only support one field.");
+                    TLOG_WARN("fulltext index only support one field.");
                     return -1;
                 }
                 break;
             default:
-                DB_WARNING("only support uniqe、key index type");
+                TLOG_WARN("only support uniqe、key index type");
                 return -1;
         }
 
         if (constraint->name.empty()) {
-            DB_WARNING("lack of index name");
+            TLOG_WARN("lack of index name");
             return -1;
         }
         if (constraint->index_dist == parser::INDEX_DIST_GLOBAL) {
@@ -1530,7 +1530,7 @@ namespace EA {
         for (int32_t column_index = 0; column_index < constraint->columns.size(); ++column_index) {
             std::string column_name = constraint->columns[column_index]->name.value;
             if (_column_can_null[column_name] && index->index_type() != proto::I_FULLTEXT) {
-                DB_WARNING("index column : %s should NOT nullptr", column_name.c_str());
+                TLOG_WARN("index column : {} should NOT nullptr", column_name.c_str());
                 _ctx->stat_info.error_code = ER_NO_DB_ERROR;
                 _ctx->stat_info.error_msg << "index column : " << column_name << " should NOT nullptr";
                 return -1;
@@ -1544,7 +1544,7 @@ namespace EA {
                 root.Parse<0>(value);
                 if (root.HasParseError()) {
                     rapidjson::ParseErrorCode code = root.GetParseError();
-                    DB_WARNING("parse create table json comments error [code:%d][%s]",
+                    TLOG_WARN("parse create table json comments error [code:{}][{}]",
                                code, value);
                     return -1;
                 }
@@ -1564,7 +1564,7 @@ namespace EA {
                 }
                 index->set_storage_type(pb_storage_type);
             } catch (...) {
-                DB_WARNING("parse create table json comments error [%s]", value);
+                TLOG_WARN("parse create table json comments error [{}]", value);
                 return -1;
             }
         }
@@ -1576,19 +1576,19 @@ namespace EA {
         if (pb_storage_type == proto::ST_PROTOBUF_OR_FORMAT1) {
             has_pb_fulltext = true;
             if (has_arrow_fulltext) {
-                DB_WARNING("fulltext has two types : pb&arrow");
+                TLOG_WARN("fulltext has two types : pb&arrow");
                 return false;
             }
             return true;
         } else if (pb_storage_type == proto::ST_ARROW) {
             has_arrow_fulltext = true;
             if (has_pb_fulltext) {
-                DB_WARNING("fulltext has two types : pb&arrow");
+                TLOG_WARN("fulltext has two types : pb&arrow");
                 return false;
             }
             return true;
         }
-        DB_WARNING("unknown storage_type");
+        TLOG_WARN("unknown storage_type");
         return false;
     }
 

@@ -364,15 +364,15 @@ namespace EA {
         void print_log() {
             if (FLAGS_reverse_print_log) {
                 int64_t all_time = delete_time + segment_time + bool_engine_time;
-                DB_NOTICE("Reverse index search time : all_time[%ld]{"
-                          "delete_time[%ld], segment_time[%ld],"
-                          "create_exe_time[%ld], bool_engine_time[%ld]}",
+                TLOG_INFO("Reverse index search time : all_time[{}]{"
+                          "delete_time[{}], segment_time[{}],"
+                          "create_exe_time[{}], bool_engine_time[{}]}",
                           all_time, delete_time, segment_time, create_exe_time, bool_engine_time);
                 for (auto &item: term_times) {
-                    DB_NOTICE("Reverse index item : term[%s], get_list[%ld]{"
-                              "is_fast[%d]{get_new_fast[%ld] | seek_new[%ld],"
-                              "seek_old[%ld], merge_one_one[%ld], get_two[%ld, %d], merge_one_two[%ld]},"
-                              "is_cache[%d], get_three[%ld, %d]{parse_nocache[%ld]}",
+                    TLOG_INFO("Reverse index item : term[{}], get_list[{}]{"
+                              "is_fast[{}]{get_new_fast[{}] | seek_new[{}],"
+                              "seek_old[{}], merge_one_one[{}], get_two[{}, {}], merge_one_two[{}]},"
+                              "is_cache[{}], get_three[{}, {}]{parse_nocache[{}]}",
                               item.term.c_str(), item.get_list, item.is_fast, item.get_new,
                               item.seek_new, item.seek_old, item.merge_one_one, item.get_two,
                               item.second_length, item.merge_one_two, item.is_cache, item.get_three,

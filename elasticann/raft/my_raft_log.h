@@ -19,7 +19,7 @@
 
 namespace EA {
 
-extern int register_myraft_extension();
+    extern int register_myraft_extension();
 
 }
 

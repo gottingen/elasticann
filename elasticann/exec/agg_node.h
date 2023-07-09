@@ -27,58 +27,72 @@
 #include "elasticann/common/mut_table_key.h"
 
 namespace EA {
-class AggNode : public ExecNode {
-public:
-    AggNode() {
-    }
-    virtual ~AggNode() {
-        for (auto expr : _group_exprs) {
-            ExprNode::destroy_tree(expr);
+    class AggNode : public ExecNode {
+    public:
+        AggNode() {
         }
-        for (auto agg : _agg_fn_calls) {
-            ExprNode::destroy_tree(agg);
+
+        virtual ~AggNode() {
+            for (auto expr: _group_exprs) {
+                ExprNode::destroy_tree(expr);
+            }
+            for (auto agg: _agg_fn_calls) {
+                ExprNode::destroy_tree(agg);
+            }
         }
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int expr_optimize(QueryContext* ctx);
-    virtual void find_place_holder(std::map<int, ExprNode*>& placeholders);
-    virtual int open(RuntimeState* state);
-    virtual int get_next(RuntimeState* state, RowBatch* batch, bool* eos);
-    virtual void close(RuntimeState* state);
-    virtual void transfer_pb(int64_t region_id, proto::PlanNode* pb_node);
-    void encode_agg_key(MemRow* row, MutTableKey& key);
-    void process_row_batch(RuntimeState* state, RowBatch& batch, int64_t& used_size, int64_t& release_size);
-    std::vector<ExprNode*>* mutable_group_exprs() {
-        return &_group_exprs;
-    }
-    int add_group_expr(proto::Expr& expr, int32_t slot_id) {
-        if (_agg_slot_set.count(slot_id) == 1) {
+
+        virtual int init(const proto::PlanNode &node);
+
+        virtual int expr_optimize(QueryContext *ctx);
+
+        virtual void find_place_holder(std::map<int, ExprNode *> &placeholders);
+
+        virtual int open(RuntimeState *state);
+
+        virtual int get_next(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        virtual void close(RuntimeState *state);
+
+        virtual void transfer_pb(int64_t region_id, proto::PlanNode *pb_node);
+
+        void encode_agg_key(MemRow *row, MutTableKey &key);
+
+        void process_row_batch(RuntimeState *state, RowBatch &batch, int64_t &used_size, int64_t &release_size);
+
+        std::vector<ExprNode *> *mutable_group_exprs() {
+            return &_group_exprs;
+        }
+
+        int add_group_expr(proto::Expr &expr, int32_t slot_id) {
+            if (_agg_slot_set.count(slot_id) == 1) {
+                return 0;
+            }
+            ExprNode *group_expr = nullptr;
+            int ret = ExprNode::create_tree(expr, &group_expr);
+            if (ret < 0) {
+                return ret;
+            }
+            _agg_slot_set.insert(slot_id);
+            _group_exprs.emplace_back(group_expr);
             return 0;
         }
-        ExprNode* group_expr = nullptr;
-        int ret = ExprNode::create_tree(expr, &group_expr);
-        if (ret < 0) {
-            return ret;
+
+        std::vector<AggFnCall *> *mutable_agg_fn_calls() {
+            return &_agg_fn_calls;
         }
-        _agg_slot_set.insert(slot_id);
-        _group_exprs.emplace_back(group_expr);
-        return 0;
-    }
-    std::vector<AggFnCall*>* mutable_agg_fn_calls() {
-        return &_agg_fn_calls;
-    }
-private:
-    //需要推导_agg_tuple_id内部slot的类型
-    std::vector<ExprNode*> _group_exprs;
-    int32_t _agg_tuple_id;
-    int     _row_cnt = 0;
-    proto::TupleDescriptor* _group_tuple_desc;
-    std::vector<AggFnCall*> _agg_fn_calls;
-    std::set<int> _agg_slot_set;
-    bool _is_merger = false;
-    MemRowDescriptor* _mem_row_desc;
-    //用于分组和get_next的定位,用map可与mysql保持一致
-    butil::FlatMap<std::string, MemRow*> _hash_map;
-    butil::FlatMap<std::string, MemRow*>::iterator _iter;
-};
+
+    private:
+        //需要推导_agg_tuple_id内部slot的类型
+        std::vector<ExprNode *> _group_exprs;
+        int32_t _agg_tuple_id;
+        int _row_cnt = 0;
+        proto::TupleDescriptor *_group_tuple_desc;
+        std::vector<AggFnCall *> _agg_fn_calls;
+        std::set<int> _agg_slot_set;
+        bool _is_merger = false;
+        MemRowDescriptor *_mem_row_desc;
+        //用于分组和get_next的定位,用map可与mysql保持一致
+        butil::FlatMap<std::string, MemRow *> _hash_map;
+        butil::FlatMap<std::string, MemRow *>::iterator _iter;
+    };
 }

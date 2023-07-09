@@ -24,57 +24,66 @@
 #include "elasticann/proto/optype.pb.h"
 
 namespace EA {
-class DmlManagerNode : public ExecNode {
-public:
-    DmlManagerNode() {
-        _factory = SchemaFactory::get_instance();
-    }
-    virtual ~DmlManagerNode() {
-    }
-    virtual int open(RuntimeState* state);
+    class DmlManagerNode : public ExecNode {
+    public:
+        DmlManagerNode() {
+            _factory = SchemaFactory::get_instance();
+        }
 
-    virtual void close(RuntimeState* state) override {
-        ExecNode::close(state);
-        std::vector<int32_t>().swap(_seq_ids);
-        std::vector<SmartRecord>().swap(_insert_scan_records);
-        std::vector<SmartRecord>().swap(_del_scan_records);
-    }
+        virtual ~DmlManagerNode() {
+        }
 
-    void set_op_type(proto::OpType op_type) {
-        _op_type = op_type;
-    }
-    std::vector<int32_t>& seq_ids() {
-        return _seq_ids;
-    }
-    int send_request(RuntimeState* state,
-            DMLNode* dml_node,
-            const std::vector<SmartRecord>& insert_scan_records,
-            const std::vector<SmartRecord>& delete_scan_records);
-    int send_request_light(RuntimeState* state,
-            DMLNode* dml_node,
-            FetcherStore& fetcher_store,
-            int seq_id,
-            const std::vector<SmartRecord>& insert_scan_records,
-            const std::vector<SmartRecord>& delete_scan_records);
-    int send_request_concurrency(RuntimeState* state, size_t start_child);
-    int get_region_infos(RuntimeState* state,
-            DMLNode* dml_node,
-            const std::vector<SmartRecord>& insert_scan_records,
-            const std::vector<SmartRecord>& delete_scan_records,
-            std::map<int64_t, proto::RegionInfo>& region_infos);
-    size_t uniq_index_number() const {
-        return _uniq_index_number;
-    }
-protected:
-    FetcherStore _fetcher_store;
-    proto::OpType  _op_type;
-    SchemaFactory*                  _factory = nullptr;
-    std::vector<int32_t>        _seq_ids; 
-    size_t  _uniq_index_number = 0;
-    size_t  _affected_index_num = 0;
-    std::vector<SmartRecord> _insert_scan_records;
-    std::vector<SmartRecord> _del_scan_records;
-};
+        virtual int open(RuntimeState *state);
 
-}
+        virtual void close(RuntimeState *state) override {
+            ExecNode::close(state);
+            std::vector<int32_t>().swap(_seq_ids);
+            std::vector<SmartRecord>().swap(_insert_scan_records);
+            std::vector<SmartRecord>().swap(_del_scan_records);
+        }
+
+        void set_op_type(proto::OpType op_type) {
+            _op_type = op_type;
+        }
+
+        std::vector<int32_t> &seq_ids() {
+            return _seq_ids;
+        }
+
+        int send_request(RuntimeState *state,
+                         DMLNode *dml_node,
+                         const std::vector<SmartRecord> &insert_scan_records,
+                         const std::vector<SmartRecord> &delete_scan_records);
+
+        int send_request_light(RuntimeState *state,
+                               DMLNode *dml_node,
+                               FetcherStore &fetcher_store,
+                               int seq_id,
+                               const std::vector<SmartRecord> &insert_scan_records,
+                               const std::vector<SmartRecord> &delete_scan_records);
+
+        int send_request_concurrency(RuntimeState *state, size_t start_child);
+
+        int get_region_infos(RuntimeState *state,
+                             DMLNode *dml_node,
+                             const std::vector<SmartRecord> &insert_scan_records,
+                             const std::vector<SmartRecord> &delete_scan_records,
+                             std::map<int64_t, proto::RegionInfo> &region_infos);
+
+        size_t uniq_index_number() const {
+            return _uniq_index_number;
+        }
+
+    protected:
+        FetcherStore _fetcher_store;
+        proto::OpType _op_type;
+        SchemaFactory *_factory = nullptr;
+        std::vector<int32_t> _seq_ids;
+        size_t _uniq_index_number = 0;
+        size_t _affected_index_num = 0;
+        std::vector<SmartRecord> _insert_scan_records;
+        std::vector<SmartRecord> _del_scan_records;
+    };
+
+}  // namespace EA
 

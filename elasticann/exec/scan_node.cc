@@ -53,7 +53,7 @@ namespace EA {
             }
             auto index_state = info.state;
             if (index_state != proto::IS_PUBLIC) {
-                DB_DEBUG("DDL_LOG skip index [%ld] state [%s] ",
+                TLOG_DEBUG("DDL_LOG skip index [{}] state [{}] ",
                          index_id, proto::IndexState_Name(index_state).c_str());
                 continue;
             }
@@ -90,7 +90,7 @@ namespace EA {
                 prefix_ratio_index_score = 0;
             }
             prefix_ratio_id_mapping.insert(std::make_pair(prefix_ratio_index_score, index_id));
-            //DB_NOTICE("index_id:%ld prefix_ratio_index_score:%u", index_id,prefix_ratio_index_score);
+            //DB_NOTICE("index_id:{} prefix_ratio_index_score:{}", index_id,prefix_ratio_index_score);
             // 优先选倒排，没有就取第一个
             switch (info.type) {
                 case proto::I_FULLTEXT:
@@ -101,7 +101,7 @@ namespace EA {
             }
         }
         if (choose_arrow_pb_reverse_index() != 0) {
-            DB_WARNING("choose arrow pb reverse index error.");
+            TLOG_WARN("choose arrow pb reverse index error.");
             return -1;
         }
         if (_multi_reverse_index.size() > 0) {
@@ -119,7 +119,7 @@ namespace EA {
         int ret = 0;
         ret = ExecNode::init(node);
         if (ret < 0) {
-            DB_WARNING("ExecNode::init fail, ret:%d", ret);
+            TLOG_WARN("ExecNode::init fail, ret:{}", ret);
             return ret;
         }
         _tuple_id = node.derive_node().scan_node().tuple_id();
@@ -137,7 +137,7 @@ namespace EA {
         int ret = 0;
         ret = ExecNode::open(state);
         if (ret < 0) {
-            DB_WARNING_STATE(state, "ExecNode::open fail:%d", ret);
+            TLOG_WARN("{}, ExecNode::open fail:{}", *state, ret);
             return ret;
         }
         _tuple_desc = state->get_tuple_desc(_tuple_id);
@@ -296,7 +296,7 @@ namespace EA {
                     multi_1_0 = true;
                 }
             }
-            DB_DEBUG("idx:%ld cost:%f", index_id, path->cost);
+            TLOG_DEBUG("idx:{} cost:{}", index_id, path->cost);
         }
         //兜底方案，如果出现多个0.0或者1.0可能代价计算有问题，使用基于规则的索引选择
         if (enable_use_cost) {
@@ -306,7 +306,7 @@ namespace EA {
         }
     }
 
-// 判断是否全覆盖，只有被全覆盖的索引可以被干掉
+    // 判断是否全覆盖，只有被全覆盖的索引可以被干掉
     bool full_coverage(const std::unordered_set<int32_t> &smaller, const std::unordered_set<int32_t> &bigger) {
         for (int32_t field_id: smaller) {
             if (bigger.count(field_id) == 0) {
@@ -317,10 +317,10 @@ namespace EA {
         return true;
     }
 
-// 两个索引比较择最优的，干掉另一个
-// return  0 没有干掉任何一个
-// return -1 outer被干掉
-// return -2 inner被干掉
+    // 两个索引比较择最优的，干掉另一个
+    // return  0 没有干掉任何一个
+    // return -1 outer被干掉
+    // return -2 inner被干掉
     int AccessPathMgr::compare_two_path(SmartPath &outer_path, SmartPath &inner_path) {
         if (_use_force_index) {
             // 只有primary可能不是FORCE_INDEX, 应该防止primary干掉force index
@@ -519,7 +519,7 @@ namespace EA {
         if (select_idx == 0) {
             if (SchemaFactory::get_instance()->get_statistics_ptr(_table_id) != nullptr
                 && SchemaFactory::get_instance()->is_switch_open(_table_id, TABLE_SWITCH_COST) && !_use_fulltext) {
-                DB_DEBUG("table %ld has statistics", _table_id);
+                TLOG_DEBUG("table {} has statistics", _table_id);
                 select_idx = select_index_by_cost();
             } else {
                 select_idx = select_index_common();
@@ -541,8 +541,8 @@ namespace EA {
             _main_path.reset();
             std::string &name = path->index_info_ptr->short_name;
             SchemaFactory::get_instance()->update_virtual_index_info(select_idx, name, sample_sql);
-            DB_WARNING(
-                    "hit virtual index, table_id: %ld, virtual_index_id: %ld, virtual_index_name: %s, sample_sql: %s",
+            TLOG_WARN(
+                    "hit virtual index, table_id: {}, virtual_index_id: {}, virtual_index_name: {}, sample_sql: {}",
                     _table_id, select_idx, name.c_str(), sample_sql.c_str());
             return select_index_in_baikaldb(sample_sql);
         }
@@ -623,8 +623,8 @@ namespace EA {
                                                          learner_path->is_covering_index, backup_use_for);
                 }
                 _learner_use_diff_index = true;
-                DB_WARNING(
-                        "need_select_learner_index: %d, has_disable_index: %d, index_id: %ld, learner_idx: %ld, sample_sql: %s",
+                TLOG_WARN(
+                        "need_select_learner_index: {}, has_disable_index: {}, index_id: {}, learner_idx: {}, sample_sql: {}",
                         path->need_select_learner_index(), _learner_path.has_disable_index(),
                         path->index_id, learner_idx, sample_sql.c_str());
                 std::vector<ExprNode *> learner_condition;
@@ -700,10 +700,10 @@ namespace EA {
             arrow_indexs.reserve(4);
             proto::StorageType filter_type = proto::ST_UNKNOWN;
             for (auto index_id: _multi_reverse_index) {
-                DB_DEBUG("reverse_filter index [%ld]", index_id);
+                TLOG_DEBUG("reverse_filter index [{}]", index_id);
                 proto::StorageType type = proto::ST_UNKNOWN;
                 if (SchemaFactory::get_instance()->get_index_storage_type(index_id, type) == -1) {
-                    DB_FATAL("get index storage type error index [%ld]", index_id);
+                    DB_FATAL("get index storage type error index [{}]", index_id);
                     return -1;
                 }
 
@@ -716,7 +716,7 @@ namespace EA {
                 }
             }
             filter_type = pb_type_num <= arrow_type_num ? proto::ST_PROTOBUF_OR_FORMAT1 : proto::ST_ARROW;
-            DB_DEBUG("reverse_filter type[%s]", proto::StorageType_Name(filter_type).c_str());
+            TLOG_DEBUG("reverse_filter type[{}]", proto::StorageType_Name(filter_type).c_str());
             auto remove_indexs_func = [this](std::vector<int> &to_remove_indexs) {
                 _multi_reverse_index.erase(std::remove_if(_multi_reverse_index.begin(), _multi_reverse_index.end(),
                                                           [&to_remove_indexs](const int &index) {
@@ -750,7 +750,7 @@ namespace EA {
                 SmartRecord record_template = SchemaFactory::get_instance()->new_record(_table_id);
 
                 if (inner_node.like_values.size() != 1) {
-                    DB_WARNING("like values size not equal one");
+                    TLOG_WARN("like values size not equal one");
                     return -1;
                 }
                 record_template->set_value(record_template->get_field_by_tag(
@@ -791,7 +791,7 @@ namespace EA {
                 break;
             }
             default : {
-                DB_WARNING("unknown node type");
+                TLOG_WARN("unknown node type");
                 break;
             }
         }
@@ -801,7 +801,7 @@ namespace EA {
     int ScanNode::create_fulltext_index_tree() {
         _fulltext_index_pb.reset(new proto::FulltextIndex);
         if (create_fulltext_index_tree(_fulltext_index_tree.root.get(), _fulltext_index_pb.get()) != 0) {
-            DB_WARNING("create fulltext index tree error.");
+            TLOG_WARN("create fulltext index tree error.");
             return -1;
         } else {
             if (_main_path.fulltext_use_arrow()) {

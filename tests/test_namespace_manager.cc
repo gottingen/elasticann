@@ -32,12 +32,12 @@ public:
     NamespaceManagerTest() {
         _rocksdb = EA::MetaRocksdb::get_instance();
         if (!_rocksdb) {
-            DB_FATAL("create rocksdb handler failed");
+            TLOG_ERROR("create rocksdb handler failed");
             return;
         }
         int ret = _rocksdb->init();
         if (ret != 0) {
-            DB_FATAL("rocksdb init failed: code:%d", ret);
+            TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return;
         }
         _namespace_manager = EA::NamespaceManager::get_instance();
@@ -79,7 +79,7 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -93,7 +93,7 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
 
     //测试点：修改namespace quota
@@ -112,7 +112,7 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     _schema_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
@@ -125,7 +125,7 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     //test_point: query_namespace_manager
     EA::proto::QueryRequest query_request;
@@ -133,12 +133,12 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     query_request.set_op_type(EA::proto::QUERY_NAMESPACE);
     query_request.set_namespace_name("Feed");
     _query_namespace_manager->get_namespace_info(&query_request, &response);
-    DB_WARNING("response: %s", response.DebugString().c_str());
+    TLOG_WARN("response: {}", response.DebugString().c_str());
 
     query_request.clear_namespace_name();
     response.clear_namespace_infos();
     _query_namespace_manager->get_namespace_info(&query_request, &response);
-    DB_WARNING("response: %s", response.DebugString().c_str());
+    TLOG_WARN("response: {}", response.DebugString().c_str());
 
     int64_t max_namespace_id = _namespace_manager->get_max_namespace_id();
     DOCTEST_REQUIRE_EQ(2, max_namespace_id);
@@ -172,7 +172,7 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     _schema_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);
@@ -181,6 +181,6 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
 } // DOCTEST_TEST_CASE_FIXTURE

@@ -21,16 +21,18 @@
 #include "elasticann/exec/exec_node.h"
 
 namespace EA {
-class KillManagerNode : public ExecNode {
-public:
-    KillManagerNode() {
-    }
-    virtual ~KillManagerNode() {
-    }
-    virtual int open(RuntimeState* state) {
-        return 0;
-    }
-};
+    class KillManagerNode : public ExecNode {
+    public:
+        KillManagerNode() {
+        }
+
+        virtual ~KillManagerNode() {
+        }
+
+        virtual int open(RuntimeState *state) {
+            return 0;
+        }
+    };
 
 }
 

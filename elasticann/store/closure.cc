@@ -42,23 +42,23 @@ namespace EA {
                         if (op_type != proto::OP_COMMIT && op_type != proto::OP_ROLLBACK) {
                             int seq_id = transaction->seq_id();
                             transaction->rollback_current_request();
-                            DB_WARNING("txn rollback region_id: %ld log_id:%lu txn_id: %lu:%d, op_type: %s",
+                            TLOG_WARN("txn rollback region_id: {} log_id:{} txn_id: {}:{}, op_type: {}",
                                        region_id, log_id, transaction->txn_id(), seq_id,
                                        proto::OpType_Name(op_type).c_str());
                         }
                     } else {
-                        DB_WARNING("leader changed region_id: %ld log_id:%lu txn_id: %lu:%d, op_type: %s",
+                        TLOG_WARN("leader changed region_id: {} log_id:{} txn_id: {}:{}, op_type: {}",
                                    region_id, log_id, transaction->txn_id(), transaction->seq_id(),
                                    proto::OpType_Name(op_type).c_str());
                     }
                 } else {
                     // 1pc状态机外执行失败rollback
                     transaction->rollback();
-                    DB_WARNING("txn rollback 1pc region_id: %ld log_id:%lu op_type: %s",
+                    TLOG_WARN("txn rollback 1pc region_id: {} log_id:{} op_type: {}",
                                region_id, log_id, proto::OpType_Name(op_type).c_str());
                 }
             }
-            DB_WARNING("region_id: %ld  status:%s ,leader:%s, log_id:%lu, remote_side: %s",
+            TLOG_WARN("region_id: {}  status:{} ,leader:{}, log_id:{}, remote_side: {}",
                        region_id,
                        status().error_cstr(),
                        butil::endpoint2str(leader).c_str(),
@@ -85,8 +85,8 @@ namespace EA {
         int64_t raft_cost = cost.get_time();
         Store::get_instance()->raft_total_cost << raft_cost;
         if (raft_cost > FLAGS_print_time_us) {
-            DB_NOTICE("dml log_id:%lu, txn_id:%lu, type:%s, raft_total_cost:%ld, region_id: %ld, "
-                      "applied_index:%ld, is_separate:%d num_prepared:%d remote_side:%s",
+            TLOG_INFO("dml log_id:{}, txn_id:{}, type:{}, raft_total_cost:{}, region_id: {}, "
+                      "applied_index:{}, is_separate:{} num_prepared:{} remote_side:{}",
                       log_id,
                       txn_id,
                       proto::OpType_Name(op_type).c_str(),
@@ -105,7 +105,7 @@ namespace EA {
 
     void AddPeerClosure::Run() {
         if (!status().ok()) {
-            DB_WARNING("region add peer fail, new_instance:%s, status:%s, region_id: %ld, cost:%ld",
+            TLOG_WARN("region add peer fail, new_instance:{}, status:{}, region_id: {}, cost:{}",
                        new_instance.c_str(),
                        status().error_cstr(),
                        region->get_region_id(),
@@ -117,12 +117,12 @@ namespace EA {
             }
             //region->send_remove_region_to_store(region->get_region_id(), new_instance);
         } else {
-            DB_WARNING("region add peer success, region_id: %ld, cost:%ld",
+            TLOG_WARN("region add peer success, region_id: {}, cost:{}",
                        region->get_region_id(),
                        cost.get_time());
         }
         region->reset_region_status();
-        DB_WARNING("region status was reset, region_id: %ld", region->get_region_id());
+        TLOG_WARN("region status was reset, region_id: {}", region->get_region_id());
         if (done) {
             done->Run();
         }
@@ -164,14 +164,14 @@ namespace EA {
         bool split_fail = false;
         ScopeProcStatus split_status(region);
         if (!status().ok()) {
-            DB_FATAL("split step(%s) fail, region_id: %ld status:%s, time_cost:%ld",
+            TLOG_ERROR("split step({}) fail, region_id: {} status:{}, time_cost:{}",
                      step_message.c_str(),
                      region->get_region_id(),
                      status().error_cstr(),
                      cost.get_time());
             split_fail = true;
         } else if (ret < 0) {
-            DB_FATAL("split step(%s) fail, region_id: %ld, cost:%ld",
+            TLOG_ERROR("split step({}) fail, region_id: {}, cost:{}",
                      step_message.c_str(),
                      region->get_region_id(),
                      cost.get_time());
@@ -180,19 +180,19 @@ namespace EA {
             split_status.reset();
             Bthread bth(&BTHREAD_ATTR_SMALL);
             bth.run(next_step);
-            DB_WARNING("last step(%s) for split, start to next step, "
-                       "region_id: %ld, cost:%ld",
+            TLOG_WARN("last step({}) for split, start to next step, "
+                       "region_id: {}, cost:{}",
                        step_message.c_str(),
                        region->get_region_id(),
                        cost.get_time());
         }
         auto remove_region = [](int64_t old_region_id, int64_t region_id, std::string leader,
                                 std::vector<std::string> peers) {
-            DB_WARNING("split fail, start remove region, old_region_id: %ld, split_region_id: %ld, peer:%s",
+            TLOG_WARN("split fail, start remove region, old_region_id: {}, split_region_id: {}, peer:{}",
                        old_region_id, region_id, leader.c_str());
             RpcSender::send_remove_region_method(region_id, leader);
             for (auto &instance: peers) {
-                DB_WARNING("split fail, start remove region, old_region_id: %ld, split_region_id: %ld, peer:%s",
+                TLOG_WARN("split fail, start remove region, old_region_id: {}, split_region_id: {}, peer:{}",
                            old_region_id, region_id, instance.c_str());
                 RpcSender::send_remove_region_method(region_id, instance);
             }
@@ -215,12 +215,12 @@ namespace EA {
 
     void ConvertToSyncClosure::Run() {
         if (!status().ok()) {
-            DB_FATAL("region_id: %ld, asyn step exec fail, status:%s, time_cost:%ld",
+            TLOG_ERROR("region_id: {}, asyn step exec fail, status:{}, time_cost:{}",
                      region_id,
                      status().error_cstr(),
                      cost.get_time());
         } else {
-            DB_WARNING("region_id: %ld, asyn step exec success, time_cost: %ld",
+            TLOG_WARN("region_id: {}, asyn step exec success, time_cost: {}",
                        region_id, cost.get_time());
         }
         sync_sign.decrease_signal();

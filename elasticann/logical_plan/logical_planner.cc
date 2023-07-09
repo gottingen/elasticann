@@ -58,7 +58,7 @@ namespace EA {
                                                proto::ExprNodeType type,
                                                const CreateExprOptions &options) {
         if (func_item == nullptr) {
-            DB_FATAL("func_item is null");
+            TLOG_ERROR("func_item is null");
             return -1;
         }
         if (func_item->has_subquery()) {
@@ -84,7 +84,7 @@ namespace EA {
         node->set_node_type(type);
         proto::Function *func = node->mutable_fn();
         if (func_item->fn_name.empty()) {
-            DB_WARNING("op:%d fn_name is empty", func_item->func_type);
+            TLOG_WARN("op:{} fn_name is empty", func_item->func_type);
             return -1;
         }
         func->set_name(func_item->fn_name.c_str());
@@ -103,7 +103,7 @@ namespace EA {
                 node_stack.pop();
                 const parser::ExprNode *child_expr_item = static_cast<const parser::ExprNode *>(item);
                 if (child_expr_item == nullptr) {
-                    DB_FATAL("child_expr_item is null");
+                    TLOG_ERROR("child_expr_item is null");
                     return -1;
                 }
                 if (child_expr_item->expr_type == parser::ET_FUNC) {
@@ -123,7 +123,7 @@ namespace EA {
             // 从后往前加保证顺序一致
             for (int i = node_list.size() - 1; i >= 0; i--) {
                 if (0 != create_expr_tree(node_list[i], expr, options)) {
-                    DB_WARNING("create ornode child expr failed");
+                    TLOG_WARN("create ornode child expr failed");
                     return -1;
                 }
             }
@@ -132,7 +132,7 @@ namespace EA {
         } else {
             for (int32_t idx = 0; idx < func_item->children.size(); ++idx) {
                 if (0 != create_expr_tree(func_item->children[idx], expr, options)) {
-                    DB_WARNING("create child expr failed");
+                    TLOG_WARN("create child expr failed");
                     return -1;
                 }
             }
@@ -160,7 +160,7 @@ namespace EA {
         node_val->set_node_type(proto::IN_PREDICATE);
         proto::Function *func = node_val->mutable_fn();
         if (func_item->fn_name.empty()) {
-            DB_WARNING("op:%d fn_name is empty", func_item->func_type);
+            TLOG_WARN("op:{} fn_name is empty", func_item->func_type);
             return -1;
         }
         func->set_name(func_item->fn_name.value); // in
@@ -189,7 +189,7 @@ namespace EA {
         int ret = create_common_subquery_expr((parser::SubqueryExpr *) arg2, tmp_expr, options,
                                               _is_correlate_subquery_expr);
         if (ret < 0) {
-            DB_WARNING("create child expr failed");
+            TLOG_WARN("create child expr failed");
             return -1;
         }
         if (!_is_correlate_subquery_expr) {
@@ -200,7 +200,7 @@ namespace EA {
             }
 
             if (0 != create_expr_tree(arg1, expr, options)) {
-                DB_WARNING("create child 1 expr failed");
+                TLOG_WARN("create child 1 expr failed");
                 return -1;
             }
             int row_count = 0;
@@ -209,7 +209,7 @@ namespace EA {
                 child_node->CopyFrom(tmp_expr.nodes(i));
                 if (tmp_expr.nodes(i).node_type() == proto::ROW_EXPR) {
                     if (tmp_expr.nodes(i).num_children() != row_expr_size) {
-                        DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                        TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                         if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                             _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                             _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -224,7 +224,7 @@ namespace EA {
                 node->set_num_children(row_count + 1);
             } else {
                 if (row_expr_size != 1) {
-                    DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                    TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                     if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                         _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                         _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -249,14 +249,14 @@ namespace EA {
                 join_type = proto::ANTI_SEMI_JOIN;
             }
             if (0 != create_expr_tree(arg1, expr, options)) {
-                DB_WARNING("create child 1 expr failed");
+                TLOG_WARN("create child 1 expr failed");
                 return -1;
             }
             CreateExprOptions tm_options = options;
             tm_options.row_expr_size = row_expr_size;
             ret = construct_apply_node(_cur_sub_ctx.get(), expr, join_type, tm_options);
             if (ret < 0) {
-                DB_WARNING("construct apply node failed");
+                TLOG_WARN("construct apply node failed");
                 return -1;
             }
         }
@@ -277,7 +277,7 @@ namespace EA {
 
         parser::ExprNode *arg1 = (parser::ExprNode *) func_item->children[0];
         if (0 != create_expr_tree(arg1, expr, options)) {
-            DB_WARNING("create child 1 expr failed");
+            TLOG_WARN("create child 1 expr failed");
             return -1;
         }
         int row_expr_size = 1;
@@ -289,7 +289,7 @@ namespace EA {
             auto node = static_cast<const parser::ExprNode *>(arg2->children[i]);
             if (node->expr_type == parser::ET_ROW_EXPR) {
                 if (row_expr_size != arg2->children[i]->children.size()) {
-                    DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                    TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                     if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                         _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                         _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -297,7 +297,7 @@ namespace EA {
                     return -1;
                 }
             } else if (row_expr_size != 1) {
-                DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                 if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                     _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                     _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -305,7 +305,7 @@ namespace EA {
                 return -1;
             }
             if (0 != create_expr_tree(arg2->children[i], expr, options)) {
-                DB_WARNING("create child expr failed");
+                TLOG_WARN("create child expr failed");
                 return -1;
             }
         }
@@ -334,7 +334,7 @@ namespace EA {
             std::unique_ptr<LogicalPlanner> planner;
             planner.reset(new PreparePlanner(ctx));
             if (planner->plan() != 0) {
-                DB_WARNING("gen stmt plan failed, mysql_type:%d, stmt_type:%d", ctx->mysql_cmd, ctx->stmt_type);
+                TLOG_WARN("gen stmt plan failed, mysql_type:{}, stmt_type:{}", ctx->mysql_cmd, ctx->stmt_type);
                 return -1;
             }
             return 0;
@@ -346,27 +346,27 @@ namespace EA {
             ctx->stat_info.error_code = ER_SYNTAX_ERROR;
             ctx->stat_info.error_msg << "syntax error! errno: " << parser.error
                                      << " errmsg: " << parser.syntax_err_str;
-            DB_WARNING("parsing error! errno: %d, errmsg: %s, sql: %s",
-                       parser.error,
+            TLOG_WARN("parsing error! errno: {}, errmsg: {}, sql: {}",
+                       static_cast<int>(parser.error),
                        parser.syntax_err_str.c_str(),
                        ctx->sql.c_str());
             return -1;
         }
         if (parser.result.size() != 1) {
-            DB_WARNING("multi-stmt is not supported, sql: %s", ctx->sql.c_str());
+            TLOG_WARN("multi-stmt is not supported, sql: {}", ctx->sql.c_str());
             ctx->stat_info.error_code = ER_NOT_SUPPORTED_YET;
             ctx->stat_info.error_msg << "multi-stmt is not supported";
             return -1;
         }
         if (parser.result[0] == nullptr) {
-            DB_WARNING("sql parser stmt is null, sql: %s", ctx->sql.c_str());
+            TLOG_WARN("sql parser stmt is null, sql: {}", ctx->sql.c_str());
             return -1;
         }
         if (parser.result[0]->node_type == parser::NT_EXPLAIN) {
             if (ctx->client_conn->txn_id != 0) {
                 ctx->stat_info.error_code = ER_STMT_NOT_ALLOWED_IN_SF_OR_TRG;
                 ctx->stat_info.error_msg << "explain statement not allow in transaction";
-                DB_WARNING("explain statement not allow in transaction txn_id:%lu", ctx->client_conn->txn_id);
+                TLOG_WARN("explain statement not allow in transaction txn_id:{}", ctx->client_conn->txn_id);
                 return -1;
             }
             parser::ExplainStmt *stmt = static_cast<parser::ExplainStmt *>(parser.result[0]);
@@ -396,7 +396,7 @@ namespace EA {
             } else {
                 ctx->is_explain = true;
             }
-            //DB_WARNING("stmt format:%s", format.c_str());
+            //TLOG_WARN("stmt format:{}", format.c_str());
         } else {
             ctx->stmt = parser.result[0];
             ctx->is_complex = ctx->stmt->is_complex_node();
@@ -406,7 +406,7 @@ namespace EA {
             ctx->explain_type != SHOW_PLAN && ctx->explain_type != SHOW_SIGN) {
             ctx->stat_info.error_code = ER_NOT_SUPPORTED_YET;
             ctx->stat_info.error_msg << "dml only support normal explain";
-            DB_WARNING("dml only support normal explain");
+            TLOG_WARN("dml only support normal explain");
             return -1;
         }
 
@@ -458,11 +458,11 @@ namespace EA {
                 planner.reset(new LoadPlanner(ctx));
                 break;
             default:
-                DB_WARNING("invalid command type: %d", ctx->stmt_type);
+                TLOG_WARN("invalid command type: {}", ctx->stmt_type);
                 return -1;
         }
         if (planner->plan() != 0) {
-            DB_WARNING("gen plan failed, type:%d", ctx->stmt_type);
+            TLOG_WARN("gen plan failed, type:{}", ctx->stmt_type);
             return -1;
         }
         if (ctx->stat_info.sign == 0) {
@@ -491,7 +491,7 @@ namespace EA {
             stat_info->sign = out[0];
             if (!ctx->sign_blacklist.empty()) {
                 if (ctx->sign_blacklist.count(stat_info->sign) > 0) {
-                    DB_WARNING("sql sign[%lu] in blacklist, sample_sql[%s]", stat_info->sign,
+                    TLOG_WARN("sql sign[{}] in blacklist, sample_sql[{}]", stat_info->sign,
                                stat_info->sample_sql.str().c_str());
                     ctx->stat_info.error_code = ER_SQL_REFUSE;
                     ctx->stat_info.error_msg << "sql sign: " << stat_info->sign << " in blacklist";
@@ -501,7 +501,7 @@ namespace EA {
             if (!ctx->need_learner_backup && !ctx->sign_forcelearner.empty()) {
                 if (ctx->sign_forcelearner.count(stat_info->sign) > 0) {
                     ctx->need_learner_backup = true;
-                    DB_WARNING("sql sign[%lu] in forcelearner, sample_sql[%s]", stat_info->sign,
+                    TLOG_WARN("sql sign[{}] in forcelearner, sample_sql[{}]", stat_info->sign,
                                stat_info->sample_sql.str().c_str());
                 }
             }
@@ -521,7 +521,7 @@ namespace EA {
                                 int64_t index_id = 0;
                                 auto ret = _factory->get_index_id(table_id, index_name, index_id);
                                 if (ret != 0) {
-                                    DB_WARNING("index_name: %s in table:%s not exist", index_name.c_str(),
+                                    TLOG_WARN("index_name: {} in table:{} not exist", index_name.c_str(),
                                                _factory->get_table_info_ptr(table_id)->name.c_str());
                                     continue;
                                 }
@@ -549,7 +549,7 @@ namespace EA {
                             int64_t index_id = 0;
                             auto ret = _factory->get_index_id(table_id, index_name, index_id);
                             if (ret != 0) {
-                                DB_WARNING("index_name: %s in table:%s not exist", index_name.c_str(),
+                                TLOG_WARN("index_name: {} in table:{} not exist", index_name.c_str(),
                                            _factory->get_table_info_ptr(table_id)->name.c_str());
                                 continue;
                             }
@@ -589,7 +589,7 @@ namespace EA {
         if (planner->plan() != 0) {
             _ctx->stat_info.error_code = _cur_sub_ctx->stat_info.error_code;
             _ctx->stat_info.error_msg << _cur_sub_ctx->stat_info.error_msg.str();
-            DB_WARNING("gen plan failed, type:%d", _cur_sub_ctx->stmt_type);
+            TLOG_WARN("gen plan failed, type:{}", _cur_sub_ctx->stmt_type);
             return -1;
         }
         if (_ctx->stat_info.family.empty()) {
@@ -610,7 +610,7 @@ namespace EA {
         _cur_sub_ctx->expr_params.row_filed_number = planner->select_names().size();
         int ret = _cur_sub_ctx->create_plan_tree();
         if (ret < 0) {
-            DB_WARNING("Failed to pb_plan to execnode");
+            TLOG_WARN("Failed to pb_plan to execnode");
             return -1;
         }
         _ctx->set_kill_ctx(_cur_sub_ctx);
@@ -666,7 +666,7 @@ namespace EA {
                 _plan_table_ctx->field_info.emplace(try_to_lower(field.lower_name), &field);
             }
         } else if (_table_names.count(table_name) != 0) {
-            DB_WARNING("Not unique table/alias, db:%s, table:%s alias:%s",
+            TLOG_WARN("Not unique table/alias, db:{}, table:{} alias:{}",
                        database.c_str(), table.c_str(), alias.c_str());
             _ctx->stat_info.error_code = ER_NONUNIQ_TABLE;
             _ctx->stat_info.error_msg << "Not unique table/alias: '" << alias << "'";
@@ -702,14 +702,14 @@ namespace EA {
         if (_plan_table_ctx->database_info.count(try_to_lower(database)) == 0) {
             int64_t databaseid = -1;
             if (0 != _factory->get_database_id(_namespace + "." + database_name, databaseid)) {
-                DB_WARNING("unknown _namespace:%s database: %s", _namespace.c_str(), database.c_str());
+                TLOG_WARN("unknown _namespace:{} database: {}", _namespace.c_str(), database.c_str());
                 _ctx->stat_info.error_code = ER_BAD_DB_ERROR;
                 _ctx->stat_info.error_msg << "database " << database << " not exist";
                 return -1;
             }
             db = _factory->get_database_info(databaseid);
             if (db.id == -1) {
-                DB_WARNING("no database found with id: %ld", databaseid);
+                TLOG_WARN("no database found with id: {}", databaseid);
                 _ctx->stat_info.error_code = ER_BAD_DB_ERROR;
                 _ctx->stat_info.error_msg << "database " << database << " not exist";
                 return -1;
@@ -729,14 +729,14 @@ namespace EA {
                 std::transform(table_name.begin(), table_name.end(), table_name.begin(), ::toupper);
             }
             if (0 != _factory->get_table_id(_namespace + "." + database_name + "." + table_name, tableid)) {
-                DB_WARNING("unknown table: %s.%s", database.c_str(), table.c_str());
+                TLOG_WARN("unknown table: {}.{}", database.c_str(), table.c_str());
                 _ctx->stat_info.error_code = ER_NO_SUCH_TABLE;
                 _ctx->stat_info.error_msg << "table: " << database << "." << table << " not exist";
                 return -1;
             }
             auto tbl_ptr = _factory->get_table_info_ptr(tableid);
             if (tbl_ptr == nullptr) {
-                DB_WARNING("no table found with id: %ld", tableid);
+                TLOG_WARN("no table found with id: {}", tableid);
                 _ctx->stat_info.error_code = ER_NO_SUCH_TABLE;
                 _ctx->stat_info.error_msg << "table: " << database << "." << table << " not exist";
                 return -1;
@@ -778,14 +778,14 @@ namespace EA {
                 _factory = SchemaFactory::get_backup_instance();
                 if (0 != SchemaFactory::get_backup_instance()->get_table_id(
                         _namespace + "." + database_name + "." + table_name, tableid)) {
-                    DB_WARNING("unknown table: %s.%s", database.c_str(), table.c_str());
+                    TLOG_WARN("unknown table: {}.{}", database.c_str(), table.c_str());
                     _ctx->stat_info.error_code = ER_NO_SUCH_TABLE;
                     _ctx->stat_info.error_msg << "table: " << database << "." << table << " not exist";
                     return -1;
                 }
                 tbl_ptr = SchemaFactory::get_backup_instance()->get_table_info_ptr(tableid);
                 if (tbl_ptr == nullptr) {
-                    DB_WARNING("no table found with id: %ld", tableid);
+                    TLOG_WARN("no table found with id: {}", tableid);
                     _ctx->stat_info.error_code = ER_NO_SUCH_TABLE;
                     _ctx->stat_info.error_msg << "table: " << database << "." << table << " not exist";
                     return -1;
@@ -798,7 +798,7 @@ namespace EA {
                 op_type = proto::OP_SELECT;
             }
             if (!_ctx->user_info->allow_op(op_type, db.id, tbl.id)) {
-                DB_WARNING("user %s has no permission to access: %s.%s, db.id:%ld, tbl.id:%ld",
+                TLOG_WARN("user {} has no permission to access: {}.{}, db.id:{}, tbl.id:{}",
                            _username.c_str(), database.c_str(), table.c_str(), db.id, tbl.id);
                 _ctx->stat_info.error_code = ER_TABLEACCESS_DENIED_ERROR;
                 _ctx->stat_info.error_msg << "user " << _username
@@ -818,7 +818,7 @@ namespace EA {
                 _plan_table_ctx->table_dbs_mapping[try_to_lower(alias_name)].emplace(database);
             }
         } else if (_table_names.count(alias_full_name) != 0) {
-            DB_WARNING("Not unique table/alias, db:%s, table:%s alias:%s",
+            TLOG_WARN("Not unique table/alias, db:{}, table:{} alias:{}",
                        database.c_str(), table.c_str(), alias.c_str());
             _ctx->stat_info.error_code = ER_NONUNIQ_TABLE;
             _ctx->stat_info.error_msg << "Not unique table/alias: '" << alias_name << "'";
@@ -844,12 +844,12 @@ namespace EA {
         std::string database;
         std::string table;
         if (parse_db_name_from_table_name(table_name, database, table) < 0) {
-            DB_WARNING("parse db name from table name fail");
+            TLOG_WARN("parse db name from table name fail");
             return -1;
         }
         std::string alias = table;
         if (0 != add_table(database, table, alias, false)) {
-            DB_WARNING("invalid database or table:%s.%s", database.c_str(), table.c_str());
+            TLOG_WARN("invalid database or table:{}.{}", database.c_str(), table.c_str());
             return -1;
         }
         return 0;
@@ -861,11 +861,11 @@ namespace EA {
         std::string alias;
         bool is_derived_table = false;
         if (parse_db_name_from_table_source(table_source, database, table, alias, is_derived_table) < 0) {
-            DB_WARNING("parse db name from table name fail");
+            TLOG_WARN("parse db name from table name fail");
             return -1;
         }
         if (0 != add_table(database, table, alias, is_derived_table)) {
-            DB_WARNING("invalid database or table:%s.%s", database.c_str(), table.c_str());
+            TLOG_WARN("invalid database or table:{}.{}", database.c_str(), table.c_str());
             return -1;
         }
         return 0;
@@ -873,30 +873,30 @@ namespace EA {
 
     int LogicalPlanner::parse_db_tables(const parser::Node *table_refs, JoinMemTmp **join_root_ptr) {
         if (table_refs == nullptr) {
-            DB_WARNING("table item is null");
+            TLOG_WARN("table item is null");
             return -1;
         }
         if (table_refs->node_type == parser::NT_TABLE) {
-            //DB_WARNING("tbls item is table name");
+            //TLOG_WARN("tbls item is table name");
             if (0 != create_join_node_from_table_name((parser::TableName *) table_refs, join_root_ptr)) {
-                DB_WARNING("parse_db_table_item failed from linked list");
+                TLOG_WARN("parse_db_table_item failed from linked list");
                 return -1;
             }
         } else if (table_refs->node_type == parser::NT_TABLE_SOURCE) {
-            // DB_WARNING("tbls item is table source");
+            // TLOG_WARN("tbls item is table source");
             if (0 != create_join_node_from_table_source((parser::TableSource *) table_refs, join_root_ptr)) {
-                DB_WARNING("parse_db_table_item failed from linked list");
+                TLOG_WARN("parse_db_table_item failed from linked list");
                 return -1;
             }
         } else if (table_refs->node_type == parser::NT_JOIN) {
-            //DB_WARNING("tbls item is item join");
+            //TLOG_WARN("tbls item is item join");
             parser::JoinNode *join_item = (parser::JoinNode *) (table_refs);
             if (0 != create_join_node_from_item_join(join_item, join_root_ptr)) {
-                DB_WARNING("parse_db_table_item failed from item join");
+                TLOG_WARN("parse_db_table_item failed from item join");
                 return -1;
             }
         } else {
-            DB_WARNING("unsupport table type");
+            TLOG_WARN("unsupport table type");
             return -1;
         }
         return 0;
@@ -909,32 +909,32 @@ namespace EA {
         join_node_mem->join_node.set_join_type(join_type_mapping[join_item->join_type]);
 
         if (join_item->left == nullptr) {
-            DB_WARNING("joint node must have left node");
+            TLOG_WARN("joint node must have left node");
             return -1;
         }
         if (0 != parse_db_tables(join_item->left, &(join_node_mem->left_node))) {
-            DB_WARNING("parse left node fail");
+            TLOG_WARN("parse left node fail");
             return -1;
         }
         if (join_item->right == nullptr) {
-            DB_WARNING("joint node must have right node");
+            TLOG_WARN("joint node must have right node");
             return -1;
         }
         if (0 != parse_db_tables(join_item->right, &(join_node_mem->right_node))) {
-            DB_WARNING("parse right node fail");
+            TLOG_WARN("parse right node fail");
             return -1;
         }
         auto ret = fill_join_table_infos(join_node_mem.get());
 
         if (ret < 0) {
-            DB_WARNING("fill join table info fail");
+            TLOG_WARN("fill join table info fail");
             return ret;
         }
         parser::ExprNode *condition = join_item->expr;
         /*
     //暂时不支持没有条件的join
     if (condition == nullptr && join_item->using_col.size() == 0) {
-        DB_WARNING("has no join condition");
+        TLOG_WARN("has no join condition");
         return -1;
     }
     */
@@ -942,7 +942,7 @@ namespace EA {
         if (condition != nullptr) {
             std::vector<proto::Expr> join_filters;
             if (0 != flatten_filter(condition, join_filters, CreateExprOptions())) {
-                DB_WARNING("flatten_filter failed");
+                TLOG_WARN("flatten_filter failed");
                 return -1;
             }
             for (uint32_t idx = 0; idx < join_filters.size(); ++idx) {
@@ -952,7 +952,7 @@ namespace EA {
         }
         ret = parse_using_cols(join_item->using_col, join_node_mem.get());
         if (ret < 0) {
-            DB_WARNING("_parse using cols fail");
+            TLOG_WARN("_parse using cols fail");
             return ret;
         }
         *join_root_ptr = join_node_mem.release();
@@ -966,7 +966,7 @@ namespace EA {
             std::string field_name = using_col[i]->name.value;
             std::unordered_set<std::string> possible_table_names = get_possible_tables(field_name);
             if (possible_table_names.size() < 2) {
-                DB_WARNING("using filed not in more than 2 table");
+                TLOG_WARN("using filed not in more than 2 table");
                 return -1;
             }
             int32_t related_table_count = 0;
@@ -985,7 +985,7 @@ namespace EA {
                 }
             }
             if (related_table_count != 1) {
-                DB_WARNING("related table count not equal to 2");
+                TLOG_WARN("related table count not equal to 2");
                 return -1;
             }
 
@@ -1001,7 +1001,7 @@ namespace EA {
                 }
             }
             if (related_table_count != 1) {
-                DB_WARNING("related table count not equal to 2");
+                TLOG_WARN("related table count not equal to 2");
                 return -1;
             }
 
@@ -1019,14 +1019,14 @@ namespace EA {
             using_col[i]->db = left_db.c_str();
             using_col[i]->table = left_table.c_str();
             if (0 != create_term_slot_ref_node(using_col[i], expr, options)) {
-                DB_WARNING("left_full_field using field create term slot fail");
+                TLOG_WARN("left_full_field using field create term slot fail");
                 return -1;
             }
             // 临时使用
             using_col[i]->db = right_db.c_str();
             using_col[i]->table = right_table.c_str();
             if (0 != create_term_slot_ref_node(using_col[i], expr, options)) {
-                DB_WARNING("left_full_field using field create term slot fail");
+                TLOG_WARN("left_full_field using field create term slot fail");
                 return -1;
             }
             proto::Expr *join_expr = join_node_mem->join_node.add_conditions();
@@ -1040,7 +1040,7 @@ namespace EA {
             int64_t table_id = _plan_table_ctx->table_info[try_to_lower(table_name)]->id;
             int32_t tuple_id = _plan_table_ctx->table_tuple_mapping[try_to_lower(table_name)].tuple_id;
             if (join_node_mem->left_full_table_names.count(try_to_lower(table_name)) != 0) {
-                DB_WARNING("not support self join");
+                TLOG_WARN("not support self join");
                 return -1;
             }
             join_node_mem->join_node.add_left_tuple_ids(tuple_id);
@@ -1051,7 +1051,7 @@ namespace EA {
             int64_t table_id = _plan_table_ctx->table_info[try_to_lower(table_name)]->id;
             int32_t tuple_id = _plan_table_ctx->table_tuple_mapping[try_to_lower(table_name)].tuple_id;
             if (join_node_mem->left_full_table_names.count(try_to_lower(table_name)) != 0) {
-                DB_WARNING("not support self join");
+                TLOG_WARN("not support self join");
                 return -1;
             }
             join_node_mem->join_node.add_left_tuple_ids(tuple_id);
@@ -1063,7 +1063,7 @@ namespace EA {
             int64_t table_id = _plan_table_ctx->table_info[try_to_lower(table_name)]->id;
             int32_t tuple_id = _plan_table_ctx->table_tuple_mapping[try_to_lower(table_name)].tuple_id;
             if (join_node_mem->right_full_table_names.count(try_to_lower(table_name)) != 0) {
-                DB_WARNING("not support self join");
+                TLOG_WARN("not support self join");
                 return -1;
             }
             join_node_mem->join_node.add_right_tuple_ids(tuple_id);
@@ -1074,7 +1074,7 @@ namespace EA {
             int64_t table_id = _plan_table_ctx->table_info[try_to_lower(try_to_lower(table_name))]->id;
             int32_t tuple_id = _plan_table_ctx->table_tuple_mapping[try_to_lower(table_name)].tuple_id;
             if (join_node_mem->right_full_table_names.count(try_to_lower(table_name)) != 0) {
-                DB_WARNING("not support self join");
+                TLOG_WARN("not support self join");
                 return -1;
             }
             join_node_mem->join_node.add_right_tuple_ids(tuple_id);
@@ -1090,7 +1090,7 @@ namespace EA {
         std::string db;
         std::string table;
         if (parse_db_name_from_table_name(table_name, db, table) < 0) {
-            DB_WARNING("parser db name from table name fail");
+            TLOG_WARN("parser db name from table name fail");
             return -1;
         }
         return create_join_node_from_terminator(db, table,
@@ -1108,7 +1108,7 @@ namespace EA {
         std::string alias;
         bool is_derived_table = false;
         if (parse_db_name_from_table_source(table_source, db, table, alias, is_derived_table) < 0) {
-            DB_WARNING("parser db name from table name fail");
+            TLOG_WARN("parser db name from table name fail");
             return -1;
         }
         std::vector<std::string> use_index_names;
@@ -1144,7 +1144,7 @@ namespace EA {
                                                          const std::vector<std::string> &ignore_index_names,
                                                          JoinMemTmp **join_root_ptr) {
         if (0 != add_table(db, table, alias, is_derived_table)) {
-            DB_WARNING("invalid database or table:%s.%s", db.c_str(), table.c_str());
+            TLOG_WARN("invalid database or table:{}.{}", db.c_str(), table.c_str());
             return -1;
         }
         std::string alias_name = alias.empty() ? table : alias;
@@ -1165,7 +1165,7 @@ namespace EA {
             int64_t index_id = 0;
             auto ret = _factory->get_index_id(table_id, index_name, index_id);
             if (ret != 0) {
-                DB_WARNING("index_name: %s in table:%s not exist",
+                TLOG_WARN("index_name: {} in table:{} not exist",
                            index_name.c_str(), alias_full_name.c_str());
                 return -1;
             }
@@ -1179,7 +1179,7 @@ namespace EA {
             int64_t index_id = 0;
             auto ret = _factory->get_index_id(table_id, index_name, index_id);
             if (ret != 0) {
-                DB_WARNING("index_name: %s in table:%s not exist",
+                TLOG_WARN("index_name: {} in table:{} not exist",
                            index_name.c_str(), alias_full_name.c_str());
                 return -1;
             }
@@ -1189,7 +1189,7 @@ namespace EA {
             int64_t index_id = 0;
             auto ret = _factory->get_index_id(table_id, index_name, index_id);
             if (ret != 0) {
-                DB_WARNING("index_name: %s in table:%s not exist",
+                TLOG_WARN("index_name: {} in table:{} not exist",
                            index_name.c_str(), alias_full_name.c_str());
                 return -1;
             }
@@ -1203,11 +1203,11 @@ namespace EA {
             std::string &db,
             std::string &table) {
         if (table_name == nullptr) {
-            DB_WARNING("table name is null");
+            TLOG_WARN("table name is null");
             return -1;
         }
         if (table_name->table.empty()) {
-            DB_WARNING("empty tbl name,sql:%s", _ctx->sql.c_str());
+            TLOG_WARN("empty tbl name,sql:{}", _ctx->sql.c_str());
             return -1;
         }
         table = table_name->table.value;
@@ -1232,7 +1232,7 @@ namespace EA {
                                                         std::string &alias,
                                                         bool &is_derived_table) {
         if (table_source == nullptr) {
-            DB_WARNING("table source is null");
+            TLOG_WARN("table source is null");
             return -1;
         }
 
@@ -1253,7 +1253,7 @@ namespace EA {
             parser::DmlNode *derived_table = table_source->derived_table;
             int ret = gen_subquery_plan(derived_table, _plan_table_ctx, ExprParams());
             if (ret < 0) {
-                DB_WARNING("gen subquery plan failed");
+                TLOG_WARN("gen subquery plan failed");
                 return -1;
             }
             _ctx->add_sub_ctx(_cur_sub_ctx);
@@ -1266,7 +1266,7 @@ namespace EA {
         }
         parser::TableName *table_name = table_source->table_name;
         if (parse_db_name_from_table_name(table_name, db, table) < 0) {
-            DB_WARNING("parser db name from table name fail");
+            TLOG_WARN("parser db name from table name fail");
             return -1;
         }
         if (!table_source->as_name.empty()) {
@@ -1283,12 +1283,12 @@ namespace EA {
             if (func->func_type == parser::FT_LOGIC_AND) {
                 for (int i = 0; i < func->children.size(); i++) {
                     if (func->children[i]->node_type != parser::NT_EXPR) {
-                        DB_FATAL("type error");
+                        TLOG_ERROR("type error");
                         return -1;
                     }
                     parser::ExprNode *child = (parser::ExprNode *) func->children[i];
                     if (flatten_filter(child, filters, options) != 0) {
-                        DB_WARNING("parse AND child error");
+                        TLOG_WARN("parse AND child error");
                         return -1;
                     }
                 }
@@ -1298,11 +1298,11 @@ namespace EA {
                 proto::Expr ge_expr;
                 proto::Expr le_expr;
                 if (0 != create_scala_func_expr(func, ge_expr, parser::FT_GE, options)) {
-                    DB_WARNING("create_scala_func_expr failed");
+                    TLOG_WARN("create_scala_func_expr failed");
                     return -1;
                 }
                 if (0 != create_scala_func_expr(func, le_expr, parser::FT_LE, options)) {
-                    DB_WARNING("create_scala_func_expr failed");
+                    TLOG_WARN("create_scala_func_expr failed");
                     return -1;
                 }
                 filters.push_back(ge_expr);
@@ -1313,7 +1313,7 @@ namespace EA {
         proto::Expr root;
         int ret = create_expr_tree(item, root, options);
         if (ret < 0) {
-            DB_WARNING("error pasing common expression");
+            TLOG_WARN("error pasing common expression");
             return -1;
         }
         if (!_is_correlate_subquery_expr) {
@@ -1375,7 +1375,7 @@ namespace EA {
                 "tdigest_build_agg", "group_concat"
         };
         if (support_agg.count(expr_item->fn_name.to_lower()) == 0) {
-            DB_WARNING("un-supported agg op or func: %s", expr_item->fn_name.c_str());
+            TLOG_WARN("un-supported agg op or func: {}", expr_item->fn_name.c_str());
             _ctx->stat_info.error_code = ER_NOT_SUPPORTED_YET;
             _ctx->stat_info.error_msg << "func \'" << expr_item->fn_name.to_string() << "\' not support";
             return -1;
@@ -1384,7 +1384,7 @@ namespace EA {
         auto &slots = get_agg_func_slot(
                 expr_item->to_string(), expr_item->fn_name.to_lower(), new_slot);
         if (slots.size() < 1) {
-            DB_WARNING("wrong number of agg slots");
+            TLOG_WARN("wrong number of agg slots");
             return -1;
         }
 
@@ -1415,7 +1415,7 @@ namespace EA {
             // count_distinct 参数为expr list，其他聚合参数为单一expr或slot ref
             for (int i = 0; i < expr_item->children.size(); i++) {
                 if (0 != create_expr_tree(expr_item->children[i], agg_expr, options)) {
-                    DB_WARNING("create child expr failed");
+                    TLOG_WARN("create child expr failed");
                     return -1;
                 }
             }
@@ -1465,11 +1465,11 @@ namespace EA {
         func->set_fn_op(parser::FT_LOGIC_AND);
 
         if (0 != create_scala_func_expr(item, expr, parser::FT_GE, options)) {
-            DB_WARNING("create_scala_func_expr failed");
+            TLOG_WARN("create_scala_func_expr failed");
             return -1;
         }
         if (0 != create_scala_func_expr(item, expr, parser::FT_LE, options)) {
-            DB_WARNING("create_scala_func_expr failed");
+            TLOG_WARN("create_scala_func_expr failed");
             return -1;
         }
         return 0;
@@ -1486,7 +1486,7 @@ namespace EA {
         CreateExprOptions options;
         options.is_values = true;
         if (0 != create_term_slot_ref_node((parser::ColumnName *) func_item->children[0], expr, options)) {
-            DB_WARNING("create_term_slot_ref_node failed");
+            TLOG_WARN("create_term_slot_ref_node failed");
             return -1;
         }
 
@@ -1585,20 +1585,20 @@ namespace EA {
             return -1;
         }
         if (0 != create_expr_tree(arg1, expr, options)) {
-            DB_WARNING("create child 1 expr failed");
+            TLOG_WARN("create child 1 expr failed");
             return -1;
         }
         proto::Expr tmp_expr;
         int ret = create_common_subquery_expr((parser::SubqueryExpr *) arg2, tmp_expr, options,
                                               _is_correlate_subquery_expr);
         if (ret < 0) {
-            DB_WARNING("create child expr failed");
+            TLOG_WARN("create child expr failed");
             return -1;
         }
         if (!_is_correlate_subquery_expr) {
             if (tmp_expr.nodes(0).node_type() == proto::ROW_EXPR) {
                 if (tmp_expr.nodes(0).num_children() != row_expr_size) {
-                    DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                    TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                     if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                         _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                         _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -1615,7 +1615,7 @@ namespace EA {
             tm_options.row_expr_size = row_expr_size;
             ret = construct_apply_node(_cur_sub_ctx.get(), expr, proto::SEMI_JOIN, tm_options);
             if (ret < 0) {
-                DB_WARNING("construct apply node failed");
+                TLOG_WARN("construct apply node failed");
                 return -1;
             }
         }
@@ -1667,7 +1667,7 @@ namespace EA {
                 auto col_expr = (parser::ColumnName *) (item->children[0]);
                 std::string alias_name = get_field_alias_name(col_expr);
                 if (alias_name.empty()) {
-                    DB_WARNING("get_field_alias_name failed: %s", col_expr->to_string().c_str());
+                    TLOG_WARN("get_field_alias_name failed: {}", col_expr->to_string().c_str());
                     return -1;
                 }
                 std::string full_name = alias_name;
@@ -1675,7 +1675,7 @@ namespace EA {
                 full_name += col_expr->name.to_lower();
                 FieldInfo *field_info = nullptr;
                 if (nullptr == (field_info = get_field_info_ptr(full_name))) {
-                    DB_WARNING("invalid field name: %s full_name: %s", col_expr->to_string().c_str(),
+                    TLOG_WARN("invalid field name: {} full_name: {}", col_expr->to_string().c_str(),
                                full_name.c_str());
                     return -1;
                 }
@@ -1697,7 +1697,7 @@ namespace EA {
                     _ctx->stat_info.error_code = ER_NOT_SUPPORTED_YET;
                     _ctx->stat_info.error_msg << "func: \'" << item->fn_name.c_str() << "\' not support";
                 }
-                DB_WARNING("un-supported scala op or func: %s", item->fn_name.c_str());
+                TLOG_WARN("un-supported scala op or func: {}", item->fn_name.c_str());
                 return -1;
             }
         }
@@ -1708,7 +1708,7 @@ namespace EA {
         node->set_num_children(item->children.size());
         proto::Function *func = node->mutable_fn();
         if (item->fn_name.empty()) {
-            DB_WARNING("op:%d fn_name is empty", op);
+            TLOG_WARN("op:{} fn_name is empty", op);
         }
         func->set_name(item->fn_name.to_lower());
         func->set_fn_op(op);
@@ -1739,7 +1739,7 @@ namespace EA {
             } else {
                 if (node->expr_type == parser::ET_ROW_EXPR) {
                     if (row_expr_size != item->children[idx]->children.size()) {
-                        DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                        TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                         if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                             _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                             _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -1747,7 +1747,7 @@ namespace EA {
                         return -1;
                     }
                 } else if (row_expr_size != 1) {
-                    DB_WARNING("Operand should contain %d column(s)", row_expr_size);
+                    TLOG_WARN("Operand should contain {} column(s)", row_expr_size);
                     if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                         _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
                         _ctx->stat_info.error_msg << "Operand should contain " << row_expr_size << " column(s)";
@@ -1756,7 +1756,7 @@ namespace EA {
                 }
             }
             if (0 != create_expr_tree(item->children[idx], expr, options)) {
-                DB_WARNING("create child expr failed");
+                TLOG_WARN("create child expr failed");
                 return -1;
             }
         }
@@ -1792,7 +1792,7 @@ namespace EA {
                 node->mutable_derive_node()->set_int_val(value.get_numberic<int64_t>());
                 break;
             default:
-                DB_WARNING("expr:%s", value.get_string().c_str());
+                TLOG_WARN("expr:{}", value.get_string().c_str());
                 break;
         }
     }
@@ -1801,13 +1801,13 @@ namespace EA {
     int LogicalPlanner::exec_subquery_expr(QueryContext *sub_ctx, QueryContext *ctx) {
         int ret = PhysicalPlanner::analyze(sub_ctx);
         if (ret < 0) {
-            DB_WARNING("exec PhysicalPlanner failed");
+            TLOG_WARN("exec PhysicalPlanner failed");
             return -1;
         }
         RuntimeState &state = *sub_ctx->get_runtime_state();
         ret = state.init(sub_ctx, nullptr);
         if (ret < 0) {
-            DB_WARNING("init RuntimeState failed www");
+            TLOG_WARN("init RuntimeState failed www");
             return -1;
         }
         state.set_is_expr_subquery(true);
@@ -1827,14 +1827,14 @@ namespace EA {
         expr_params.is_expr_subquery = true;
         int ret = gen_subquery_plan(item->query_stmt, _plan_table_ctx, expr_params);
         if (ret < 0) {
-            DB_WARNING("gen subquery plan failed");
+            TLOG_WARN("gen subquery plan failed");
             return -1;
         }
 
         if (!_cur_sub_ctx->expr_params.is_correlated_subquery) {
             ret = exec_subquery_expr(_cur_sub_ctx.get(), _ctx);
             if (ret < 0) {
-                DB_WARNING("exec subquery failed");
+                TLOG_WARN("exec subquery failed");
                 return -1;
             }
             auto state = _cur_sub_ctx->get_runtime_state();
@@ -1842,7 +1842,7 @@ namespace EA {
             if (options.max_one_row && subquery_exprs_vec.size() > 1) {
                 _ctx->stat_info.error_code = ER_SUBQUERY_NO_1_ROW;
                 _ctx->stat_info.error_msg << "Subquery returns more than 1 row";
-                DB_WARNING("Subquery returns more than 1 row");
+                TLOG_WARN("Subquery returns more than 1 row");
                 return -1;
             }
             // select (SubSelect)
@@ -1854,7 +1854,7 @@ namespace EA {
                     if (subquery_exprs_vec.size() != 1 || subquery_exprs_vec[0].size() != 1) {
                         _ctx->stat_info.error_code = ER_SUBQUERY_NO_1_ROW;
                         _ctx->stat_info.error_msg << "Subquery returns more than 1 row";
-                        DB_WARNING("Subquery returns more than 1 row");
+                        TLOG_WARN("Subquery returns more than 1 row");
                         return -1;
                     }
                     proto::ExprNode *node = expr.add_nodes();
@@ -1878,7 +1878,7 @@ namespace EA {
                         }
                     }
                 } else {
-                    DB_WARNING("not data row_filed_number:%d", _cur_sub_ctx->expr_params.row_filed_number);
+                    TLOG_WARN("not data row_filed_number:{}", _cur_sub_ctx->expr_params.row_filed_number);
                     if (_cur_sub_ctx->expr_params.row_filed_number > 1) {
                         proto::ExprNode *row_node = expr.add_nodes();
                         row_node->set_node_type(proto::ROW_EXPR);
@@ -1918,12 +1918,12 @@ namespace EA {
         if (arg1->expr_type == parser::ET_ROW_EXPR && arg1->children.size() > 1) {
             _ctx->stat_info.error_code = ER_OPERAND_COLUMNS;
             _ctx->stat_info.error_msg << "Operand should contain 1 column(s)s";
-            DB_WARNING("Operand should contain 1 column(s)s");
+            TLOG_WARN("Operand should contain 1 column(s)s");
             return -1;
         }
         int ret = create_expr_tree(sub_query_expr->left_expr, left_expr, options);
         if (ret < 0) {
-            DB_WARNING("create expr failed");
+            TLOG_WARN("create expr failed");
             return -1;
         }
         ExprParams expr_params;
@@ -1965,7 +1965,7 @@ namespace EA {
                         for (uint32_t i = 1; i < subquery_exprs_vec.size(); i++) {
                             // = all返回多个不同值
                             if (first_val.compare(subquery_exprs_vec[i][0]) != 0) {
-                                DB_WARNING("always_false");
+                                TLOG_WARN("always_false");
                                 always_false = true;
                             }
                         }
@@ -2002,7 +2002,7 @@ namespace EA {
                         for (uint32_t i = 1; i < subquery_exprs_vec.size(); i++) {
                             // = all返回多个不同值
                             if (first_val.compare(subquery_exprs_vec[i][0]) != 0) {
-                                DB_WARNING("always_false");
+                                TLOG_WARN("always_false");
                                 always_false = true;
                             }
                         }
@@ -2071,7 +2071,7 @@ namespace EA {
             }
             ret = construct_apply_node(_cur_sub_ctx.get(), expr, proto::LEFT_JOIN, tmp_options);
             if (ret < 0) {
-                DB_WARNING("construct apply node failed");
+                TLOG_WARN("construct apply node failed");
                 return -1;
             }
         }
@@ -2094,7 +2094,7 @@ namespace EA {
         expr_params.is_expr_subquery = true;
         int ret = gen_subquery_plan(sub_query_expr->query_expr->query_stmt, _plan_table_ctx, expr_params);
         if (ret < 0) {
-            DB_WARNING("gen subquery plan failed");
+            TLOG_WARN("gen subquery plan failed");
             return -1;
         }
 
@@ -2124,7 +2124,7 @@ namespace EA {
             }
             ret = construct_apply_node(_cur_sub_ctx.get(), expr, join_type, options);
             if (ret < 0) {
-                DB_WARNING("construct apply node failed");
+                TLOG_WARN("construct apply node failed");
                 return -1;
             }
         }
@@ -2142,11 +2142,11 @@ namespace EA {
         if (_is_correlate_subquery_expr && options.is_select_field) {
             ret = construct_apply_node(_cur_sub_ctx.get(), expr, proto::LEFT_JOIN, options);
             if (ret < 0) {
-                DB_WARNING("construct apply node failed");
+                TLOG_WARN("construct apply node failed");
                 return -1;
             }
         } else if (_is_correlate_subquery_expr) {
-            DB_WARNING("not support");
+            TLOG_WARN("not support");
             return -1;
         }
         _is_correlate_subquery_expr = false;
@@ -2156,11 +2156,11 @@ namespace EA {
     int
     LogicalPlanner::create_expr_tree(const parser::Node *item, proto::Expr &expr, const CreateExprOptions &options) {
         if (item == nullptr) {
-            DB_FATAL("item is null");
+            TLOG_ERROR("item is null");
             return -1;
         }
         if (item->node_type != parser::NT_EXPR) {
-            DB_FATAL("type error:%d", item->node_type);
+            TLOG_ERROR("type error:{}", item->node_type);
             return -1;
         }
         const parser::ExprNode *expr_item = (const parser::ExprNode *) item;
@@ -2170,7 +2170,7 @@ namespace EA {
                     _ctx->stat_info.error_code = ER_BAD_FIELD_ERROR;
                     _ctx->stat_info.error_msg << "Invalid literal '" << expr_item->to_string() << "'";
                 }
-                DB_WARNING("create_term_literal_node failed");
+                TLOG_WARN("create_term_literal_node failed");
                 return -1;
             }
         } else if (expr_item->expr_type == parser::ET_COLUMN) {
@@ -2195,7 +2195,7 @@ namespace EA {
             }
         } else if (expr_item->expr_type == parser::ET_ROW_EXPR) {
             if (create_row_expr_node(static_cast<const parser::RowExpr *>(expr_item), expr, options) != 0) {
-                DB_WARNING("create_row_expr_node failed");
+                TLOG_WARN("create_row_expr_node failed");
                 return -1;
             }
         } else if (expr_item->expr_type == parser::ET_FUNC) {
@@ -2229,7 +2229,7 @@ namespace EA {
                             _ctx->stat_info.error_code = ER_INVALID_GROUP_FUNC_USE;
                             _ctx->stat_info.error_msg << "Invalid use of group function";
                         }
-                        DB_WARNING("Invalid use of group function");
+                        TLOG_WARN("Invalid use of group function");
                         return -1;
                     }
                     return create_agg_expr(func, expr, options);
@@ -2263,7 +2263,7 @@ namespace EA {
                 }
                     // todo:support
                 default:
-                    DB_WARNING("un-supported func_type:%d fn_name:%s",
+                    TLOG_WARN("un-supported func_type:{} fn_name:{}",
                                func->func_type, func->fn_name.c_str());
                     return -1;
             }
@@ -2274,7 +2274,7 @@ namespace EA {
         } else if (expr_item->expr_type == parser::ET_EXISTS_SUB_QUERY_EXPR) {
             return handle_exists_subquery(expr_item, expr, options);
         } else {
-            DB_WARNING("un-supported expr_type: %d", expr_item->expr_type);
+            TLOG_WARN("un-supported expr_type: {}", expr_item->expr_type);
             return -1;
         }
         return 0;
@@ -2295,14 +2295,14 @@ namespace EA {
                     _ctx->stat_info.error_code = ER_WRONG_TABLE_NAME;
                     _ctx->stat_info.error_msg << "Incorrect table name \'" << column->to_string() << "\'";
                 }
-                DB_WARNING("no database found for field: %s", column->to_string().c_str());
+                TLOG_WARN("no database found for field: {}", column->to_string().c_str());
                 return "";
             } else if (dbs.size() > 1 && !FLAGS_disambiguate_select_name) {
                 if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                     _ctx->stat_info.error_code = ER_AMBIGUOUS_FIELD_TERM;
                     _ctx->stat_info.error_msg << "column  \'" << column->name << "\' is ambiguous";
                 }
-                DB_WARNING("ambiguous field_name: %s", column->to_string().c_str());
+                TLOG_WARN("ambiguous field_name: {}", column->to_string().c_str());
                 return "";
             }
             alias_name += *dbs.begin();
@@ -2317,7 +2317,7 @@ namespace EA {
                     _ctx->stat_info.error_code = ER_WRONG_COLUMN_NAME;
                     _ctx->stat_info.error_msg << "Incorrect column name \'" << column->to_string() << "\'";
                 }
-                DB_WARNING("no table found for field: %s", column->to_string().c_str());
+                TLOG_WARN("no table found for field: {}", column->to_string().c_str());
                 return "";
             } else if (tables.size() > 1) {
                 // select id from t1 as tt1 join (select id from t2) as tt2 where tt1.id=tt2.id;
@@ -2333,7 +2333,7 @@ namespace EA {
                 }
                 if (!FLAGS_disambiguate_select_name) {
                     for (auto &t: meet_tables) {
-                        DB_WARNING("ambiguous field_name: %s t:%s", column->to_string().c_str(),
+                        TLOG_WARN("ambiguous field_name: {} t:{}", column->to_string().c_str(),
                                    t.c_str());
                     }
                     if (_ctx->stat_info.error_code == ER_ERROR_FIRST) {
@@ -2346,7 +2346,7 @@ namespace EA {
             alias_name += *tables.begin();
             return alias_name;
         } else {
-            DB_FATAL("column.name is null");
+            TLOG_ERROR("column.name is null");
             return "";
         }
         return alias_name;
@@ -2363,7 +2363,7 @@ namespace EA {
             tuple_info->table_id = table_id;
             tuple_info->slot_cnt = 1;
         }
-        //DB_WARNING("table_name:%s tuple_id:%d table_id:%d", table_name.c_str(), tuple_info->tuple_id, table_id);
+        //TLOG_WARN("table_name:{} tuple_id:{} table_id:{}", table_name.c_str(), tuple_info->tuple_id, table_id);
         return tuple_info;
     }
 
@@ -2420,25 +2420,25 @@ namespace EA {
 // -2 means alias name ambiguous
     int LogicalPlanner::create_alias_node(const parser::ColumnName *column, proto::Expr &expr) {
         if (!column->db.empty()) {
-            DB_WARNING("alias no db");
+            TLOG_WARN("alias no db");
             return -1;
         }
         if (!column->table.empty()) {
-            //DB_WARNING("alias no table");
+            //TLOG_WARN("alias no table");
             return -1;
         }
         std::string lower_name = column->name.to_lower();
         int match_count = _select_alias_mapping.count(lower_name);
         if (match_count > 1 && !FLAGS_disambiguate_select_name) {
-            DB_WARNING("column name: %s is ambiguous", column->name.c_str());
+            TLOG_WARN("column name: {} is ambiguous", column->name.c_str());
             return -2;
         } else if (match_count == 0) {
-            //DB_WARNING("invalid column name: %s", column->name.c_str());
+            //TLOG_WARN("invalid column name: {}", column->name.c_str());
             return -1;
         } else {
             auto iter = _select_alias_mapping.find(lower_name);
             if (iter != _select_alias_mapping.end() && iter->second >= _select_exprs.size()) {
-                //DB_WARNING("invalid column name: %s", column->name.c_str());
+                //TLOG_WARN("invalid column name: {}", column->name.c_str());
                 return -1;
             }
             expr.MergeFrom(_select_exprs[iter->second]);
@@ -2498,7 +2498,7 @@ namespace EA {
         }
         std::string alias_name = get_field_alias_name(col_expr);
         if (alias_name.empty()) {
-            DB_WARNING("get_field_alias_name failed: %s", col_expr->to_string().c_str());
+            TLOG_WARN("get_field_alias_name failed: {}", col_expr->to_string().c_str());
             return -1;
         }
         std::string full_name = alias_name;
@@ -2508,7 +2508,7 @@ namespace EA {
         if (nullptr == (field_info = get_field_info_ptr(full_name))) {
             //_ctx->set_error_code(-1);
             //_ctx->set_error_msg(std::string("invalid field name in: ").append(term));
-            DB_WARNING("invalid field name: %s full_name: %s", col_expr->to_string().c_str(), full_name.c_str());
+            TLOG_WARN("invalid field name: {} full_name: {}", col_expr->to_string().c_str(), full_name.c_str());
             return -1;
         }
         proto::SlotDescriptor slot;
@@ -2576,7 +2576,7 @@ namespace EA {
                 node->mutable_derive_node()->set_int_val(literal->_u.int64_val);
                 break;
             default:
-                DB_WARNING("create_term_literal_node failed: %d", literal->literal_type);
+                TLOG_WARN("create_term_literal_node failed: {}", literal->literal_type);
                 return -1;
         }
         return 0;
@@ -2589,7 +2589,7 @@ namespace EA {
         node->set_node_type(proto::ROW_EXPR);
         for (int32_t idx = 0; idx < item->children.size(); ++idx) {
             if (0 != create_expr_tree(item->children[idx], expr, options)) {
-                DB_WARNING("create child expr failed");
+                TLOG_WARN("create child expr failed");
                 return -1;
             }
         }
@@ -2607,12 +2607,12 @@ namespace EA {
             // create order by expr node
             proto::Expr order_expr;
             if (0 != create_expr_tree(order_items[idx]->expr, order_expr, options)) {
-                DB_WARNING("create group expr failed");
+                TLOG_WARN("create group expr failed");
                 return -1;
             }
             const proto::ExprNode &node = order_expr.nodes(0);
             if (node.node_type() != proto::SLOT_REF && node.node_type() != proto::AGG_EXPR) {
-                //DB_WARNING("un-supported order-by node type: %d", node.node_type());
+                //TLOG_WARN("un-supported order-by node type: {}", node.node_type());
                 //return -1;
                 create_order_func_slot();
             }
@@ -2726,7 +2726,7 @@ namespace EA {
             proto::Expr *expr = filter->add_conjuncts();
             expr->CopyFrom(filters[idx]);
         }
-        //DB_NOTICE("filter:%s", filter->ShortDebugString().c_str());
+        //TLOG_INFO("filter:{}", filter->ShortDebugString().c_str());
         return 0;
     }
 
@@ -2743,7 +2743,7 @@ namespace EA {
         proto::SortNode *sort = derive->mutable_sort_node();
 
         if (_order_exprs.size() != _order_ascs.size()) {
-            DB_WARNING("order expr format error");
+            TLOG_WARN("order expr format error");
             return -1;
         }
         for (uint32_t idx = 0; idx < _order_exprs.size(); ++idx) {
@@ -2760,7 +2760,7 @@ namespace EA {
 
     int LogicalPlanner::create_join_and_scan_nodes(JoinMemTmp *join_root, ApplyMemTmp *apply_root) {
         if (join_root == nullptr) {
-            DB_WARNING("join root is null");
+            TLOG_WARN("join root is null");
             return -1;
         }
         // apply_root存在则join_root是apply_root的左节点
@@ -2774,7 +2774,7 @@ namespace EA {
             proto::ApplyNode *join = derive->mutable_apply_node();
             *join = apply_root->apply_node;
             if (0 != create_join_and_scan_nodes(apply_root->outer_node, nullptr)) {
-                DB_WARNING("create left child when join node fail");
+                TLOG_WARN("create left child when join node fail");
                 return -1;
             }
             for (int i = 0; i < apply_root->inner_plan.nodes_size(); i++) {
@@ -2808,7 +2808,7 @@ namespace EA {
             scan->set_tuple_id(join_root->join_node.left_tuple_ids(0));
             scan->set_table_id(join_root->join_node.left_table_ids(0));
             scan->set_engine(_factory->get_table_engine(scan->table_id()));
-            //DB_WARNING("get_table_engine :%d", scan->engine());
+            //TLOG_WARN("get_table_engine :{}", scan->engine());
             for (auto index_id: join_root->use_indexes) {
                 scan->add_use_indexes(index_id);
             }
@@ -2822,7 +2822,7 @@ namespace EA {
         }
         //如果不是根节点必须是左右孩子都有
         if (join_root->left_node == nullptr || join_root->right_node == nullptr) {
-            DB_WARNING("create join node fail");
+            TLOG_WARN("create join node fail");
             return -1;
         }
         proto::PlanNode *join_node = _ctx->add_plan_node();
@@ -2834,11 +2834,11 @@ namespace EA {
         proto::JoinNode *join = derive->mutable_join_node();
         *join = join_root->join_node;
         if (0 != create_join_and_scan_nodes(join_root->left_node, nullptr)) {
-            DB_WARNING("create left child when join node fail");
+            TLOG_WARN("create left child when join node fail");
             return -1;
         }
         if (0 != create_join_and_scan_nodes(join_root->right_node, nullptr)) {
-            DB_WARNING("create right child when join node fail");
+            TLOG_WARN("create right child when join node fail");
             return -1;
         }
         return 0;
@@ -2856,7 +2856,7 @@ namespace EA {
             scan->set_tuple_id(tuple_desc.tuple_id());
             scan->set_table_id(tuple_desc.table_id());
             scan->set_engine(_factory->get_table_engine(scan->table_id()));
-            //DB_WARNING("get_table_engine :%d", scan->engine());
+            //TLOG_WARN("get_table_engine :{}", scan->engine());
         }
         return 0;
     }
@@ -2867,13 +2867,13 @@ namespace EA {
         }
         auto client = _ctx->client_conn;
         if (client->txn_id == 0) {
-            DB_DEBUG("enable_2pc %d global index %d, binlog %d",
+            TLOG_DEBUG("enable_2pc {} global index {}, binlog {}",
                      _ctx->enable_2pc, _factory->has_global_index(table_id), _factory->has_open_binlog(table_id));
             if (_ctx->enable_2pc
                 || _factory->need_begin_txn(table_id)
                 || _factory->has_open_binlog(table_id)) {
                 client->on_begin();
-                DB_DEBUG("get txn %ld", client->txn_id);
+                TLOG_DEBUG("get txn {}", client->txn_id);
                 client->seq_id = 0;
                 //is_gloabl_ddl 打开时，该连接处理全局二级索引增量数据，不需要处理binlog。
                 if (_factory->has_open_binlog(table_id) && !client->is_index_ddl) {
@@ -2884,14 +2884,14 @@ namespace EA {
                 client->txn_id = 0;
                 client->seq_id = 0;
             }
-            //DB_WARNING("DEBUG client->txn_id:%ld client->seq_id: %d", client->txn_id, client->seq_id);
+            //TLOG_WARN("DEBUG client->txn_id:{} client->seq_id: {}", client->txn_id, client->seq_id);
             _ctx->get_runtime_state()->set_single_sql_autocommit(true);
         } else {
             if (_factory->has_open_binlog(table_id) && !client->is_index_ddl) {
                 client->open_binlog = true;
                 _ctx->open_binlog = true;
             }
-            //DB_WARNING("DEBUG client->txn_id:%ld client->seq_id: %d", client->txn_id, client->seq_id);
+            //TLOG_WARN("DEBUG client->txn_id:{} client->seq_id: {}", client->txn_id, client->seq_id);
             _ctx->get_runtime_state()->set_single_sql_autocommit(false);
         }
         if (client->txn_id != 0) {
@@ -2950,7 +2950,7 @@ namespace EA {
         proto::DerivePlanNode *derived_node = plan_node->mutable_derive_node();
         proto::TransactionNode *txn_node = derived_node->mutable_transaction_node();
 
-        DB_WARNING("plan_rollback_txn");
+        TLOG_WARN("plan_rollback_txn");
         //txn_node->set_txn_id(_ctx->txn_id);
         txn_node->set_txn_cmd(proto::TXN_ROLLBACK);
     }

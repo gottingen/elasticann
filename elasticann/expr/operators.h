@@ -21,13 +21,18 @@
 #include "elasticann/common/expr_value.h"
 
 namespace EA {
-//~ ! -1 -1.1
-//ExprValue bit_not_int(const std::vector<ExprValue>& input);
-ExprValue bit_not_uint(const std::vector<ExprValue>& input);
-ExprValue logic_not_bool(const std::vector<ExprValue>& input);
-ExprValue minus_int(const std::vector<ExprValue>& input);
-ExprValue minus_uint(const std::vector<ExprValue>& input);
-ExprValue minus_double(const std::vector<ExprValue>& input);
+
+    //~ ! -1 -1.1
+    //ExprValue bit_not_int(const std::vector<ExprValue>& input);
+    ExprValue bit_not_uint(const std::vector<ExprValue> &input);
+
+    ExprValue logic_not_bool(const std::vector<ExprValue> &input);
+
+    ExprValue minus_int(const std::vector<ExprValue> &input);
+
+    ExprValue minus_uint(const std::vector<ExprValue> &input);
+
+    ExprValue minus_double(const std::vector<ExprValue> &input);
 
 #define BINARY_OP_DEFINE(NAME, TYPE) \
     ExprValue NAME##_##TYPE##_##TYPE(const std::vector<ExprValue>& input);
@@ -43,31 +48,46 @@ ExprValue minus_double(const std::vector<ExprValue>& input);
     BINARY_OP_DEFINE(NAME, datetime); \
     BINARY_OP_DEFINE(NAME, time); \
     BINARY_OP_DEFINE(NAME, date); \
-    BINARY_OP_DEFINE(NAME, timestamp); 
+    BINARY_OP_DEFINE(NAME, timestamp);
 // + - * /
-BINARY_OP_ALL_TYPES_DEFINE(add);
-BINARY_OP_ALL_TYPES_DEFINE(minus);
-BINARY_OP_ALL_TYPES_DEFINE(multiplies);
-BINARY_OP_ALL_TYPES_DEFINE(divides);
+    BINARY_OP_ALL_TYPES_DEFINE(add);
+
+    BINARY_OP_ALL_TYPES_DEFINE(minus);
+
+    BINARY_OP_ALL_TYPES_DEFINE(multiplies);
+
+    BINARY_OP_ALL_TYPES_DEFINE(divides);
 // % << >> & | ^
 // 位运算全部作为uint64，和mysql保持一致
-BINARY_OP_DEFINE(mod, int);
-BINARY_OP_DEFINE(mod, uint);
-BINARY_OP_DEFINE(left_shift, uint);
-BINARY_OP_DEFINE(right_shift, uint);
-BINARY_OP_DEFINE(bit_and, uint);
-BINARY_OP_DEFINE(bit_or, uint);
-BINARY_OP_DEFINE(bit_xor, uint);
+    BINARY_OP_DEFINE(mod, int);
+
+    BINARY_OP_DEFINE(mod, uint);
+
+    BINARY_OP_DEFINE(left_shift, uint);
+
+    BINARY_OP_DEFINE(right_shift, uint);
+
+    BINARY_OP_DEFINE(bit_and, uint);
+
+    BINARY_OP_DEFINE(bit_or, uint);
+
+    BINARY_OP_DEFINE(bit_xor, uint);
 // == != > >= < <=
-BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(eq);
-BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(ne);
-BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(gt);
-BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(ge);
-BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(lt);
-BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(le);
+    BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(eq);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(ne);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(gt);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(ge);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(lt);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_DEFINE(le);
 // && || xor
-BINARY_OP_DEFINE(logic_and, bool);
-BINARY_OP_DEFINE(logic_or, bool);
+    BINARY_OP_DEFINE(logic_and, bool);
+
+    BINARY_OP_DEFINE(logic_or, bool);
 //BINARY_OP_DEFINE(logic_xor, bool);
 }
 

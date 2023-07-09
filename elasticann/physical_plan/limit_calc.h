@@ -22,15 +22,16 @@
 #include "elasticann/exec/limit_node.h"
 
 namespace EA {
-class LimitCalc {
-public:
-    /* 从limit节点开始
-     * 每个节点limit值都置位offset+limit
-     * 直到filter、sort、merge_agg/agg
-     */
-    int analyze(QueryContext* ctx);
-private:
-    void _analyze_limit(QueryContext* ctx, ExecNode* node, int64_t limit);
-};
+    class LimitCalc {
+    public:
+        /* 从limit节点开始
+         * 每个节点limit值都置位offset+limit
+         * 直到filter、sort、merge_agg/agg
+         */
+        int analyze(QueryContext *ctx);
+
+    private:
+        void _analyze_limit(QueryContext *ctx, ExecNode *node, int64_t limit);
+    };
 }
 

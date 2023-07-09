@@ -29,6 +29,8 @@
 #include "elasticann/session/user_info.h"
 #include "elasticann/common/type_utils.h"
 #include "elasticann/common/common.h"
+#include "elasticann/logical_plan/query_context.h"
+#include "turbo/format/format.h"
 
 namespace EA {
 
@@ -107,7 +109,7 @@ namespace EA {
                 }
                 for (auto &pair: addr_callids_map[addr]) {
                     brpc::StartCancel(pair.second);
-                    DB_WARNING("cancel addr:%s, region_id: %ld, fd: %d", addr.c_str(), pair.first, fd);
+                    TLOG_WARN("cancel addr:{}, region_id: {}, fd: {}", addr.c_str(), pair.first, fd);
                 }
                 addr_callids_map[addr].clear();
             }
@@ -120,19 +122,19 @@ namespace EA {
 
         void insert_txn_tid(int64_t table_id) {
             BAIDU_SCOPED_LOCK(txn_tid_set_lock);
-            DB_DEBUG("insert tid %ld", table_id);
+            TLOG_DEBUG("insert tid {}", table_id);
             txn_table_id_set.insert(table_id);
         }
 
         bool is_txn_tid_exist(int64_t table_id) {
             BAIDU_SCOPED_LOCK(txn_tid_set_lock);
-            DB_DEBUG("is txn tid %ld exist", table_id);
+            TLOG_DEBUG("is txn tid {} exist", table_id);
             return txn_table_id_set.count(table_id) == 1;
         }
 
         void clear_txn_tid_set() {
             BAIDU_SCOPED_LOCK(txn_tid_set_lock);
-            DB_DEBUG("clear txn tid set");
+            TLOG_DEBUG("clear txn tid set");
             txn_table_id_set.clear();
         }
 
@@ -265,3 +267,13 @@ namespace EA {
     };
 
 } // namespace EA
+
+namespace fmt {
+    template<>
+    struct formatter<::EA::NetworkSocket> : public formatter<int> {
+        auto format(const ::EA::NetworkSocket &sock, format_context &ctx) const {
+            return fmt::format_to(ctx.out(), "user={} fd={} ip={} port={} errno={} log_id={}:", sock.username, sock.fd, sock.ip, sock.port,
+                                  sock.query_ctx->stat_info.error_code, sock.query_ctx->stat_info.log_id);
+        }
+    };
+}

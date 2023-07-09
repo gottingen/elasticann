@@ -36,12 +36,12 @@ public:
     PrivilegeManagerTest() {
         _rocksdb = EA::MetaRocksdb::get_instance();
         if (!_rocksdb) {
-            DB_FATAL("create rocksdb handler failed");
+            TLOG_ERROR("create rocksdb handler failed");
             return;
         }
         int ret = _rocksdb->init();
         if (ret != 0) {
-            DB_FATAL("rocksdb init failed: code:%d", ret);
+            TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return;
         }
         _query_privilege_manager = EA::QueryPrivilegeManager::get_instance();
@@ -91,7 +91,7 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -105,7 +105,7 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
 
     int64_t max_namespace_id = _namespace_manager->get_max_namespace_id();
@@ -148,10 +148,10 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_id_map.size());
@@ -162,10 +162,10 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -179,10 +179,10 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_id_map.size());
@@ -193,10 +193,10 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
 
     //测试点：创建table
@@ -256,19 +256,19 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _table_manager->_table_info_map.size());
 
     for (auto &table_mem: _table_manager->_table_info_map) {
-        DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
-        DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
+        TLOG_WARN("whether_level_table:{}", table_mem.second.whether_level_table);
+        TLOG_WARN("table_info:{}", table_mem.second.schema_pb.ShortDebugString().c_str());
         for (auto &partition_region: table_mem.second.partition_regions) {
-            DB_WARNING("partition_id: %ld", partition_region.first);
+            TLOG_WARN("partition_id: {}", partition_region.first);
             for (auto region_id: partition_region.second) {
-                DB_WARNING("region_id: %ld", region_id);
+                TLOG_WARN("region_id: {}", region_id);
             }
         }
         for (auto &field: table_mem.second.field_id_map) {
-            DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
+            TLOG_WARN("field_id:{}, field_name:{}", field.second, field.first.c_str());
         }
         for (auto &index: table_mem.second.index_id_map) {
-            DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
+            TLOG_WARN("index_id:{}, index_name:{}", index.second, index.first.c_str());
         }
     }
     _schema_manager->load_snapshot();
@@ -299,18 +299,18 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _table_manager->_table_info_map.size());
 
     for (auto &table_mem: _table_manager->_table_info_map) {
-        DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
-        DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
+        TLOG_WARN("whether_level_table:{}", table_mem.second.whether_level_table);
+        TLOG_WARN("table_info:{}", table_mem.second.schema_pb.ShortDebugString().c_str());
         for (auto &field: table_mem.second.field_id_map) {
-            DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
+            TLOG_WARN("field_id:{}, field_name:{}", field.second, field.first.c_str());
         }
         for (auto &index: table_mem.second.index_id_map) {
-            DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
+            TLOG_WARN("index_id:{}, index_name:{}", index.second, index.first.c_str());
         }
         for (auto &partition_region: table_mem.second.partition_regions) {
-            DB_WARNING("partition_id: %ld", partition_region.first);
+            TLOG_WARN("partition_id: {}", partition_region.first);
             for (auto region_id: partition_region.second) {
-                DB_WARNING("region_id: %ld", region_id);
+                TLOG_WARN("region_id: {}", region_id);
             }
         }
     }
@@ -375,18 +375,18 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map.size());
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map[1].schema_pb.version());
     for (auto &table_mem: _table_manager->_table_info_map) {
-        DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
-        DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
+        TLOG_WARN("whether_level_table:{}", table_mem.second.whether_level_table);
+        TLOG_WARN("table_info:{}", table_mem.second.schema_pb.ShortDebugString().c_str());
         for (auto &field: table_mem.second.field_id_map) {
-            DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
+            TLOG_WARN("field_id:{}, field_name:{}", field.second, field.first.c_str());
         }
         for (auto &index: table_mem.second.index_id_map) {
-            DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
+            TLOG_WARN("index_id:{}, index_name:{}", index.second, index.first.c_str());
         }
         for (auto &partition_region: table_mem.second.partition_regions) {
-            DB_WARNING("partition_id: %ld", partition_region.first);
+            TLOG_WARN("partition_id: {}", partition_region.first);
             for (auto region_id: partition_region.second) {
-                DB_WARNING("region_id: %ld", region_id);
+                TLOG_WARN("region_id: {}", region_id);
             }
         }
     }
@@ -421,18 +421,18 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _table_manager->_table_info_map[1].schema_pb.version());
 
     for (auto &table_mem: _table_manager->_table_info_map) {
-        DB_WARNING("whether_level_table:%d", table_mem.second.whether_level_table);
-        DB_WARNING("table_info:%s", table_mem.second.schema_pb.ShortDebugString().c_str());
+        TLOG_WARN("whether_level_table:{}", table_mem.second.whether_level_table);
+        TLOG_WARN("table_info:{}", table_mem.second.schema_pb.ShortDebugString().c_str());
         for (auto &field: table_mem.second.field_id_map) {
-            DB_WARNING("field_id:%d, field_name:%s", field.second, field.first.c_str());
+            TLOG_WARN("field_id:{}, field_name:{}", field.second, field.first.c_str());
         }
         for (auto &index: table_mem.second.index_id_map) {
-            DB_WARNING("index_id:%ld, index_name:%s", index.second, index.first.c_str());
+            TLOG_WARN("index_id:{}, index_name:{}", index.second, index.first.c_str());
         }
         for (auto &partition_region: table_mem.second.partition_regions) {
-            DB_WARNING("partition_id: %ld", partition_region.first);
+            TLOG_WARN("partition_id: {}", partition_region.first);
             for (auto region_id: partition_region.second) {
-                DB_WARNING("region_id: %ld", region_id);
+                TLOG_WARN("region_id: {}", region_id);
             }
         }
     }
@@ -453,13 +453,13 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     _privilege_manager->create_user(create_user_request, NULL);
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     _privilege_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     //test_point: test_query_priviege
@@ -467,22 +467,22 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     EA::proto::QueryResponse response;
     query_request.set_op_type(EA::proto::QUERY_USERPRIVILEG);
     _query_privilege_manager->get_user_info(&query_request, &response);
-    DB_WARNING("privilege info: %s", response.DebugString().c_str());
+    TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
     response.clear_user_privilege();
     query_request.set_user_name("thunder");
     _query_privilege_manager->get_user_info(&query_request, &response);
-    DB_WARNING("privilege info: %s", response.DebugString().c_str());
+    TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
     response.clear_user_privilege();
     query_request.set_op_type(EA::proto::QUERY_PRIVILEGE_FLATTEN);
     _query_privilege_manager->get_flatten_privilege(&query_request, &response);
-    DB_WARNING("privilege info: %s", response.DebugString().c_str());
+    TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
     response.clear_flatten_privileges();
     query_request.set_user_name("thunder");
     _query_privilege_manager->get_flatten_privilege(&query_request, &response);
-    DB_WARNING("privilege info: %s", response.DebugString().c_str());
+    TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
     //为用户添加权限
     EA::proto::MetaManagerRequest add_privilege_request;
@@ -506,13 +506,13 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     _privilege_manager->add_privilege(add_privilege_request, NULL);
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     _privilege_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
 
@@ -534,13 +534,13 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     _privilege_manager->drop_privilege(drop_privilege_request, NULL);
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     _privilege_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     //删除用户
@@ -551,13 +551,13 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     _privilege_manager->drop_user(drop_user_request, NULL);
     DOCTEST_REQUIRE_EQ(0, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     _privilege_manager->load_snapshot();
     DOCTEST_REQUIRE_EQ(0, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
-        DB_WARNING("user_name:%s, privilege:%s",
+        TLOG_WARN("user_name:{}, privilege:{}",
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
 

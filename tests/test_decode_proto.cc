@@ -185,37 +185,37 @@ void test_proto_invalid_field() {
     const google::protobuf::FieldDescriptor *field0 = descriptor->FindFieldByNumber(2);
     const google::protobuf::FieldDescriptor *field1 = descriptor->FindFieldByNumber(-1);
     const google::protobuf::FieldDescriptor *field2 = descriptor->FindFieldByNumber(20);
-    DB_WARNING("field0: %p, field1: %p, field2: %p", field0, field1, field2);
+    TLOG_WARN("field0: {}, field1: {}, field2: {}", turbo::Ptr(field0), turbo::Ptr(field1), turbo::Ptr(field2));
 
     if (!reflection->HasField(messages[0], field0)) {
-        DB_WARNING("has no field0");
+        TLOG_WARN("has no field0");
     } else {
-        DB_WARNING("has field0");
+        TLOG_WARN("has field0");
     }
 
     if (!reflection->HasField(messages[0], field1)) {
-        DB_WARNING("has no field1");
+        TLOG_WARN("has no field1");
     } else {
-        DB_WARNING("has field1");
+        TLOG_WARN("has field1");
     }
 
     if (!reflection->HasField(messages[0], field2)) {
-        DB_WARNING("has no field2");
+        TLOG_WARN("has no field2");
     } else {
-        DB_WARNING("has field2");
+        TLOG_WARN("has field2");
     }
 }
 
 int main(int argc, char **argv) {
     //baidu::rpc::StartDummyServerAt(8800);
-    DB_WARNING("thread num:%d", bthread::FLAGS_bthread_concurrency);
+    TLOG_WARN("thread num:{}", bthread::FLAGS_bthread_concurrency);
     sleep(10);
 
     int batch_cnt = 20;//std::stoi(argv[1]);
     int test_cnt = 100;//std::stoi(argv[2]);
     int use_arena = 4;//std::stoi(argv[3]);
     int th_cnt = 2; //std::stoi(argv[4]);
-    DB_WARNING("batch_cnt: %d, test_cnt: %d, %d", batch_cnt, test_cnt, use_arena);
+    TLOG_WARN("batch_cnt: {}, test_cnt: {}, {}", batch_cnt, test_cnt, use_arena);
 
     srand((unsigned) time(NULL));
 
@@ -225,14 +225,14 @@ int main(int argc, char **argv) {
     EA::TimeCost cost;
     BthreadCond cond;
     auto cal = [&]() {
-        DB_WARNING("start thread");
+        TLOG_WARN("start thread");
         google::protobuf::Arena *arena = nullptr;
         for (int idx = 0; idx < test_cnt; ++idx) {
             if (use_arena == 1) {
                 if (idx % batch_cnt == 0) {
                     if (arena) {
                         //auto pair = arena->SpaceAllocatedAndUsed();
-                        //DB_WARNING("allocated and used: %lu, %lu", pair.first, pair.second);
+                        //TLOG_WARN("allocated and used: {}, {}", pair.first, pair.second);
                     }
                     delete arena;
                     arena = new google::protobuf::Arena(/*option*/);
@@ -245,11 +245,11 @@ int main(int argc, char **argv) {
                 gen_data(message, idx);
                 delete message;
             }
-            //DB_WARNING("finish batch: %d", idx);
+            //TLOG_WARN("finish batch: {}", idx);
         }
         delete arena;
         cond.decrease_signal();
-        DB_WARNING("end thread");
+        TLOG_WARN("end thread");
     };
     for (int i = 0; i < th_cnt; i++) {
         Bthread bth(&BTHREAD_ATTR_SMALL);
@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
     }
     cond.wait();
 
-    DB_WARNING("time cost decode: %ld", cost.get_time());
+    TLOG_WARN("time cost decode: {}", cost.get_time());
 
     return 0;
 }

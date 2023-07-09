@@ -21,18 +21,22 @@
 #include "elasticann/exec/exec_node.h"
 
 namespace EA {
-class KillNode : public ExecNode {
-public:
-    KillNode() {
-    }
-    virtual ~KillNode() {
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int open(RuntimeState* state);
-private:
-    uint64_t _db_conn_id = 0;
-    bool _is_query = 0;
-};
+    class KillNode : public ExecNode {
+    public:
+        KillNode() {
+        }
+
+        virtual ~KillNode() {
+        }
+
+        virtual int init(const proto::PlanNode &node);
+
+        virtual int open(RuntimeState *state);
+
+    private:
+        uint64_t _db_conn_id = 0;
+        bool _is_query = 0;
+    };
 
 }
 

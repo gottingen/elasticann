@@ -235,7 +235,7 @@ namespace EA {
 
     template<class Charset>
     std::optional<bool> LikePredicate::like(const std::string &target, const std::string &pattern) {
-        DB_DEBUG("process %s %s ", target.c_str(), pattern.c_str());
+        TLOG_DEBUG("process {} {} ", target.c_str(), pattern.c_str());
         size_t tx = 0, px = 0, ntx = 0, npx = 0;
         const static rocksdb::Slice under_score("_", 1);
         const static rocksdb::Slice percent("%", 1);
@@ -248,7 +248,7 @@ namespace EA {
                 if (p_point.size() == 0) {
                     return std::nullopt;
                 }
-                DB_DEBUG("get pattern %s", p_point.ToString().c_str());
+                TLOG_DEBUG("get pattern {}", p_point.ToString().c_str());
                 if (p_point.compare(under_score) == 0) {
                     if (tx < target.size()) {
                         size_t t_offset = 1;
@@ -276,14 +276,14 @@ namespace EA {
                     if (p_point.compare(escape) == 0 && px + escape.size() < pattern.size()) {
                         px += escape.size();
                         p_point = pattern_charset.next_code_point(px);
-                        DB_DEBUG("get pattern %s", p_point.ToString().c_str());
+                        TLOG_DEBUG("get pattern {}", p_point.ToString().c_str());
                         if (p_point.size() == 0) {
                             return std::nullopt;
                         }
                     }
                     if (tx < target.size()) {
                         auto t_point = target_charset.next_code_point(tx);
-                        DB_DEBUG("get target pattern %s", t_point.ToString().c_str());
+                        TLOG_DEBUG("get target pattern {}", t_point.ToString().c_str());
                         if (t_point.size() == 0) {
                             return std::nullopt;
                         }

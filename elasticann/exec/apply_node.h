@@ -16,6 +16,7 @@
 
 
 #pragma once
+
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/exec/joiner.h"
 #include "elasticann/common/mut_table_key.h"
@@ -24,51 +25,66 @@
 
 namespace EA {
 
-class ApplyNode : public Joiner {
-public:
-    ApplyNode() {
-    }
-    virtual  ~ApplyNode() { }
+    class ApplyNode : public Joiner {
+    public:
+        ApplyNode() {
+        }
 
-    virtual int init(const proto::PlanNode& node);
-    virtual int predicate_pushdown(std::vector<ExprNode*>& input_exprs);
-    virtual void transfer_pb(int64_t region_id, proto::PlanNode* pb_node);
-    virtual int open(RuntimeState* state);
-    virtual int get_next(RuntimeState* state, RowBatch* batch, bool* eos);
+        virtual  ~ApplyNode() {}
 
-    void decorrelate();
+        virtual int init(const proto::PlanNode &node);
 
-    int check_unique_key(RuntimeState* state, const std::map<int32_t, std::set<int32_t>>& tuple_field_ids);
+        virtual int predicate_pushdown(std::vector<ExprNode *> &input_exprs);
 
-    bool is_correlate_expr(ExprNode* expr, bool& is_equal);
+        virtual void transfer_pb(int64_t region_id, proto::PlanNode *pb_node);
 
-    void get_slot_ref_sign_set(RuntimeState* state, std::set<int64_t>& sign_set);
+        virtual int open(RuntimeState *state);
 
-private:
-    void extract_eq_inner_slots(ExprNode* expr_node);
-    int hash_apply(RuntimeState* state);
-    int loop_hash_apply(RuntimeState* state);
-    int nested_loop_apply(RuntimeState* state);
-    int fetcher_inner_table_data(RuntimeState* state,
-                            MemRow* outer_tuple_data,
-                            std::vector<ExecNode*>& scan_nodes,
-                            std::vector<MemRow*>& inner_tuple_data);
-    int get_next_via_inner_hash_map(RuntimeState* state, RowBatch* batch, bool* eos);
-    int get_next_via_outer_hash_map(RuntimeState* state, RowBatch* batch, bool* eos);
-    int get_next_via_loop_outer_hash_map(RuntimeState* state, RowBatch* batch, bool* eos);
-    int get_next_for_nested_loop_join(RuntimeState* state, RowBatch* batch, bool* eos);
-    inline int get_loop_num() {
-        return _parent->get_limit() * std::pow(2, _loops);
-    }
-private:
-    bool    _max_one_row = false;
-    bool    _has_matched = false;
-    bool    _all_matched = true;
-    bool    _is_select_field = false;
-    std::map<int64_t, std::vector<ExprNode*>> _literal_maps;
-    std::set<int64_t> _slot_ref_sign_set;
-    std::vector<ExecNode*> _scan_nodes;
-    std::vector<SlotRef*> _inner_eq_slot_refs;
-};
+        virtual int get_next(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        void decorrelate();
+
+        int check_unique_key(RuntimeState *state, const std::map<int32_t, std::set<int32_t>> &tuple_field_ids);
+
+        bool is_correlate_expr(ExprNode *expr, bool &is_equal);
+
+        void get_slot_ref_sign_set(RuntimeState *state, std::set<int64_t> &sign_set);
+
+    private:
+        void extract_eq_inner_slots(ExprNode *expr_node);
+
+        int hash_apply(RuntimeState *state);
+
+        int loop_hash_apply(RuntimeState *state);
+
+        int nested_loop_apply(RuntimeState *state);
+
+        int fetcher_inner_table_data(RuntimeState *state,
+                                     MemRow *outer_tuple_data,
+                                     std::vector<ExecNode *> &scan_nodes,
+                                     std::vector<MemRow *> &inner_tuple_data);
+
+        int get_next_via_inner_hash_map(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        int get_next_via_outer_hash_map(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        int get_next_via_loop_outer_hash_map(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        int get_next_for_nested_loop_join(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        inline int get_loop_num() {
+            return _parent->get_limit() * std::pow(2, _loops);
+        }
+
+    private:
+        bool _max_one_row = false;
+        bool _has_matched = false;
+        bool _all_matched = true;
+        bool _is_select_field = false;
+        std::map<int64_t, std::vector<ExprNode *>> _literal_maps;
+        std::set<int64_t> _slot_ref_sign_set;
+        std::vector<ExecNode *> _scan_nodes;
+        std::vector<SlotRef *> _inner_eq_slot_refs;
+    };
 }
 

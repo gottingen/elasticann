@@ -309,7 +309,7 @@ namespace EA {
                 if (it->second.ts == begin_ts) {
                     if (it->second.time.get_time() > FLAGS_binlog_warn_timeout_minute * 60 * 1000 * 1000LL) {
                         // 长时间一直访问一个ts需要报警
-                        DB_WARNING("region_id: %ld, remote_side: %s, ts: %ld, read begin ts for a long time", region_id,
+                        TLOG_WARN("region_id: {}, remote_side: {}, ts: {}, read begin ts for a long time", region_id,
                                    ip.c_str(), begin_ts);
                     }
                 } else {
@@ -397,7 +397,7 @@ namespace EA {
             if (_shutdown.compare_exchange_strong(expected_status, true)) {
                 is_learner() ? _learner->shutdown(nullptr) : _node.shutdown(nullptr);
                 _init_success = false;
-                DB_WARNING("raft node was shutdown, region_id: %ld", _region_id);
+                TLOG_WARN("raft node was shutdown, region_id: {}", _region_id);
             }
         }
 
@@ -407,11 +407,11 @@ namespace EA {
 
         void join() {
             is_learner() ? _learner->join() : _node.join();
-            DB_WARNING("raft node join completely, region_id: %ld", _region_id);
+            TLOG_WARN("raft node join completely, region_id: {}", _region_id);
             _real_writing_cond.wait();
             _disable_write_cond.wait();
             _multi_thread_cond.wait();
-            DB_WARNING("_multi_thread_cond wait success, region_id: %ld", _region_id);
+            TLOG_WARN("_multi_thread_cond wait success, region_id: {}", _region_id);
             _txn_pool.close();
         }
 
@@ -461,7 +461,7 @@ namespace EA {
 
         void wait_table_info() {
             while (!_factory->exist_tableid(get_table_id())) {
-                DB_WARNING("region_id: %ld wait for table_info: %ld", _region_id, get_table_id());
+                TLOG_WARN("region_id: {} wait for table_info: {}", _region_id, get_table_id());
                 bthread_usleep(1000 * 1000);
             }
         }
@@ -580,7 +580,7 @@ namespace EA {
                 return;
             }
             _is_leader.store(_node.is_leader());
-            DB_WARNING("region_id: %ld, is_leader:%d", _region_id, _is_leader.load());
+            TLOG_WARN("region_id: {}, is_leader:{}", _region_id, _is_leader.load());
         }
 
         int transfer_leader_to(const braft::PeerId &peer) {
@@ -883,7 +883,7 @@ namespace EA {
             _is_leader.store(true);
             _not_leader_alarm.reset();
             _expected_term = term;
-            DB_WARNING("leader real start, region_id: %ld term: %ld", _region_id, term);
+            TLOG_WARN("leader real start, region_id: {} term: {}", _region_id, term);
         }
 
         int64_t get_version() {
@@ -920,7 +920,7 @@ namespace EA {
             if (_legal_region) {
                 std::lock_guard<std::mutex> lock_region(_region_lock);
                 _region_info.set_version(1);
-                DB_WARNING("compare and set split verison to 1, region_id: %ld", _region_id);
+                TLOG_WARN("compare and set split verison to 1, region_id: {}", _region_id);
                 return true;
             }
             return false;
@@ -966,14 +966,14 @@ namespace EA {
         void set_num_table_lines(int64_t table_line) {
             MetaWriter::get_instance()->update_num_table_lines(_region_id, table_line);
             _num_table_lines.store(table_line);
-            DB_WARNING("region_id: %ld, table_line:%ld", _region_id, _num_table_lines.load());
+            TLOG_WARN("region_id: {}, table_line:{}", _region_id, _num_table_lines.load());
         }
 
         void add_num_table_lines(int64_t row_line) {
             int64_t table_line = _num_table_lines.load() + row_line;
             MetaWriter::get_instance()->update_num_table_lines(_region_id, table_line);
             _num_table_lines.store(table_line);
-            DB_WARNING("region_id: %ld, table_line:%ld", _region_id, _num_table_lines.load());
+            TLOG_WARN("region_id: {}, table_line:{}", _region_id, _num_table_lines.load());
         }
 
         bool removed() const {
@@ -1007,7 +1007,7 @@ namespace EA {
                 wait_time = _split_param.split_slow_down_cost * 10;
             }
             if (wait_time > 30 * 1000 * 1000LL) {
-                //DB_WARNING("split wait time exceed 30s, region_id: %ld", _region_id);
+                //TLOG_WARN("split wait time exceed 30s, region_id: {}", _region_id);
                 wait_time = 30 * 1000 * 1000LL;
             }
             return wait_time;
@@ -1075,7 +1075,7 @@ namespace EA {
                     _online_ttl_base_expire_time_us = ttl_info.online_ttl_expire_time_us;
                     _use_ttl = true;
                     _txn_pool.update_ttl_info(_use_ttl, _online_ttl_base_expire_time_us);
-                    DB_WARNING("table_id: %ld, region_id: %ld, ttl_duration_s: %ld, online_ttl_expire_time_us: %ld, %s",
+                    TLOG_WARN("table_id: {}, region_id: {}, ttl_duration_s: {}, online_ttl_expire_time_us: {}, {}",
                                get_table_id(), _region_id, ttl_info.ttl_duration_s,
                                ttl_info.online_ttl_expire_time_us,
                                timestamp_to_str(ttl_info.online_ttl_expire_time_us / 1000000).c_str());
@@ -1102,7 +1102,7 @@ namespace EA {
                     for (auto &pair: state_map) {
                         if (pair.second->sign == sign) {
                             pair.second->cancel();
-                            DB_WARNING("region_id: %ld, runtime:%p cancel", _region_id, pair.second.get());
+                            TLOG_WARN("region_id: {}, runtime:{} cancel", _region_id, turbo::Ptr(pair.second.get()));
                         }
                     }
                 }
@@ -1126,7 +1126,7 @@ namespace EA {
             Bthread bth(&BTHREAD_ATTR_SMALL);
             std::function<void()> remove_region_function =
                     [this, drop_region_id, instance_address]() {
-                        DB_WARNING("remove region: %lu, peer: %s", drop_region_id, instance_address.c_str());
+                        TLOG_WARN("remove region: {}, peer: {}", drop_region_id, instance_address.c_str());
                         _multi_thread_cond.increase();
                         RpcSender::send_remove_region_method(drop_region_id, instance_address);
                         _multi_thread_cond.decrease_signal();
@@ -1484,7 +1484,7 @@ namespace EA {
                         _region_id, region_info.end_key(),
                         _use_ttl, _online_ttl_base_expire_time_us);
             }
-            DB_WARNING("region_id: %ld, start_key: %s, end_key: %s", _region_id,
+            TLOG_WARN("region_id: {}, start_key: {}, end_key: {}", _region_id,
                        rocksdb::Slice(region_info.start_key()).ToString(true).c_str(),
                        rocksdb::Slice(region_info.end_key()).ToString(true).c_str());
         }
@@ -1497,7 +1497,7 @@ namespace EA {
                     return false;
                 }
                 if (cost.get_time() > 60 * 1000 * 1000) {
-                    DB_WARNING("region_id: %ld wait for rocksdb stall", _region_id);
+                    TLOG_WARN("region_id: {} wait for rocksdb stall", _region_id);
                     cost.reset();
                 }
                 reset_timecost();
@@ -1545,7 +1545,7 @@ namespace EA {
         void update_streaming_result(brpc::StreamId id, proto::StreamState state) {
             BAIDU_SCOPED_LOCK(_streaming_result.mutex);
             if (_streaming_result.last_update_time.get_time() > 3600 * 1000 * 1000LL) {
-                DB_WARNING("clean streaming result");
+                TLOG_WARN("clean streaming result");
                 _streaming_result.state.clear();
             }
             _streaming_result.state[id] = state;

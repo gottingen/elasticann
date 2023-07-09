@@ -16,6 +16,7 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
+
 #include "tests/doctest/doctest.h"
 
 #include "elasticann/meta_server/auto_incr_state_machine.h"

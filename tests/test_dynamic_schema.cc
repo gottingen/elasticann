@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
     EA::TimeCost cost;
     //val_encoder->reload_schema_test(info, row_cnt);
-    DB_NOTICE("reload_schema cost: %lu", cost.get_time());
+    TLOG_INFO("reload_schema cost: {}", cost.get_time());
     cost.reset();
 
     return 0;
@@ -106,13 +106,13 @@ int main(int argc, char* argv[]) {
         }
         //rows_vec.push_back(record);
     }
-    DB_NOTICE("set_field cost: %lu", cost.get_time());
+    TLOG_INFO("set_field cost: {}", cost.get_time());
     cost.reset();
 
     std::vector<EA::FieldInfo> infos;
     auto res = val_encoder->get_index_fields(1, infos);
     if (res == -1) {
-        DB_WARNING("get pk fields failed: %lu", 1);
+        TLOG_WARN("get pk fields failed: {}", 1);
         return -1;
     }
     for (auto info : infos) {
@@ -131,14 +131,14 @@ int main(int argc, char* argv[]) {
     std::string message_str;
     int res = record->encode(message_str);
     assert(res == true);
-    DB_NOTICE("encode_fields cost: %lu", cost.get_time());
+    TLOG_INFO("encode_fields cost: {}", cost.get_time());
     cost.reset();
 
     auto out_record = val_encoder->create_record_by_tableid(1);
     res = out_record->decode(message_str);
     assert(res == true);
 
-    DB_NOTICE("decode_fields cost: %lu", cost.get_time());
+    TLOG_INFO("decode_fields cost: {}", cost.get_time());
     cost.reset();
 
     std::cout << "sizeof(float): " << sizeof(float) << std::endl;

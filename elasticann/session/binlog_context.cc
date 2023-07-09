@@ -32,13 +32,13 @@ int64_t TsoFetcher::get_tso() {
                 bthread_usleep(tso::update_timestamp_interval_ms * 1000LL);
                 continue;  
             } else {
-                DB_FATAL("get tso failed, response:%s", response.ShortDebugString().c_str());
+                TLOG_ERROR("get tso failed, response:{}", response.ShortDebugString().c_str());
                 return ret;
             }
         }
         break;
     }
-    //DB_WARNING("response:%s", response.ShortDebugString().c_str());
+    //TLOG_WARN("response:{}", response.ShortDebugString().c_str());
     auto&  tso = response.start_timestamp();
     int64_t timestamp = (tso.physical() << tso::logical_bits) + tso.logical();
 
@@ -47,11 +47,11 @@ int64_t TsoFetcher::get_tso() {
 
 int BinlogContext::get_binlog_regions(uint64_t log_id) {
     if (_table_info == nullptr || _partition_record == nullptr) {
-        DB_WARNING("wrong state log_id:%lu", log_id);
+        TLOG_WARN("wrong state log_id:{}", log_id);
         return -1;
     }
     if (!_table_info->is_linked) {
-        DB_WARNING("table %ld not link to binlog table log_id:%lu", _table_info->id, log_id);
+        TLOG_WARN("table {} not link to binlog table log_id:{}", _table_info->id, log_id);
         return -1;      
     }
     int ret = 0;
@@ -66,7 +66,7 @@ int BinlogContext::get_binlog_regions(uint64_t log_id) {
     }
 
     if (ret < 0) {
-        DB_WARNING("get binlog region failed table_id: %ld log_id:%lu",
+        TLOG_WARN("get binlog region failed table_id: {} log_id:{}",
             _table_info->id, log_id);
         return -1;
     }

@@ -24,31 +24,35 @@
 
 namespace EA {
 
-class UpdatePlanner : public LogicalPlanner {
-public:
-    UpdatePlanner(QueryContext* ctx) : 
-        LogicalPlanner(ctx), 
-        _limit_count(-1) {}
+    class UpdatePlanner : public LogicalPlanner {
+    public:
+        UpdatePlanner(QueryContext *ctx) :
+                LogicalPlanner(ctx),
+                _limit_count(-1) {}
 
-    virtual ~UpdatePlanner() {}
-    virtual int plan();
+        virtual ~UpdatePlanner() {}
 
-private:
+        virtual int plan();
 
-    int create_update_node(proto::PlanNode* update_node);
+    private:
 
-    // method to parse SQL parts
-    int parse_kv_list();
-    int parse_where();
-    int parse_orderby();
-    int parse_limit();
+        int create_update_node(proto::PlanNode *update_node);
 
-private:
-    parser::UpdateStmt*                 _update;
-    std::vector<proto::Expr>               _where_filters;
-    int32_t                             _limit_count;
-    std::vector<proto::SlotDescriptor>     _update_slots;
-    std::vector<proto::Expr>               _update_values;
-};
+        // method to parse SQL parts
+        int parse_kv_list();
+
+        int parse_where();
+
+        int parse_orderby();
+
+        int parse_limit();
+
+    private:
+        parser::UpdateStmt *_update;
+        std::vector<proto::Expr> _where_filters;
+        int32_t _limit_count;
+        std::vector<proto::SlotDescriptor> _update_slots;
+        std::vector<proto::Expr> _update_values;
+    };
 } //namespace EA
 

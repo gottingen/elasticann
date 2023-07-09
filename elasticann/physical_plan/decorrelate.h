@@ -40,4 +40,4 @@ namespace EA {
             return 0;
         }
     };
-}
+}  // namespace EA

@@ -26,12 +26,12 @@ int DMLNode::expr_optimize(QueryContext* ctx) {
     int ret = 0;
     ret = ExecNode::expr_optimize(ctx);
     if (ret < 0) {
-        DB_WARNING("expr type_inferer fail:%d", ret);
+        TLOG_WARN("expr type_inferer fail:{}", ret);
         return ret;
     }
     ret = common_expr_optimize(&_update_exprs);
     if (ret < 0) {
-        DB_WARNING("common_expr_optimize fail");
+        TLOG_WARN("common_expr_optimize fail");
         return ret;
     }
     return 0;
@@ -56,12 +56,12 @@ int DMLNode::init_schema_info(RuntimeState* state) {
     _region_id = state->region_id();
     _table_info = SchemaFactory::get_instance()->get_table_info_ptr(_table_id); 
     if (_table_info == nullptr) {
-        DB_WARNING("get table info failed table_id: %ld", _table_id);
+        TLOG_WARN("get table info failed table_id: {}", _table_id);
         return -1;
     }
     _pri_info = SchemaFactory::get_instance()->get_index_info_ptr(_table_id);
     if (_pri_info == nullptr) {
-        DB_WARNING("get primary index info failed table_id: %ld", _table_id);
+        TLOG_WARN("get primary index info failed table_id: {}", _table_id);
         return -1;
     }
 
@@ -69,14 +69,14 @@ int DMLNode::init_schema_info(RuntimeState* state) {
     if (ttl_duration > 0) {
         _ttl_timestamp_us = butil::gettimeofday_us() + ttl_duration * 1000 * 1000LL;
     }
-    DB_DEBUG("table_id: %ld, region_id: %ld, _row_ttl_duration: %ld, table ttl duration: %ld", 
+    TLOG_DEBUG("table_id: {}, region_id: {}, _row_ttl_duration: {}, table ttl duration: {}", 
         _table_id, _region_id, _row_ttl_duration, _table_info->ttl_info.ttl_duration_s);
     bool ttl = ttl_duration > 0;
 
     if (_global_index_id != 0) {
         _global_index_info = SchemaFactory::get_instance()->get_index_info_ptr(_global_index_id);
         if (_global_index_info == nullptr) {
-            DB_WARNING("get global index info failed _global_index_id: %ld", _global_index_id);
+            TLOG_WARN("get global index info failed _global_index_id: {}", _global_index_id);
             return -1;
         }
     }
@@ -88,7 +88,7 @@ int DMLNode::init_schema_info(RuntimeState* state) {
         for (auto index_id : _table_info->indices) {
             auto index_info = SchemaFactory::get_instance()->get_index_info_ptr(index_id);
             if (index_info == nullptr) {
-                DB_WARNING("get index info failed index_id: %ld", index_id);
+                TLOG_WARN("get index info failed index_id: {}", index_id);
                 return -1;
             }
             if (index_info->type == proto::I_FULLTEXT) {
@@ -103,7 +103,7 @@ int DMLNode::init_schema_info(RuntimeState* state) {
         }
         // db认为需要写入,store还未同步ddl信息,写失败处理
         if (_ddl_need_write && !ddl_index_id_synced) {
-            DB_WARNING("table_id:%ld ddl index info not found index:%ld", _table_id, _ddl_index_id);
+            TLOG_WARN("table_id:{} ddl index info not found index:{}", _table_id, _ddl_index_id);
             return -1;
         }
     }
@@ -132,14 +132,14 @@ int DMLNode::init_schema_info(RuntimeState* state) {
     }
     _txn = state->txn();
     if (_txn == nullptr) {
-        DB_WARNING_STATE(state, "txn is nullptr: region:%ld", _region_id);
+        TLOG_WARN("{}, txn is nullptr: region:{}", *state,_region_id);
         return -1;
     }
     if (_node_type == proto::UPDATE_NODE || _node_type == proto::DELETE_NODE || _node_type == proto::LOCK_PRIMARY_NODE) {
         if (state->tuple_id >= 0) {
             _tuple_desc = state->get_tuple_desc(state->tuple_id);
             if (_tuple_desc == nullptr) {
-                DB_WARNING_STATE(state, "_tuple_desc nullptr: tuple_id:%d", state->tuple_id);
+                TLOG_WARN("{}, _tuple_desc nullptr: tuple_id:{}", *state, state->tuple_id);
                 return -1;
             }
             add_delete_conditon_fields();
@@ -202,7 +202,7 @@ int DMLNode::init_schema_info(RuntimeState* state) {
 
 int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update) {
     _ignore_index_ids.clear();
-    //DB_WARNING_STATE(state, "insert record: %s", record->debug_string().c_str());
+    //TLOG_WARN("{}, insert record: {}", *state,record->debug_string().c_str());
     int ret = 0;
     int affected_rows = 0;
     // update更新部分索引，会在update_row里指定索引
@@ -225,16 +225,16 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
                 auto field = record->get_field_by_tag(slot.field_id());
                 _dup_update_row->set_value(slot.tuple_id(), slot.slot_id(),
                         record->get_value(field));
-                //DB_WARNING_STATE(state, "_on_dup_key_update: tuple:%d slot:%d %d", slot.tuple_id(), slot.slot_id(), record->get_value(field).get_numberic<int32_t>());
+                //TLOG_WARN("{}, _on_dup_key_update: tuple:{} slot:{} {}", *state,slot.tuple_id(), slot.slot_id(), record->get_value(field).get_numberic<int32_t>());
             }
         }
     }
     _txn->set_write_ttl_timestamp_us(_ttl_timestamp_us);
-    DB_DEBUG("ttl_timestamp_us: %ld", _ttl_timestamp_us);
+    TLOG_DEBUG("ttl_timestamp_us: {}", _ttl_timestamp_us);
     MutTableKey pk_key;
     ret = record->encode_key(*_pri_info, pk_key, -1, false);
     if (ret < 0) {
-        DB_WARNING_STATE(state, "encode key failed, ret:%d", ret);
+        TLOG_WARN("{}, encode key failed, ret:{}", *state,ret);
         return ret;
     }
     std::string pk_str = pk_key.data();
@@ -251,7 +251,7 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
             ret = _txn->get_update_primary(_region_id, *_pri_info, old_record, _field_ids, GET_LOCK, true);
         }
         if (ret == -3) {
-            //DB_WARNING_STATE(state, "key not in this region:%ld, %s", _region_id, record->to_string().c_str());
+            //TLOG_WARN("{}, key not in this region:{}, {}", *state,_region_id, record->to_string().c_str());
             return 0;
         }
         if (ret == -4) {
@@ -264,8 +264,8 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
                     return 0;
                 }
                 if (is_update) {
-                    DB_WARNING_STATE(state, "update new primary row must not exist, "
-                            "index:%ld, ret:%d", _table_id, ret);
+                    TLOG_WARN("{}, update new primary row must not exist, "
+                            "index:{}, ret:{}", *state,_table_id, ret);
                     state->error_code = ER_DUP_ENTRY;
                     state->error_msg << "Duplicate entry: '" << 
                         old_record->get_index_value(*_pri_info) << "' for key 'PRIMARY'";
@@ -290,7 +290,7 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
                     // 对于主键replace，可以不删除旧数据，直接用新数据覆盖
                     ret = remove_row(state, old_record, pk_str, false);
                     if (ret < 0) {
-                        DB_WARNING_STATE(state, "remove fail, table_id:%ld ,ret:%d", _table_id, ret);
+                        TLOG_WARN("{}, remove fail, table_id:{} ,ret:{}", *state,_table_id, ret);
                         return -1;
                     }
                     if (_local_index_binlog) {
@@ -299,14 +299,14 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
                     cstore_update_fields_partly = true;
                     ++affected_rows;
                 } else {
-                    DB_WARNING_STATE(state, "insert row must not exist, index:%ld, ret:%d", _table_id, ret);
+                    TLOG_WARN("{}, insert row must not exist, index:{}, ret:{}", *state,_table_id, ret);
                     state->error_code = ER_DUP_ENTRY;
                     state->error_msg << "Duplicate entry: '" << 
                         old_record->get_index_value(*_pri_info) << "' for key 'PRIMARY'";
                     return -1;
                 }
             } else {
-                DB_WARNING_STATE(state, "insert row rocksdb error, index:%ld, ret:%d", _table_id, ret);
+                TLOG_WARN("{}, insert row rocksdb error, index:{}, ret:{}", *state,_table_id, ret);
                 if (ret == -5) {
                     state->error_code = ER_LOCK_WAIT_TIMEOUT;
                     state->error_msg << "Lock '" << 
@@ -322,12 +322,12 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
         IndexInfo& info = *info_ptr;
 
         auto index_state = info.state;
-        //DB_DEBUG("dml_insert_record prime+index string[%s] state[%s] index_id[%ld] index_name[%s] region_%ld", 
+        //TLOG_DEBUG("dml_insert_record prime+index string[{}] state[{}] index_id[{}] index_name[{}] region_{}", 
         //    record->to_string().c_str(), proto::IndexState_Name(index_state).c_str(), info.id, info.name.c_str(), _region_id);
 
         if (!_ddl_need_write && (index_state != proto::IS_PUBLIC && index_state != proto::IS_WRITE_ONLY &&
             index_state != proto::IS_WRITE_LOCAL)) {
-            DB_DEBUG("DDL_LOG skip index [%ld] state [%s] ", 
+            TLOG_DEBUG("DDL_LOG skip index [{}] state [{}] ", 
                 info.id, proto::IndexState_Name(index_state).c_str());
             continue;
         }
@@ -343,8 +343,8 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
         ret = _txn->get_update_secondary(_region_id, *_pri_info, info, old_record, GET_LOCK, true);
         if (ret == 0) {
             if (is_update) {
-                DB_WARNING_STATE(state, "update uniq key must not exist, "
-                        "index:%ld, ret:%d", info.id, ret);
+                TLOG_WARN("{}, update uniq key must not exist, "
+                        "index:{}, ret:{}", *state, info.id, ret);
                 state->error_code = ER_DUP_ENTRY;
                 state->error_msg << "Duplicate entry: '" << 
                     old_record->get_index_value(info) << "' for key '" << info.short_name << "'";
@@ -360,14 +360,14 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
             } else if (_is_replace) {
                 ret = delete_row(state, old_record, nullptr);
                 if (ret < 0) {
-                    DB_WARNING_STATE(state, "remove fail, index:%ld ,ret:%d", info.id, ret);
+                    TLOG_WARN("{}, remove fail, index:{} ,ret:{}", *state,info.id, ret);
                     return -1;
                 }
                 ++affected_rows;
                 continue;
             } else {
-                DB_WARNING_STATE(state, "insert uniq key must not exist, "
-                        "index:%ld, ret:%d", info.id, ret);
+                TLOG_WARN("{}, insert uniq key must not exist, "
+                        "index:{}, ret:{}", *state,info.id, ret);
                 state->error_code = ER_DUP_ENTRY;
                 state->error_msg << "Duplicate entry: '" << 
                     old_record->get_index_value(info) << "' for key '" << info.short_name << "'";
@@ -381,13 +381,13 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
                 state->error_code = ER_LOCK_WAIT_TIMEOUT;
                 state->error_msg << "Lock '" << 
                      old_record->get_index_value(info) << "' for key '" << info.short_name << "' Timeout";
-                DB_WARNING_STATE(state, "insert rocksdb get lock failed, index:%ld, ret:%d", info.id, ret);
+                TLOG_WARN("{}, insert rocksdb get lock failed, index:{}, ret:{}", *state,info.id, ret);
                 return -1;
             }
             if (_need_ignore) {
                 return 0;
             }
-            DB_WARNING_STATE(state, "insert rocksdb failed, index:%ld, ret:%d", info.id, ret);
+            TLOG_WARN("{}, insert rocksdb failed, index:{}, ret:{}", *state,info.id, ret);
             return -1;
         }
     }
@@ -402,13 +402,13 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
         auto index_state = info.state;
         if (!_ddl_need_write && (index_state != proto::IS_PUBLIC && index_state != proto::IS_WRITE_ONLY &&
             index_state != proto::IS_WRITE_LOCAL)) {
-            DB_DEBUG("DDL_LOG skip index [%ld] state [%s] ", 
+            TLOG_DEBUG("DDL_LOG skip index [{}] state [{}] ", 
                 info.id, proto::IndexState_Name(index_state).c_str());
             continue;
         }
         // 全文索引信息未同步到store,写失败处理
         if (_ddl_need_write && info.type == proto::I_FULLTEXT && reverse_index_map.count(info.id) == 0) {
-            DB_WARNING_STATE(state, "table_id:%ld full index info not found index:%ld", _table_id, info.id);
+            TLOG_WARN("{}, table_id:{} full index info not found index:{}",*state, _table_id, info.id);
             return -1;
         }
         if (reverse_index_map.count(info.id) == 1) {
@@ -423,11 +423,11 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
             std::string word;
             ret = record->get_reverse_word(info, word);
             if (ret < 0) {
-                DB_WARNING_STATE(state, "index_info to word fail for index_id: %ld", 
+                TLOG_WARN("{}, index_info to word fail for index_id: {}", *state,
                                  info.id);
                 return ret;
             }
-            //DB_NOTICE("word:%s", str_to_hex(word).c_str());
+            //TLOG_INFO("word:{}", str_to_hex(word).c_str());
             ret = reverse_index_map[info.id]->insert_reverse(_txn, 
                                                             word, pk_str, record);
             if (ret < 0) {
@@ -437,7 +437,7 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
         }
         ret = _txn->put_secondary(_region_id, info, record);
         if (ret < 0) {
-            DB_WARNING_STATE(state, "put index:%ld fail:%d, table_id:%ld", info.id, ret, _table_id);
+            TLOG_WARN("{}, put index:{} fail:{}, table_id:{}", *state, info.id, ret, _table_id);
             return ret;
         }
     }
@@ -450,10 +450,10 @@ int DMLNode::insert_row(RuntimeState* state, SmartRecord record, bool is_update)
     ret = _txn->put_primary(_region_id, *_pri_info, record,
                             cstore_update_fields_partly ? &_update_field_ids : nullptr);
     if (ret < 0) {
-        DB_WARNING_STATE(state, "put table:%ld fail:%d", _table_id, ret);
+        TLOG_WARN("{}, put table:{} fail:{}", *state,_table_id, ret);
         return -1;
     }
-    //DB_WARNING_STATE(state, "insert succes:%ld, %s", _region_id, record->to_string().c_str());
+    //TLOG_WARN("{}, insert succes:{}, {}", *state, _region_id, record->to_string().c_str());
     if (need_increase) {
         ++_num_increase_rows;
     }
@@ -465,7 +465,7 @@ int DMLNode::get_lock_row(RuntimeState* state, SmartRecord record, std::string* 
     MutTableKey pk_key;
     ret = record->encode_key(*_pri_info, pk_key, -1, false);
     if (ret < 0) {
-        DB_WARNING_STATE(state, "encode key failed, ret:%d", ret);
+        TLOG_WARN("{}, encode key failed, ret:{}", *state,ret);
         return ret;
     }
     *pk_str = pk_key.data();
@@ -497,7 +497,7 @@ int DMLNode::remove_row(RuntimeState* state, SmartRecord record,
     if (delete_primary) {
         ret = _txn->remove(_region_id, *_pri_info, record);
         if (ret != 0) {
-            DB_WARNING_STATE(state, "remove fail, index:%ld ,ret:%d", _table_id, ret);
+            TLOG_WARN("{}, remove fail, index:{} ,ret:{}", *state,_table_id, ret);
             return -1;
         }
     }
@@ -512,7 +512,7 @@ int DMLNode::remove_row(RuntimeState* state, SmartRecord record,
         }
         auto index_state = info.state;
         if (index_state == proto::IS_NONE) {
-            DB_DEBUG("DDL_LOG skip index [%ld] state [%s] ", 
+            TLOG_DEBUG("DDL_LOG skip index [{}] state [{}] ", 
                 index_id, proto::IndexState_Name(index_state).c_str());
             continue;
         }
@@ -527,7 +527,7 @@ int DMLNode::remove_row(RuntimeState* state, SmartRecord record,
         if (reverse_index_map.count(info.id) == 1) {
             // inverted index only support single field
             if (info.id == -1 || info.fields.size() != 1) {
-                DB_WARNING_STATE(state, "indexinfo get fail, index_id:%ld", info.id);
+                TLOG_WARN("{}, indexinfo get fail, index_id:{}", *state,info.id);
                 return -1;
             }
             auto field = record->get_field_by_idx(info.fields[0].pb_idx);
@@ -537,7 +537,7 @@ int DMLNode::remove_row(RuntimeState* state, SmartRecord record,
             std::string word;
             ret = record->get_reverse_word(info, word);
             if (ret < 0) {
-                DB_WARNING_STATE(state, "index_info to word fail for index_id: %ld", info.id);
+                TLOG_WARN("{}, index_info to word fail for index_id: {}", *state,info.id);
                 return ret;
             }
             ret = reverse_index_map[info.id]->delete_reverse(_txn,
@@ -549,12 +549,12 @@ int DMLNode::remove_row(RuntimeState* state, SmartRecord record,
         }
         ret = _txn->get_update_secondary(_region_id, *_pri_info, info, record, LOCK_ONLY, false);
         if (ret != 0 && ret != -2) {
-            DB_WARNING_STATE(state, "lock fail, index:%ld, ret:%d", info.id, ret);
+            TLOG_WARN("{}, lock fail, index:{}, ret:{}",*state, info.id, ret);
             return -1;
         }
         ret = _txn->remove(_region_id, info, record);
         if (ret != 0) {
-            DB_WARNING_STATE(state, "remove index:%ld failed", info.id);
+            TLOG_WARN("{}, remove index:{} failed", *state,info.id);
             return -1;
         }
     }
@@ -570,17 +570,17 @@ int DMLNode::delete_row(RuntimeState* state, SmartRecord record, MemRow* row) {
     std::string pk_str;
     ret = get_lock_row(state, record, &pk_str, row);
     if (ret == -3) {
-        //DB_WARNING_STATE(state, "key not in this region:%ld", _region_id);
+        //TLOG_WARN("{}, key not in this region:{}", *state,_region_id);
         return 0;
     }else if (ret == -2 || ret == -4) {
         // deleted or expired
         return 0;
     } else if (ret != 0) {
-        DB_WARNING_STATE(state, "lock table:%ld failed", _table_id);
+        TLOG_WARN("{}, lock table:{} failed", *state,_table_id);
         return -1;
     }
     if (!satisfy_condition_again(state, row)) {
-        DB_WARNING_STATE(state, "condition changed when delete record:%s", record->debug_string().c_str());
+        TLOG_WARN("{}, condition changed when delete record:{}", *state,record->debug_string().c_str());
         // UndoGetForUpdate(pk_str)?
         return 0;
     }
@@ -606,17 +606,17 @@ int DMLNode::update_row(RuntimeState* state, SmartRecord record, MemRow* row) {
     std::string pk_str;
     ret = get_lock_row(state, record, &pk_str, row);
     if (ret == -3) {
-        //DB_WARNING_STATE(state, "key not in this region:%ld", _region_id);
+        //TLOG_WARN("{}, key not in this region:{}", *state,_region_id);
         return 0;
     } else if (ret == -2 || ret == -4) {
         // row deleted or expired
         return 0;
     } else if (ret != 0) {
-        DB_WARNING_STATE(state, "lock table:%ld failed", _table_id);
+        TLOG_WARN("{}, lock table:{} failed", *state,_table_id);
         return -1;
     }
     if (!satisfy_condition_again(state, row)) {
-        DB_WARNING_STATE(state, "condition changed when update record:%s", record->debug_string().c_str());
+        TLOG_WARN("{}, condition changed when update record:{}", *state,record->debug_string().c_str());
         // UndoGetForUpdate(pk_str)? 同一个txn GetForUpdate与UndoGetForUpdate之间不要写pk_str
         return 0;
     }
@@ -624,7 +624,7 @@ int DMLNode::update_row(RuntimeState* state, SmartRecord record, MemRow* row) {
     // 影响了主键需要删除旧的行
     ret = remove_row(state, record, pk_str, _update_affect_primary);
     if (ret < 0) {
-        DB_WARNING_STATE(state, "remove_row fail");
+        TLOG_WARN("{}, remove_row fail",*state);
         return -1;
     } else if (ret == 0) {
         // update null row
@@ -640,7 +640,7 @@ int DMLNode::update_row(RuntimeState* state, SmartRecord record, MemRow* row) {
                 auto field = record->get_field_by_tag(slot.field_id());
                 row->set_value(slot.tuple_id(), slot.slot_id(),
                         record->get_value(field));
-                //DB_WARNING_STATE(state, "_on_dup_key_update: tuple:%d slot:%d %d", slot.tuple_id(), slot.slot_id(), record->get_value(field).get_numberic<int32_t>());
+                //TLOG_WARN("{}, _on_dup_key_update: tuple:{} slot:{} {}", *state,slot.tuple_id(), slot.slot_id(), record->get_value(field).get_numberic<int32_t>());
             }
         }
     }
@@ -656,7 +656,7 @@ int DMLNode::update_row(RuntimeState* state, SmartRecord record, MemRow* row) {
     }
     ret = insert_row(state, record, true);
     if (ret < 0) {
-        DB_WARNING_STATE(state, "insert_row fail");
+        TLOG_WARN("{}, insert_row fail", *state);
         return -1;
     }
     return 1;

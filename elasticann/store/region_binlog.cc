@@ -64,14 +64,14 @@ namespace EA {
         query_request.set_op_type(proto::QUERY_REGION);
         query_request.add_region_ids(primary_region_id);
         if (meta_server_interact.send_request("query", query_request, query_response) != 0) {
-            DB_FATAL("send query request to meta server fail primary_region_id: %ld "
-                     "region_id:%ld res: %s", primary_region_id, _region_id, query_response.ShortDebugString().c_str());
+            TLOG_ERROR("send query request to meta server fail primary_region_id: {} "
+                     "region_id:{} res: {}", primary_region_id, _region_id, query_response.ShortDebugString().c_str());
             return -1;
         }
 
         if (query_response.errcode() != proto::SUCCESS) {
-            DB_FATAL("send query request to meta server fail primary_region_id: %ld "
-                     "region_id:%ld res: %s", primary_region_id, _region_id, query_response.ShortDebugString().c_str());
+            TLOG_ERROR("send query request to meta server fail primary_region_id: {} "
+                     "region_id:{} res: {}", primary_region_id, _region_id, query_response.ShortDebugString().c_str());
             return -1;
         }
 
@@ -112,14 +112,14 @@ namespace EA {
                         commit_ts = txn_info.commit_ts();
                     } else {
                         // primary没有查到rollback_tag，认为是commit，但是secondary不是PREPARE状态
-                        DB_FATAL("primary committed, secondary need catchup log, region_id:%ld,"
-                                 "primary_region_id: %ld txn_id: %lu",
+                        TLOG_ERROR("primary committed, secondary need catchup log, region_id:{},"
+                                 "primary_region_id: {} txn_id: {}",
                                  _region_id, region_info.region_id(), txn_id);
                         success = true;
                         return;
                     }
                     if (commit_ts <= start_ts) {
-                        DB_FATAL("commit_ts: %ld, start_ts: %ld, txn_id: %ld", commit_ts, start_ts, txn_id);
+                        TLOG_ERROR("commit_ts: {}, start_ts: {}, txn_id: {}", commit_ts, start_ts, txn_id);
                         return;
                     }
                     binlog_request.set_region_id(_region_id);
@@ -133,7 +133,7 @@ namespace EA {
                     butil::IOBuf data;
                     butil::IOBufAsZeroCopyOutputStream wrapper(&data);
                     if (!binlog_request.SerializeToZeroCopyStream(&wrapper)) {
-                        DB_FATAL("region_id: %ld serialize failed", _region_id);
+                        TLOG_ERROR("region_id: {} serialize failed", _region_id);
                         return;
                     }
 
@@ -144,7 +144,7 @@ namespace EA {
                     task.done = c;
                     _node.apply(task);
                     success = true;
-                    DB_WARNING("send txn query success request:%s response: %s",
+                    TLOG_WARN("send txn query success request:{} response: {}",
                                request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
                     break;
                 }
@@ -152,7 +152,7 @@ namespace EA {
                     if (response.leader() != "0.0.0.0:0") {
                         region_info.set_leader(response.leader());
                     }
-                    DB_WARNING("send txn query NOT_LEADER , request:%s response: %s",
+                    TLOG_WARN("send txn query NOT_LEADER , request:{} response: {}",
                                request.ShortDebugString().c_str(),
                                response.ShortDebugString().c_str());
                     bthread_usleep(retry_times * FLAGS_retry_interval_us);
@@ -165,14 +165,14 @@ namespace EA {
                             request.set_region_version(region_info.version());
                         }
                     }
-                    DB_WARNING("send txn query VERSION_OLD , request:%s response: %s",
+                    TLOG_WARN("send txn query VERSION_OLD , request:{} response: {}",
                                request.ShortDebugString().c_str(),
                                response.ShortDebugString().c_str());
                     bthread_usleep(retry_times * FLAGS_retry_interval_us);
                     break;
                 }
                 default: {
-                    DB_WARNING("send txn query failed , request:%s response: %s",
+                    TLOG_WARN("send txn query failed , request:{} response: {}",
                                request.ShortDebugString().c_str(),
                                response.ShortDebugString().c_str());
                     bthread_usleep(retry_times * FLAGS_retry_interval_us);
@@ -204,10 +204,10 @@ namespace EA {
                 if (iter.second.time.get_time() > FLAGS_binlog_timeout_us) {
                     RocksdbVars::get_instance()->binlog_not_commit_max_cost << iter.second.time.get_time();
                     //告警
-                    DB_WARNING("region_id: %ld, start_ts: %ld, txn_id:%ld, primary_region_id: %ld timeout",
+                    TLOG_WARN("region_id: {}, start_ts: {}, txn_id:{}, primary_region_id: {} timeout",
                                _region_id, iter.first, iter.second.txn_id, iter.second.primary_region_id);
                     if (iter.second.time.get_time() > FLAGS_binlog_warn_timeout_minute * 60 * 1000 * 1000LL) {
-                        DB_FATAL("region_id: %ld not commited for a long time", _region_id);
+                        TLOG_ERROR("region_id: {} not commited for a long time", _region_id);
                     }
 
                     // 避免过长
@@ -257,11 +257,11 @@ namespace EA {
         butil::IOBuf data;
         butil::IOBufAsZeroCopyOutputStream wrapper(&data);
         if (!request.SerializeToZeroCopyStream(&wrapper)) {
-            DB_FATAL("region_id: %ld serialize failed", _region_id);
+            TLOG_ERROR("region_id: {} serialize failed", _region_id);
             return;
         }
 
-        DB_WARNING("region_id: %ld, FAKE BINLOG, ts: %ld, %s", _region_id, ts, ts_to_datetime_str(ts).c_str());
+        TLOG_WARN("region_id: {}, FAKE BINLOG, ts: {}, {}", _region_id, ts, ts_to_datetime_str(ts).c_str());
 
         BinlogClosure *c = new BinlogClosure(&cond);
         cond.increase_wait();
@@ -424,7 +424,7 @@ namespace EA {
         if (_binlog_param.check_point_ts > 0) {
             int ret = binlog_scan_when_restart();
             if (ret != 0) {
-                DB_FATAL("region_id: %ld, snapshot load failed", _region_id);
+                TLOG_ERROR("region_id: {}, snapshot load failed", _region_id);
                 return -1;
             }
         }
@@ -433,7 +433,7 @@ namespace EA {
             _meta_writer->write_binlog_oldest_ts(_region_id, _binlog_param.check_point_ts);
             _binlog_param.oldest_ts = _binlog_param.check_point_ts;
         }
-        DB_WARNING("region_id: %ld, check_point_ts: [%ld, %s], oldest_ts: [%ld, %s]", _region_id,
+        TLOG_WARN("region_id: {}, check_point_ts: [{}, {}], oldest_ts: [{}, {}]", _region_id,
                    _binlog_param.check_point_ts, ts_to_datetime_str(_binlog_param.check_point_ts).c_str(),
                    _binlog_param.oldest_ts, ts_to_datetime_str(_binlog_param.oldest_ts).c_str());
         return 0;
@@ -449,23 +449,23 @@ namespace EA {
         if (_binlog_param.check_point_ts > 0) {
             int ret = binlog_scan_when_restart();
             if (ret != 0) {
-                DB_FATAL("region_id: %ld, snapshot load failed", _region_id);
+                TLOG_ERROR("region_id: {}, snapshot load failed", _region_id);
                 return -1;
             }
             _binlog_param.max_ts_applied = std::max(_binlog_param.check_point_ts, _binlog_param.max_ts_applied);
             // binlog数据没有拉取过来，需要将oldest更新为最大的ts
             ret = _meta_writer->write_binlog_oldest_ts(_region_id, _binlog_param.max_ts_applied);
             if (ret != 0) {
-                DB_FATAL("region_id: %ld, snapshot load failed write ts failed", _region_id);
+                TLOG_ERROR("region_id: {}, snapshot load failed write ts failed", _region_id);
                 return -1;
             }
             _binlog_param.oldest_ts = _binlog_param.max_ts_applied;
         } else {
-            DB_FATAL("region_id: %ld, snapshot load check point %ld invaild", _region_id, _binlog_param.check_point_ts);
+            TLOG_ERROR("region_id: {}, snapshot load check point {} invaild", _region_id, _binlog_param.check_point_ts);
             return -1;
         }
 
-        DB_WARNING("region_id: %ld, check_point_ts: [%ld, %s], oldest_ts: [%ld, %s], time: %ld", _region_id,
+        TLOG_WARN("region_id: {}, check_point_ts: [{}, {}], oldest_ts: [{}, {}], time: {}", _region_id,
                    _binlog_param.check_point_ts, ts_to_datetime_str(_binlog_param.check_point_ts).c_str(),
                    _binlog_param.oldest_ts, ts_to_datetime_str(_binlog_param.oldest_ts).c_str(), time.get_time());
         return 0;
@@ -499,7 +499,7 @@ namespace EA {
 
         TableIterator *table_iter = Iterator::scan_primary(nullptr, range, field_ids, field_slot, false, true);
         if (table_iter == nullptr) {
-            DB_WARNING("open TableIterator fail, table_id:%ld", get_table_id());
+            TLOG_WARN("open TableIterator fail, table_id:{}", get_table_id());
             return -1;
         }
 
@@ -537,8 +537,8 @@ namespace EA {
 
         // 一轮扫描结束后，处理内存map，更新check point
         binlog_update_check_point();
-        DB_WARNING(
-                "region_id: %ld, scan_rows: %ld, scan_range[%ld, %ld]; binlog_scan map size: %lu, check point ts: %ld, cost: %ld",
+        TLOG_WARN(
+                "region_id: {}, scan_rows: {}, scan_range[{}, {}]; binlog_scan map size: {}, check point ts: {}, cost: {}",
                 _region_id, scan_rows, first_ts, last_ts, _binlog_param.ts_binlog_map.size(),
                 _binlog_param.check_point_ts, cost.get_time());
         return 0;
@@ -554,7 +554,7 @@ namespace EA {
 
         //扫描时小于max ts直接跳过
         if (ts < _binlog_param.max_ts_applied) {
-            DB_WARNING("region_id: %ld scan_ts: %ld < max_ts: %ld, txn_id: %ld", _region_id, ts,
+            TLOG_WARN("region_id: {} scan_ts: {} < max_ts: {}, txn_id: {}", _region_id, ts,
                        _binlog_param.max_ts_applied, txn_id);
             return;
         }
@@ -562,19 +562,19 @@ namespace EA {
         if (binlog_type == FAKE_BINLOG) {
             binlog_desc.binlog_type = binlog_type;
             _binlog_param.ts_binlog_map[ts] = binlog_desc;
-            DB_WARNING("region_id: %ld, ts: [%ld, %s], type: %s, txn_id: %ld",
+            TLOG_WARN("region_id: {}, ts: [{}, {}], type: {}, txn_id: {}",
                        _region_id, ts, ts_to_datetime_str(ts).c_str(), binlog_type_name(binlog_type), txn_id);
         } else if (binlog_type == PREWRITE_BINLOG) {
             binlog_desc.binlog_type = binlog_type;
             binlog_desc.txn_id = txn_id;
             binlog_desc.primary_region_id = binlog_get_int64_val("primary_region_id", field_value_map);
             _binlog_param.ts_binlog_map[ts] = binlog_desc;
-            DB_WARNING("region_id: %ld, start_ts: [%ld, %s], type: %s, txn_id: %ld",
+            TLOG_WARN("region_id: {}, start_ts: [{}, {}], type: {}, txn_id: {}",
                        _region_id, ts, ts_to_datetime_str(ts).c_str(), binlog_type_name(binlog_type), txn_id);
         } else if (binlog_type == COMMIT_BINLOG || binlog_type == ROLLBACK_BINLOG) {
             if (start_ts < _binlog_param.check_point_ts) {
-                DB_WARNING(
-                        "region_id: %ld, type: %s, start_ts: [%ld, %s] < check point: %ld, ts: [%ld, %s], txn_id: %ld",
+                TLOG_WARN(
+                        "region_id: {}, type: {}, start_ts: [{}, {}] < check point: {}, ts: [{}, {}], txn_id: {}",
                         _region_id, binlog_type_name(binlog_type), start_ts, ts_to_datetime_str(start_ts).c_str(),
                         _binlog_param.check_point_ts, ts, ts_to_datetime_str(ts).c_str(), txn_id);
                 return;
@@ -583,20 +583,20 @@ namespace EA {
             auto iter = _binlog_param.ts_binlog_map.find(start_ts);
             if (iter == _binlog_param.ts_binlog_map.end()) {
                 if (binlog_type == ROLLBACK_BINLOG) {
-                    DB_WARNING(
-                            "region_id: %ld, type: %s, start_ts: [%ld, %s] can not find in map, ts: [%ld, %s], txn_id: %ld",
+                    TLOG_WARN(
+                            "region_id: {}, type: {}, start_ts: [{}, {}] can not find in map, ts: [{}, {}], txn_id: {}",
                             _region_id, binlog_type_name(binlog_type), start_ts, ts_to_datetime_str(start_ts).c_str(),
                             ts, ts_to_datetime_str(ts).c_str(), txn_id);
                 } else {
-                    DB_FATAL(
-                            "region_id: %ld, type: %s, start_ts: [%ld, %s] can not find in map, ts: [%ld, %s], txn_id: %ld",
+                    TLOG_ERROR(
+                            "region_id: {}, type: {}, start_ts: [{}, {}] can not find in map, ts: [{}, {}], txn_id: {}",
                             _region_id, binlog_type_name(binlog_type), start_ts, ts_to_datetime_str(start_ts).c_str(),
                             ts, ts_to_datetime_str(ts).c_str(), txn_id);
                 }
                 return;
             } else {
                 _binlog_param.ts_binlog_map.erase(start_ts);
-                DB_WARNING("region_id: %ld, type: %s, start_ts: [%ld, %s] erase, commit_ts: [%ld, %s] txn_id: %ld",
+                TLOG_WARN("region_id: {}, type: {}, start_ts: [{}, {}] erase, commit_ts: [{}, {}] txn_id: {}",
                            _region_id, binlog_type_name(binlog_type), start_ts, ts_to_datetime_str(start_ts).c_str(),
                            ts, ts_to_datetime_str(ts).c_str(), txn_id);
             }
@@ -626,24 +626,24 @@ namespace EA {
                 _binlog_param.ts_binlog_map[ts] = binlog_desc;
                 ret = _meta_writer->write_binlog_check_point(_region_id, ts);
                 if (ret < 0) {
-                    DB_FATAL("region_id: %ld, txn_id: %ld, ts: %ld write binlog check point failed",
+                    TLOG_ERROR("region_id: {}, txn_id: {}, ts: {} write binlog check point failed",
                              _region_id, txn_id, ts);
                     return -1;
                 }
                 ret = _meta_writer->write_binlog_oldest_ts(_region_id, ts);
                 if (ret < 0) {
-                    DB_FATAL("region_id: %ld, txn_id: %ld, ts: %ld write oldest ts failed",
+                    TLOG_ERROR("region_id: {}, txn_id: {}, ts: {} write oldest ts failed",
                              _region_id, txn_id, ts);
                     return -1;
                 }
                 _binlog_param.check_point_ts = ts;
                 _binlog_param.oldest_ts = ts;
                 _binlog_param.max_ts_applied = std::max(_binlog_param.max_ts_applied, ts);
-                DB_WARNING("region_id: %ld, ts: %ld, %s, FAKE BINLOG reset check point and oldest ts", _region_id, ts,
+                TLOG_WARN("region_id: {}, ts: {}, {}, FAKE BINLOG reset check point and oldest ts", _region_id, ts,
                            ts_to_datetime_str(ts).c_str());
             } else {
-                DB_WARNING(
-                        "region_id :%ld, txn_id: %ld, start_ts: %ld, %s, commit_ts: %ld, %s, binlog_type: %s, discard",
+                TLOG_WARN(
+                        "region_id :{}, txn_id: {}, start_ts: {}, {}, commit_ts: {}, {}, binlog_type: {}, discard",
                         _region_id, txn_id, start_ts, ts_to_datetime_str(start_ts).c_str(), ts,
                         ts_to_datetime_str(ts).c_str(), binlog_type_name(type));
             }
@@ -654,13 +654,13 @@ namespace EA {
             // check point 变小说明写入ts小于check point，告警
             if (tso::get_timestamp_internal(_binlog_param.check_point_ts) - tso::get_timestamp_internal(ts)
                 > FLAGS_check_point_rollback_interval_s) {
-                DB_FATAL("region_id: %ld, new ts: %ld, %s, < old check point ts: %ld, %s, "
-                         "check point rollback interval too long, remote_side: %s", _region_id, ts,
+                TLOG_ERROR("region_id: {}, new ts: {}, {}, < old check point ts: {}, {}, "
+                         "check point rollback interval too long, remote_side: {}", _region_id, ts,
                          ts_to_datetime_str(ts).c_str(),
                          _binlog_param.check_point_ts, ts_to_datetime_str(_binlog_param.check_point_ts).c_str(),
                          remote_side.c_str());
             } else {
-                DB_WARNING("region_id: %ld, new ts: %ld, %s, < old check point ts: %ld, %s, remote_side: %s",
+                TLOG_WARN("region_id: {}, new ts: {}, {}, < old check point ts: {}, {}, remote_side: {}",
                            _region_id, ts, ts_to_datetime_str(ts).c_str(),
                            _binlog_param.check_point_ts, ts_to_datetime_str(_binlog_param.check_point_ts).c_str(),
                            remote_side.c_str());
@@ -669,18 +669,18 @@ namespace EA {
 
         if (type == FAKE_BINLOG) {
             if (ts <= _binlog_param.check_point_ts) {
-                DB_WARNING("region_id: %ld, ts: %ld, FAKE BINLOG", _region_id, ts);
+                TLOG_WARN("region_id: {}, ts: {}, FAKE BINLOG", _region_id, ts);
                 return 0;
             }
             binlog_desc.binlog_type = type;
             _binlog_param.ts_binlog_map[ts] = binlog_desc;
-            DB_DEBUG("region_id: %ld, ts: %ld, %s, FAKE BINLOG", _region_id, ts, ts_to_datetime_str(ts).c_str());
+            TLOG_DEBUG("region_id: {}, ts: {}, {}, FAKE BINLOG", _region_id, ts, ts_to_datetime_str(ts).c_str());
         } else if (type == PREWRITE_BINLOG) {
             binlog_desc.binlog_type = type;
             binlog_desc.txn_id = txn_id;
             binlog_desc.primary_region_id = binlog_get_int64_val("primary_region_id", field_value_map);
             _binlog_param.ts_binlog_map[ts] = binlog_desc;
-            DB_DEBUG("region_id: %ld, ts: %ld, %s, txn_id: %ld, PREWRITE BINLOG, remote_side: %s",
+            TLOG_DEBUG("region_id: {}, ts: {}, {}, txn_id: {}, PREWRITE BINLOG, remote_side: {}",
                      _region_id, ts, ts_to_datetime_str(ts).c_str(), txn_id, remote_side.c_str());
         } else if (type == COMMIT_BINLOG || type == ROLLBACK_BINLOG) {
             if (start_ts < _binlog_param.check_point_ts) {
@@ -692,8 +692,8 @@ namespace EA {
                         _binlog_param.timeout_start_ts_done[start_ts] = true;
                     } else {
                         // 重复commit
-                        DB_WARNING(
-                                "region_id: %ld, type: %s, txn_id: %ld, commit_ts: %ld, %s, start_ts: %ld, %s, remote_side: %s",
+                        TLOG_WARN(
+                                "region_id: {}, type: {}, txn_id: {}, commit_ts: {}, {}, start_ts: {}, {}, remote_side: {}",
                                 _region_id, binlog_type_name(type), txn_id, ts, ts_to_datetime_str(ts).c_str(),
                                 start_ts,
                                 ts_to_datetime_str(start_ts).c_str(), remote_side.c_str());
@@ -702,8 +702,8 @@ namespace EA {
                 }
 
                 if (type == COMMIT_BINLOG && ts < _binlog_read_max_ts.load()) {
-                    DB_FATAL(
-                            "region_id: %ld, type: %s, txn_id: %ld, commit_ts: %ld, %s, start_ts: %ld, %s, read_max_ts: %ld, %s, remote_side: %s",
+                    TLOG_ERROR(
+                            "region_id: {}, type: {}, txn_id: {}, commit_ts: {}, {}, start_ts: {}, {}, read_max_ts: {}, {}, remote_side: {}",
                             _region_id, binlog_type_name(type), txn_id, ts, ts_to_datetime_str(ts).c_str(), start_ts,
                             ts_to_datetime_str(start_ts).c_str(),
                             _binlog_read_max_ts.load(), ts_to_datetime_str(_binlog_read_max_ts.load()).c_str(),
@@ -714,8 +714,8 @@ namespace EA {
 
             auto iter = _binlog_param.ts_binlog_map.find(start_ts);
             if (iter == _binlog_param.ts_binlog_map.end()) {
-                DB_FATAL(
-                        "region_id: %ld, type: %s, txn_id: %ld, commit_ts: %ld, %s, start_ts: %ld, %s can not find in map, remote_side: %s",
+                TLOG_ERROR(
+                        "region_id: {}, type: {}, txn_id: {}, commit_ts: {}, {}, start_ts: {}, {} can not find in map, remote_side: {}",
                         _region_id, binlog_type_name(type), txn_id, ts, ts_to_datetime_str(ts).c_str(), start_ts,
                         ts_to_datetime_str(start_ts).c_str(),
                         remote_side.c_str());
@@ -733,8 +733,8 @@ namespace EA {
                     }
                 }
 
-                DB_DEBUG(
-                        "region_id: %ld, type: %s, txn_id: %ld, commit_ts: %ld, %s start_ts: %ld, %s remote_side: %s repeated_commit: %d, erase",
+                TLOG_DEBUG(
+                        "region_id: {}, type: {}, txn_id: {}, commit_ts: {}, {} start_ts: {}, {} remote_side: {} repeated_commit: {}, erase",
                         _region_id, binlog_type_name(type), txn_id, ts, ts_to_datetime_str(ts).c_str(), start_ts,
                         ts_to_datetime_str(start_ts).c_str(), remote_side.c_str(), repeated_commit);
             }
@@ -758,7 +758,7 @@ namespace EA {
             BinlogType type = iter->second.binlog_type;
 
             if (type == COMMIT_BINLOG || type == ROLLBACK_BINLOG) {
-                DB_FATAL("binlog type: %s , txn_id: %ld", binlog_type_name(type), iter->second.txn_id);
+                TLOG_ERROR("binlog type: {} , txn_id: {}", binlog_type_name(type), iter->second.txn_id);
             }
 
             if (type == PREWRITE_BINLOG) {
@@ -777,11 +777,11 @@ namespace EA {
 
         int ret = _meta_writer->write_binlog_check_point(_region_id, check_point_ts);
         if (ret != 0) {
-            DB_FATAL("region_id: %ld, check_point_ts: %ld, write check_point_ts failed", _region_id, check_point_ts);
+            TLOG_ERROR("region_id: {}, check_point_ts: {}, write check_point_ts failed", _region_id, check_point_ts);
             return -1;
         }
 
-        DB_WARNING("region_id: %ld, check point ts %ld, %s => %ld, %s", _region_id, _binlog_param.check_point_ts,
+        TLOG_WARN("region_id: {}, check point ts {}, {} => {}, {}", _region_id, _binlog_param.check_point_ts,
                    ts_to_datetime_str(_binlog_param.check_point_ts).c_str(), check_point_ts,
                    ts_to_datetime_str(check_point_ts).c_str());
         _binlog_param.check_point_ts = check_point_ts;
@@ -791,17 +791,17 @@ namespace EA {
 
     int Region::write_binlog_record(SmartRecord record) {
         MutTableKey key;
-        // DB_WARNING("region_id: %ld, pk_id: %ld", _region_id, pk_index.id);
+        // TLOG_WARN("region_id: {}, pk_id: {}", _region_id, pk_index.id);
         key.append_i64(_region_id).append_i64(_binlog_pri->id);
         if (0 != key.append_index(*_binlog_pri, record.get(), -1, true)) {
-            DB_FATAL("Fail to append_index, reg=%ld, tab=%ld", _region_id, _binlog_pri->id);
+            TLOG_ERROR("Fail to append_index, reg={}, tab={}", _region_id, _binlog_pri->id);
             return -1;
         }
 
         std::string value;
         int ret = record->encode(value);
         if (ret != 0) {
-            DB_FATAL("encode record failed: reg=%ld, tab=%ld", _region_id, _binlog_pri->id);
+            TLOG_ERROR("encode record failed: reg={}, tab={}", _region_id, _binlog_pri->id);
             return -1;
         }
 
@@ -813,7 +813,7 @@ namespace EA {
         batch.Put(_data_cf, key.data(), value);
         auto s = _rocksdb->write(write_options, &batch);
         if (!s.ok()) {
-            DB_FATAL("write binlog failed, region_id: %ld, status: %s", _region_id, s.ToString().c_str());
+            TLOG_ERROR("write binlog failed, region_id: {}, status: {}", _region_id, s.ToString().c_str());
             return -1;
         }
 
@@ -829,7 +829,7 @@ namespace EA {
     int Region::write_binlog_value(const std::map<std::string, ExprValue> &field_value_map) {
         SmartRecord record = _factory->new_record(*_binlog_table);
         if (record == nullptr) {
-            DB_WARNING("table_id: %ld nullptr", get_table_id());
+            TLOG_WARN("table_id: {} nullptr", get_table_id());
             return -1;
         }
 
@@ -846,12 +846,12 @@ namespace EA {
                     default_value.cast_to(field.type);
                 }
                 if (0 != record->set_value(record->get_field_by_tag(field.id), default_value)) {
-                    DB_WARNING("fill insert value failed");
+                    TLOG_WARN("fill insert value failed");
                     return -1;
                 }
             } else {
                 if (0 != record->set_value(record->get_field_by_tag(field.id), iter->second)) {
-                    DB_WARNING("fill insert value failed");
+                    TLOG_WARN("fill insert value failed");
                     return -1;
                 }
             }
@@ -882,13 +882,13 @@ namespace EA {
                 break;
             }
             default: {
-                DB_FATAL("unsupport request type, op_type:%d, region_id: %ld",
+                TLOG_ERROR("unsupport request type, op_type:{}, region_id: {}",
                          request.op_type(), _region_id);
                 if (done != nullptr && ((BinlogClosure *) done)->response != nullptr) {
                     ((BinlogClosure *) done)->response->set_errcode(proto::UNSUPPORT_REQ_TYPE);
                     ((BinlogClosure *) done)->response->set_errmsg("unsupport request type");
                 }
-                DB_NOTICE("op_type: %s, region_id: %ld, applied_index:%ld",
+                TLOG_INFO("op_type: {}, region_id: {}, applied_index:{}",
                           proto::OpType_Name(request.op_type()).c_str(), _region_id, _applied_index);
                 break;
             }
@@ -900,13 +900,13 @@ namespace EA {
                     ((BinlogClosure *) done)->response->set_errcode(proto::PUT_VALUE_FAIL);
                     ((BinlogClosure *) done)->response->set_errmsg("write rocksdb fail");
                 }
-                DB_FATAL("write binlog failed, region_id: %ld", _region_id);
+                TLOG_ERROR("write binlog failed, region_id: {}", _region_id);
             }
 
             binlog_update_map_when_apply(field_value_map, done ? ((BinlogClosure *) done)->remote_side : "");
             binlog_update_check_point();
         } else {
-            DB_FATAL("region_id: %ld field value invailde", _region_id);
+            TLOG_ERROR("region_id: {} field value invailde", _region_id);
         }
 
         if (done != nullptr && ((BinlogClosure *) done)->response != nullptr) {
@@ -981,7 +981,7 @@ namespace EA {
             keys_str.emplace_back(key);
             keys.emplace_back(keys_str[num_keys]);
             num_keys++;
-            DB_DEBUG("start_ts: %ld", iter.first);
+            TLOG_DEBUG("start_ts: {}", iter.first);
         }
         std::vector<rocksdb::PinnableSlice> values(num_keys);
         std::vector<rocksdb::Status> statuses(num_keys);
@@ -998,10 +998,10 @@ namespace EA {
             if (!statuses[i].ok()) {
                 failed = true;
                 // raft leader 有可能在apply之后才写raftlog，此处有可能notfound，但是不影响数据正确性，返错之后capture会请求其他peer（follower不存在此问题）
-                DB_WARNING("multiget failed, idx: %d, start_ts: %ld, status: %s", i, start_ts,
+                TLOG_WARN("multiget failed, idx: {}, start_ts: {}, status: {}", i, start_ts,
                            statuses[i].ToString().c_str());
             } else {
-                DB_DEBUG("multiget start_ts: %ld, value size: %ld", start_ts, values[i].size());
+                TLOG_DEBUG("multiget start_ts: {}, value size: {}", start_ts, values[i].size());
                 start_binlog_map[start_ts].assign(values[i].data(), values[i].size());
             }
         }
@@ -1042,28 +1042,28 @@ namespace EA {
             ++seek_cnt;
             int64_t ts = TableKey(rocksdb_iter->key()).extract_i64(0);
             if (ts < map_iter->first) {
-                DB_DEBUG("ts: %ld, < map start_ts: %ld, region_id: %ld", ts, map_iter->first, _region_id);
+                TLOG_DEBUG("ts: {}, < map start_ts: {}, region_id: {}", ts, map_iter->first, _region_id);
                 continue;
             } else if (ts == map_iter->first) {
                 map_iter->second = std::string(rocksdb_iter->value().data(), rocksdb_iter->value().size());
                 end_ts = ts;
-                DB_DEBUG("seek ts: %ld success", ts);
+                TLOG_DEBUG("seek ts: {} success", ts);
                 ++map_iter;
                 ++real_seek_cnt;
                 continue;
             } else {
                 // 不符合预期
                 failed = true;
-                DB_FATAL("ts: %ld > map start_ts: %ld, region_id: %ld", ts, map_iter->first, _region_id);
+                TLOG_ERROR("ts: {} > map start_ts: {}, region_id: {}", ts, map_iter->first, _region_id);
                 break;
             }
         }
 
         if (map_iter != start_binlog_map.end() || failed) {
-            DB_FATAL("seek failed: %d, region_id: %ld", failed, _region_id);
+            TLOG_ERROR("seek failed: {}, region_id: {}", failed, _region_id);
             return -1;
         } else {
-            DB_WARNING("region_id: %ld, seek: [%ld => %ld], [%s => %s], seek_cnt: %d, real_seek_cnt: %d, time: %ld",
+            TLOG_WARN("region_id: {}, seek: [{} => {}], [{} => {}], seek_cnt: {}, real_seek_cnt: {}, time: {}",
                        _region_id, begin_ts, end_ts, ts_to_datetime_str(begin_ts).c_str(),
                        ts_to_datetime_str(end_ts).c_str(),
                        seek_cnt, real_seek_cnt, time.get_time());
@@ -1086,13 +1086,13 @@ namespace EA {
                 // fake binlog
                 ret = fill_fake_binlog(commit_ts, binlog_value);
                 if (ret != 0) {
-                    DB_WARNING("fill fake binlog fail, ts:%ld, region_id: %ld", start_ts, _region_id);
+                    TLOG_WARN("fill fake binlog fail, ts:{}, region_id: {}", start_ts, _region_id);
                     return -1;
                 }
             } else {
                 ret = _rocksdb->get_binlog_value(start_ts, binlog_value);
                 if (ret != 0) {
-                    DB_WARNING("get ts:%ld from rocksdb binlog cf fail, region_id: %ld", start_ts, _region_id);
+                    TLOG_WARN("get ts:{} from rocksdb binlog cf fail, region_id: {}", start_ts, _region_id);
                     return -1;
                 }
             }
@@ -1128,7 +1128,7 @@ namespace EA {
                 ret = seek(_start_binlog_map);
             }
             if (ret != 0) {
-                DB_WARNING("get binlog failed, region_id: %ld", _region_id);
+                TLOG_WARN("get binlog failed, region_id: {}", _region_id);
                 return -1;
             }
 
@@ -1167,7 +1167,7 @@ namespace EA {
 
         binlog.clear();
         if (!fake_binlog.SerializeToString(&binlog)) {
-            DB_FATAL("region_id: %ld serialize failed", _region_id);
+            TLOG_ERROR("region_id: {} serialize failed", _region_id);
             return -1;
         }
 
@@ -1176,15 +1176,15 @@ namespace EA {
 
     void BinlogReadMgr::print_log() {
         if (_binlog_total_row_cnts > 0 && _time.get_time() > FLAGS_print_time_us) {
-            DB_WARNING(
-                    "region_id[%ld], begin_ts[%ld, %s], total_binlog_size[%ld], mode[%d], need_read_cnt[%ld], fake_cnt[%ld], binlog_num[%d], binlog_row_cnt[%ld]"
-                    "first_commit_ts[%ld, %s], last_commit_ts[%ld, %s], time[%ld], remote_capture_ip[%s], log_id[%lu] get binlog finish.",
-                    _region_id, _begin_ts, ts_to_datetime_str(_begin_ts).c_str(), _total_binlog_size, _mode,
+            TLOG_WARN(
+                    "region_id[{}], begin_ts[{}, {}], total_binlog_size[{}], mode[{}], need_read_cnt[{}], fake_cnt[{}], binlog_num[{}], binlog_row_cnt[{}]"
+                    "first_commit_ts[{}, {}], last_commit_ts[{}, {}], time[{}], remote_capture_ip[{}], log_id[{}] get binlog finish.",
+                    _region_id, _begin_ts, ts_to_datetime_str(_begin_ts), _total_binlog_size, static_cast<int>(_mode),
                     _need_read_cnt, _fake_binlog_cnt,
                     _binlog_num, _binlog_total_row_cnts, _first_commit_ts,
-                    ts_to_datetime_str(_first_commit_ts).c_str(), _last_commit_ts,
-                    ts_to_datetime_str(_last_commit_ts).c_str(), _time.get_time(),
-                    _capture_ip.c_str(), _log_id);
+                    ts_to_datetime_str(_first_commit_ts), _last_commit_ts,
+                    ts_to_datetime_str(_last_commit_ts), _time.get_time(),
+                    _capture_ip, _log_id);
         }
     }
 
@@ -1201,7 +1201,7 @@ namespace EA {
             ret = seek(_start_binlog_map);
         }
         if (ret != 0) {
-            DB_WARNING("get binlog failed, region_id: %ld", _region_id);
+            TLOG_WARN("get binlog failed, region_id: {}", _region_id);
             return -1;
         }
 
@@ -1245,7 +1245,7 @@ namespace EA {
 
         TableIterator *table_iter = Iterator::scan_primary(nullptr, range, field_ids, field_slot, false, true);
         if (table_iter == nullptr) {
-            DB_WARNING("open TableIterator fail, table_id:%ld", get_table_id());
+            TLOG_WARN("open TableIterator fail, table_id:{}", get_table_id());
             return -1;
         }
 
@@ -1257,13 +1257,13 @@ namespace EA {
         int ret = 0;
         record->clear();
         if (!table_iter->valid()) {
-            DB_WARNING("region_id: %ld table_iter is invalid", _region_id);
+            TLOG_WARN("region_id: {} table_iter is invalid", _region_id);
             return -1;
         }
 
         ret = table_iter->get_next(record);
         if (ret < 0) {
-            DB_WARNING("region_id: %ld get_next failed", _region_id);
+            TLOG_WARN("region_id: {} get_next failed", _region_id);
             return -1;
         }
 
@@ -1365,7 +1365,7 @@ namespace EA {
         int64_t binlog_cnt = request->binlog_desc().read_binlog_cnt();
         int64_t begin_ts = request->binlog_desc().binlog_ts();
         _binlog_alarm.check_read_ts(remote_side, _region_id, begin_ts);
-        DB_DEBUG("read_binlog request %s", request->ShortDebugString().c_str());
+        TLOG_DEBUG("read_binlog request {}", request->ShortDebugString().c_str());
         int64_t check_point_ts = 0;
         int64_t oldest_ts = 0;
         {
@@ -1374,7 +1374,7 @@ namespace EA {
 
             check_point_ts = _binlog_param.check_point_ts;
             if (check_point_ts < 0) {
-                DB_FATAL("region_id: %ld, get check point failed", _region_id);
+                TLOG_ERROR("region_id: {}, get check point failed", _region_id);
                 response->set_errcode(proto::GET_VALUE_FAIL);
                 response->set_errmsg("get binlog check point ts");
                 return;
@@ -1382,7 +1382,7 @@ namespace EA {
 
             oldest_ts = _binlog_param.oldest_ts;
             if (oldest_ts < 0) {
-                DB_FATAL("region_id: %ld, get oldest ts failed", _region_id);
+                TLOG_ERROR("region_id: {}, get oldest ts failed", _region_id);
                 response->set_errcode(proto::GET_VALUE_FAIL);
                 response->set_errmsg("get binlog oldest ts failed");
                 return;
@@ -1391,14 +1391,14 @@ namespace EA {
         }
 
         if (begin_ts == 0) {
-            DB_FATAL("region_id: %ld, begin_ts is 0", _region_id);
+            TLOG_ERROR("region_id: {}, begin_ts is 0", _region_id);
             response->set_errcode(proto::GET_VALUE_FAIL);
             response->set_errmsg("get binlog check point ts");
             return;
         }
 
         if (begin_ts < oldest_ts) {
-            DB_WARNING("region_id: %ld, begin ts : %ld < oldest ts : %ld", _region_id, begin_ts, oldest_ts);
+            TLOG_WARN("region_id: {}, begin ts : {} < oldest ts : {}", _region_id, begin_ts, oldest_ts);
             response->set_errcode(proto::LESS_THAN_OLDEST_TS);
             response->set_errmsg("begin ts gt oldest ts");
             return;
@@ -1435,7 +1435,7 @@ namespace EA {
 
         TableIterator *table_iter = Iterator::scan_primary(nullptr, range, field_ids, field_slot, false, true);
         if (table_iter == nullptr) {
-            DB_WARNING("open TableIterator fail, table_id:%ld", get_table_id());
+            TLOG_WARN("open TableIterator fail, table_id:{}", get_table_id());
             return;
         }
 
@@ -1451,13 +1451,13 @@ namespace EA {
         while (1) {
             record->clear();
             if (!table_iter->valid()) {
-                // DB_WARNING("region_id: %ld not valid", _region_id);
+                // TLOG_WARN("region_id: {} not valid", _region_id);
                 break;
             }
 
             ret = table_iter->get_next(record);
             if (ret < 0) {
-                DB_WARNING("region_id: %ld get_next failed", _region_id);
+                TLOG_WARN("region_id: {} get_next failed", _region_id);
                 break;
             }
             std::map<std::string, ExprValue> field_value_map;
@@ -1470,7 +1470,7 @@ namespace EA {
                 binlog_row_cnt = 1;
             }
             if (ts < begin_ts || ts > check_point_ts) {
-                DB_WARNING("region_id: %ld, ts: %ld, begin_ts: %ld, check_point_ts: %ld", _region_id, ts, begin_ts,
+                TLOG_WARN("region_id: {}, ts: {}, begin_ts: {}, check_point_ts: {}", _region_id, ts, begin_ts,
                            check_point_ts);
                 break;
             }
@@ -1478,7 +1478,7 @@ namespace EA {
             if (binlog_type == FAKE_BINLOG && ts > begin_ts) {
                 ret = binlog_reader.get_binlog_value(ts, ts, response, 1);
                 if (ret < 0) {
-                    DB_WARNING("get fake binlog ts:%ld fail, region_id: %ld", ts, _region_id);
+                    TLOG_WARN("get fake binlog ts:{} fail, region_id: {}", ts, _region_id);
                     response->set_errcode(proto::GET_VALUE_FAIL);
                     response->set_errmsg("read fake binlog failed");
                     return;
@@ -1496,7 +1496,7 @@ namespace EA {
             }
 
             if (start_ts < oldest_ts) {
-                DB_WARNING("region_id: %ld, start ts : %ld < oldest ts : %ld", _region_id, start_ts, oldest_ts);
+                TLOG_WARN("region_id: {}, start ts : {} < oldest ts : {}", _region_id, start_ts, oldest_ts);
                 //特殊错误码 TODO
                 response->set_errcode(proto::LESS_THAN_OLDEST_TS);
                 response->set_errmsg("start ts gt oldest ts");
@@ -1509,7 +1509,7 @@ namespace EA {
             binlog_cnt -= binlog_row_cnt;
             ret = binlog_reader.get_binlog_value(ts, start_ts, response, binlog_row_cnt);
             if (ret < 0) {
-                DB_WARNING("get ts:%ld from rocksdb binlog cf fail, region_id: %ld", start_ts, _region_id);
+                TLOG_WARN("get ts:{} from rocksdb binlog cf fail, region_id: {}", start_ts, _region_id);
                 response->set_errcode(proto::GET_VALUE_FAIL);
                 response->set_errmsg("read binlog failed");
                 return;
@@ -1520,7 +1520,7 @@ namespace EA {
 
         ret = binlog_reader.get_binlog_finish(response);
         if (ret < 0) {
-            DB_WARNING("get value from rocksdb binlog cf fail, region_id: %ld", _region_id);
+            TLOG_WARN("get value from rocksdb binlog cf fail, region_id: {}", _region_id);
             response->set_errcode(proto::GET_VALUE_FAIL);
             response->set_errmsg("read binlog failed");
             return;
@@ -1539,7 +1539,7 @@ namespace EA {
         _binlog_param.ts_binlog_map.clear();
         _meta_writer->write_binlog_check_point(_region_id, _binlog_param.check_point_ts);
 
-        DB_WARNING("region_id: %ld force recover binlog, check point [%ld, %s], oldest ts [%ld, %s]", _region_id,
+        TLOG_WARN("region_id: {} force recover binlog, check point [{}, {}], oldest ts [{}, {}]", _region_id,
                    _binlog_param.check_point_ts, ts_to_datetime_str(_binlog_param.check_point_ts).c_str(),
                    _binlog_param.oldest_ts, ts_to_datetime_str(_binlog_param.oldest_ts).c_str());
     }
@@ -1597,7 +1597,7 @@ namespace EA {
             response->set_errcode(proto::NOT_LEADER);
             response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
             response->set_errmsg("not leader");
-            DB_WARNING("not leader, leader:%s, region_id: %ld, log_id:%lu, remote_side:%s",
+            TLOG_WARN("not leader, leader:{}, region_id: {}, log_id:{}, remote_side:{}",
                        butil::endpoint2str(_node.leader_id().addr).c_str(),
                        _region_id, log_id, remote_side);
             return;
@@ -1605,8 +1605,8 @@ namespace EA {
 
         response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str()); // 每次都返回leader
         if (validate_version(request, response) == false) {
-            DB_WARNING("region version too old, region_id: %ld, log_id:%lu,"
-                       " request_version:%ld, region_version:%ld optype:%s remote_side:%s",
+            TLOG_WARN("region version too old, region_id: {}, log_id:{},"
+                       " request_version:{}, region_version:{} optype:{} remote_side:{}",
                        _region_id, log_id, request->region_version(), _region_info.version(),
                        proto::OpType_Name(request->op_type()).c_str(), remote_side);
             return;
@@ -1617,7 +1617,7 @@ namespace EA {
             response->set_errcode(proto::NOT_LEADER);
             response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
             response->set_errmsg("not leader");
-            DB_WARNING("not leader, leader:%s, region_id: %ld, version:%ld, log_id:%lu, remote_side:%s",
+            TLOG_WARN("not leader, leader:{}, region_id: {}, version:{}, log_id:{}, remote_side:{}",
                        butil::endpoint2str(_node.leader_id().addr).c_str(),
                        _region_id, _region_info.version(), log_id, remote_side);
             return;
@@ -1663,7 +1663,7 @@ namespace EA {
             default:
                 response->set_errcode(proto::UNSUPPORT_REQ_TYPE);
                 response->set_errmsg("unsupport request type");
-                DB_WARNING("not support op_type when binlog request, op_type:%s region_id: %ld, log_id:%lu",
+                TLOG_WARN("not support op_type when binlog request, op_type:{} region_id: {}, log_id:{}",
                            proto::OpType_Name(request->op_type()).c_str(), _region_id, log_id);
         }
         return;

@@ -791,23 +791,23 @@ namespace EA {
             doc.Parse<0>(json_str.c_str());
             if (doc.HasParseError()) {
                 rapidjson::ParseErrorCode code = doc.GetParseError();
-                DB_WARNING("parse json_str error [code:%d][%s]", code, json_str.c_str());
+                TLOG_WARN("parse json_str error [code:{}][{}]", code, json_str.c_str());
                 return ExprValue::Null();
             }
 
         } catch (...) {
-            DB_WARNING("parse json_str error [%s]", json_str.c_str());
+            TLOG_WARN("parse json_str error [{}]", json_str.c_str());
             return ExprValue::Null();
         }
         rapidjson::Pointer pointer(path.c_str());
         if (!pointer.IsValid()) {
-            DB_WARNING("invalid path: [%s]", path.c_str());
+            TLOG_WARN("invalid path: [{}]", path.c_str());
             return ExprValue::Null();
         }
 
         const rapidjson::Value *pValue = rapidjson::GetValueByPointer(doc, pointer);
         if (pValue == nullptr) {
-            DB_WARNING("the path: [%s] does not exist in doc [%s]", path.c_str(), json_str.c_str());
+            TLOG_WARN("the path: [{}] does not exist in doc [{}]", path.c_str(), json_str.c_str());
             return ExprValue::Null();
         }
         // TODO type on fly
@@ -1147,7 +1147,7 @@ namespace EA {
             return ExprValue::Null();
         }
         try {
-            turbo::CivilDay today(year,month,day);
+            turbo::CivilDay today(year, month, day);
             get_weekday(today);
             ExprValue tmp(proto::UINT32);
             /*
@@ -1156,7 +1156,7 @@ namespace EA {
             tmp._u.uint32_val = static_cast<uint32_t>(turbo::GetWeekday(today)) + 1;
             return tmp;
         } catch (std::exception &e) {
-            DB_WARNING("date error:%s", e.what());
+            TLOG_WARN("date error:{}", e.what());
             return ExprValue::Null();
         }
     }
@@ -1268,7 +1268,7 @@ namespace EA {
             tmp._u.uint32_val = turbo::GetYearDay(today);
             return tmp;
         } catch (std::exception &e) {
-            DB_WARNING("date error:%s", e.what());
+            TLOG_WARN("date error:{}", e.what());
             return ExprValue::Null();
         }
     }
@@ -1299,7 +1299,7 @@ namespace EA {
             }
             return tmp;
         } catch (std::exception &e) {
-            DB_WARNING("date error:%s", e.what());
+            TLOG_WARN("date error:{}", e.what());
             return ExprValue::Null();
         }
     }
@@ -1377,7 +1377,7 @@ namespace EA {
             first_day = turbo::CivilDay(year, 1, 1);
             today = turbo::CivilDay(year, month, day);
         } catch (std::exception &e) {
-            DB_WARNING("date error:%s", e.what());
+            TLOG_WARN("date error:{}", e.what());
             return -1;
         }
         int day_of_year = turbo::GetYearDay(today);
@@ -1480,7 +1480,7 @@ namespace EA {
             tmp._u.uint32_val = week_number;
             return tmp;
         } catch (std::exception &e) {
-            DB_WARNING("date error:%s", e.what());
+            TLOG_WARN("date error:{}", e.what());
             return ExprValue::Null();
         }
     }

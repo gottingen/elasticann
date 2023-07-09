@@ -17,50 +17,65 @@
 
 // Brief:  the class for generating and executing DDL SQL
 #pragma once
+
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
 
-class DDLPlanner : public LogicalPlanner {
-public:
+    class DDLPlanner : public LogicalPlanner {
+    public:
 
-    DDLPlanner(QueryContext* ctx) : LogicalPlanner(ctx) {}
+        DDLPlanner(QueryContext *ctx) : LogicalPlanner(ctx) {}
 
-    virtual ~DDLPlanner() {}
+        virtual ~DDLPlanner() {}
 
-    virtual int plan();
+        virtual int plan();
 
-private:
-    int parse_create_table(proto::SchemaInfo& table);
-    int parse_drop_table(proto::SchemaInfo& table);
-    int parse_restore_table(proto::SchemaInfo& table);
-    int parse_create_database(proto::DataBaseInfo& database);
-    int parse_drop_database(proto::DataBaseInfo& database);
-    int parse_alter_table(proto::MetaManagerRequest& alter_request);
-    int check_partition_key_constraint(proto::SchemaInfo& table, const std::string& field_name);
+    private:
+        int parse_create_table(proto::SchemaInfo &table);
 
-    int add_column_def(proto::SchemaInfo& table, parser::ColumnDef* column);
-    int add_constraint_def(proto::SchemaInfo& table, parser::Constraint* constraint,parser::AlterTableSpec* spec);
-    bool is_fulltext_type_constraint(proto::StorageType pb_storage_type, bool& has_arrow_type, bool& has_pb_type) const;
-    proto::PrimitiveType to_baikal_type(parser::FieldType* field_type);
-    int parse_pre_split_keys(std::string split_start_key,
-                             std::string split_end_key,
-                             std::string global_start_key,
-                             std::string global_end_key,
-                             int32_t split_region_num, proto::SchemaInfo& table);
-    int pre_split_index(const std::string& start_key,
-                        const std::string& end_key,
-                        int32_t region_num,
-                        proto::SchemaInfo& table,
-                        const proto::IndexInfo* pk_index,
-                        const proto::IndexInfo* index,
-                        const std::vector<const proto::FieldInfo*>& pk_fields,
-                        const std::vector<const proto::FieldInfo*>& index_fields);
-    int parse_modify_column(proto::MetaManagerRequest& alter_request,
-                              const parser::TableName* table_name,
-                              const parser::AlterTableSpec* alter_spec);
-    std::map<std::string, bool> _column_can_null;
-};
+        int parse_drop_table(proto::SchemaInfo &table);
+
+        int parse_restore_table(proto::SchemaInfo &table);
+
+        int parse_create_database(proto::DataBaseInfo &database);
+
+        int parse_drop_database(proto::DataBaseInfo &database);
+
+        int parse_alter_table(proto::MetaManagerRequest &alter_request);
+
+        int check_partition_key_constraint(proto::SchemaInfo &table, const std::string &field_name);
+
+        int add_column_def(proto::SchemaInfo &table, parser::ColumnDef *column);
+
+        int add_constraint_def(proto::SchemaInfo &table, parser::Constraint *constraint, parser::AlterTableSpec *spec);
+
+        bool
+        is_fulltext_type_constraint(proto::StorageType pb_storage_type, bool &has_arrow_type, bool &has_pb_type) const;
+
+        proto::PrimitiveType to_baikal_type(parser::FieldType *field_type);
+
+        int parse_pre_split_keys(std::string split_start_key,
+                                 std::string split_end_key,
+                                 std::string global_start_key,
+                                 std::string global_end_key,
+                                 int32_t split_region_num, proto::SchemaInfo &table);
+
+        int pre_split_index(const std::string &start_key,
+                            const std::string &end_key,
+                            int32_t region_num,
+                            proto::SchemaInfo &table,
+                            const proto::IndexInfo *pk_index,
+                            const proto::IndexInfo *index,
+                            const std::vector<const proto::FieldInfo *> &pk_fields,
+                            const std::vector<const proto::FieldInfo *> &index_fields);
+
+        int parse_modify_column(proto::MetaManagerRequest &alter_request,
+                                const parser::TableName *table_name,
+                                const parser::AlterTableSpec *alter_spec);
+
+        std::map<std::string, bool> _column_can_null;
+    };
 } //namespace EA

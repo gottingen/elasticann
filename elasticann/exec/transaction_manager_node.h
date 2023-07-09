@@ -23,22 +23,28 @@
 #include "elasticann/proto/plan.pb.h"
 
 namespace EA {
-class TransactionManagerNode : public ExecNode {
-public:
-    TransactionManagerNode() {
-    }
-    virtual ~TransactionManagerNode() {
-    }
-    void set_op_type(proto::OpType op_type) {
-        _op_type = op_type;
-    }
-    virtual int exec_begin_node(RuntimeState* state, ExecNode* begin_node);
-    virtual int exec_prepared_node(RuntimeState* state, ExecNode* prepared_node, int start_seq_id);
-    virtual int exec_commit_node(RuntimeState* state, ExecNode* commit_node);
-    virtual int exec_rollback_node(RuntimeState* state, ExecNode* rollback_node);
+    class TransactionManagerNode : public ExecNode {
+    public:
+        TransactionManagerNode() {
+        }
 
-protected:
-    FetcherStore _fetcher_store;
-    proto::OpType _op_type = proto::OP_NONE;
-};
+        virtual ~TransactionManagerNode() {
+        }
+
+        void set_op_type(proto::OpType op_type) {
+            _op_type = op_type;
+        }
+
+        virtual int exec_begin_node(RuntimeState *state, ExecNode *begin_node);
+
+        virtual int exec_prepared_node(RuntimeState *state, ExecNode *prepared_node, int start_seq_id);
+
+        virtual int exec_commit_node(RuntimeState *state, ExecNode *commit_node);
+
+        virtual int exec_rollback_node(RuntimeState *state, ExecNode *rollback_node);
+
+    protected:
+        FetcherStore _fetcher_store;
+        proto::OpType _op_type = proto::OP_NONE;
+    };
 }
