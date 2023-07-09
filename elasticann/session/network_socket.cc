@@ -105,7 +105,6 @@ namespace EA {
     std::atomic<uint64_t> NetworkSocket::txn_id_counter(1);
 
     NetworkSocket::~NetworkSocket() {
-        //DB_WARNING_CLIENT(this, "NetworkSocket close");
         if (fd > 0) {
             close(fd);
         }

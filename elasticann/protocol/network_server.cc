@@ -21,7 +21,7 @@
 #include <netinet/tcp.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "elasticann/common/log.h"
+
 #include <gflags/gflags.h>
 #include <time.h>
 #include "turbo/strings/str_replace.h"
@@ -73,10 +73,10 @@ namespace EA {
             if (MetaServerInteract::get_instance()->send_request("baikal_heartbeat", request, response) == 0) {
                 //处理心跳
                 BaikalHeartBeat::process_heart_beat_response(response);
-                DB_WARNING("report_heart_beat, construct_req_cost:%ld, process_res_cost:%ld",
+                TLOG_WARN("report_heart_beat, construct_req_cost:{}, process_res_cost:{}",
                            construct_req_cost, cost.get_time());
             } else {
-                DB_WARNING("send heart beat request to meta server fail");
+                TLOG_WARN("send heart beat request to meta server fail");
             }
 
             if (MetaServerInteract::get_backup_instance()->is_inited()) {
@@ -91,10 +91,10 @@ namespace EA {
                     0) {
                     //处理心跳
                     BaikalHeartBeat::process_heart_beat_response(response, true);
-                    DB_WARNING("report_heart_beat, construct_req_cost:%ld, process_res_cost:%ld",
+                    TLOG_WARN("report_heart_beat, construct_req_cost:{}, process_res_cost:{}",
                                construct_req_cost, cost.get_time());
                 } else {
-                    DB_WARNING("send heart beat request to meta server fail");
+                    TLOG_WARN("send heart beat request to meta server fail");
                 }
             }
 
@@ -116,10 +116,10 @@ namespace EA {
             if (MetaServerInteract::get_instance()->send_request("baikal_other_heartbeat", request, response) == 0) {
                 //处理心跳
                 process_other_heart_beat_response(response);
-                DB_WARNING("report_heart_beat, construct_req_cost:%ld, process_res_cost:%ld",
+                TLOG_WARN("report_heart_beat, construct_req_cost:{}, process_res_cost:{}",
                            construct_req_cost, cost.get_time());
             } else {
-                DB_WARNING("send heart beat request to meta server fail");
+                TLOG_WARN("send heart beat request to meta server fail");
             }
             bthread_usleep_fast_shutdown(FLAGS_baikal_heartbeat_interval_us, _shutdown);
         }
@@ -298,11 +298,11 @@ namespace EA {
         } while (++retry < 20);
 
         if (ret != 0) {
-            DB_FATAL("sql_len:%lu query fail : %s", sql.size(), sql.c_str());
+            TLOG_ERROR("sql_len:{} query fail : {}", sql.size(), sql.c_str());
             sql += ";\n";
             return -1;
         }
-        DB_NOTICE("affected_rows:%lu, cost:%ld, sql_len:%lu, sql:%s",
+        TLOG_INFO("affected_rows:{}, cost:{}, sql_len:{}, sql:{}",
                   result_set.get_affected_rows(), cost.get_time(), sql.size(), sql.c_str());
         return 0;
     }
@@ -372,11 +372,11 @@ namespace EA {
         } while (++retry < 20);
 
         if (ret != 0) {
-            DB_FATAL("sql_len:%lu query fail : %s", sql.size(), sql.c_str());
+            TLOG_ERROR("sql_len:{} query fail : {}", sql.size(), sql.c_str());
             sql += ";\n";
             return -1;
         }
-        DB_NOTICE("affected_rows:%lu, cost:%ld, sql_len:%lu, sql:%s",
+        TLOG_INFO("affected_rows:{}, cost:{}, sql_len:{}, sql:{}",
                   result_set.get_affected_rows(), cost.get_time(), sql.size(), sql.c_str());
         return 0;
     }
@@ -398,11 +398,11 @@ namespace EA {
         } while (++retry < 20);
 
         if (ret != 0) {
-            DB_FATAL("sql_len:%lu query fail : %s", sql.size(), sql.c_str());
+            TLOG_ERROR("sql_len:{} query fail : {}", sql.size(), sql.c_str());
             sql += ";\n";
             return -1;
         }
-        DB_NOTICE("affected_rows:%lu, cost:%ld, sql_len:%lu, sql:%s",
+        TLOG_INFO("affected_rows:{}, cost:{}, sql_len:{}, sql:{}",
                   result_set.get_affected_rows(), cost.get_time(), sql.size(), sql.c_str());
         return 0;
     }
@@ -433,7 +433,7 @@ namespace EA {
                     auto &set_subquery_signs = iter_begin->second.subquery_signs;
                     uint64_t parent_sign = iter_begin->second.parent_sign;
                     if (set_subquery_signs.size() > 0 && parent_sign_to_counts.count(parent_sign) == 0) {
-                        DB_NOTICE("parent_sign is [%lu] and subquery_sign size is [%ld]", parent_sign,
+                        TLOG_INFO("parent_sign is [{}] and subquery_sign size is [{}]", parent_sign,
                                   set_subquery_signs.size());
                         parent_sign_to_subquery_signs[parent_sign] = set_subquery_signs;
                         parent_sign_to_counts.insert(parent_sign);
@@ -491,7 +491,7 @@ namespace EA {
                     if (hostname == "HOSTNAME") {
                         hostname = butil::my_hostname();
                         if (hostname == "") {
-                            DB_WARNING("get hostname failed");
+                            TLOG_WARN("get hostname failed");
                         }
                     }
 
@@ -528,15 +528,15 @@ namespace EA {
                                                    / (pair2.second.count - pair2.second.err_count);
                         }
                         dynamic_timeout_ms = sql_info->dynamic_timeout_ms();
-                        SQL_TRACE("sign:%lu qps:%f avg_scan_rows:%ld scan_rows_9999:%ld "
-                                  "latency_us:%ld latency_us_9999:%ld times:%ld dynamic_timeout_ms:%ld",
+                        TLOG_TRACE("sign:{} qps:{} avg_scan_rows:{} scan_rows_9999:{} "
+                                  "latency_us:{} latency_us_9999:{} times:{} dynamic_timeout_ms:{}",
                                   out_sign, sql_info->qps, sql_info->avg_scan_rows, sql_info->scan_rows_9999,
                                   sql_info->latency_us,
                                   sql_info->latency_us_9999, sql_info->times_avg_and_9999, dynamic_timeout_ms);
                     }
-                    SQL_TRACE("date_hour_min=[%04d-%02d-%02d\t%02d\t%02d] sum_pv_avg_affected_scan_filter_rgcnt_err="
-                              "[%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld] sign_hostname_index=[%lu\t%s\t%s] dynamic_timeout_ms:%ld sql_agg: %s "
-                              "op_version_desc=[%ld\t%s\t%s\t%s]",
+                    TLOG_TRACE("date_hour_min=[{:04d}-{:02d}-{:02d}\t{:02d}\t{:02d}] sum_pv_avg_affected_scan_filter_rgcnt_err="
+                              "[{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}] sign_hostname_index=[{}\t{}\t{}] dynamic_timeout_ms:{} sql_agg: {} "
+                              "op_version_desc=[{}\t{}\t{}\t{}]",
                               1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min,
                               pair2.second.sum, pair2.second.count,
                               pair2.second.count == 0 ? 0 : pair2.second.sum / pair2.second.count,
@@ -552,10 +552,10 @@ namespace EA {
                         if (values_size >= FLAGS_batch_insert_agg_sql_size) {
                             sql_values.pop_back();
                             if (insert_agg_sql(sql_values) < 0) {
-                                DB_WARNING("insert agg_sql: %s failed", sql_values.c_str());
+                                TLOG_WARN("insert agg_sql: {} failed", sql_values.c_str());
                             }
                             if (insert_agg_sql_by_sign(sign_sql_map, family_tbl_tag_set, sign_to_counts) < 0) {
-                                DB_WARNING("insert agg_sql_by_sign: %s failed", sql_values.c_str());
+                                TLOG_WARN("insert agg_sql_by_sign: {} failed", sql_values.c_str());
                             }
                             sql_values.clear();
                             values_size = 0;
@@ -589,14 +589,14 @@ namespace EA {
 
                         // time
                         char time_str[40];
-                        snprintf(time_str, 40, "%04d-%02d-%02d %02d:%02d:%02d:%03d",
+                        snprintf(time_str, 40, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}:{:03d}",
                                  tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, 0);
                         sql_values += "('" + std::string(time_str) + "',";                 // time: 06-02 14:33:10:063
-                        snprintf(time_str, 40, "%02d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+                        snprintf(time_str, 40, "{:02d}-{:02d}-{:02d}", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
                         sql_values += "'" + std::string(time_str) + "',";                  // date: 2021-06-02
-                        snprintf(time_str, 40, "%02d", tm.tm_hour);
+                        snprintf(time_str, 40, "{:02d}", tm.tm_hour);
                         sql_values += "'" + std::string(time_str) + "',";
-                        snprintf(time_str, 40, "%02d", tm.tm_min);
+                        snprintf(time_str, 40, "{:02d}", tm.tm_min);
                         sql_values += "'" + std::string(time_str) + "',";
                         sql_values += "'" + std::to_string(pair2.second.sum) + "',";
                         sql_values += "'" + std::to_string(pair2.second.count) + "',";
@@ -639,10 +639,10 @@ namespace EA {
             if (FLAGS_insert_agg_sql && values_size > 0) {
                 sql_values.pop_back();
                 if (insert_agg_sql(sql_values) < 0) {
-                    DB_WARNING("insert agg_sql: %s failed", sql_values.c_str());
+                    TLOG_WARN("insert agg_sql: {} failed", sql_values.c_str());
                 }
                 if (insert_agg_sql_by_sign(sign_sql_map, family_tbl_tag_set, sign_to_counts) < 0) {
-                    DB_WARNING("insert agg_sql_by_sign: %s failed", sql_values.c_str());
+                    TLOG_WARN("insert agg_sql_by_sign: {} failed", sql_values.c_str());
                 }
             }
             for (auto &pair: table_count_err) {
@@ -653,7 +653,7 @@ namespace EA {
                     auto tbl_ptr = factory->get_table_info_ptr(table_id);
                     if (tbl_ptr != nullptr && tbl_ptr->have_backup) {
                         tbl_ptr->need_read_backup = true;
-                        DB_FATAL("table_id: %ld, %s use backup, count:%ld, err:%ld",
+                        TLOG_ERROR("table_id: {}, {} use backup, count:{}, err:{}",
                                  table_id, tbl_ptr->name.c_str(), pair.second.count, pair.second.err);
                     }
                 }
@@ -721,10 +721,10 @@ namespace EA {
         } while (++retry < 10);
 
         if (ret != 0) {
-            DB_FATAL("sql_len:%lu query fail : %s", sql.size(), sql.c_str());
+            TLOG_ERROR("sql_len:{} query fail : {}", sql.size(), sql.c_str());
             sql += ";\n";
         }
-        DB_NOTICE("affected_rows:%lu, cost:%ld, sql_len:%lu, sql:%s",
+        TLOG_INFO("affected_rows:{}, cost:{}, sql_len:{}, sql:{}",
                   result_set.get_affected_rows(), cost.get_time(), sql.size(), sql.c_str());
         bthread_usleep(1000000);//sleep 1s
         return ret;
@@ -739,19 +739,19 @@ namespace EA {
             if (cntl->ErrorCode() == brpc::ERPCTIMEDOUT ||
                 cntl->ErrorCode() == ETIMEDOUT) {
                 new_status = proto::DEAD;
-                DB_WARNING("addr:%s is dead(hang), need rpc cancel, errcode:%d, error:%s",
+                TLOG_WARN("addr:{} is dead(hang), need rpc cancel, errcode:{}, error:{}",
                            addr.c_str(), cntl->ErrorCode(), cntl->ErrorText().c_str());
             } else if (cntl->ErrorCode() != brpc::ENOMETHOD) {
                 new_status = proto::FAULTY;
-                DB_WARNING("addr:%s is faulty, errcode:%d, error:%s",
+                TLOG_WARN("addr:{} is faulty, errcode:{}, error:{}",
                            addr.c_str(), cntl->ErrorCode(), cntl->ErrorText().c_str());
             }
         } else if (response->errcode() == proto::STORE_BUSY) {
             new_status = proto::BUSY;
-            DB_WARNING("addr:%s is busy", addr.c_str());
+            TLOG_WARN("addr:{} is busy", addr.c_str());
         } else if (response->errcode() == proto::STORE_ROCKS_HANG) {
             new_status = proto::DEAD;
-            DB_WARNING("addr:%s is rocks hang", addr.c_str());
+            TLOG_WARN("addr:{} is rocks hang", addr.c_str());
         }
 
         if (old_status != new_status) {
@@ -790,7 +790,7 @@ namespace EA {
                 }
                 int ret = channel.Init(addr.c_str(), &option);
                 if (ret != 0) {
-                    DB_WARNING("init failed, addr:%s, ret:%d", addr.c_str(), ret);
+                    TLOG_WARN("init failed, addr:{}, ret:{}", addr.c_str(), ret);
                     continue;
                 }
                 proto::HealthCheck req;
@@ -856,7 +856,7 @@ namespace EA {
             //dead实例不会太多，设置个阈值，太多了则不做处理
             size_t max_dead_cnt = std::min(info_map.size() / 10 + 1, (size_t) 5);
             if (need_cancel_addrs.size() > max_dead_cnt) {
-                DB_WARNING("too many dead instance, size: %lu/%lu", need_cancel_addrs.size(), info_map.size());
+                TLOG_WARN("too many dead instance, size: {}/{}", need_cancel_addrs.size(), info_map.size());
                 need_cancel_addrs.clear();
             }
             for (auto &addr: need_cancel_addrs) {
@@ -865,11 +865,11 @@ namespace EA {
 
             time_t time_now = time(nullptr);
             if (time_now == (time_t) -1) {
-                DB_WARNING("get current time failed.");
+                TLOG_WARN("get current time failed.");
                 return;
             }
             if (_epoll_info == nullptr) {
-                DB_WARNING("_epoll_info not initialized yet.");
+                TLOG_WARN("_epoll_info not initialized yet.");
                 return;
             }
 
@@ -890,11 +890,11 @@ namespace EA {
                         continue;
                     }
                     if (sock->is_free || sock->fd == -1) {
-                        DB_WARNING("sock is already free.");
+                        TLOG_WARN("sock is already free.");
                         sock->mutex.unlock();
                         continue;
                     }
-                    DB_WARNING("close un_authed connection [fd=%d][ip=%s][port=%d].",
+                    TLOG_WARN("close un_authed connection [fd={}][ip={}][port={}].",
                                sock->fd, sock->ip.c_str(), sock->port);
                     sock->shutdown = true;
                     MachineDriver::get_instance()->dispatch(sock, _epoll_info,
@@ -908,13 +908,13 @@ namespace EA {
                     if (need_cancel_addrs.size() > 0) {
                         // cancel dead addr
                         sock->cancel_rpc(need_cancel_addrs, sock->fd);
-                        DB_WARNING("%lu addrs is dead, cancel", need_cancel_addrs.size());
+                        TLOG_WARN("{} addrs is dead, cancel", need_cancel_addrs.size());
                     }
 
                     int query_time_diff = time_now - ctx->stat_info.start_stamp.tv_sec;
                     if (query_time_diff > FLAGS_slow_query_timeout_s) {
-                        DB_NOTICE(
-                                "query is slow, [cost=%d][fd=%d][ip=%s:%d][now=%ld][active=%ld][user=%s][log_id=%lu][sql=%s]",
+                        TLOG_INFO(
+                                "query is slow, [cost={}][fd={}][ip={}:{}][now={}][active={}][user={}][log_id={}][sql={}]",
                                 query_time_diff, sock->fd, sock->ip.c_str(), sock->port,
                                 time_now, sock->last_active,
                                 sock->user_info->username.c_str(),
@@ -952,11 +952,11 @@ namespace EA {
                     continue;
                 }
                 if (sock->is_free || sock->fd == -1) {
-                    DB_WARNING("sock is already free.");
+                    TLOG_WARN("sock is already free.");
                     sock->mutex.unlock();
                     continue;
                 }
-                DB_NOTICE("close idle connection [fd=%d][ip=%s:%d][now=%ld][active=%ld][user=%s]",
+                TLOG_INFO("close idle connection [fd={}][ip={}:{}][now={}][active={}][user={}]",
                           sock->fd, sock->ip.c_str(), sock->port,
                           time_now, sock->last_active,
                           sock->user_info->username.c_str());
@@ -990,12 +990,12 @@ namespace EA {
                 time_t end_time = slow_query_info.end_time;
                 localtime_r(&start_time, &local_start_time);
                 localtime_r(&end_time, &local_end_time);
-                //localtime => format("%Y-%m-%d %H:%M:%S")
+                //localtime => format("%Y-%m-{} %H:%M:%S")
                 char start_time_str[40], end_time_str[40];
-                snprintf(start_time_str, 40, "%04d-%02d-%02d %02d:%02d:%02d:%03d",
+                snprintf(start_time_str, 40, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}:{:03d}",
                          local_start_time.tm_year + 1900, local_start_time.tm_mon + 1, local_start_time.tm_mday,
                          local_start_time.tm_hour, local_start_time.tm_min, local_start_time.tm_sec, 0);
-                snprintf(end_time_str, 40, "%04d-%02d-%02d %02d:%02d:%02d:%03d",
+                snprintf(end_time_str, 40, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}:{:03d}",
                          local_end_time.tm_year + 1900, local_end_time.tm_mon + 1, local_end_time.tm_mday,
                          local_end_time.tm_hour, local_end_time.tm_min, local_end_time.tm_sec, 0);
                 //combine sql values
@@ -1022,7 +1022,7 @@ namespace EA {
                 slow_query_info_values.pop_back();
                 int ret = insert_slow_query_infos(slow_query_info_values);
                 if (ret < 0) {
-                    DB_WARNING("insert slow query infos failed, values_size is [%ld] values_info [%s]",
+                    TLOG_WARN("insert slow query infos failed, values_size is [{}] values_info [{}]",
                                values_size, slow_query_info_values.c_str());
                 }
                 values_size = 0;
@@ -1034,7 +1034,7 @@ namespace EA {
             slow_query_info_values.pop_back();
             int ret = insert_slow_query_infos(slow_query_info_values);
             if (ret < 0) {
-                DB_WARNING("insert slow query infos failed, values_size is [%ld] values_info [%s]",
+                TLOG_WARN("insert slow query infos failed, values_size is [{}] values_info [{}]",
                            values_size, slow_query_info_values.c_str());
             }
             values_size = 0;
@@ -1061,12 +1061,12 @@ namespace EA {
         } while (++retry < 20);
 
         if (ret != 0) {
-            DB_FATAL("sql_len:%lu query fail : %s", insert_slow_query_info_sql.size(),
+            TLOG_ERROR("sql_len:{} query fail : {}", insert_slow_query_info_sql.size(),
                      insert_slow_query_info_sql.c_str());
             insert_slow_query_info_sql += ";\n";
             return -1;
         }
-        DB_NOTICE("affected_rows:%lu, cost:%ld, sql_len:%lu, sql:%s",
+        TLOG_INFO("affected_rows:{}, cost:{}, sql_len:{}, sql:{}",
                   result_set.get_affected_rows(), cost.get_time(), insert_slow_query_info_sql.size(),
                   insert_slow_query_info_sql.c_str());
         return 0;
@@ -1096,7 +1096,7 @@ namespace EA {
         SchemaFactory *factory = SchemaFactory::get_instance();
         int64_t instance_tableid = -1;
         if (0 != factory->get_table_id(instance_table_name, instance_tableid)) {
-            DB_WARNING("unknown instance table: %s", instance_table_name.c_str());
+            TLOG_WARN("unknown instance table: {}", instance_table_name.c_str());
             return -1;
         }
 
@@ -1110,15 +1110,15 @@ namespace EA {
         if (MetaServerInteract::get_instance()->send_request("meta_manager",
                                                              request,
                                                              response) != 0) {
-            DB_FATAL("fetch_instance_info from meta_server fail");
+            TLOG_ERROR("fetch_instance_info from meta_server fail");
             return -1;
         }
         if (response.start_id() + 1 != response.end_id()) {
-            DB_FATAL("gen id count not equal to 1");
+            TLOG_ERROR("gen id count not equal to 1");
             return -1;
         }
         _instance_id = response.start_id();
-        DB_NOTICE("baikaldb instance_id: %lu", _instance_id);
+        TLOG_INFO("baikaldb instance_id: {}", _instance_id);
         return 0;
     }
 
@@ -1132,10 +1132,10 @@ namespace EA {
         std::string address = endpoint2str(addr).c_str();
         int ret = get_physical_room(address, _physical_room);
         if (ret < 0) {
-            DB_FATAL("get physical room fail");
+            TLOG_ERROR("get physical room fail");
             return false;
         }
-        DB_NOTICE("get physical_room %s", _physical_room.c_str());
+        TLOG_INFO("get physical_room {}", _physical_room.c_str());
         // 先把meta数据都获取到
         proto::BaikalHeartBeatRequest request;
         proto::BaikalHeartBeatResponse response;
@@ -1146,29 +1146,29 @@ namespace EA {
         if (MetaServerInteract::get_instance()->send_request("baikal_heartbeat", request, response) == 0) {
             //处理心跳
             BaikalHeartBeat::process_heart_beat_response_sync(response);
-            //DB_WARNING("req:%s  \nres:%s", request.DebugString().c_str(), response.DebugString().c_str());
+            //TLOG_WARN("req:{}  \nres:{}", request.DebugString().c_str(), response.DebugString().c_str());
         } else {
-            DB_FATAL("send heart beat request to meta server fail");
+            TLOG_ERROR("send heart beat request to meta server fail");
             return false;
         }
-        DB_NOTICE("sync time2:%ld", cost.get_time());
+        TLOG_INFO("sync time2:{}", cost.get_time());
         if (FLAGS_fetch_instance_id) {
             if (fetch_instance_info() != 0) {
                 return false;
             }
         }
-        DB_WARNING("get instance_id: %lu", _instance_id);
+        TLOG_WARN("get instance_id: {}", _instance_id);
         // for print_agg_sql
         if (FLAGS_insert_agg_sql) {
             int rc = 0;
             rc = _manager.init("conf", "baikal_client.conf");
             if (rc != 0) {
-                DB_FATAL("baikal client init fail:%d", rc);
+                TLOG_ERROR("baikal client init fail:{}", rc);
                 return false;
             }
             _baikaldb = _manager.get_service("baikaldb");
             if (_baikaldb == nullptr) {
-                DB_FATAL("baikaldb is null");
+                TLOG_ERROR("baikaldb is null");
                 return false;
             }
         }
@@ -1181,7 +1181,7 @@ namespace EA {
         _other_heartbeat_bth.join();
 
         if (_epoll_info == nullptr) {
-            DB_WARNING("_epoll_info not initialized yet.");
+            TLOG_WARN("_epoll_info not initialized yet.");
             return;
         }
         for (int32_t idx = 0; idx < CONFIG_MPL_EPOLL_MAX_SIZE; ++idx) {
@@ -1204,13 +1204,13 @@ namespace EA {
 
     bool NetworkServer::start() {
         if (!_is_init) {
-            DB_FATAL("Network server is not initail.");
+            TLOG_ERROR("Network server is not initail.");
             return false;
         }
-        DB_WARNING("db server init success");
+        TLOG_WARN("db server init success");
         if (0 != make_worker_process()) {
             _shutdown = true;
-            DB_FATAL("Start event loop failed.");
+            TLOG_ERROR("Start event loop failed.");
             return false;
         }
         return true;
@@ -1221,18 +1221,18 @@ namespace EA {
         SocketFactory *socket_pool = SocketFactory::get_instance();
         SmartSocket sock = socket_pool->create(SERVER_SOCKET);
         if (sock == nullptr) {
-            DB_FATAL("Failed to fetch socket from poll.type:[%u]", SERVER_SOCKET);
+            TLOG_ERROR("Failed to fetch socket from poll.type:[{}]", static_cast<int>(SERVER_SOCKET));
             return SmartSocket();
         }
         // Bind.
         int val = 1;
         if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) != 0) {
-            DB_FATAL("setsockopt fail");
+            TLOG_ERROR("setsockopt fail");
             return SmartSocket();
         }
 
         if (FLAGS_enable_tcp_keep_alive && set_keep_tcp_alive(sock->fd) != 0) {
-            DB_FATAL("setsockopt fail");
+            TLOG_ERROR("setsockopt fail");
             return SmartSocket();
         }
         struct sockaddr_in listen_addr;
@@ -1240,20 +1240,20 @@ namespace EA {
         listen_addr.sin_addr.s_addr = INADDR_ANY;
         listen_addr.sin_port = htons(FLAGS_baikal_port);
         if (0 > bind(sock->fd, (struct sockaddr *) &listen_addr, sizeof(listen_addr))) {
-            DB_FATAL("bind() errno=%d, error=%s", errno, strerror(errno));
+            TLOG_ERROR("bind() errno={}, error={}", errno, strerror(errno));
             return SmartSocket();
         }
 
         // Listen.
         if (0 > listen(sock->fd, FLAGS_backlog)) {
-            DB_FATAL("listen() failed fd=%d, bakclog=%d, errno=%d, error=%s",
+            TLOG_ERROR("listen() failed fd={}, bakclog={}, errno={}, error={}",
                      sock->fd, FLAGS_backlog, errno, strerror(errno));
             return SmartSocket();
         }
         sock->shutdown = false;
         // Set socket attribute.
         if (!set_fd_flags(sock->fd)) {
-            DB_FATAL("create listen socket but set fd flags error.");
+            TLOG_ERROR("create listen socket but set fd flags error.");
             return SmartSocket();
         }
         return sock;
@@ -1266,31 +1266,31 @@ namespace EA {
         // 打开keepalive功能
         int32_t alive = 1;
         if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, (void *) &alive, sizeof(alive)) < 0) {
-            DB_WARNING("fd:%d setsockopt SO_KEEPALIVE failed: %d (%s)", socket_fd, errno, strerror(errno));
+            TLOG_WARN("fd:{} setsockopt SO_KEEPALIVE failed: {} ({})", socket_fd, errno, strerror(errno));
             return -1;
         }
         // 关闭一个非活跃连接之前的最大重试次数
         int32_t probes = 3;
         if (setsockopt(socket_fd, SOL_TCP, TCP_KEEPCNT, (void *) &probes, sizeof(probes)) < 0) {
-            DB_WARNING("fd:%d setsockopt SO_KEEPCNT failed: %d (%s)", socket_fd, errno, strerror(errno));
+            TLOG_WARN("fd:{} setsockopt SO_KEEPCNT failed: {} ({})", socket_fd, errno, strerror(errno));
             return -1;
         }
         // 发送 keepalive 报文的时间间隔
         int32_t alivetime = 30;
         if (setsockopt(socket_fd, SOL_TCP, TCP_KEEPIDLE, (void *) &alivetime, sizeof(alivetime)) < 0) {
-            DB_WARNING("fd:%d setsockopt SO_KEEPIDLE failed: %d (%s)", socket_fd, errno, strerror(errno));
+            TLOG_WARN("fd:{} setsockopt SO_KEEPIDLE failed: {} ({})", socket_fd, errno, strerror(errno));
             return -1;
         }
         // 重试间隔
         int32_t interval = 10;
         if (setsockopt(socket_fd, SOL_TCP, TCP_KEEPINTVL, (void *) &interval, sizeof(interval)) < 0) {
-            DB_WARNING("fd:%d setsockopt SO_KEEPINTVL failed: %d (%s)", socket_fd, errno, strerror(errno));
+            TLOG_WARN("fd:{} setsockopt SO_KEEPINTVL failed: {} ({})", socket_fd, errno, strerror(errno));
             return -1;
         }
 
         int32_t nodelay = 1;
         if (setsockopt(socket_fd, IPPROTO_TCP, TCP_NODELAY, (void *) &nodelay, sizeof(nodelay)) < 0) {
-            DB_WARNING("fd:%d setsockopt TCP_NODELAY failed %d (%s)", socket_fd, errno, strerror(errno));
+            TLOG_WARN("fd:{} setsockopt TCP_NODELAY failed {} ({})", socket_fd, errno, strerror(errno));
             return -1;
         }
 
@@ -1298,7 +1298,7 @@ namespace EA {
         linger.l_onoff = 1;
         linger.l_linger = 3;
         if (setsockopt(socket_fd, SOL_SOCKET, SO_LINGER, (void *) &linger, sizeof(linger)) < 0) {
-            DB_WARNING("fd:%d setsockopt SO_LINGER failed: %d (%s)", socket_fd, errno, strerror(errno));
+            TLOG_WARN("fd:{} setsockopt SO_LINGER failed: {} ({})", socket_fd, errno, strerror(errno));
             return -1;
         }
 
@@ -1307,7 +1307,7 @@ namespace EA {
 
     int NetworkServer::make_worker_process() {
         if (MachineDriver::get_instance()->init(_driver_thread_num) != 0) {
-            DB_FATAL("Failed to init machine driver.");
+            TLOG_ERROR("Failed to init machine driver.");
             exit(-1);
         }
         _conn_check_bth.run([this]() { connection_timeout_check(); });
@@ -1322,18 +1322,18 @@ namespace EA {
         // Create listen socket.
         _service = create_listen_socket();
         if (_service == nullptr) {
-            DB_FATAL("Failed to create listen socket.");
+            TLOG_ERROR("Failed to create listen socket.");
             return -1;
         }
 
         // Initail epoll info.
         _epoll_info = new EpollInfo();
         if (!_epoll_info->init()) {
-            DB_FATAL("initial epoll info failed.");
+            TLOG_ERROR("initial epoll info failed.");
             return -1;
         }
         if (!_epoll_info->poll_events_add(_service, EPOLLIN)) {
-            DB_FATAL("poll_events_add add socket[%d] error", _service->fd);
+            TLOG_ERROR("poll_events_add add socket[{}] error", _service->fd);
             return -1;
         }
         // Process epoll events.
@@ -1357,24 +1357,24 @@ namespace EA {
                     socklen_t client_len = sizeof(client_addr);
                     int client_fd = accept(fd, (struct sockaddr *) &client_addr, &client_len);
                     if (client_fd <= 0) {
-                        DB_WARNING("Wrong fd:[%d] errno:%d", client_fd, errno);
+                        TLOG_WARN("Wrong fd:[{}] errno:{}", client_fd, errno);
                         continue;
                     }
                     if (client_fd >= CONFIG_MPL_EPOLL_MAX_SIZE) {
-                        DB_WARNING("Wrong fd.fd=%d >= CONFIG_MENU_EPOLL_MAX_SIZE", client_fd);
+                        TLOG_WARN("Wrong fd.fd={} >= CONFIG_MENU_EPOLL_MAX_SIZE", client_fd);
                         close(client_fd);
                         continue;
                     }
                     // Set flags of client socket.
                     if (!set_fd_flags(client_fd)) {
-                        DB_WARNING("client_fd=%d set_fd_flags error close(client)", client_fd);
+                        TLOG_WARN("client_fd={} set_fd_flags error close(client)", client_fd);
                         close(client_fd);
                         continue;
                     }
                     // Create NetworkSocket for new client socket.
                     SmartSocket client_socket = socket_pool->create(CLIENT_SOCKET);
                     if (client_socket == nullptr) {
-                        DB_WARNING("Failed to create NetworkSocket from pool.fd:[%d]", client_fd);
+                        TLOG_WARN("Failed to create NetworkSocket from pool.fd:[{}]", client_fd);
                         close(client_fd);
                         continue;
                     }
@@ -1392,35 +1392,39 @@ namespace EA {
 
                     // Set socket mapping and event.
                     if (!_epoll_info->set_fd_mapping(client_socket->fd, client_socket)) {
-                        DB_FATAL("Failed to set fd mapping.");
+                        TLOG_ERROR("Failed to set fd mapping.");
                         return -1;
                     }
                     _epoll_info->poll_events_add(client_socket, 0);
 
                     // New connection will be handled immediately.
                     fd = client_fd;
-                    //DB_NOTICE("Accept new connect [ip=%s, port=%d, client_fd=%d]",
-                    DB_WARNING_CLIENT(client_socket, "Accept new connect [ip=%s, port=%d, client_fd=%d]",
+                    //TLOG_INFO("Accept new connect [ip={}, port={}, client_fd={}]",
+
+                    TLOG_WARN("{}, Accept new connect [ip={}, port={}, client_fd={}]",*client_socket,
                                       ip_address,
                                       client_socket->port,
                                       client_socket->fd);
+
                 }
 
                 // Check if socket in fd_mapping or not.
                 SmartSocket sock = _epoll_info->get_fd_mapping(fd);
                 if (sock == nullptr) {
-                    DB_DEBUG("Can't find fd in fd_mapping, fd:[%d], listen_fd:[%d], fd_cnt:[%d]",
+                    TLOG_DEBUG("Can't find fd in fd_mapping, fd:[{}], listen_fd:[{}], fd_cnt:[{}]",
                              fd, listen_fd, cnt);
                     continue;
                 }
                 if (fd != sock->fd) {
-                    DB_WARNING_CLIENT(sock, "current [fd=%d][sock_fd=%d]"
-                                            "[event=%d][fd_cnt=%d][state=%s]",
+
+                    TLOG_WARN("{},current [fd={}][sock_fd={}]"
+                                            "[event={}][fd_cnt={}][state={}]",*sock,
                                       fd,
                                       sock->fd,
                                       event,
                                       fd_cnt,
                                       state2str(sock).c_str());
+
                     continue;
                 }
                 sock->last_active = time(nullptr);
@@ -1430,14 +1434,14 @@ namespace EA {
                 if (event & EPOLLHUP || event & EPOLLERR) {
                     if (sock->socket_type == CLIENT_SOCKET) {
                         if ((event & EPOLLHUP) && sock->shutdown == false) {
-                            DB_WARNING_CLIENT(sock, "CLIENT EPOLL event is EPOLLHUP, fd=%d event=0x%x",
+                           TLOG_WARN("{},CLIENT EPOLL event is EPOLLHUP, fd={} event=0x{:x}",*sock,
                                               fd, event);
                         } else if ((event & EPOLLERR) && sock->shutdown == false) {
-                            DB_WARNING_CLIENT(sock, "CLIENT EPOLL event is EPOLLERR, fd=%d event=0x%x",
-                                              fd, event);
+                           TLOG_WARN("{},CLIENT EPOLL event is EPOLLERR, fd={} event=0x{:x}", *sock,
+                                             fd, event);
                         }
                     } else {
-                        DB_WARNING_CLIENT(sock, "socket type is wrong, fd %d event=0x%x", fd, event);
+                        TLOG_WARN("{},socket type is wrong, fd {} event=0x{:x}", *sock,fd, event);
                     }
                     sock->shutdown = true;
                 }
@@ -1449,7 +1453,7 @@ namespace EA {
                         continue;
                     }
                     if (sock->is_free || sock->fd == -1) {
-                        DB_WARNING_CLIENT(sock, "sock is already free.");
+                        TLOG_WARN("{},sock is already free.", *sock);
                         sock->mutex.unlock();
                         continue;
                     }
@@ -1459,11 +1463,11 @@ namespace EA {
                     MachineDriver::get_instance()->dispatch(sock, _epoll_info,
                                                             sock->shutdown || _shutdown);
                 } else {
-                    DB_WARNING("unknown network socket type[%d].", sock->socket_type);
+                    TLOG_WARN("unknown network socket type[{}].", static_cast<int>(sock->socket_type));
                 }
             }
         }
-        DB_NOTICE("Baikal instance exit.");
+        TLOG_INFO("Baikal instance exit.");
         return 0;
     }
 
@@ -1499,17 +1503,17 @@ namespace EA {
 
     bool NetworkServer::set_fd_flags(int fd) {
         if (fd < 0) {
-            DB_FATAL("wrong fd:[%d].", fd);
+            TLOG_ERROR("wrong fd:[{}].", fd);
             return false;
         }
         int opts = fcntl(fd, F_GETFL);
         if (opts < 0) {
-            DB_FATAL("set_fd_flags() fd=%d fcntl(fd, F_GETFL) error", fd);
+            TLOG_ERROR("set_fd_flags() fd={} fcntl(fd, F_GETFL) error", fd);
             return false;
         }
         opts = opts | O_NONBLOCK;
         if (fcntl(fd, F_SETFL, opts) < 0) {
-            DB_FATAL("set_fd_flags() fd=%d fcntl(fd, F_SETFL, opts) error", fd);
+            TLOG_ERROR("set_fd_flags() fd={} fcntl(fd, F_SETFL, opts) error", fd);
             return false;
         }
         struct linger li;
@@ -1518,13 +1522,13 @@ namespace EA {
 
         int ret = setsockopt(fd, SOL_SOCKET, SO_LINGER, (const char *) &li, sizeof(li));
         if (ret != 0) {
-            DB_FATAL("set_fd_flags() fd=%d setsockopt linger error", fd);
+            TLOG_ERROR("set_fd_flags() fd={} setsockopt linger error", fd);
             return false;
         }
         int var = 1;
         ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &var, sizeof(var));
         if (ret != 0) {
-            DB_FATAL("set_fd_flags() fd=%d setsockopt tcp_nodelay error", fd);
+            TLOG_ERROR("set_fd_flags() fd={} setsockopt tcp_nodelay error", fd);
             return false;
         }
         return true;

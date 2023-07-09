@@ -41,7 +41,7 @@ namespace EA {
         // // get pthread tid (first column of `ps x`)
         pid_t tid = (pid_t) syscall(SYS_gettid);
         // if (tid >= PID_MAX) {
-        //     DB_FATAL("tid: %d overflow PID_MAX", tid);
+        //     TLOG_ERROR("tid: {} overflow PID_MAX", tid);
         //     exit(-1);
         // }
 

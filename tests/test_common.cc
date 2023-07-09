@@ -25,8 +25,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstdint>
-#include <boost/regex.hpp>
-#include <boost/locale.hpp>
 #include <locale>
 #include <json2pb/pb_to_json.h>
 #include <brpc/channel.h>
@@ -161,27 +159,6 @@ namespace EA {
             channel.AddChannel(sub_channel2, NULL);
         }
         TLOG_WARN("selective2:{}", cost.get_time());
-    }
-
-    DOCTEST_TEST_CASE("test_exmaple, case_all") {
-        int a = 10;
-        int &b = a;
-        int &c = b;
-        std::cout << &a << " " << &b << " " << &c << std::endl;
-        boost::regex partion_key_pattern("[0-9.]+[eE][+-][0-9]+");
-        boost::cmatch what;
-        auto aa = boost::regex_search("insert into user_acct (cop_userid, fc_userid) values (1123, 1.0E+7)", what,
-                                      partion_key_pattern);
-        std::cout << "aa:" << aa << std::endl;
-        std::cout << sizeof(std::size_t) << std::endl;
-        return;
-        bvar::Adder<char> test;
-        bvar::Window<bvar::Adder<char>> test_minute(&test, 6);
-        for (int i = 0; i < 266; i++) {
-            test << 1;
-            std::cout << (int) test.get_value() << " " << (int) test_minute.get_value() << std::endl;
-            usleep(1000000);
-        }
     }
 
     DOCTEST_TEST_CASE("regex_test, re2_regex") {
@@ -440,27 +417,7 @@ namespace EA {
         bthread_usleep(1000000);
     }*/
     }
-/*
-DOCTEST_TEST_CASE("test_gbk_regex, match") {
 
-    //招 gbk码点
-    std::string zhao1{".*\xCD\xB6.*"};
-    //如何避免无效点击和恶意点击 gbk码点
-    std::string val1{"\xC8\xE7\xBA\xCE\xB1\xDC\xC3\xE2\xCE\xDE\xD0\xA7\xB5\xE3\xBB\xF7\xBA\xCD\xB6\xF1\xD2\xE2\xB5\xE3\xBB\xF7"};
-    // char匹配
-    std::cout << "regex match result : " << boost::regex_match(val1, boost::regex(zhao1)) << '\n';
-    // wchar 匹配
-    // 转换成utf8字符，转换成宽字符
-    auto wzhao1 = boost::locale::conv::utf_to_utf<wchar_t>(
-        boost::locale::conv::to_utf<char>(zhao1, "gbk"));
-
-    auto wzhao_regex = boost::wregex(wzhao1);
-    auto wval1 = boost::locale::conv::utf_to_utf<wchar_t>(
-        boost::locale::conv::to_utf<char>(val1, "gbk"));
-
-    std::cout << "wregex match result : " << boost::regex_match(wval1, wzhao_regex) << '\n';
-}
-*/
     DEFINE_int64(gflags_test_int64, 20000, "");
     DEFINE_double(gflags_test_double, 0.234, "");
     DEFINE_string(gflags_test_string, "abc", "");

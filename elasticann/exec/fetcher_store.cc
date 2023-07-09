@@ -812,10 +812,10 @@ namespace EA {
         for (auto &pb_row: _response.row_values()) {
             if (pb_row.tuple_values_size() != _response.tuple_ids_size()) {
                 // brpc SelectiveChannel+backup_request有bug，pb的repeated字段merge到一起了
-                SQL_TRACE("backup_request size diff, tuple_values_size:{} tuple_ids_size:{} rows:{}",
+                TLOG_TRACE("backup_request size diff, tuple_values_size:{} tuple_ids_size:{} rows:{}",
                           pb_row.tuple_values_size(), _response.tuple_ids_size(), _response.row_values_size());
                 for (auto id: _response.tuple_ids()) {
-                    SQL_TRACE("tuple_id:{}  ", id);
+                    TLOG_TRACE("tuple_id:{}  ", id);
                 }
                 return E_RETRY;
             }

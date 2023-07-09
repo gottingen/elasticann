@@ -22,7 +22,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <boost/regex.hpp>
 #include "re2/re2.h"
 #include "elasticann/expr/predicate.h"
 

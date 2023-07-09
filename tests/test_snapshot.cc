@@ -24,7 +24,8 @@
 #include "rocksdb/options.h"
 #include "rocksdb/slice_transform.h"
 #include "turbo/files/filesystem.h"
-#include "elasticann/common/log.h"
+#include "elasticann/common/common.h"
+
 
 int main(int argc, char **argv) {
 

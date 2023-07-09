@@ -90,7 +90,7 @@ namespace EA {
                 prefix_ratio_index_score = 0;
             }
             prefix_ratio_id_mapping.insert(std::make_pair(prefix_ratio_index_score, index_id));
-            //DB_NOTICE("index_id:{} prefix_ratio_index_score:{}", index_id,prefix_ratio_index_score);
+            //TLOG_INFO("index_id:{} prefix_ratio_index_score:{}", index_id,prefix_ratio_index_score);
             // 优先选倒排，没有就取第一个
             switch (info.type) {
                 case proto::I_FULLTEXT:
@@ -703,7 +703,7 @@ namespace EA {
                 TLOG_DEBUG("reverse_filter index [{}]", index_id);
                 proto::StorageType type = proto::ST_UNKNOWN;
                 if (SchemaFactory::get_instance()->get_index_storage_type(index_id, type) == -1) {
-                    DB_FATAL("get index storage type error index [{}]", index_id);
+                    TLOG_ERROR("get index storage type error index [{}]", index_id);
                     return -1;
                 }
 

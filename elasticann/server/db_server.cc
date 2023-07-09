@@ -55,11 +55,11 @@ int main(int argc, char **argv) {
     turbo::filesystem::path remove_path("init.success");
     turbo::filesystem::remove_all(remove_path);
     // Initail log
-    if (EA::init_log(argv[0]) != 0) {
+    if (!EA::init_tlog()) {
         fprintf(stderr, "log init failed.");
         return -1;
     }
-    TLOG_INFO("baikaldb starting");
+    TLOG_INFO("EA starting");
 //    TLOG_WARN("log file load success; GetMemoryReleaseRate:{}",
 //            MallocExtension::instance()->GetMemoryReleaseRate());
 
@@ -125,4 +125,3 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

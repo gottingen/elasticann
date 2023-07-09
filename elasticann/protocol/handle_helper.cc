@@ -98,7 +98,7 @@ namespace EA {
 
     bool HandleHelper::execute(const SmartSocket &client) {
         if (client == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -142,18 +142,18 @@ namespace EA {
             resource_tag = split_vec[4];
             if (split_vec[5] != "learner" || opt != "remove_illegal_peer") {
                 client->state = STATE_ERROR;
-                DB_FATAL("param invalid");
+                TLOG_ERROR("param invalid");
                 return false;
             }
             is_remove_learner = true;
         } else {
             client->state = STATE_ERROR;
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         auto iter = opt_map.find(opt);
         if (iter == opt_map.end()) {
-            DB_WARNING("param invalid opt:%s", opt.c_str());
+            TLOG_WARN("param invalid opt:{}", opt.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -197,7 +197,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, update_learner_schema_result) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -224,7 +224,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -238,12 +238,12 @@ namespace EA {
                                                         std::vector<std::vector<std::string>> &update_learner_schema_result) {
         int ret = MetaServerInteract::get_instance()->send_request("query", query_req, query_res);
         if (ret != 0 || query_res.errcode() != proto::SUCCESS) {
-            DB_WARNING("send_request fail");
+            TLOG_WARN("send_request fail");
             return;
         }
 
         if (query_res.region_status_infos_size() == 0) {
-            DB_NOTICE("query unhealthy region learners size is 0, resource_tag is [%s]",
+            TLOG_INFO("query unhealthy region learners size is 0, resource_tag is [{}]",
                       (query_req.has_resource_tag() ? query_req.resource_tag().c_str() : ""));
             return;
         }
@@ -264,11 +264,11 @@ namespace EA {
             ret = SchemaFactory::get_instance()->get_region_info(region_info.table_id(), region_info.region_id(),
                                                                  update_region_info);
             if (ret < 0) {
-                DB_WARNING("master region_id [%ld] is not exist.", region_info.region_id());
+                TLOG_WARN("master region_id [{}] is not exist.", region_info.region_id());
                 continue;
             }
             *region_iter = update_region_info;
-            DB_NOTICE("update region_info is [%s]", update_region_info.ShortDebugString().c_str());
+            TLOG_INFO("update region_info is [{}]", update_region_info.ShortDebugString().c_str());
             region_iter->clear_learners();
             for (auto &learn: update_region_info.learners()) {
                 if (peer_id_peer_status.find(learn) == peer_id_peer_status.end()) {
@@ -332,7 +332,7 @@ namespace EA {
 
     bool HandleHelper::_handle_add_privilege(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::string db = "";
@@ -349,7 +349,7 @@ namespace EA {
             resource_tag = split_vec[3];
         } else {
             client->state = STATE_ERROR;
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         proto::MetaManagerRequest request;
@@ -370,7 +370,7 @@ namespace EA {
             add_db->set_database_rw(rw);
         }
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -381,7 +381,7 @@ namespace EA {
     bool
     HandleHelper::_handle_table_resource_tag(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::string namespace_name = client->user_info->namespace_;
@@ -395,7 +395,7 @@ namespace EA {
             resource_tag = split_vec[3];
         } else {
             client->state = STATE_ERROR;
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -410,7 +410,7 @@ namespace EA {
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
 
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -421,7 +421,7 @@ namespace EA {
     bool
     HandleHelper::_handle_load_balance_switch(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -443,7 +443,7 @@ namespace EA {
             _switch = split_vec[3];
         } else {
             client->state = STATE_ERROR;
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -451,12 +451,12 @@ namespace EA {
         std::transform(_switch.begin(), _switch.end(), _switch.begin(), ::tolower);
         if (opt_map.find(_switch) == opt_map.end()) {
             client->state = STATE_ERROR;
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         request.set_op_type(opt_map[_switch]);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -466,7 +466,7 @@ namespace EA {
 
     bool HandleHelper::_handle_create_namespace(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -477,7 +477,7 @@ namespace EA {
         auto info = request.mutable_namespace_info();
         info->set_namespace_name(namespace_);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -487,7 +487,7 @@ namespace EA {
 
     bool HandleHelper::_handle_drop_instance(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -498,7 +498,7 @@ namespace EA {
         auto info = request.mutable_instance();
         info->set_address(address);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -509,7 +509,7 @@ namespace EA {
     bool HandleHelper::_handle_table_main_logical_room(const SmartSocket &client,
                                                        const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::string namespace_name = client->user_info->namespace_;
@@ -521,7 +521,7 @@ namespace EA {
             main_logical_room = split_vec[3];
         } else {
             client->state = STATE_ERROR;
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -534,7 +534,7 @@ namespace EA {
         info->set_namespace_name(namespace_name);
         info->set_main_logical_room(main_logical_room);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -544,7 +544,7 @@ namespace EA {
 
     bool HandleHelper::_handle_drop_region(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() < 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -557,7 +557,7 @@ namespace EA {
             info->Add(region_id);
         }
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -567,7 +567,7 @@ namespace EA {
 
     bool HandleHelper::_handle_split_lines(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() != 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -581,7 +581,7 @@ namespace EA {
         int64_t split_lines = strtoll(split_vec[3].c_str(), nullptr, 10);
         info->set_region_split_lines(split_lines);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -591,7 +591,7 @@ namespace EA {
 
     bool HandleHelper::_handle_ttl_duration(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() != 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -608,7 +608,7 @@ namespace EA {
         }
         info->set_ttl_duration(ttl);
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -619,7 +619,7 @@ namespace EA {
     bool HandleHelper::_handle_split_region(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         int64_t table_id = 0;
@@ -628,7 +628,7 @@ namespace EA {
             table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
             region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
         } else {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -637,7 +637,7 @@ namespace EA {
         req.add_region_ids(region_id);
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", region_id, table_id);
             if (!_make_response_packet(client, "no such regionID")) {
                 return false;
             }
@@ -651,7 +651,7 @@ namespace EA {
             proto::StoreRes res;
             StoreInteract interact(leader);
             interact.send_request("manual_split_region", req, res);
-            DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+            TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
             if (res.errcode() == proto::NOT_LEADER && res.has_leader() &&
                 !res.leader().empty() && res.leader() != "0.0.0.0:0") {
                 leader = res.leader();
@@ -670,7 +670,7 @@ namespace EA {
 
     bool HandleHelper::_handle_rm_privilege(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::string db = "";
@@ -681,7 +681,7 @@ namespace EA {
             db = split_vec[2];
             table = split_vec[3];
         } else {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -709,7 +709,7 @@ namespace EA {
             info->set_resource_tag(table);
         }
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -719,7 +719,7 @@ namespace EA {
 
     bool HandleHelper::_handle_modify_partition(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::string db = "";
@@ -731,12 +731,12 @@ namespace EA {
             db = split_vec[2];
             table = split_vec[3];
         } else {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
         if (db == "" || table == "") {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -753,7 +753,7 @@ namespace EA {
         partition_info->set_type(proto::PT_HASH);
         partition_info->set_expr_string("((userid & 0x700) >> 6) + (userid & 3)");
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -769,7 +769,7 @@ namespace EA {
         };
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !client->user_info || !factory) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -778,7 +778,7 @@ namespace EA {
             turbo::EqualsIgnoreCase(split_vec[3], "global")) {
             delete_global_ddl = true;
         } else if (split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -787,11 +787,11 @@ namespace EA {
         std::string full_name = client->user_info->namespace_ + "." + client->current_db + "." + table_name;
         int64_t table_id;
         if (factory->get_table_id(full_name, table_id) != 0) {
-            DB_FATAL("param invalid, no such table with table name: %s", full_name.c_str());
+            TLOG_ERROR("param invalid, no such table with table name: {}", full_name.c_str());
             client->state = STATE_ERROR;
             return false;
         }
-        DB_WARNING("table_name: %s, table_id: %ld", table_name.c_str(), table_id);
+        TLOG_WARN("table_name: {}, table_id: {}", table_name.c_str(), table_id);
         proto::MetaManagerRequest request;
         proto::MetaManagerResponse response;
         request.set_op_type(opt_map[split_vec[1]]);
@@ -804,7 +804,7 @@ namespace EA {
             info->set_table_id(table_id);
         }
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -814,7 +814,7 @@ namespace EA {
 
     bool HandleHelper::_handle_update_dists(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || !client->query_ctx || split_vec.size() < 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -824,7 +824,7 @@ namespace EA {
         if (start != std::string::npos && end != std::string::npos) {
             json = json.substr(start, end - start + 1);
         } else {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -832,7 +832,7 @@ namespace EA {
         proto::SchemaInfo table_info;
         std::string error_info = json2pb(json, &table_info);
         if (error_info != "") {
-            DB_FATAL("parse json failed: %s, with error: %s", json.c_str(), error_info.c_str());
+            TLOG_ERROR("parse json failed: {}, with error: {}", json.c_str(), error_info.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -852,7 +852,7 @@ namespace EA {
                 }
             }
             if (!find_main_logical_room) {
-                DB_WARNING("main_logical_room not match: %s", table_info.main_logical_room().c_str());
+                TLOG_WARN("main_logical_room not match: {}", table_info.main_logical_room().c_str());
                 client->state = STATE_ERROR;
                 return false;
             }
@@ -864,14 +864,14 @@ namespace EA {
                 replicas += dist.count();
             }
             if (table_info.replica_num() != replicas) {
-                DB_WARNING("replica_num not match");
+                TLOG_WARN("replica_num not match");
                 client->state = STATE_ERROR;
                 return false;
             }
         }
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -883,7 +883,7 @@ namespace EA {
         // handle store_rm_region leader regionID (no_delay)  (force)
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx || split_vec.size() < 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::string store_addr = split_vec[2];
@@ -906,7 +906,7 @@ namespace EA {
         proto::StoreRes res;
         StoreInteract interact(store_addr);
         interact.send_request("remove_region", req, res);
-        DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
         if (!_make_response_packet(client, res.ShortDebugString())) {
             return false;
         }
@@ -918,7 +918,7 @@ namespace EA {
         // handle store_add_peer tableID regionID address
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx || split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
@@ -929,7 +929,7 @@ namespace EA {
         req.set_region_id(region_id);
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", region_id, table_id);
             client->state = STATE_ERROR;
             return false;
         }
@@ -945,7 +945,7 @@ namespace EA {
             proto::StoreRes res;
             StoreInteract interact(leader);
             interact.send_request("add_peer", req, res);
-            DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+            TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
             if (res.errcode() == proto::NOT_LEADER && res.has_leader() &&
                 !res.leader().empty() && res.leader() != "0.0.0.0:0") {
                 leader = res.leader();
@@ -970,7 +970,7 @@ namespace EA {
             proto::RaftControlResponse res;
             StoreInteract interact(leader);
             interact.send_request("region_raft_control", req, res);
-            DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+            TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
             if (res.errcode() == proto::NOT_LEADER && res.has_leader() &&
                 !res.leader().empty() && res.leader() != "0.0.0.0:0") {
                 leader = res.leader();
@@ -994,14 +994,14 @@ namespace EA {
         // handle store_rm_peer tableID regionID address (force)
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         bool is_force = false;
         if (split_vec.size() == 6 && turbo::EqualsIgnoreCase(split_vec[5], "force")) {
             is_force = true;
         } else if (split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1016,7 +1016,7 @@ namespace EA {
         req.set_region_id(region_id);
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", region_id, table_id);
             if (!_make_response_packet(client, "no such regionID")) {
                 return false;
             }
@@ -1047,14 +1047,14 @@ namespace EA {
         // handle store_set_peer tableID regionID address
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         bool is_force = false;
         if (split_vec.size() == 6 && turbo::EqualsIgnoreCase(split_vec[5], "force")) {
             is_force = true;
         } else if (split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1070,7 +1070,7 @@ namespace EA {
         req.set_force(is_force);
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", region_id, table_id);
             if (!_make_response_packet(client, "no such regionID")) {
                 return false;
             }
@@ -1095,7 +1095,7 @@ namespace EA {
         proto::RaftControlResponse res;
         StoreInteract interact(only_one_peer);
         interact.send_request("region_raft_control", req, res);
-        DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
         if (!_make_response_packet(client, res.ShortDebugString())) {
             return false;
         }
@@ -1108,11 +1108,11 @@ namespace EA {
         // handle store_trans_leader tableID regionID TransLeaderAddress
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         if (split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1127,7 +1127,7 @@ namespace EA {
         req.set_region_id(region_id);
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", region_id, table_id);
             if (!_make_response_packet(client, "no such regionID")) {
                 return false;
             }
@@ -1154,7 +1154,7 @@ namespace EA {
 
     bool HandleHelper::_handle_add_user(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || !client->query_ctx || split_vec.size() < 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1165,14 +1165,14 @@ namespace EA {
         if (start != std::string::npos && end != std::string::npos) {
             json = json.substr(start, end - start + 1);
         } else {
-            DB_FATAL("json param invalid");
+            TLOG_ERROR("json param invalid");
             client->state = STATE_ERROR;
             return false;
         }
 
         proto::UserPrivilege user_info;
         if (json2pb(json, &user_info) != "") {
-            DB_FATAL("parse json failed: %s", json.c_str());
+            TLOG_ERROR("parse json failed: {}", json.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -1184,7 +1184,7 @@ namespace EA {
         *info = user_info;
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -1194,11 +1194,11 @@ namespace EA {
 
     bool HandleHelper::_handle_copy_db(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || !client->query_ctx) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         if (split_vec.size() < 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1210,7 +1210,7 @@ namespace EA {
         int64_t db_id = 0;
         if (factory->get_database_id(ns + "." + orgin_db, db_id) != 0) {
             client->state = STATE_ERROR;
-            DB_WARNING("orgin db not exist : %s", orgin_db.c_str());
+            TLOG_WARN("orgin db not exist : {}", orgin_db.c_str());
             return false;
         }
 
@@ -1221,9 +1221,9 @@ namespace EA {
         database->set_namespace_name(ns);
         database->set_database(desc_db);
         int ret = MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (ret != 0 || response.errcode() != proto::SUCCESS) {
-            DB_WARNING("send_request fail");
+            TLOG_WARN("send_request fail");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1234,10 +1234,10 @@ namespace EA {
         query_request.set_namespace_name(ns);
         query_request.set_database(orgin_db);
         ret = MetaServerInteract::get_instance()->send_request("query", query_request, query_response);
-        DB_WARNING("req:%s res:%s", query_request.ShortDebugString().c_str(),
+        TLOG_WARN("req:{} res:{}", query_request.ShortDebugString().c_str(),
                    query_response.ShortDebugString().c_str());
         if (ret != 0 || query_response.errcode() != proto::SUCCESS) {
-            DB_WARNING("send_request fail");
+            TLOG_WARN("send_request fail");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1253,9 +1253,9 @@ namespace EA {
                 index.clear_field_ids();
             }
             ret = MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-            DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+            TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
             if (ret != 0 || response.errcode() != proto::SUCCESS) {
-                DB_WARNING("send_request fail");
+                TLOG_WARN("send_request fail");
                 client->state = STATE_ERROR;
                 return false;
             }
@@ -1269,7 +1269,7 @@ namespace EA {
 
     bool HandleHelper::_handle_binlog(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr || client->user_info == nullptr || split_vec.size() < 6) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1284,7 +1284,7 @@ namespace EA {
         } else if (turbo::EqualsIgnoreCase(split_vec[1], SQL_HANDLE_UNLINK_BINLOG)) {
             request.set_op_type(proto::OP_UNLINK_BINLOG);
         } else {
-            DB_FATAL("json param invalid");
+            TLOG_ERROR("json param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1301,7 +1301,7 @@ namespace EA {
         binlog_info->set_table_name(binlog_table_name);
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -1311,7 +1311,7 @@ namespace EA {
 
     bool HandleHelper::_handle_instance_param(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1321,7 +1321,7 @@ namespace EA {
                 is_meta_param = true;
             }
         } else if (split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1353,7 +1353,7 @@ namespace EA {
         params->set_need_delete(need_delete);
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -1398,12 +1398,12 @@ namespace EA {
 
     bool HandleHelper::_handle_schema_conf(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
         if (split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1420,7 +1420,7 @@ namespace EA {
         int64_t table_id;
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (factory->get_table_id(full_name, table_id) != 0) {
-            DB_FATAL("param invalid, no such table with table name: %s", full_name.c_str());
+            TLOG_ERROR("param invalid, no such table with table name: {}", full_name.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -1452,7 +1452,7 @@ namespace EA {
             schema_conf->set_tail_split_step(tail_split_step);
         } else if (key == "backup_table") {
             int32_t number = proto::BackupTable_descriptor()->FindValueByName(split_vec[4])->number();
-            DB_WARNING("backup table enum %s => %d", split_vec[4].c_str(), number);
+            TLOG_WARN("backup table enum {} => {}", split_vec[4].c_str(), number);
             schema_conf->set_backup_table(static_cast<proto::BackupTable>(number));
         } else if (key == "in_fast_import") {
             schema_conf->set_in_fast_import(is_open);
@@ -1462,7 +1462,7 @@ namespace EA {
                    || key.find("forceindex") != key.npos) {
             auto table = factory->get_table_info_ptr(table_id);
             if (table == nullptr) {
-                DB_FATAL("table null table name: %s, table_id: %ld", full_name.c_str(), table_id);
+                TLOG_ERROR("table null table name: {}, table_id: {}", full_name.c_str(), table_id);
                 client->state = STATE_ERROR;
                 return false;
             }
@@ -1472,27 +1472,27 @@ namespace EA {
             if (key.find("blacklist") != key.npos) {
                 handle_signlist(is_add, table->sign_blacklist, split_vec[4], value);
                 schema_conf->set_sign_blacklist(value);
-                DB_WARNING("blacklist table_name: %s, table_id: %ld, signs: %s", full_name.c_str(), table_id,
+                TLOG_WARN("blacklist table_name: {}, table_id: {}, signs: {}", full_name.c_str(), table_id,
                            value.c_str());
             } else if (key.find("forcelearner") != key.npos) {
                 handle_signlist(is_add, table->sign_forcelearner, split_vec[4], value);
                 schema_conf->set_sign_forcelearner(value);
-                DB_WARNING("forcelearner table_name: %s, table_id: %ld, signs: %s", full_name.c_str(), table_id,
+                TLOG_WARN("forcelearner table_name: {}, table_id: {}, signs: {}", full_name.c_str(), table_id,
                            value.c_str());
             } else {
                 handle_signlist(is_add, table->sign_forceindex, split_vec[4], value);
                 schema_conf->set_sign_forceindex(value);
-                DB_WARNING("forceindex table_name: %s, table_id: %ld, signs: %s", full_name.c_str(), table_id,
+                TLOG_WARN("forceindex table_name: {}, table_id: {}, signs: {}", full_name.c_str(), table_id,
                            value.c_str());
             }
         } else {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -1502,7 +1502,7 @@ namespace EA {
 
     bool HandleHelper::_handle_migrate_instance(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1514,7 +1514,7 @@ namespace EA {
         instance_info->set_address(instance_address);
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -1524,14 +1524,14 @@ namespace EA {
 
     bool HandleHelper::_handle_instance_status(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (!client || !client->user_info || split_vec.size() != 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
         const std::string &instance_address = split_vec[2];
         proto::Status status = proto::NORMAL;
         if (!proto::Status_Parse(split_vec[3], &status)) {
-            DB_FATAL("param invalid, parse status fail");
+            TLOG_ERROR("param invalid, parse status fail");
             return false;
         }
         proto::MetaManagerRequest request;
@@ -1542,7 +1542,7 @@ namespace EA {
         instance_info->set_status(status);
 
         MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (!_make_response_packet(client, response.ShortDebugString())) {
             return false;
         }
@@ -1560,7 +1560,7 @@ namespace EA {
         };
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx || split_vec.size() < 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1568,7 +1568,7 @@ namespace EA {
         if (split_vec.size() == 5) {
             region_id = strtoll(split_vec[4].c_str(), nullptr, 10);
         } else if (split_vec.size() != 4) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1591,7 +1591,7 @@ namespace EA {
         proto::StoreRes res;
         StoreInteract interact(store_addr);
         interact.send_request("compact_region", req, res);
-        DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), req.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), req.ShortDebugString().c_str());
         if (!_make_response_packet(client, res.ShortDebugString())) {
             return false;
         }
@@ -1602,7 +1602,7 @@ namespace EA {
     bool HandleHelper::_handle_store_rm_txn(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         // handle store_rm_txn StoreAddress regionID txnID
         if (!client || !client->query_ctx || split_vec.size() != 5) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1618,7 +1618,7 @@ namespace EA {
         proto::StoreRes res;
         StoreInteract interact(store_addr);
         interact.send_request("query", req, res);
-        DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), req.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), req.ShortDebugString().c_str());
         if (!_make_response_packet(client, res.ShortDebugString())) {
             return false;
         }
@@ -1630,11 +1630,11 @@ namespace EA {
         // handle region_adjustkey tableID regionID start_key_region_id end_key_region_id
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!client || !factory || !client->query_ctx) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         if (split_vec.size() != 6) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -1646,7 +1646,7 @@ namespace EA {
 
         proto::RegionInfo info;
         if (factory->get_region_info(table_id, region_id, info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", region_id, table_id);
             if (!_make_response_packet(client, "no such regionid")) {
                 return false;
             }
@@ -1655,7 +1655,7 @@ namespace EA {
         }
         proto::RegionInfo start_info;
         if (factory->get_region_info(table_id, start_region_id, start_info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", start_region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", start_region_id, table_id);
             if (!_make_response_packet(client, "no such regionid")) {
                 return false;
             }
@@ -1664,7 +1664,7 @@ namespace EA {
         }
         proto::RegionInfo end_info;
         if (factory->get_region_info(table_id, end_region_id, end_info) != 0) {
-            DB_WARNING("param invalid, no region %ld in table %ld", end_region_id, table_id);
+            TLOG_WARN("param invalid, no region {} in table {}", end_region_id, table_id);
             if (!_make_response_packet(client, "no such regionid")) {
                 return false;
             }
@@ -1682,7 +1682,7 @@ namespace EA {
         req.set_force(true);
         StoreInteract interact(info.leader());
         interact.send_request_for_leader("query", req, res);
-        DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
         if (!_make_response_packet(client, res.ShortDebugString())) {
             return false;
         }
@@ -1714,7 +1714,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1728,22 +1728,22 @@ namespace EA {
             std::vector<ResultField> &fields,
             std::vector<std::vector<std::string> > &rows) {
         if (!sock || !sock->send_buf) {
-            DB_FATAL("sock == nullptr.");
+            TLOG_ERROR("sock == nullptr.");
             return RET_ERROR;
         }
         if (fields.size() == 0) {
-            DB_FATAL("Field size is 0.");
+            TLOG_ERROR("Field size is 0.");
             return RET_ERROR;
         }
 
         //Result Set Header Packet
         int start_pos = sock->send_buf->_size;
         if (!sock->send_buf->byte_array_append_len((const uint8_t *) "\x01\x00\x00\x01", 4)) {
-            DB_FATAL("byte_array_append_len failed.");
+            TLOG_ERROR("byte_array_append_len failed.");
             return RET_ERROR;
         }
         if (!sock->send_buf->byte_array_append_length_coded_binary(fields.size())) {
-            DB_FATAL("byte_array_append_len failed. len:[%lu]", fields.size());
+            TLOG_ERROR("byte_array_append_len failed. len:[{}]", fields.size());
             return RET_ERROR;
         }
         int packet_body_len = sock->send_buf->_size - start_pos - 4;
@@ -1770,7 +1770,7 @@ namespace EA {
         for (uint32_t cnt = 0; cnt < rows.size(); ++cnt) {
             // Make row data packet
             if (!_wrapper->make_row_packet(sock->send_buf, rows[cnt], ++sock->packet_id)) {
-                DB_FATAL("make_row_packet failed");
+                TLOG_ERROR("make_row_packet failed");
                 return RET_ERROR;
             }
         }

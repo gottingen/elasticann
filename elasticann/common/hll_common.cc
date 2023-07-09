@@ -31,7 +31,7 @@
 // redis HyperLogLog implementation to C++
 
 #include "elasticann/common/hll_common.h"
-#include "elasticann/common/log.h"
+
 
 #include <math.h>
 #include <cstring>

@@ -257,7 +257,7 @@ namespace EA {
                     exist_record->encode_key(*_pri_info, exist_key, -1, false, false) == 0) {
 
                     if (key.data().compare(exist_key.data()) == 0) {
-                        DB_NOTICE("same pk val.");
+                        TLOG_INFO("same pk val.");
                         ++_num_increase_rows;
                         return 1;
                     } else {

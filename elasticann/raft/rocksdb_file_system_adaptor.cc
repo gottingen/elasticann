@@ -873,4 +873,3 @@ inline int iobuf_to_slices(const butil::IOBuf& data, size_t size, std::vector<ro
 
 }//namespace
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

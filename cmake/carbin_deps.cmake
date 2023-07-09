@@ -71,18 +71,6 @@ else ()
     SET(ZLIB_LIBRARIES z)
 endif ()
 
-#boost
-if (CARBIN_WITH_SYSTEM_LIBS)
-    SET(Boost_NO_BOOST_CMAKE 1)
-    SET(Boost_USE_MULTITHREADED ON)
-    SET(Boost_USE_STATIC_LIBS ON)
-    find_package(Boost 1.63.0 REQUIRED thread filesystem system regex)
-    ADD_LIBRARY(boost SHARED IMPORTED GLOBAL)
-else ()
-    include(boost)
-endif ()
-message(boost: ${Boost_VERSION}, ${Boost_LIB_VERSION}, DIRS: ${Boost_INCLUDE_DIRS}, LIBS: ${Boost_LIBRARIES})
-
 #rapidjson
 if (CARBIN_WITH_SYSTEM_LIBS)
     find_path(RAPIDJSON_INCLUDE_DIR NAMES rapidjson/rapidjson.h)
@@ -228,10 +216,6 @@ endif ()
 message(braft lib : ${BRAFT_LIBRARIES})
 
 include_directories(${ROCKSDB_INCLUDE_DIR})
-#[[SET(Boost_NO_BOOST_CMAKE 1)
-SET(Boost_USE_MULTITHREADED ON)
-SET(Boost_USE_STATIC_LIBS ON)]]
-#find_package(Boost REQUIRED)
 
 #message(STATUS "ssl:" ${OPENSSL_SSL_LIBRARY})
 #message(STATUS "crypto:" ${OPENSSL_CRYPTO_LIBRARY})
@@ -242,8 +226,6 @@ SET(DEP_INC
         ${OPENSSL_INCLUDE_DIR}
         ${ZLIB_INCLUDE_DIR}
         #        ${BZ2_INCLUDE_DIR}
-
-        ${Boost_INCLUDE_DIR}
         ${ARROW_INCLUDE_DIR}
         ${BLUEBIRD_INCLUDE_DIR}
         ${RAPIDJSON_INCLUDE_DIR}
@@ -273,9 +255,7 @@ set(CARBIN_DEPS_LINK
         ${GFLAGS_LIBRARIES}
         ${PROTOBUF_LIBRARIES}
         ${OPENSSL_CRYPTO_LIBRARY}
-        ${Boost_LIBRARIES}
         ${RE2_LIBRARIES}
-        ${Boost_LIBRARIES}
         ${BLUEBIRD_LIBRARIES}
         ${LEVELDB_LIBRARIES}
         ${OPENSSL_SSL_LIBRARY}

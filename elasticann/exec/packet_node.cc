@@ -570,7 +570,7 @@ namespace EA {
             stat->set_table_id(state->get_tuple_desc(0)->table_id());
             stat->set_version(0);
         } else {
-            DB_FATAL("can`t find table_id");
+            TLOG_ERROR("can`t find table_id");
             return -1;
         }
         proto::Histogram *histogram = stat->mutable_histogram();
@@ -586,7 +586,7 @@ namespace EA {
         if (MetaServerInteract::get_instance()->send_request("meta_manager",
                                                              request,
                                                              response) != 0) {
-            DB_FATAL("update statistics from meta_server fail");
+            TLOG_ERROR("update statistics from meta_server fail");
             return -1;
         }
         if (response.errcode() != proto::SUCCESS) {
@@ -702,15 +702,15 @@ namespace EA {
         //Result Set Header Packet
         int start_pos = _send_buf->_size;
         if (!_send_buf->byte_array_append_len((const uint8_t *) "\x01\x00\x00\x01", 4)) {
-            DB_FATAL("byte_array_append_len failed.");
+            TLOG_ERROR("byte_array_append_len failed.");
             return -1;
         }
         if (_fields.size() == 0) {
-            DB_FATAL("fields size is wrong.size:[0]");
+            TLOG_ERROR("fields size is wrong.size:[0]");
             return -1;
         }
         if (!_send_buf->byte_array_append_length_coded_binary(_fields.size())) {
-            DB_FATAL("byte_array_append_len failed. len:[{}]", _fields.size());
+            TLOG_ERROR("byte_array_append_len failed. len:[{}]", _fields.size());
             return -1;
         }
         int packet_body_len = _send_buf->_size - start_pos - 4;
@@ -748,7 +748,7 @@ namespace EA {
         bytes[2] = '\x00';
         bytes[3] = (++_client->packet_id) & 0xFF;
         if (!_send_buf->byte_array_append_len(bytes, 4)) {
-            DB_FATAL("Failed to append len. value:[{}], len:[1]", bytes);
+            TLOG_ERROR("Failed to append len. value:[{}], len:[1]", bytes);
             return -1;
         }
 
@@ -756,11 +756,11 @@ namespace EA {
         for (auto &item: row) {
             uint64_t length = item.size();
             if (!_send_buf->byte_array_append_length_coded_binary(length)) {
-                DB_FATAL("Failed to append length coded binary.length:[{}]", length);
+                TLOG_ERROR("Failed to append length coded binary.length:[{}]", length);
                 return -1;
             }
             if (!_send_buf->byte_array_append_len((const uint8_t *) item.c_str(), item.size())) {
-                DB_FATAL("Failed to append table cell.");
+                TLOG_ERROR("Failed to append table cell.");
                 return -1;
             }
         }
@@ -779,14 +779,14 @@ namespace EA {
         bytes[2] = '\x00';
         bytes[3] = (++_client->packet_id) & 0xFF;
         if (!_send_buf->byte_array_append_len(bytes, 4)) {
-            DB_FATAL("Failed to append len. value:[{}], len:[1]", bytes);
+            TLOG_ERROR("Failed to append len. value:[{}], len:[1]", bytes);
             return -1;
         }
 
         // package body.
         for (auto expr: _projections) {
             if (!_send_buf->append_text_value(expr->get_value(row).cast_to(expr->col_type()))) {
-                DB_FATAL("Failed to append table cell.");
+                TLOG_ERROR("Failed to append table cell.");
                 return -1;
             }
         }
@@ -803,7 +803,7 @@ namespace EA {
             bytes[2] = '\x00';
             bytes[3] = (++_client->packet_id) & 0xFF;
             if (!_send_buf->byte_array_insert_len(bytes, start_pos, 4)) {
-                DB_FATAL("Failed to insert len. value:[{}], len:[4]", bytes);
+                TLOG_ERROR("Failed to insert len. value:[{}], len:[4]", bytes);
                 return -1;
             }
         }
@@ -821,14 +821,14 @@ namespace EA {
         bytes[2] = '\x00';
         bytes[3] = (++_client->packet_id) & 0xFF;
         if (!_send_buf->byte_array_append_len(bytes, 4)) {
-            DB_FATAL("Failed to append len. value:[{}], len:[4]", bytes);
+            TLOG_ERROR("Failed to append len. value:[{}], len:[4]", bytes);
             return -1;
         }
 
         // row header
         bytes[0] = '\x00';
         if (!_send_buf->byte_array_append_len(bytes, 1)) {
-            DB_FATAL("Failed to append row_header");
+            TLOG_ERROR("Failed to append row_header");
             return -1;
         }
 
@@ -838,7 +838,7 @@ namespace EA {
         memset(null_map.get(), 0, null_bitmap_len);
         int null_map_pos = _send_buf->_size;
         if (!_send_buf->byte_array_append_len(null_map.get(), null_bitmap_len)) {
-            DB_FATAL("Failed to append null_map");
+            TLOG_ERROR("Failed to append null_map");
             return -1;
         }
 
@@ -847,7 +847,7 @@ namespace EA {
         for (auto expr: _projections) {
             if (!_send_buf->append_binary_value(expr->get_value(row).cast_to(expr->col_type()),
                                                 _fields[field_idx].type, null_map.get(), field_idx, 2)) {
-                DB_FATAL("Failed to append table cell.");
+                TLOG_ERROR("Failed to append table cell.");
                 return -1;
             }
             field_idx++;
@@ -872,7 +872,7 @@ namespace EA {
             bytes[2] = '\x00';
             bytes[3] = (++_client->packet_id) & 0xFF;
             if (!_send_buf->byte_array_insert_len(bytes, start_pos, 4)) {
-                DB_FATAL("Failed to insert len. value:[{}], len:[4]", bytes);
+                TLOG_ERROR("Failed to insert len. value:[{}], len:[4]", bytes);
                 return -1;
             }
         }

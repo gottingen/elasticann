@@ -23,4 +23,3 @@ void UpdateRegionStatus::reset_region_status(int64_t /*region_id*/) {
 }
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
