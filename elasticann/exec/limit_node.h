@@ -16,47 +16,60 @@
 
 
 #pragma once
+
 #include "elasticann/exec/exec_node.h"
 
 namespace EA {
-class LimitNode : public ExecNode {
-public:
-    LimitNode() : _offset(0), _num_rows_skipped(0) {}
-    virtual ~LimitNode() {
-        ExprNode::destroy_tree(_offset_expr);
-        ExprNode::destroy_tree(_count_expr);
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int get_next(RuntimeState* state, RowBatch* batch, bool* eos);
-    virtual void close(RuntimeState* state) {
-        ExecNode::close(state);
-        _num_rows_skipped = 0;
-    }
-    virtual int expr_optimize(QueryContext* ctx);
-    virtual void find_place_holder(std::map<int, ExprNode*>& placeholders);
-    virtual void transfer_pb(int64_t region_id, proto::PlanNode* pb_node);
+    class LimitNode : public ExecNode {
+    public:
+        LimitNode() : _offset(0), _num_rows_skipped(0) {}
 
-    int64_t other_limit() {
-        return _offset + _limit;
-    }
-    int64_t get_offset() {
-        return _offset;
-    }
-    int64_t get_num_rows_skipped() {
-        return _num_rows_skipped;
-    }
-    void add_num_rows_skipped(int64_t num) {
-        _num_rows_skipped += num;
-    }
-    int64_t get_limit() {
-	return _limit;
-    }
-private:
-    int64_t _offset;
-    int64_t _num_rows_skipped;
+        virtual ~LimitNode() {
+            ExprNode::destroy_tree(_offset_expr);
+            ExprNode::destroy_tree(_count_expr);
+        }
 
-    ExprNode*   _offset_expr = nullptr;
-    ExprNode*   _count_expr  = nullptr;
-};
+        virtual int init(const proto::PlanNode &node);
+
+        virtual int get_next(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        virtual void close(RuntimeState *state) {
+            ExecNode::close(state);
+            _num_rows_skipped = 0;
+        }
+
+        virtual int expr_optimize(QueryContext *ctx);
+
+        virtual void find_place_holder(std::map<int, ExprNode *> &placeholders);
+
+        virtual void transfer_pb(int64_t region_id, proto::PlanNode *pb_node);
+
+        int64_t other_limit() {
+            return _offset + _limit;
+        }
+
+        int64_t get_offset() {
+            return _offset;
+        }
+
+        int64_t get_num_rows_skipped() {
+            return _num_rows_skipped;
+        }
+
+        void add_num_rows_skipped(int64_t num) {
+            _num_rows_skipped += num;
+        }
+
+        int64_t get_limit() {
+            return _limit;
+        }
+
+    private:
+        int64_t _offset;
+        int64_t _num_rows_skipped;
+
+        ExprNode *_offset_expr = nullptr;
+        ExprNode *_count_expr = nullptr;
+    };
 }
 

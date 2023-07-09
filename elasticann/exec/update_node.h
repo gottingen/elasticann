@@ -22,20 +22,25 @@
 #include "elasticann/engine/transaction.h"
 
 namespace EA {
-class UpdateNode : public DMLNode {
-public:
-    UpdateNode() {
-    }
-    virtual ~UpdateNode() {
-        for (auto expr : _update_exprs) {
-            ExprNode::destroy_tree(expr);
+    class UpdateNode : public DMLNode {
+    public:
+        UpdateNode() {
         }
-    }
-    virtual int init(const proto::PlanNode& node) override;
-    virtual int open(RuntimeState* state) override;
-    virtual void close(RuntimeState* state) override;
-    virtual void transfer_pb(int64_t region_id, proto::PlanNode* pb_node) override;
-};
+
+        virtual ~UpdateNode() {
+            for (auto expr: _update_exprs) {
+                ExprNode::destroy_tree(expr);
+            }
+        }
+
+        virtual int init(const proto::PlanNode &node) override;
+
+        virtual int open(RuntimeState *state) override;
+
+        virtual void close(RuntimeState *state) override;
+
+        virtual void transfer_pb(int64_t region_id, proto::PlanNode *pb_node) override;
+    };
 
 }
 

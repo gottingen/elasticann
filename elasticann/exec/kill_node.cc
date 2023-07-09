@@ -19,29 +19,29 @@
 #include "elasticann/runtime/runtime_state.h"
 
 namespace EA {
-int KillNode::init(const proto::PlanNode& node) {
-    int ret = 0;
-    ret = ExecNode::init(node);
-    if (ret < 0) {
-        DB_WARNING("ExecNode::init fail, ret:%d", ret);
-        return ret;
+    int KillNode::init(const proto::PlanNode &node) {
+        int ret = 0;
+        ret = ExecNode::init(node);
+        if (ret < 0) {
+            TLOG_WARN("ExecNode::init fail, ret:{}", ret);
+            return ret;
+        }
+        _db_conn_id = node.derive_node().kill_node().db_conn_id();
+        _is_query = node.derive_node().kill_node().is_query();
+        return 0;
     }
-    _db_conn_id =  node.derive_node().kill_node().db_conn_id();
-    _is_query =  node.derive_node().kill_node().is_query();
-    return 0;
-}
 
-int KillNode::open(RuntimeState* state) {
-    int ret = 0;
-    ret = ExecNode::open(state);
-    if (ret < 0) {
-        DB_WARNING_STATE(state, "ExecNode::open fail:%d", ret);
-        return ret;
+    int KillNode::open(RuntimeState *state) {
+        int ret = 0;
+        ret = ExecNode::open(state);
+        if (ret < 0) {
+            TLOG_WARN("{}, ExecNode::open fail:{}", *state, ret);
+            return ret;
+        }
+        if (_db_conn_id != 0) {
+            state->conn_id_cancel(_db_conn_id);
+        }
+        return 0;
     }
-    if (_db_conn_id != 0) {
-        state->conn_id_cancel(_db_conn_id);
-    }
-    return 0;
-}
 
 }

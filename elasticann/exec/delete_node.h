@@ -22,18 +22,21 @@
 #include "elasticann/engine/transaction.h"
 
 namespace EA {
-class DeleteNode : public DMLNode {
-public:
-    DeleteNode() {
-    }
-    virtual ~DeleteNode() {
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int open(RuntimeState* state);
+    class DeleteNode : public DMLNode {
+    public:
+        DeleteNode() {
+        }
 
-private:
-    std::vector<proto::SlotDescriptor> _primary_slots;
-};
+        virtual ~DeleteNode() {
+        }
+
+        virtual int init(const proto::PlanNode &node);
+
+        virtual int open(RuntimeState *state);
+
+    private:
+        std::vector<proto::SlotDescriptor> _primary_slots;
+    };
 
 }
 

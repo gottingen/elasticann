@@ -16,6 +16,7 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_NO_SHORT_MACRO_NAMES
+
 #include "tests/doctest/doctest.h"
 
 #include "elasticann/meta_server/auto_incr_state_machine.h"
@@ -99,4 +100,3 @@ DOCTEST_TEST_CASE_FIXTURE(AutoIncrStateMachineTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(39, _auto_incr->_auto_increment_map[1]);
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

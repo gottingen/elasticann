@@ -16,36 +16,40 @@
 
 
 #pragma once
+
 #include "elasticann/exec/dml_manager_node.h"
 #include "elasticann/exec/fetcher_store.h"
 
 namespace EA {
 
-class IndexDDLManagerNode : public DmlManagerNode {
-public:
-    IndexDDLManagerNode();
-    virtual ~IndexDDLManagerNode();
+    class IndexDDLManagerNode : public DmlManagerNode {
+    public:
+        IndexDDLManagerNode();
 
-    virtual int open(RuntimeState* state);
-    void set_table_id(int64_t table_id) {
-        _table_id = table_id;
-    }
-    void set_index_id(int64_t index_id) {
-        _index_id = index_id;
-    }
+        virtual ~IndexDDLManagerNode();
 
-    void set_task_id(const std::string& task_id) {
-        _task_id = task_id;
-    }
+        virtual int open(RuntimeState *state);
 
-    void set_is_global_index(bool flags) {
-        _is_global_index = flags;
-    }
+        void set_table_id(int64_t table_id) {
+            _table_id = table_id;
+        }
 
-private:
-    int64_t _table_id {0};
-    int64_t _index_id {0};
-    std::string _task_id;
-    bool _is_global_index = false;
-};
+        void set_index_id(int64_t index_id) {
+            _index_id = index_id;
+        }
+
+        void set_task_id(const std::string &task_id) {
+            _task_id = task_id;
+        }
+
+        void set_is_global_index(bool flags) {
+            _is_global_index = flags;
+        }
+
+    private:
+        int64_t _table_id{0};
+        int64_t _index_id{0};
+        std::string _task_id;
+        bool _is_global_index = false;
+    };
 } // namespace  baikaldbame

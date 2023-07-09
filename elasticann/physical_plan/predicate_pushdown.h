@@ -24,24 +24,24 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-class PredicatePushDown {
-public:
-    int analyze(QueryContext* ctx) {
-        ExecNode* plan = ctx->root;
-        //目前只要有join节点的话才做谓词下推
-        JoinNode* join = static_cast<JoinNode*>(plan->get_node(proto::JOIN_NODE));
-        ApplyNode* apply = static_cast<ApplyNode*>(plan->get_node(proto::APPLY_NODE));
-        if (join == nullptr && apply == nullptr) {
-            //DB_WARNING("has no join, not predicate")
+    class PredicatePushDown {
+    public:
+        int analyze(QueryContext *ctx) {
+            ExecNode *plan = ctx->root;
+            //目前只要有join节点的话才做谓词下推
+            JoinNode *join = static_cast<JoinNode *>(plan->get_node(proto::JOIN_NODE));
+            ApplyNode *apply = static_cast<ApplyNode *>(plan->get_node(proto::APPLY_NODE));
+            if (join == nullptr && apply == nullptr) {
+                //TLOG_WARN("has no join, not predicate")
+                return 0;
+            }
+            std::vector<ExprNode *> empty_exprs;
+            if (0 != plan->predicate_pushdown(empty_exprs)) {
+                TLOG_WARN("predicate push down fail");
+                return -1;
+            }
             return 0;
         }
-        std::vector<ExprNode*> empty_exprs;
-        if (0 != plan->predicate_pushdown(empty_exprs)) {
-            DB_WARNING("predicate push down fail");
-            return -1;
-        }
-        return 0;
-    }
-};
+    };
 }
 

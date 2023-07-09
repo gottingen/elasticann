@@ -31,12 +31,12 @@ public:
     ClusterManagerTest() {
         _rocksdb = EA::MetaRocksdb::get_instance();
         if (!_rocksdb) {
-            DB_FATAL("create rocksdb handler failed");
+            TLOG_ERROR("create rocksdb handler failed");
             return;
         }
         int ret = _rocksdb->init();
         if (ret != 0) {
-            DB_FATAL("rocksdb init failed: code:%d", ret);
+            TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return;
         }
         _cluster_manager = EA::ClusterManager::get_instance();
@@ -125,10 +125,10 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(2, _cluster_manager->_logical_physical_map["lg1"].size());
     DOCTEST_REQUIRE_EQ(3, _cluster_manager->_physical_instance_map.size());
     for (auto &pair: _cluster_manager->_physical_info) {
-        DB_WARNING("physical_room:%s, logical_room:%s", pair.first.c_str(), pair.second.c_str());
+        TLOG_WARN("physical_room:{}, logical_room:{}", pair.first.c_str(), pair.second.c_str());
     }
     for (auto &room: _cluster_manager->_logical_physical_map["lg1"]) {
-        DB_WARNING("physical_room:%s", room.c_str());
+        TLOG_WARN("physical_room:{}", room.c_str());
     }
     for (auto &pair: _cluster_manager->_physical_instance_map) {
         DOCTEST_REQUIRE_EQ(0, pair.second.size());
@@ -148,10 +148,10 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(3, _cluster_manager->_logical_physical_map["lg1"].size());
     DOCTEST_REQUIRE_EQ(4, _cluster_manager->_physical_instance_map.size());
     for (auto &pair: _cluster_manager->_physical_info) {
-        DB_WARNING("physical_room:%s, logical_room:%s", pair.first.c_str(), pair.second.c_str());
+        TLOG_WARN("physical_room:{}, logical_room:{}", pair.first.c_str(), pair.second.c_str());
     }
     for (auto &room: _cluster_manager->_logical_physical_map["lg1"]) {
-        DB_WARNING("physical_room:%s", room.c_str());
+        TLOG_WARN("physical_room:{}", room.c_str());
     }
     for (auto &pair: _cluster_manager->_physical_instance_map) {
         DOCTEST_REQUIRE_EQ(0, pair.second.size());
@@ -411,7 +411,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(2, _cluster_manager->_logical_physical_map["lg1"].size());
     DOCTEST_REQUIRE_EQ(1, _cluster_manager->_logical_physical_map["lg4"].size());
 
-    DB_WARNING("begin test select instance");
+    TLOG_WARN("begin test select instance");
     //// select instance
     //// 无resource_tag, 无exclude_stores
     std::string resource_tag;
@@ -419,7 +419,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     std::string selected_instance, select1, select2;
     int ret = _cluster_manager->select_instance_rolling({resource_tag, "", ""}, exclude_stores, selected_instance);
     select1 = selected_instance;
-    DB_WARNING("selected instance:%s", selected_instance.c_str());
+    TLOG_WARN("selected instance:{}", selected_instance.c_str());
     DOCTEST_REQUIRE_EQ(0, ret);
     //轮询再选一次
     ret = _cluster_manager->select_instance_rolling({resource_tag, "", ""}, exclude_stores, selected_instance);
@@ -1189,7 +1189,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
     resource_tag = "add_cluster";
 
 // 初始化&add instance, 开启全局的network balance
-    DB_WARNING("start add 100 instance");
+    TLOG_WARN("start add 100 instance");
     for (
             auto i = 0;
             i < 100; ++i) {
@@ -1208,7 +1208,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
                 add_instance(request_instance,
                              NULL);
     }
-    DB_WARNING("end add 100 instance");
+    TLOG_WARN("end add 100 instance");
     _state_machine->
             set_network_segment_balance(resource_tag,
                                         true);
@@ -1231,7 +1231,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
         DOCTEST_REQUIRE_EQ(10, pick_times[ip]);
     }
 
-    DB_WARNING("start add 100 instance again");
+    TLOG_WARN("start add 100 instance again");
     for (
             auto i = 0;
             i < 100; ++i) {
@@ -1250,7 +1250,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
                 add_instance(request_instance,
                              NULL);
     }
-    DB_WARNING("start add 100 instance again end");
+    TLOG_WARN("start add 100 instance again end");
     pick_times.
 
             clear();

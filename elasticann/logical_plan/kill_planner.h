@@ -17,21 +17,22 @@
 
 // Brief:  the class for generating and executing prepare statements
 #pragma once
+
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
 
-class KillPlanner : public LogicalPlanner {
-public:
+    class KillPlanner : public LogicalPlanner {
+    public:
 
-    KillPlanner(QueryContext* ctx) : LogicalPlanner(ctx) {}
+        KillPlanner(QueryContext *ctx) : LogicalPlanner(ctx) {}
 
-    virtual ~KillPlanner() {}
+        virtual ~KillPlanner() {}
 
-    virtual int plan();
+        virtual int plan();
 
-private:
-};
+    private:
+    };
 } //namespace EA

@@ -538,3 +538,12 @@ namespace EA {
         return true;
     }
 }
+
+namespace fmt {
+    template<>
+    struct formatter<::EA::MysqlType> : public formatter<int> {
+        auto format(const ::EA::MysqlType& a, format_context& ctx) const {
+            return formatter<int>::format(static_cast<int>(a), ctx);
+        }
+    };
+}

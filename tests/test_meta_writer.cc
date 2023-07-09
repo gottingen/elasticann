@@ -25,12 +25,12 @@ public:
     MetaWriterTest() {
         auto rocksdb = EA::RocksWrapper::get_instance();
         if (!rocksdb) {
-            DB_FATAL("create rocksdb handler failed");
+            TLOG_ERROR("create rocksdb handler failed");
             return;
         }
         int ret = rocksdb->init("./rocks_db");
         if (ret != 0) {
-            DB_FATAL("rocksdb init failed: code:%d", ret);
+            TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return;
         }
 
@@ -59,7 +59,7 @@ DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
     std::vector<EA::proto::RegionInfo> region_infos;
     ret = _writer->parse_region_infos(region_infos);
     DOCTEST_REQUIRE_EQ(1, region_infos.size());
-    DB_WARNING("region_info: %s", region_infos[0].ShortDebugString().c_str());
+    TLOG_WARN("region_info: {}", region_infos[0].ShortDebugString().c_str());
     int64_t applied_index = 0;
     int64_t data_index = 0;
     _writer->read_applied_index(region_id, &applied_index, &data_index);
@@ -101,7 +101,7 @@ DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
     region_infos.clear();
     ret = _writer->parse_region_infos(region_infos);
     DOCTEST_REQUIRE_EQ(1, region_infos.size());
-    DB_WARNING("region_info: %s", region_infos[0].ShortDebugString().c_str());
+    TLOG_WARN("region_info: {}", region_infos[0].ShortDebugString().c_str());
 
     {
         //write_batch, transcation_log_index
@@ -165,7 +165,7 @@ DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
         if (!txn.ParseFromString(txn_info.second)) {
             DOCTEST_REQUIRE_EQ(1, 0);
         }
-        DB_WARNING("log_index: %ld, txn_info:%s", 
+        TLOG_WARN("log_index: {}, txn_info:{}",
                     txn_info.first, txn.ShortDebugString().c_str());
     }
 

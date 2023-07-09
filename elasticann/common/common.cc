@@ -43,7 +43,6 @@ DEFINE_int32(snapshot_load_num, 4, "snapshot load concurrency, default 4");
 DEFINE_int32(baikal_heartbeat_concurrency, 10, "baikal heartbeat concurrency, default:10");
 DEFINE_int64(incremental_info_gc_time, 600 * 1000 * 1000, "time interval to clear incremental info");
 DECLARE_string(default_physical_room);
-DEFINE_bool(enable_debug, false, "open DB_DEBUG log");
 DEFINE_bool(enable_self_trace, true, "open SELF_TRACE log");
 DEFINE_bool(servitysinglelog, true, "diff servity message in seperate logfile");
 DEFINE_bool(open_service_write_concurrency, true, "open service_write_concurrency, default: true");

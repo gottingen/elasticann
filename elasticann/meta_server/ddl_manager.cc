@@ -17,7 +17,7 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/common/mut_table_key.h"
 #include "elasticann/meta_server/table_manager.h"
-#include "elasticann/common/log.h"
+
 #include "elasticann/meta_server/meta_util.h"
 
 namespace EA {

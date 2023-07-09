@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     if (argc >= 2) {
         family_count = atoi(argv[1]);
     }
-    DB_NOTICE("family count: %u", family_count);
+    TLOG_INFO("family count: {}", family_count);
 
     // create column family
     std::vector<ColumnFamilyHandle *> cf_vec;
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     }
     s = db->CreateColumnFamilies(ColumnFamilyOptions(), family_names, &cf_vec);
     assert(s.ok());
-    DB_NOTICE("create cfs success");
+    TLOG_INFO("create cfs success");
 
     // close DB
     for (uint32_t idx = 0; idx < cf_vec.size(); ++idx) {
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     family_names.clear();
     s = DB::ListColumnFamilies(DBOptions(), db_path, &family_names);
     assert(s.ok());
-    DB_NOTICE("column family count: %lu", family_names.size());
+    TLOG_INFO("column family count: {}", family_names.size());
 
     // open DB with two column families
     std::vector<ColumnFamilyDescriptor> column_families;
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
         s = db->CompactRange(CompactRangeOptions(), handle, nullptr, nullptr);
     }
     assert(s.ok());
-    DB_NOTICE("put cost: %lu", cost.get_time());
+    TLOG_INFO("put cost: {}", cost.get_time());
     // s = db->Put(WriteOptions(), handles[0], Slice("key1"), Slice("value1"));
     // s = db->Put(WriteOptions(), handles[0], Slice("key2"), Slice("value2"));
     // s = db->Put(WriteOptions(), handles[0], Slice("key3"), Slice("value3"));

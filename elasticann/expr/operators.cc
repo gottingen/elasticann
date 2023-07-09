@@ -29,11 +29,15 @@ namespace EA {
     }
 
 //UNARY_OP_FN(bit_not, int, proto::INT64, int64_val, ~);
-UNARY_OP_FN(bit_not, uint, proto::UINT64, uint64_val, ~);
-UNARY_OP_FN(logic_not, bool, proto::BOOL, bool_val, !);
-UNARY_OP_FN(minus, int, proto::INT64, int64_val, -);
-UNARY_OP_FN(minus, uint, proto::INT64, int64_val, -);
-UNARY_OP_FN(minus, double, proto::DOUBLE, double_val, -);
+    UNARY_OP_FN(bit_not, uint, proto::UINT64, uint64_val, ~);
+
+    UNARY_OP_FN(logic_not, bool, proto::BOOL, bool_val, !);
+
+    UNARY_OP_FN(minus, int, proto::INT64, int64_val, -);
+
+    UNARY_OP_FN(minus, uint, proto::INT64, int64_val, -);
+
+    UNARY_OP_FN(minus, double, proto::DOUBLE, double_val, -);
 
 #define BINARY_OP_FN(NAME, TYPE, PRIMITIVE_TYPE, VAL, OP) \
     ExprValue NAME##_##TYPE##_##TYPE(const std::vector<ExprValue>& input) { \
@@ -49,9 +53,11 @@ UNARY_OP_FN(minus, double, proto::DOUBLE, double_val, -);
     BINARY_OP_FN(NAME, uint, proto::UINT64, uint64_val, OP); \
     BINARY_OP_FN(NAME, double, proto::DOUBLE, double_val, OP);
 // + - *
-BINARY_OP_ALL_TYPES_FN(add, +);
-BINARY_OP_ALL_TYPES_FN(minus, -);
-BINARY_OP_ALL_TYPES_FN(multiplies, *);
+    BINARY_OP_ALL_TYPES_FN(add, +);
+
+    BINARY_OP_ALL_TYPES_FN(minus, -);
+
+    BINARY_OP_ALL_TYPES_FN(multiplies, *);
 
 #define BINARY_OP_ZERO_FN(NAME, TYPE, PRIMITIVE_TYPE, VAL, OP) \
     ExprValue NAME##_##TYPE##_##TYPE(const std::vector<ExprValue>& input) { \
@@ -67,16 +73,22 @@ BINARY_OP_ALL_TYPES_FN(multiplies, *);
     BINARY_OP_ZERO_FN(NAME, uint, proto::UINT64, uint64_val, OP); \
     BINARY_OP_ZERO_FN(NAME, double, proto::DOUBLE, double_val, OP);
 // / %
-BINARY_OP_ALL_TYPES_ZERO_FN(divides, /);
-BINARY_OP_ZERO_FN(mod, int, proto::INT64, int64_val, %);
-BINARY_OP_ZERO_FN(mod, uint, proto::UINT64, uint64_val, %);
+    BINARY_OP_ALL_TYPES_ZERO_FN(divides, /);
+
+    BINARY_OP_ZERO_FN(mod, int, proto::INT64, int64_val, %);
+
+    BINARY_OP_ZERO_FN(mod, uint, proto::UINT64, uint64_val, %);
 // << >> & | ^
 //BINARY_OP_FN(left_shift, int, proto::INT64, int64_val, <<);
-BINARY_OP_FN(left_shift, uint, proto::UINT64, uint64_val, <<);
-BINARY_OP_FN(right_shift, uint, proto::UINT64, uint64_val, >>);
-BINARY_OP_FN(bit_and, uint, proto::UINT64, uint64_val, &);
-BINARY_OP_FN(bit_or, uint, proto::UINT64, uint64_val, |);
-BINARY_OP_FN(bit_xor, uint, proto::UINT64, uint64_val, ^);
+    BINARY_OP_FN(left_shift, uint, proto::UINT64, uint64_val, <<);
+
+    BINARY_OP_FN(right_shift, uint, proto::UINT64, uint64_val, >>);
+
+    BINARY_OP_FN(bit_and, uint, proto::UINT64, uint64_val, &);
+
+    BINARY_OP_FN(bit_or, uint, proto::UINT64, uint64_val, |);
+
+    BINARY_OP_FN(bit_xor, uint, proto::UINT64, uint64_val, ^);
 
 #define BINARY_OP_PREDICATE_FN(NAME, TYPE, VAL, OP) \
     ExprValue NAME##_##TYPE##_##TYPE(const std::vector<ExprValue>& input) { \
@@ -98,14 +110,20 @@ BINARY_OP_FN(bit_xor, uint, proto::UINT64, uint64_val, ^);
     BINARY_OP_PREDICATE_FN(NAME, timestamp, _u.uint32_val, OP);
 
 // == != > >= < <=
-BINARY_OP_PREDICATE_ALL_TYPES_FN(eq, ==);
-BINARY_OP_PREDICATE_ALL_TYPES_FN(ne, !=);
-BINARY_OP_PREDICATE_ALL_TYPES_FN(gt, >);
-BINARY_OP_PREDICATE_ALL_TYPES_FN(ge, >=);
-BINARY_OP_PREDICATE_ALL_TYPES_FN(lt, <);
-BINARY_OP_PREDICATE_ALL_TYPES_FN(le, <=);
+    BINARY_OP_PREDICATE_ALL_TYPES_FN(eq, ==);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_FN(ne, !=);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_FN(gt, >);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_FN(ge, >=);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_FN(lt, <);
+
+    BINARY_OP_PREDICATE_ALL_TYPES_FN(le, <=);
 // && || ; not used, see predicate.h
-BINARY_OP_PREDICATE_FN(logic_and, bool, _u.bool_val, &&);
-BINARY_OP_PREDICATE_FN(logic_or, bool, _u.bool_val, ||);
+    BINARY_OP_PREDICATE_FN(logic_and, bool, _u.bool_val, &&);
+
+    BINARY_OP_PREDICATE_FN(logic_or, bool, _u.bool_val, ||);
 }
 

@@ -17,25 +17,28 @@
 
 // Brief:  the class for generating and executing prepare statements
 #pragma once
+
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
 
-class PreparePlanner : public LogicalPlanner {
-public:
+    class PreparePlanner : public LogicalPlanner {
+    public:
 
-    PreparePlanner(QueryContext* ctx) : LogicalPlanner(ctx) {}
+        PreparePlanner(QueryContext *ctx) : LogicalPlanner(ctx) {}
 
-    virtual ~PreparePlanner() {}
+        virtual ~PreparePlanner() {}
 
-    virtual int plan();
+        virtual int plan();
 
-private:
-    int stmt_prepare(const std::string& stmt_name, const std::string& stmt_sql);
-    int stmt_execute(const std::string& stmt_name, std::vector<proto::ExprNode>& params);
-    int stmt_close(const std::string& stmt_name);
-    
-};
+    private:
+        int stmt_prepare(const std::string &stmt_name, const std::string &stmt_sql);
+
+        int stmt_execute(const std::string &stmt_name, std::vector<proto::ExprNode> &params);
+
+        int stmt_close(const std::string &stmt_name);
+
+    };
 } //namespace EA

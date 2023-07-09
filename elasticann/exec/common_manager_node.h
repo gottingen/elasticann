@@ -22,32 +22,37 @@
 #include "elasticann/exec/fetcher_store.h"
 
 namespace EA {
-class CommonManagerNode : public ExecNode {
-public:
-    CommonManagerNode() {
-    }
-    virtual ~CommonManagerNode() {
-    }
-    virtual int open(RuntimeState* state) {
-        int ret = 0;
-        auto client_conn = state->client_conn();
-        if (client_conn == nullptr) {
-            DB_WARNING("connection is nullptr: %lu, %d", state->txn_id, client_conn->seq_id);
-           return -1; 
+    class CommonManagerNode : public ExecNode {
+    public:
+        CommonManagerNode() {
         }
-        ExecNode* common_node = _children[0];
-        ret = _fetcher_store.run(state, _region_infos, common_node, client_conn->seq_id, client_conn->seq_id, _op_type);
-        if (ret < 0) {
-            DB_WARNING("exec common node fail");
+
+        virtual ~CommonManagerNode() {
         }
-        return ret;
-    }
-    void set_op_type(proto::OpType op_type) {
-        _op_type = op_type;
-    }
-protected:
-    proto::OpType _op_type = proto::OP_NONE;
-    FetcherStore _fetcher_store;
-};
-}
+
+        virtual int open(RuntimeState *state) {
+            int ret = 0;
+            auto client_conn = state->client_conn();
+            if (client_conn == nullptr) {
+                TLOG_WARN("connection is nullptr: {}, {}", state->txn_id, client_conn->seq_id);
+                return -1;
+            }
+            ExecNode *common_node = _children[0];
+            ret = _fetcher_store.run(state, _region_infos, common_node, client_conn->seq_id, client_conn->seq_id,
+                                     _op_type);
+            if (ret < 0) {
+                TLOG_WARN("exec common node fail");
+            }
+            return ret;
+        }
+
+        void set_op_type(proto::OpType op_type) {
+            _op_type = op_type;
+        }
+
+    protected:
+        proto::OpType _op_type = proto::OP_NONE;
+        FetcherStore _fetcher_store;
+    };
+}  // namespace EA
 

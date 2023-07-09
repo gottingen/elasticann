@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <braft/raft.h>                    
+#include <braft/raft.h>
 #include <brpc/channel.h>
 #include <brpc/server.h>
 #include <brpc/controller.h>
@@ -25,11 +25,10 @@
 #include "elasticann/common/common.h"
 
 namespace EA {
-extern void common_raft_control(google::protobuf::RpcController* controller,
-                         const proto::RaftControlRequest* request,
-                         proto::RaftControlResponse* response,
-                         google::protobuf::Closure* done,
-                         braft::Node* node);
+    extern void common_raft_control(google::protobuf::RpcController *controller,
+                                    const proto::RaftControlRequest *request,
+                                    proto::RaftControlResponse *response,
+                                    google::protobuf::Closure *done,
+                                    braft::Node *node);
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

@@ -21,7 +21,7 @@
 #include "turbo/strings/numbers.h"
 
 namespace EA {
-//DEFINE_string(old_stable_path, "/home/work/shared/data/raft_data/stable", "old stable path");
+    //DEFINE_string(old_stable_path, "/home/work/shared/data/raft_data/stable", "old stable path");
 
     static int parse_my_raft_meta_uri(const std::string &uri, std::string &id) {
         size_t pos = uri.find("id=");
@@ -44,33 +44,33 @@ namespace EA {
     RaftMetaStorage *MyRaftMetaStorage::new_instance(const std::string &uri) const {
         RocksWrapper *rocksdb = RocksWrapper::get_instance();
         if (rocksdb == nullptr) {
-            DB_FATAL("rocksdb is not set");
+            TLOG_ERROR("rocksdb is not set");
             return nullptr;
         }
         std::string string_region_id;
         int ret = parse_my_raft_meta_uri(uri, string_region_id);
         if (ret != 0) {
-            DB_FATAL("parse uri fail, uri:%s", uri.c_str());
+            TLOG_ERROR("parse uri fail, uri:{}", uri.c_str());
             return nullptr;
         }
-        auto pr = turbo::Atoi<int64_t >(string_region_id);
-        if(!pr.ok()) {
-            DB_FATAL("parse region_idri fail, uri:%s", string_region_id.c_str());
+        auto pr = turbo::Atoi<int64_t>(string_region_id);
+        if (!pr.ok()) {
+            TLOG_ERROR("parse region_idri fail, uri:{}", string_region_id.c_str());
             return nullptr;
         }
         int64_t region_id = pr.value();
         rocksdb::ColumnFamilyHandle *handle = rocksdb->get_raft_log_handle();
         if (handle == nullptr) {
-            DB_FATAL("get raft log handle from rocksdb fail,uri:%s, region_id: %ld",
-                     uri.c_str(), region_id);
+            TLOG_ERROR("get raft log handle from rocksdb fail,uri:{}, region_id: {}",
+                       uri.c_str(), region_id);
             return nullptr;
         }
         RaftMetaStorage *instance = new(std::nothrow) MyRaftMetaStorage(region_id, rocksdb, handle);
         if (instance == nullptr) {
-            DB_FATAL("new raft_meta_storage instance fail, region_id: %ld",
-                     region_id);
+            TLOG_ERROR("new raft_meta_storage instance fail, region_id: {}",
+                       region_id);
         }
-        DB_WARNING("new my_raft_meta_storage success, region_id: %ld", region_id);
+        TLOG_WARN("new my_raft_meta_storage success, region_id: {}", region_id);
         return instance;
     }
 
@@ -178,9 +178,9 @@ namespace EA {
             meta.ParseFromString(value_str);
             _term = meta.term();
             ret = _votedfor.parse(meta.votedfor());
-            LOG(INFO) << "load meta success " << _term << " _votedfor" << _votedfor.to_string();
+            TLOG_INFO("load meta success {} _votedfor {}", _term, _votedfor.to_string());
         } else {
-            LOG(WARNING) << "Fail to load meta by rocksdb region_id: " << _region_id;
+            TLOG_WARN("Fail to load meta by rocksdb region_id: {}", _region_id);
             //return old_load();
         }
 
@@ -206,18 +206,15 @@ namespace EA {
         rocksdb::WriteOptions options;
         auto status = _db->put(options, _handle, key, value);
         if (!status.ok()) {
-            PLOG(ERROR) << "Fail to save meta to region_id: " << _region_id
-                        << ", rocksdb error " << status.ToString();
+            TLOG_ERROR("Fail to save meta to region_id: {}, rocksdb error {}", _region_id, status.ToString());
             return -1;
         }
 
         timer.stop();
-        LOG(INFO) << "save stable meta region_id: " << _region_id
-                  << " term " << _term << " votedfor " << _votedfor.to_string() << " time: " << timer.u_elapsed();
+        TLOG_INFO("save stable meta region_id: {} term {} vote for {} time {}", _region_id, _term,
+                  _votedfor.to_string(), timer.u_elapsed());
         return 0;
     }
 
 }
 
-
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

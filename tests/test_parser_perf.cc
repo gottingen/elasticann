@@ -31,14 +31,14 @@ void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
                     mp_clear(pool);
                     int ret = parse_sql(sqls[num_sql], sql_parser);
                     if (ret != 0) {
-                        DB_WARNING("parsing error! errorno:[%d][%s][%s]", ret, sql_err_to_str(ret), sqls[num_sql]);
+                        TLOG_WARN("parsing error! errorno:[{}][{}][{}]", ret, sql_err_to_str(ret), sqls[num_sql]);
                         if (ret == SQL_ERR_SYNTAX_ERROR) {
-                            DB_WARNING("parsing syntax message:[%s]", sql_syntax_err_str(sql_parser));
-                            DB_WARNING("before parsing [%s]", sqls[num_sql] + sql_syntax_err_offset(sql_parser));
+                            TLOG_WARN("parsing syntax message:[{}]", sql_syntax_err_str(sql_parser));
+                            TLOG_WARN("before parsing [{}]", sqls[num_sql] + sql_syntax_err_offset(sql_parser));
                         }
                     }
                 }
-                //DB_WARNING("old parse finished: thread: %d, loop: %d", i, j);
+                //TLOG_WARN("old parse finished: thread: {}, loop: {}", i, j);
             }
             sql_parser_free(sql_parser);
             mp_free(pool);
@@ -49,7 +49,7 @@ void test_old_parser(std::vector<char*>& sqls, int num_thread, int loop) {
         bth.run(parse_sqls);
     }
     cond.wait();
-    DB_WARNING("old parser cost: %ld", cost.get_time());
+    TLOG_WARN("old parser cost: {}", cost.get_time());
 }
 
 void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
@@ -63,14 +63,14 @@ void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
                     std::string sql(sqls[num_sql]);
                     parser.parse(sql);
                     if (parser.error != parser::SUCC) {
-                        DB_WARNING("new parse failed: thread: %d, loop: %d, sql: %d, %s", 
+                        TLOG_WARN("new parse failed: thread: {}, loop: {}, sql: {}, {}", 
                             i, j, num_sql, parser.syntax_err_str.c_str());
                         continue;
                     }
                     //parser::StmtNode* stmt = (parser::StmtNode*)parser.result[0];
-                    //printf("sql: %s\n", stmt->to_string().c_str());
+                    //printf("sql: {}\n", stmt->to_string().c_str());
                 }
-                //DB_WARNING("new parse finished: thread: %d, loop: %d", i, j);
+                //TLOG_WARN("new parse finished: thread: {}, loop: {}", i, j);
             }
             cond.decrease_signal();
             return;
@@ -80,19 +80,19 @@ void test_new_parser(std::vector<char*>& sqls, int num_thread, int loop) {
         bth.run(parse_sqls);
     }
     cond.wait();
-    DB_WARNING("new parser cost: %ld", cost.get_time());
+    TLOG_WARN("new parser cost: {}", cost.get_time());
 }
 
 int main(int argc, char** argv) {
     baidu::rpc::StartDummyServerAt(8888/*port*/);
     if (argc != 5) {
-        DB_WARNING("usage: file num_thread num_loop old_or_new");
+        TLOG_WARN("usage: file num_thread num_loop old_or_new");
         exit(1);
     }
     baidu::rpc::StartDummyServerAt(8888/*port*/);
     FILE* my_fd = fopen(argv[1], "rb");
     if (my_fd == NULL) {
-        printf("file %s does not exsit\n", argv[1]);
+        printf("file {} does not exsit\n", argv[1]);
         exit(1);
     }
     int thread = atoi(argv[2]);
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 
     if (thread >= 10) {
         if (0 != bthread_setconcurrency(thread)) {
-            DB_WARNING("set bthread concurrency failed");
+            TLOG_WARN("set bthread concurrency failed");
             fclose(my_fd);
             exit(1);
         }
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 	        	break;
 	        }
         }
-        //DB_WARNING("sql is: %s", sql);
+        //TLOG_WARN("sql is: {}", sql);
         sqls.push_back(sql);
     }
 

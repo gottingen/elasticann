@@ -93,7 +93,7 @@ namespace EA {
             });
         }
         cond.wait();
-        DB_WARNING("sort time:%ld", cost.get_time());
+        TLOG_WARN("sort time:{}", cost.get_time());
     }
 
     void Sorter::shiftdown(size_t index) {

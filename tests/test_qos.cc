@@ -45,7 +45,7 @@ void test_func() {
             cost.reset();
             i=i*2;
             
-            DB_WARNING("adder:%d, qps:%ld", count-count1, test_sum_per_second.get_value(FLAGS_qos_get_value));
+            TLOG_WARN("adder:{}, qps:{}", count-count1, test_sum_per_second.get_value(FLAGS_qos_get_value));
             count1 = count;
 
         }
@@ -73,9 +73,9 @@ int qos_test1(baikal::client::Service* baikaldb) {
             baikal::client::ResultSet result_set;
             int ret = baikaldb->query(0, sql, &result_set);
             if (ret != 0) {
-                DB_FATAL("atom_test failed");
+                TLOG_ERROR("atom_test failed");
             } else {
-                DB_WARNING("atom_test succ");
+                TLOG_WARN("atom_test succ");
             }
         };
 
@@ -98,9 +98,9 @@ int qos_test2(baikal::client::Service* baikaldb) {
             baikal::client::ResultSet result_set;
             int ret = baikaldb->query(0, sql, &result_set);
             if (ret != 0) {
-                DB_FATAL("qos_test failed");
+                TLOG_ERROR("qos_test failed");
             } else {
-                DB_WARNING("qos_test succ");
+                TLOG_WARN("qos_test succ");
             }
         };
 
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
     baikal::client::Manager tmp_manager;
     int ret = tmp_manager.init("conf", "baikal_client.conf");
     if (ret != 0) {
-        DB_FATAL("baikal client init fail:%d", ret);
+        TLOG_ERROR("baikal client init fail:{}", ret);
         return 0;
     }
 
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
         if (baikaldb == nullptr) {
             baikaldb = tmp_manager.get_service("baikaldb_utf8");
             if (baikaldb == nullptr) {
-                DB_FATAL("get_service failed");
+                TLOG_ERROR("get_service failed");
                 return -1;
             }
         }
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
     EA::StoreQos* store_qos = EA::StoreQos::get_instance();
     ret = store_qos->init();
     if (ret < 0) {
-        DB_FATAL("store qos init fail");
+        TLOG_ERROR("store qos init fail");
         return -1;
     } 
 
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
                 StoreQos::get_instance()->create_bthread_local(EA::QOS_SELECT,sign,123);
                 
                 EA::QosBthreadLocal* local = StoreQos::get_instance()->get_bthread_local();
-                DB_WARNING("local:%p", local);
+                TLOG_WARN("local:{}", local);
                 EA::TimeCost local_time;
                 for (;;) {
 
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
                 }
                 
        
-                DB_WARNING("bthread:%d, sign:%lu. time:%ld", i, sign, local_time.get_time());
+                TLOG_WARN("bthread:{}, sign:{}. time:{}", i, sign, local_time.get_time());
                 cond.decrease_signal();
             };
             
@@ -180,9 +180,9 @@ int main(int argc, char* argv[]) {
     }
 
     cond.wait();
-    DB_WARNING("time:%ld", cost.get_time());
+    TLOG_WARN("time:{}", cost.get_time());
     store_qos->close();
-    DB_WARNING("store qos close success");
+    TLOG_WARN("store qos close success");
 
     bthread_usleep(10000000);
 

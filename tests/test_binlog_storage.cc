@@ -19,8 +19,6 @@
 #include <atomic>
 #include <fstream>
 #include <unordered_set>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 #include <brpc/channel.h>
 
 #include "elasticann/common/meta_server_interact.h"

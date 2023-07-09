@@ -22,14 +22,17 @@
 #include "elasticann/exec/transaction_manager_node.h"
 
 namespace EA {
-class SingleTxnManagerNode : public TransactionManagerNode {
-public:
-    SingleTxnManagerNode() {
-    }
-    virtual ~SingleTxnManagerNode() {
-    }
-    virtual int open(RuntimeState* state);
-    virtual void reset(RuntimeState* state);
-};
+    class SingleTxnManagerNode : public TransactionManagerNode {
+    public:
+        SingleTxnManagerNode() {
+        }
+
+        virtual ~SingleTxnManagerNode() {
+        }
+
+        virtual int open(RuntimeState *state);
+
+        virtual void reset(RuntimeState *state);
+    };
 }
 

@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     }
     //s = db->CompactRange(rocksdb::CompactRangeOptions(), nullptr, nullptr);
     //assert(s.ok());
-    //DB_NOTICE("put cost: %lu", cost.get_time());
+    //TLOG_INFO("put cost: {}", cost.get_time());
 
     EA::MutTableKey key1;
     key1.append_i32(5000000 / 50000);
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 
     cost.reset();
     s = db->Get(rocksdb::ReadOptions(), cf_handle, key1.data(), &value);
-    DB_NOTICE("get cost: %lu, %s", cost.get_time(), rocksdb::Slice(value).ToString().c_str());
+    TLOG_INFO("get cost: {}, {}", cost.get_time(), rocksdb::Slice(value).ToString().c_str());
 
     cost.reset();
     rocksdb::ReadOptions read_options;
@@ -90,13 +90,13 @@ int main(int argc, char **argv) {
     EA::MutTableKey key2;
     key2.append_i32(5000000 / 50000);
     iter->Seek(key2.data());
-    DB_NOTICE("seek cost: %lu", cost.get_time());
+    TLOG_INFO("seek cost: {}", cost.get_time());
     int count = 0;
     for (; iter->Valid(); iter->Next()) {
         //std::cout << iter->key().ToString() << " | " << iter->value().ToString() << std::endl;
         count++;
     }
-    DB_NOTICE("count: %d", count);*/
+    TLOG_INFO("count: {}", count);*/
 
     rocksdb::ColumnFamilyOptions cf_option;
     cf_option.prefix_extractor.reset(
@@ -143,13 +143,13 @@ int main(int argc, char **argv) {
 
     EA::TimeCost cost;
     iter->SeekToFirst();
-    DB_NOTICE("SeekToFirst cost: %ld", cost.get_time());
+    TLOG_INFO("SeekToFirst cost: {}", cost.get_time());
     cost.reset();
     int count = 0;
     for (; iter->Valid(); iter->Next()) {
         count++;
     }
-    DB_NOTICE("forward next cost: %ld, count:%d", cost.get_time(), count);
+    TLOG_INFO("forward next cost: {}, count:{}", cost.get_time(), count);
     delete iter;
 
     //////
@@ -159,13 +159,13 @@ int main(int argc, char **argv) {
 
     cost.reset();
     iter->SeekToLast();
-    DB_NOTICE("SeekToLast cost: %ld", cost.get_time());
+    TLOG_INFO("SeekToLast cost: {}", cost.get_time());
     cost.reset();
     count = 0;
     for (; iter->Valid(); iter->Prev()) {
         count++;
     }
-    DB_NOTICE("backward prev cost: %ld, count:%d", cost.get_time(), count);
+    TLOG_INFO("backward prev cost: {}, count:{}", cost.get_time(), count);
     delete iter;
 
     //////
@@ -177,13 +177,13 @@ int main(int argc, char **argv) {
     key1.append_i64(5).append_i64(5000000);
     cost.reset();
     iter->Seek(key1.data());
-    DB_NOTICE("Seek cost: %ld", cost.get_time());
+    TLOG_INFO("Seek cost: {}", cost.get_time());
     cost.reset();
     count = 0;
     for (; iter->Valid(); iter->Next()) {
         count++;
     }
-    DB_NOTICE("forward next cost: %ld, count:%d", cost.get_time(), count);
+    TLOG_INFO("forward next cost: {}, count:{}", cost.get_time(), count);
     delete iter;
 
     //////
@@ -195,13 +195,13 @@ int main(int argc, char **argv) {
     key2.append_i64(5).append_i64(5999999);
     cost.reset();
     iter->SeekForPrev(key2.data());
-    DB_NOTICE("SeekForPrev cost: %ld", cost.get_time());
+    TLOG_INFO("SeekForPrev cost: {}", cost.get_time());
     cost.reset();
     count = 0;
     for (; iter->Valid(); iter->Prev()) {
         count++;
     }
-    DB_NOTICE("backward prev cost: %ld, count:%d", cost.get_time(), count);
+    TLOG_INFO("backward prev cost: {}, count:{}", cost.get_time(), count);
     delete iter;
     //return 0;
 

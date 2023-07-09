@@ -97,7 +97,7 @@ DOCTEST_TEST_CASE("common cmsketch") {
         value_o.type = EA::proto::INT32;
         value_o._u.int32_val = FLAGS_test_value;
         int cnt = column.get_value(value_o.hash());
-        DB_WARNING("0 size:%d, depth:%d, width:%d, get_value:%d, cnt:%d", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
+        TLOG_WARN("0 size:{}, depth:{}, width:{}, get_value:{}, cnt:{}", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
     }
     {
         std::string arg_value = FLAGS_test_tuple;
@@ -108,18 +108,18 @@ DOCTEST_TEST_CASE("common cmsketch") {
         EA::TupleRecord tuple_record(slice1);
         int ret = tuple_record.verification_fields(122);
         if (ret != 0) {
-            DB_WARNING("decode fail slice1: %lu, %s", slice1.size(), slice1.ToString(true).c_str());
+            TLOG_WARN("decode fail slice1: {}, {}", slice1.size(), slice1.ToString(true).c_str());
         } else {  
-            DB_WARNING("decode succ slice1: %lu, %s", slice1.size(), slice1.ToString(true).c_str());
+            TLOG_WARN("decode succ slice1: {}, {}", slice1.size(), slice1.ToString(true).c_str());
         }
         slice1.remove_prefix(sizeof(uint64_t));
 
         EA::TupleRecord tuple_record2(slice1);
         ret = tuple_record2.verification_fields(122);
         if (ret != 0) {
-            DB_WARNING("decode fail slice1: %lu, %s", slice1.size(), slice1.ToString(true).c_str());
+            TLOG_WARN("decode fail slice1: {}, {}", slice1.size(), slice1.ToString(true).c_str());
         } else {  
-            DB_WARNING("decode succ slice1: %lu, %s", slice1.size(), slice1.ToString(true).c_str());
+            TLOG_WARN("decode succ slice1: {}, {}", slice1.size(), slice1.ToString(true).c_str());
         }
     }
     // {
@@ -136,7 +136,7 @@ DOCTEST_TEST_CASE("common cmsketch") {
     //     value_o.type = EA::proto::INT32;
     //     value_o._u.int32_val = FLAGS_test_value;
     //     int cnt = column.get_value1(value_o.hash());
-    //     DB_WARNING("1 size:%d, depth:%d, width:%d, get_value:%d, cnt:%d", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
+    //     TLOG_WARN("1 size:{}, depth:{}, width:{}, get_value:{}, cnt:{}", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
     // }
     // {
     //     int size = FLAGS_test_total;
@@ -152,7 +152,7 @@ DOCTEST_TEST_CASE("common cmsketch") {
     //     value_o.type = EA::proto::INT32;
     //     value_o._u.int32_val = FLAGS_test_value;
     //     int cnt = column.get_value2(value_o.hash());
-    //     DB_WARNING("2 size:%d, depth:%d, width:%d, get_value:%d, cnt:%d", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
+    //     TLOG_WARN("2 size:{}, depth:{}, width:{}, get_value:{}, cnt:{}", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
     // }
 
     {

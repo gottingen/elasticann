@@ -23,7 +23,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <boost/algorithm/string.hpp>
 #include "elasticann/sqlparser/parser.h"
 #include "turbo/strings/str_split.h"
 

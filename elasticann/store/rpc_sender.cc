@@ -32,8 +32,8 @@ namespace EA {
             request.set_region_version(request_version);
             ret = send_query_method(request, instance, recevie_region_id);
             if (ret < 0) {
-                DB_WARNING("send no op fail, region_id: %ld, reqeust: %s",
-                           recevie_region_id, request.ShortDebugString().c_str());
+                TLOG_WARN("send no op fail, region_id: {}, reqeust: {}",
+                          recevie_region_id, request.ShortDebugString().c_str());
                 bthread_usleep(1000 * 1000LL);
             }
         }
@@ -83,11 +83,11 @@ namespace EA {
         auto ret = store_interact.send_request_for_leader(log_id, "query", request, response);
         if (ret == 0) {
             if (time_cost.get_time() > FLAGS_print_time_us) {
-                DB_WARNING("send request to new region success,"
-                           " response:%s, receive_region_id: %ld, time_cost:%ld",
-                           pb2json(response).c_str(),
-                           receive_region_id,
-                           time_cost.get_time());
+                TLOG_WARN("send request to new region success,"
+                          " response:%s, receive_region_id: {}, time_cost:{}",
+                          pb2json(response).c_str(),
+                          receive_region_id,
+                          time_cost.get_time());
             }
             return 0;
         }

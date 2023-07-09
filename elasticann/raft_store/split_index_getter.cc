@@ -19,27 +19,8 @@
 #include "elasticann/store/store.h"
 
 namespace EA {
-int64_t SplitIndexGetter::get_split_index(int64_t region_id) {
-    return Store::get_instance()->get_split_index_for_region(region_id);
-}
-}
+    int64_t SplitIndexGetter::get_split_index(int64_t region_id) {
+        return Store::get_instance()->get_split_index_for_region(region_id);
+    }
+}  // namespace EA
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

@@ -81,7 +81,7 @@ namespace EA {
 
         auto status = _rocksdb->write(MetaWriter::write_options, _meta_cf, keys, values);
         if (!status.ok()) {
-            DB_FATAL("write init_meta_info fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write init_meta_info fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         }
@@ -92,17 +92,17 @@ namespace EA {
         int64_t region_id = region_info.region_id();
         std::string string_region_info;
         if (!region_info.SerializeToString(&string_region_info)) {
-            DB_FATAL("region_info: %s serialize to string fail, region_id: %ld",
+            TLOG_ERROR("region_info: {} serialize to string fail, region_id: {}",
                      region_info.ShortDebugString().c_str(), region_id);
         }
         auto status = _rocksdb->put(MetaWriter::write_options, _meta_cf,
                                     rocksdb::Slice(region_info_key(region_id)), rocksdb::Slice(string_region_info));
         if (!status.ok()) {
-            DB_FATAL("write update_region_info fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write update_region_info fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         } else {
-            DB_WARNING("write region info success, region_info: %s", region_info.ShortDebugString().c_str());
+            TLOG_WARN("write region info success, region_info: {}", region_info.ShortDebugString().c_str());
         }
         return 0;
     }
@@ -111,18 +111,18 @@ namespace EA {
         int64_t region_id = region_ddl_info.region_id();
         std::string string_region_ddl_info;
         if (!region_ddl_info.SerializeToString(&string_region_ddl_info)) {
-            DB_FATAL("region_ddl_info: %s serialize to string fail, region_id: %ld",
+            TLOG_ERROR("region_ddl_info: {} serialize to string fail, region_id: {}",
                      region_ddl_info.ShortDebugString().c_str(), region_id);
         }
         auto status = _rocksdb->put(MetaWriter::write_options, _meta_cf,
                                     rocksdb::Slice(region_ddl_info_key(region_id)),
                                     rocksdb::Slice(string_region_ddl_info));
         if (!status.ok()) {
-            DB_FATAL("write update_region_ddl_info fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write update_region_ddl_info fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         } else {
-            DB_NOTICE("write region info success, region_ddl_info: %s", region_ddl_info.ShortDebugString().c_str());
+            TLOG_INFO("write region info success, region_ddl_info: {}", region_ddl_info.ShortDebugString().c_str());
         }
         return 0;
     }
@@ -132,11 +132,11 @@ namespace EA {
                                     rocksdb::Slice(num_table_lines_key(region_id)),
                                     rocksdb::Slice(encode_num_table_lines(num_table_lines)));
         if (!status.ok()) {
-            DB_FATAL("write update_num_table_lines fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write update_num_table_lines fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         } else {
-            //DB_WARNING("region_id: %ld update num_table_lines: %ld success", region_id, num_table_lines);
+            //TLOG_WARN("region_id: {} update num_table_lines: {} success", region_id, num_table_lines);
         }
         return 0;
     }
@@ -146,11 +146,11 @@ namespace EA {
                                     rocksdb::Slice(applied_index_key(region_id)),
                                     rocksdb::Slice(encode_applied_index(applied_index, data_index)));
         if (!status.ok()) {
-            DB_FATAL("write apply index fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write apply index fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         } else {
-            //DB_WARNING("region_id: %ld update_apply_index : %ld success",
+            //TLOG_WARN("region_id: {} update_apply_index : {} success",
             //            region_id, applied_index);
         }
         return 0;
@@ -167,7 +167,7 @@ namespace EA {
                                     rocksdb::Slice(pre_commit_key(region_id, txn_id)),
                                     rocksdb::Slice(line_value.data()));
         if (!status.ok()) {
-            DB_FATAL("write pre commit fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write pre commit fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         }
@@ -179,7 +179,7 @@ namespace EA {
                                     rocksdb::Slice(doing_snapshot_key(region_id)),
                                     rocksdb::Slice(""));
         if (!status.ok()) {
-            DB_FATAL("write doing snapshot fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write doing snapshot fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         }
@@ -189,7 +189,7 @@ namespace EA {
     int MetaWriter::write_batch(rocksdb::WriteBatch *updates, int64_t region_id) {
         auto status = _rocksdb->write(MetaWriter::write_options, updates);
         if (!status.ok()) {
-            DB_FATAL("write batch fail, err_msg: %s, region_id: %ld",
+            TLOG_ERROR("write batch fail, err_msg: {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         }
@@ -257,7 +257,7 @@ namespace EA {
         rocksdb::IngestExternalFileOptions ifo;
         auto res = _rocksdb->ingest_external_file(_meta_cf, {meta_sst_file}, ifo);
         if (!res.ok()) {
-             DB_WARNING("Error while adding file %s, Error %s, region_id: %ld",
+             TLOG_WARN("Error while adding file {}, Error {}, region_id: {}",
                      meta_sst_file.c_str(), res.ToString().c_str(), region_id);
              return -1;
         }
@@ -270,7 +270,7 @@ namespace EA {
         rocksdb::SstFileReader reader(options);
         auto res = reader.Open(meta_sst_file);
         if (!res.ok()) {
-            DB_WARNING("SstFileReader open fail %s, Error %s, region_id: %ld",
+            TLOG_WARN("SstFileReader open fail {}, Error {}, region_id: {}",
                        meta_sst_file.c_str(), res.ToString().c_str(), region_id);
             return -1;
         }
@@ -280,7 +280,7 @@ namespace EA {
             auto status = _rocksdb->put(MetaWriter::write_options, _meta_cf,
                                         iter->key(), iter->value());
             if (!status.ok()) {
-                DB_FATAL("put meta fail, err_msg: %s, region_id: %ld",
+                TLOG_ERROR("put meta fail, err_msg: {}, region_id: {}",
                          status.ToString().c_str(), region_id);
                 return -1;
             }
@@ -298,26 +298,26 @@ namespace EA {
         //batch.Delete(_meta_cf, doing_snapshot_key(drop_region_id));
         auto status = _rocksdb->write(options, &batch);
         if (!status.ok()) {
-            DB_FATAL("drop region fail, error: code=%d, msg=%s, region_id: %ld",
+            TLOG_ERROR("drop region fail, error: code={}, msg={}, region_id: {}",
                      status.code(), status.ToString().c_str(), drop_region_id);
             return -1;
         }
         auto ret = clear_txn_infos(drop_region_id);
         if (ret < 0) {
-            DB_FATAL("clear_txn_infos fail, region_id: %ld", drop_region_id);
+            TLOG_ERROR("clear_txn_infos fail, region_id: {}", drop_region_id);
             return ret;
         }
         ret = clear_txn_log_index(drop_region_id);
         if (ret < 0) {
-            DB_FATAL("clear txn log index fail, region_id: %ld", drop_region_id);
+            TLOG_ERROR("clear txn log index fail, region_id: {}", drop_region_id);
             return ret;
         }
         ret = clear_pre_commit_infos(drop_region_id);
         if (ret < 0) {
-            DB_FATAL("clear pre commit infos fail, region_id: %ld", drop_region_id);
+            TLOG_ERROR("clear pre commit infos fail, region_id: {}", drop_region_id);
             return ret;
         }
-        DB_WARNING("clear meta info success, cost: %ld, region_id: %ld", cost.get_time(), drop_region_id);
+        TLOG_WARN("clear meta info success, cost: {}, region_id: {}", cost.get_time(), drop_region_id);
         return 0;
     }
 
@@ -332,26 +332,26 @@ namespace EA {
         batch.Delete(_meta_cf, learner_key(drop_region_id));
         auto status = _rocksdb->write(options, &batch);
         if (!status.ok()) {
-            DB_FATAL("drop region fail, error: code=%d, msg=%s, region_id: %ld",
+            TLOG_ERROR("drop region fail, error: code={}, msg={}, region_id: {}",
                      status.code(), status.ToString().c_str(), drop_region_id);
             return -1;
         }
         auto ret = clear_txn_infos(drop_region_id);
         if (ret < 0) {
-            DB_FATAL("clear_txn_infos fail, region_id: %ld", drop_region_id);
+            TLOG_ERROR("clear_txn_infos fail, region_id: {}", drop_region_id);
             return ret;
         }
         ret = clear_txn_log_index(drop_region_id);
         if (ret < 0) {
-            DB_FATAL("clear txn log index fail, region_id: %ld", drop_region_id);
+            TLOG_ERROR("clear txn log index fail, region_id: {}", drop_region_id);
             return ret;
         }
         ret = clear_pre_commit_infos(drop_region_id);
         if (ret < 0) {
-            DB_FATAL("clear pre commit infos fail, region_id: %ld", drop_region_id);
+            TLOG_ERROR("clear pre commit infos fail, region_id: {}", drop_region_id);
             return ret;
         }
-        DB_WARNING("clear meta info success, cost: %ld, region_id: %ld", cost.get_time(), drop_region_id);
+        TLOG_WARN("clear meta info success, cost: {}, region_id: {}", cost.get_time(), drop_region_id);
         return 0;
     }
 
@@ -361,7 +361,7 @@ namespace EA {
         auto status = _rocksdb->remove_range(MetaWriter::write_options, _meta_cf,
                                              start_key, end_key, false);
         if (!status.ok()) {
-            DB_WARNING("remove_range error: code=%d, msg=%s, region_id: %ld",
+            TLOG_WARN("remove_range error: code={}, msg={}, region_id: {}",
                        status.code(), status.ToString().c_str(), region_id);
             return -1;
         }
@@ -374,7 +374,7 @@ namespace EA {
         auto status = _rocksdb->remove_range(MetaWriter::write_options, _meta_cf,
                                              start_key, end_key, false);
         if (!status.ok()) {
-            DB_WARNING("remove_range error: code=%d, msg=%s, region_id: %ld",
+            TLOG_WARN("remove_range error: code={}, msg={}, region_id: {}",
                        status.code(), status.ToString().c_str(), region_id);
             return -1;
         }
@@ -387,7 +387,7 @@ namespace EA {
         auto status = _rocksdb->remove_range(MetaWriter::write_options, _meta_cf,
                                              start_key, end_key, false);
         if (!status.ok()) {
-            DB_WARNING("remove_range error: code=%d, msg=%s, region_id: %ld",
+            TLOG_WARN("remove_range error: code={}, msg={}, region_id: {}",
                        status.code(), status.ToString().c_str(), region_id);
             return -1;
         }
@@ -400,7 +400,7 @@ namespace EA {
         batch.Delete(_meta_cf, doing_snapshot_key(region_id));
         auto status = _rocksdb->write(options, &batch);
         if (!status.ok()) {
-            DB_FATAL("drop region fail, error: code=%d, msg=%s, region_id: %ld",
+            TLOG_ERROR("drop region fail, error: code={}, msg={}, region_id: {}",
                      status.code(), status.ToString().c_str(), region_id);
             return -1;
         }
@@ -413,7 +413,7 @@ namespace EA {
         batch.Delete(_meta_cf, region_info_key(region_id));
         auto status = _rocksdb->write(options, &batch);
         if (!status.ok()) {
-            DB_FATAL("drop region fail, error: code=%d, msg=%s, region_id: %ld",
+            TLOG_ERROR("drop region fail, error: code={}, msg={}, region_id: {}",
                      status.code(), status.ToString().c_str(), region_id);
             return -1;
         }
@@ -435,7 +435,7 @@ namespace EA {
             }
             proto::RegionInfo region_info;
             if (!region_info.ParseFromString(iter->value().ToString())) {
-                DB_FATAL("parse from pb fail when load region snapshot, key:%s",
+                TLOG_ERROR("parse from pb fail when load region snapshot, key:{}",
                          iter->value().ToString().c_str());
                 continue;
             }
@@ -453,18 +453,18 @@ namespace EA {
         std::string prefix = transcation_pb_key_prefix(region_id);
         for (iter->Seek(prefix); iter->Valid(); iter->Next()) {
             if (!iter->key().starts_with(prefix)) {
-                DB_WARNING("read end info, region_id: %ld, key:%s", region_id, iter->key().ToString(true).c_str());
+                TLOG_WARN("read end info, region_id: {}, key:{}", region_id, iter->key().ToString(true).c_str());
                 break;
             }
             int64_t log_index = 0;
             //key: identify + region_id + identify + txn_id + log_index
             if (iter->key().size() == (1 + sizeof(int64_t) + 1 + sizeof(uint64_t) + sizeof(int64_t))) {
                 log_index = TableKey(iter->key()).extract_i64(1 + sizeof(int64_t) + 1 + sizeof(uint64_t));
-                DB_WARNING("parse txn info, log_index: %ld, txn_id: %lu, region_id: %ld",
+                TLOG_WARN("parse txn info, log_index: {}, txn_id: {}, region_id: {}",
                            log_index, TableKey(iter->key()).extract_u64(1 + sizeof(int64_t) + 1), region_id);
             } else {
                 log_index = TableKey(iter->key()).extract_i64(1 + sizeof(int64_t) + 1);
-                DB_WARNING("parse txn info, log_index: %ld, region_id: %ld",
+                TLOG_WARN("parse txn info, log_index: {}, region_id: {}",
                            log_index, region_id);
             }
             prepared_txn_infos[log_index] = iter->value().ToString();
@@ -481,12 +481,12 @@ namespace EA {
         std::string prefix = log_index_key_prefix(region_id);
         for (iter->Seek(prefix); iter->Valid(); iter->Next()) {
             if (!iter->key().starts_with(prefix)) {
-                DB_WARNING("read end info, region_id: %ld, key:%s", region_id, iter->key().ToString(true).c_str());
+                TLOG_WARN("read end info, region_id: {}, key:{}", region_id, iter->key().ToString(true).c_str());
                 break;
             }
             TableKey log_index(iter->value());
             log_indexs[decode_log_index_key(iter->key())] = log_index.extract_i64(0);
-            DB_WARNING("region_id: %ld read prepared transcation log index: %ld, transaction_id: %lu",
+            TLOG_WARN("region_id: {} read prepared transcation log index: {}, transaction_id: {}",
 
                        region_id, log_index.extract_i64(0), decode_log_index_key(iter->key()));
         }
@@ -521,7 +521,7 @@ namespace EA {
         std::string value;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(applied_index_key(region_id)), &value);
         if (!status.ok()) {
-            DB_WARNING("Error while read applied index, Error %s, region_id: %ld",
+            TLOG_WARN("Error while read applied index, Error {}, region_id: {}",
                        status.ToString().c_str(), region_id);
             *applied_index = -1;
             *data_index = -1;
@@ -542,7 +542,7 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(num_table_lines_key(region_id)), &value);
         if (!status.ok()) {
-            DB_WARNING("Error while read num_table_lines fail, Error %s, region_id: %ld",
+            TLOG_WARN("Error while read num_table_lines fail, Error {}, region_id: {}",
                        status.ToString().c_str(), region_id);
             return -1;
         }
@@ -554,11 +554,11 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(learner_key(region_id)), &value);
         if (!status.ok()) {
-            DB_WARNING("Error while read learner key, Error %s, region_id: %ld",
+            TLOG_WARN("Error while read learner key, Error {}, region_id: {}",
                        status.ToString().c_str(), region_id);
             return -1;
         }
-        DB_DEBUG("region_id %ld read learner %s", region_id, str_to_hex(value).c_str());
+        TLOG_DEBUG("region_id {} read learner {}", region_id, str_to_hex(value).c_str());
         return TableKey(rocksdb::Slice(value)).extract_i64(0);
     }
 
@@ -567,12 +567,12 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(region_info_key(region_id)), &value);
         if (!status.ok()) {
-            DB_WARNING("Error while read applied index, Error %s, region_id: %ld",
+            TLOG_WARN("Error while read applied index, Error {}, region_id: {}",
                        status.ToString().c_str(), region_id);
             return -1;
         }
         if (!region_info.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when read region info, region_id: %ld, value:%s",
+            TLOG_ERROR("parse from pb fail when read region info, region_id: {}, value:{}",
                      region_id, value.c_str());
             return -1;
         }
@@ -584,11 +584,11 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(region_ddl_info_key(region_id)), &value);
         if (!status.ok()) {
-            DB_NOTICE("DDL_LOG region_id: %ld have no ddlwork.", region_id);
+            TLOG_INFO("DDL_LOG region_id: {} have no ddlwork.", region_id);
             return -1;
         }
         if (!region_ddl_info.ParseFromString(value)) {
-            DB_FATAL("parse from pb fail when read region ddl info, region_id: %ld, value:%s",
+            TLOG_ERROR("parse from pb fail when read region ddl info, region_id: {}, value:{}",
                      region_id, value.c_str());
             return -1;
         }
@@ -600,10 +600,10 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(doing_snapshot_key(region_id)), &value);
         if (!status.ok()) {
-            DB_WARNING("region_id: %ld not doing snapshot", region_id);
+            TLOG_WARN("region_id: {} not doing snapshot", region_id);
             return -1;
         }
-        DB_WARNING("region_id: %ld read doing snapshot success", region_id);
+        TLOG_WARN("region_id: {} read doing snapshot success", region_id);
         return 0;
     }
 
@@ -618,7 +618,7 @@ namespace EA {
         }
         num_table_lines = TableKey(rocksdb::Slice(value)).extract_i64(0);
         applied_index = TableKey(rocksdb::Slice(value)).extract_i64(sizeof(int64_t));
-        DB_WARNING("region_id: %ld read pre commit value, num_table_lines: %ld, applied_index: %ld",
+        TLOG_WARN("region_id: {} read pre commit value, num_table_lines: {}, applied_index: {}",
                    region_id, num_table_lines, applied_index);
         return 0;
     }
@@ -749,7 +749,7 @@ namespace EA {
     std::string MetaWriter::encode_region_info(const proto::RegionInfo &region_info) const {
         std::string string_region_info;
         if (!region_info.SerializeToString(&string_region_info)) {
-            DB_FATAL("region_info: %s serialize to string fail, region_id: %ld",
+            TLOG_ERROR("region_info: {} serialize to string fail, region_id: {}",
                      region_info.ShortDebugString().c_str(), region_info.region_id());
             string_region_info.clear();
         }
@@ -759,7 +759,7 @@ namespace EA {
     std::string MetaWriter::encode_transcation_pb_value(const proto::StoreReq &txn) const {
         std::string string_txn;
         if (!txn.SerializeToString(&string_txn)) {
-            DB_FATAL("txn: %s serialize to string fail", txn.ShortDebugString().c_str());
+            TLOG_ERROR("txn: {} serialize to string fail", txn.ShortDebugString().c_str());
             string_txn.clear();
         }
         return string_txn;
@@ -820,7 +820,7 @@ namespace EA {
                                     rocksdb::Slice(binlog_check_point_key(region_id)),
                                     rocksdb::Slice(value.data()));
         if (!status.ok()) {
-            DB_FATAL("write binlog check point fail, err_msg: %s, region_id: %ld, ts: %ld",
+            TLOG_ERROR("write binlog check point fail, err_msg: {}, region_id: {}, ts: {}",
                      status.ToString().c_str(), region_id, ts);
             return -1;
         }
@@ -828,13 +828,13 @@ namespace EA {
     }
 
     int MetaWriter::write_learner_key(int64_t region_id, bool is_learner) {
-        DB_DEBUG("write learner key region %ld, is_learner %d write %s",
+        TLOG_DEBUG("write learner key region {}, is_learner {} write {}",
                  region_id, is_learner, str_to_hex(encode_learner_flag(is_learner)).c_str());
         auto status = _rocksdb->put(MetaWriter::write_options, _meta_cf,
                                     rocksdb::Slice(learner_key(region_id)),
                                     rocksdb::Slice(encode_learner_flag(is_learner)));
         if (!status.ok()) {
-            DB_FATAL("write binlog check point fail, err_msg: %s, region_id: %ld, learner: %d",
+            TLOG_ERROR("write binlog check point fail, err_msg: {}, region_id: {}, learner: {}",
                      status.ToString().c_str(), region_id, is_learner);
             return -1;
         }
@@ -846,7 +846,7 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(binlog_check_point_key(region_id)), &value);
         if (!status.ok()) {
-            DB_FATAL("Error while read binlog check point, Error %s, region_id: %ld",
+            TLOG_ERROR("Error while read binlog check point, Error {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         }
@@ -876,7 +876,7 @@ namespace EA {
                                     rocksdb::Slice(binlog_oldest_ts_key(region_id)),
                                     rocksdb::Slice(value.data()));
         if (!status.ok()) {
-            DB_FATAL("write binlog oldest ts fail, err_msg: %s, region_id: %ld, ts: %ld",
+            TLOG_ERROR("write binlog oldest ts fail, err_msg: {}, region_id: {}, ts: {}",
                      status.ToString().c_str(), region_id, ts);
             return -1;
         }
@@ -888,7 +888,7 @@ namespace EA {
         rocksdb::ReadOptions options;
         auto status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(binlog_oldest_ts_key(region_id)), &value);
         if (!status.ok()) {
-            DB_FATAL("Error while read binlog oldest ts, Error %s, region_id: %ld",
+            TLOG_ERROR("Error while read binlog oldest ts, Error {}, region_id: {}",
                      status.ToString().c_str(), region_id);
             return -1;
         }
@@ -910,7 +910,7 @@ namespace EA {
                                     rocksdb::Slice(key.data()),
                                     rocksdb::Slice(value.data()));
         if (!status.ok()) {
-            DB_FATAL("write rocks_hang_check_key fail, err_msg: %s", status.ToString().c_str());
+            TLOG_ERROR("write rocks_hang_check_key fail, err_msg: {}", status.ToString().c_str());
             return -1;
         }
 
@@ -919,7 +919,7 @@ namespace EA {
         rocksdb::ReadOptions options;
         status = _rocksdb->get(options, _meta_cf, rocksdb::Slice(key.data()), &r_value);
         if (!status.ok()) {
-            DB_FATAL("Error while read rocks_hang_check_key, Error %s", status.ToString().c_str());
+            TLOG_ERROR("Error while read rocks_hang_check_key, Error {}", status.ToString().c_str());
             return -1;
         }
         return 0;

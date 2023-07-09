@@ -55,7 +55,7 @@ namespace EA {
                 _mem_row_desc = std::make_shared<MemRowDescriptor>();
                 int ret = _mem_row_desc->init(_tuple_descs);
                 if (ret < 0) {
-                    DB_WARNING("_mem_row_desc init fail");
+                    TLOG_WARN("_mem_row_desc init fail");
                     return -1;
                 }
                 TimeCost start_time;
@@ -65,7 +65,7 @@ namespace EA {
             _mem_row_desc = std::make_shared<MemRowDescriptor>();
             int ret = _mem_row_desc->init(_tuple_descs);
             if (ret < 0) {
-                DB_WARNING("_mem_row_desc init fail");
+                TLOG_WARN("_mem_row_desc init fail");
                 return -1;
             }
         }
@@ -81,7 +81,7 @@ namespace EA {
             _need_check_region = false;
         }
         int64_t limit = plan.nodes(0).limit();
-        //DB_WARNING("limit:%ld", limit);
+        //TLOG_WARN("limit:{}", limit);
         if (limit > 0) {
             _row_batch_capacity = limit / 2 + 1;
         }
@@ -101,7 +101,7 @@ namespace EA {
             }
         }
         if (pool == nullptr) {
-            DB_WARNING("error: txn pool is null: %ld", _region_id);
+            TLOG_WARN("error: txn pool is null: {}", _region_id);
             return -1;
         }
         is_separate = store_compute_separate;
@@ -151,7 +151,7 @@ namespace EA {
                 _mem_row_desc = std::make_shared<MemRowDescriptor>();
                 int ret = _mem_row_desc->init(_tuple_descs);
                 if (ret < 0) {
-                    DB_WARNING("_mem_row_desc init fail");
+                    TLOG_WARN("_mem_row_desc init fail");
                     return -1;
                 }
                 TimeCost start_time;
@@ -161,7 +161,7 @@ namespace EA {
             _mem_row_desc = std::make_shared<MemRowDescriptor>();
             int ret = _mem_row_desc->init(_tuple_descs);
             if (ret < 0) {
-                DB_WARNING("_mem_row_desc init fail");
+                TLOG_WARN("_mem_row_desc init fail");
                 return -1;
             }
         }
@@ -194,7 +194,7 @@ namespace EA {
         auto sql_stat_ptr = schema_factory->get_sql_stat(sign);
         if (sql_stat_ptr == nullptr || sql_stat_ptr->counter < SqlStatistics::SQL_COUNTS_RANGE) {
             single_store_concurrency = 1;
-            DB_WARNING("select sql is unappropriate sql, need to limit concurrency as one, sql sign is [%lu]", sign);
+            TLOG_WARN("select sql is unappropriate sql, need to limit concurrency as one, sql sign is [{}]", sign);
         }
         return single_store_concurrency;
     }
@@ -223,7 +223,7 @@ namespace EA {
         _used_bytes.fetch_add(bytes, std::memory_order_relaxed);
         if (_mem_tracker->has_limit_exceeded() || _mem_tracker->any_limit_exceeded()) {
             _mem_tracker->set_limit_exceeded();
-            DB_WARNING("log_id:%lu memory limit Exceeded limit:%ld consumed:%ld used:%ld.", _log_id,
+            TLOG_WARN("log_id:{} memory limit Exceeded limit:{} consumed:{} used:{}.", _log_id,
                        _mem_tracker->bytes_limit(), _mem_tracker->bytes_consumed(), _used_bytes.load());
             BAIDU_SCOPED_LOCK(_mem_lock);
             error_code = ER_TOO_BIG_SELECT;
@@ -264,7 +264,7 @@ namespace EA {
                 auto &time_cost = iter->second.first;
                 auto sql_not_used_time = time_cost.get_time();//sql截止目前未被使用的时长(us)
                 if (sql_not_used_time > time_length_us) {
-                    DB_NOTICE("current sql sign [%lu] is to to be erased, current map_descriptor_size is [%lu]", sign,
+                    TLOG_INFO("current sql sign [{}] is to to be erased, current map_descriptor_size is [{}]", sign,
                               sql_sign_to_mem_row_descriptor.size());
                     iter = sql_sign_to_mem_row_descriptor.erase(iter);
                 } else {

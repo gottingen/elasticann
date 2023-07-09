@@ -64,12 +64,12 @@ namespace EA {
     int MemRow::decode_key(int32_t tuple_id, IndexInfo &index,
                            std::vector <int32_t> &field_slot, const TableKey &key, int &pos) {
         if (index.type == proto::I_NONE) {
-            DB_WARNING("unknown table index type: %ld", index.id);
+            TLOG_WARN("unknown table index type: {}", index.id);
             return -1;
         }
         auto tuple = get_tuple(tuple_id);
         if (tuple == nullptr) {
-            DB_FATAL("unknown tuple: %d", tuple_id);
+            TLOG_ERROR("unknown tuple: {}", tuple_id);
             return -1;
         }
         uint8_t null_flag = 0;
@@ -80,11 +80,11 @@ namespace EA {
             pos += sizeof(uint8_t);
         }
         for (uint32_t idx = 0; idx < index.fields.size(); ++idx) {
-            // DB_WARNING("null_flag: %ld, %u, %d, %d, %s",
+            // TLOG_WARN("null_flag: {}, {}, {}, {}, {}",
             //     index.id, null_flag, pos, index.fields[idx].can_null,
             //     key.data().ToString(true).c_str());
             if (((null_flag >> (7 - idx)) & 0x01) && index.fields[idx].can_null) {
-                //DB_DEBUG("field is null: %d", idx);
+                //TLOG_DEBUG("field is null: {}", idx);
                 continue;
             }
             int32_t slot = field_slot[index.fields[idx].id];
@@ -92,18 +92,18 @@ namespace EA {
             //pos需要更新，容易出bug
             if (slot == 0) {
                 if (0 != key.skip_field(index.fields[idx], pos)) {
-                    DB_WARNING("skip index field error");
+                    TLOG_WARN("skip index field error");
                     return -1;
                 }
                 continue;
             }
             const FieldDescriptor *field = descriptor->field(slot - 1);
             if (field == nullptr) {
-                DB_WARNING("invalid field: %d slot: %d", index.fields[idx].id, slot);
+                TLOG_WARN("invalid field: {} slot: {}", index.fields[idx].id, slot);
                 return -1;
             }
             if (0 != key.decode_field(tuple, reflection, field, index.fields[idx], pos)) {
-                DB_WARNING("decode index field error");
+                TLOG_WARN("decode index field error");
                 return -1;
             }
         }
@@ -113,12 +113,12 @@ namespace EA {
     int MemRow::decode_primary_key(int32_t tuple_id, IndexInfo &index, std::vector <int32_t> &field_slot,
                                    const TableKey &key, int &pos) {
         if (index.type != proto::I_KEY && index.type != proto::I_UNIQ) {
-            DB_WARNING("invalid secondary index type: %ld", index.id);
+            TLOG_WARN("invalid secondary index type: {}", index.id);
             return -1;
         }
         auto tuple = get_tuple(tuple_id);
         if (tuple == nullptr) {
-            DB_FATAL("unknown tuple: %d", tuple_id);
+            TLOG_ERROR("unknown tuple: {}", tuple_id);
             return -1;
         }
         const Descriptor *descriptor = tuple->GetDescriptor();
@@ -129,18 +129,18 @@ namespace EA {
             //pos需要更新，容易出bug
             if (slot == 0) {
                 if (0 != key.skip_field(field_info, pos)) {
-                    DB_WARNING("skip index field error");
+                    TLOG_WARN("skip index field error");
                     return -1;
                 }
                 continue;
             }
             const FieldDescriptor *field = descriptor->field(slot - 1);
             if (field == nullptr) {
-                DB_WARNING("invalid field: %d slot: %d", field_info.id, slot);
+                TLOG_WARN("invalid field: {} slot: {}", field_info.id, slot);
                 return -1;
             }
             if (0 != key.decode_field(tuple, reflection, field, field_info, pos)) {
-                DB_WARNING("decode index field error: field_id: %d, type: %d",
+                TLOG_WARN("decode index field error: field_id: {}, type: {}",
                            field_info.id, field_info.type);
                 return -1;
             }

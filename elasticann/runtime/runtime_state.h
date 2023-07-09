@@ -31,6 +31,7 @@
 #include "elasticann/runtime/trace_state.h"
 #include "elasticann/common/statistics.h"
 #include "elasticann/common/memory_profile.h"
+#include "turbo/format/format.h"
 //#include "region_resource.h"
 
 using google::protobuf::RepeatedPtrField;
@@ -150,7 +151,7 @@ namespace EA {
             return _mem_row_desc.get();
         }
 
-        int64_t region_id() {
+        int64_t region_id() const {
             return _region_id;
         }
 
@@ -158,7 +159,7 @@ namespace EA {
             return _region_version;
         }
 
-        int64_t table_id() {
+        int64_t table_id() const {
             if (_resource != nullptr) {
                 return _resource->region_info.table_id();
             }
@@ -268,7 +269,7 @@ namespace EA {
             return _sort_use_index;
         }
 
-        uint64_t log_id() {
+        uint64_t log_id() const {
             return _log_id;
         }
 
@@ -506,3 +507,12 @@ namespace EA {
     typedef std::shared_ptr<RuntimeState> SmartState;
 }  // namespace EA
 
+namespace fmt {
+    template<>
+    struct formatter<::EA::RuntimeState> : public formatter<int> {
+        auto format(const ::EA::RuntimeState &state, format_context &ctx) const {
+            return fmt::format_to(ctx.out(), "log_id: {}, region_id: {}, table_id: {}", state.log_id(),
+                                  state.region_id(), state.table_id());
+        }
+    };
+}

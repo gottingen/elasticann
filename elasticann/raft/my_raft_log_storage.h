@@ -33,131 +33,135 @@
 
 namespace EA {
 
-struct LogHead {
-    explicit LogHead(const rocksdb::Slice& raw) {
-        butil::RawUnpacker(raw.data())
-                .unpack64((uint64_t&)term)
-                .unpack32((uint32_t&)type);
-    }
-    LogHead(int64_t term, int type) : term(term), type(type) {}
-    void serialize_to(void* data) {
-        butil::RawPacker(data).pack64(term).pack32(type);
-    }
-    int64_t term;
-    int type;
-};
+    struct LogHead {
+        explicit LogHead(const rocksdb::Slice &raw) {
+            butil::RawUnpacker(raw.data())
+                    .unpack64((uint64_t &) term)
+                    .unpack32((uint32_t &) type);
+        }
 
-// Implementation of LogStorage based on RocksDB
-class MyRaftLogStorage : public braft::LogStorage {
-typedef std::vector<std::pair<rocksdb::SliceParts, rocksdb::SliceParts>> SlicePartsVec;
-public:
+        LogHead(int64_t term, int type) : term(term), type(type) {}
 
-    /* raft_log_cf data format
-     * Key:RegionId(8 bytes) + 0x01 Value: _first_log_index
-     *
-     * Key:RegionId(8 bytes) + 0x02 + Index(8 bytes)
-     * Value : LogHead + data
-     * LogHead: term(8 bytes) + EntryType(int)
-     * data: DATA(IOBuf) / ConfigurationPBMeta(pb)
-     */ 
-    static const size_t LOG_META_KEY_SIZE = sizeof(int64_t) + 1;
-    static const size_t LOG_DATA_KEY_SIZE = sizeof(int64_t) + 1 + sizeof(int64_t);
-    static const uint8_t LOG_META_IDENTIFY = 0x01;                                      
-    static const uint8_t LOG_DATA_IDENTIFY = 0x02;    
-    const static size_t LOG_HEAD_SIZE = sizeof(int64_t) + sizeof(int);
-    ~MyRaftLogStorage();
-    MyRaftLogStorage():_db(nullptr), _raftlog_handle(nullptr), _binlog_handle(nullptr) {
-        bthread_mutex_init(&_mutex, nullptr);
-    }
-    // init logstorage, check consistency and integrity
-    int init(braft::ConfigurationManager* configuration_manager) override;
+        void serialize_to(void *data) {
+            butil::RawPacker(data).pack64(term).pack32(type);
+        }
 
-    // first log index in log
-    int64_t first_log_index() override {
-        return _first_log_index.load(std::memory_order_relaxed);
-    }   
+        int64_t term;
+        int type;
+    };
 
-    // last log index in log
-    int64_t last_log_index() {
-        return _last_log_index.load(std::memory_order_relaxed);
-    }   
+    // Implementation of LogStorage based on RocksDB
+    class MyRaftLogStorage : public braft::LogStorage {
+        typedef std::vector<std::pair<rocksdb::SliceParts, rocksdb::SliceParts>> SlicePartsVec;
+    public:
 
-    // get logentry by index
-    braft::LogEntry* get_entry(const int64_t index) override;
+        /* raft_log_cf data format
+         * Key:RegionId(8 bytes) + 0x01 Value: _first_log_index
+         *
+         * Key:RegionId(8 bytes) + 0x02 + Index(8 bytes)
+         * Value : LogHead + data
+         * LogHead: term(8 bytes) + EntryType(int)
+         * data: DATA(IOBuf) / ConfigurationPBMeta(pb)
+         */
+        static const size_t LOG_META_KEY_SIZE = sizeof(int64_t) + 1;
+        static const size_t LOG_DATA_KEY_SIZE = sizeof(int64_t) + 1 + sizeof(int64_t);
+        static const uint8_t LOG_META_IDENTIFY = 0x01;
+        static const uint8_t LOG_DATA_IDENTIFY = 0x02;
+        const static size_t LOG_HEAD_SIZE = sizeof(int64_t) + sizeof(int);
 
-    // get logentry's term by index
-    int64_t get_term(const int64_t index) override;
+        ~MyRaftLogStorage();
 
-    // append entries to log
-    int append_entry(const braft::LogEntry* entry) override;
+        MyRaftLogStorage() : _db(nullptr), _raftlog_handle(nullptr), _binlog_handle(nullptr) {
+            bthread_mutex_init(&_mutex, nullptr);
+        }
 
-    // append entries to log, return append success number
-    int append_entries(const std::vector<braft::LogEntry*>& entries 
-            , braft::IOMetric* metric) override;
+        // init logstorage, check consistency and integrity
+        int init(braft::ConfigurationManager *configuration_manager) override;
 
-    // delete logs from storage's head, [first_log_index, first_index_kept) will be discarded
-    int truncate_prefix(const int64_t first_index_kept) override;
+        // first log index in log
+        int64_t first_log_index() override {
+            return _first_log_index.load(std::memory_order_relaxed);
+        }
 
-    // delete uncommitted logs from storage's tail, (last_index_kept, last_log_index] will be discarded
-    int truncate_suffix(const int64_t last_index_kept) override;
+        // last log index in log
+        int64_t last_log_index() {
+            return _last_log_index.load(std::memory_order_relaxed);
+        }
 
-    // Drop all the existing logs and reset next log index to |next_log_index|.
-    // This function is called after installing snapshot from leader
-    int reset(const int64_t next_log_index) override;
+        // get logentry by index
+        braft::LogEntry *get_entry(const int64_t index) override;
 
-    // Create an instance of this kind of LogStorage with the parameters encoded 
-    // in |uri|
-    // Return the address referenced to the instance on success, nullptr otherwise.
-    LogStorage* new_instance(const std::string& uri) const override;
+        // get logentry's term by index
+        int64_t get_term(const int64_t index) override;
 
-private:
+        // append entries to log
+        int append_entry(const braft::LogEntry *entry) override;
 
-    MyRaftLogStorage(int64_t region_id, RocksWrapper* db,
-                        rocksdb::ColumnFamilyHandle* raftlog_handle,
-                        rocksdb::ColumnFamilyHandle* binlog_handle);
+        // append entries to log, return append success number
+        int append_entries(const std::vector<braft::LogEntry *> &entries, braft::IOMetric *metric) override;
 
-    int get_binlog_entry(rocksdb::Slice& raftlog_value_slice, std::string& binlog_value);
+        // delete logs from storage's head, [first_log_index, first_index_kept) will be discarded
+        int truncate_prefix(const int64_t first_index_kept) override;
 
-    int _build_key_value(SlicePartsVec& kv_raftlog_vec, SlicePartsVec& kv_binlog_vec,
-                        const braft::LogEntry* entry, butil::Arena& arena);
+        // delete uncommitted logs from storage's tail, (last_index_kept, last_log_index] will be discarded
+        int truncate_suffix(const int64_t last_index_kept) override;
 
-    int _construct_slice_array(void* head_buf, const butil::IOBuf& binlog_buf, rocksdb::SliceParts* raftlog_value, 
-                            rocksdb::SliceParts* binlog_key, rocksdb::SliceParts* binlog_value, butil::Arena& arena);
+        // Drop all the existing logs and reset next log index to |next_log_index|.
+        // This function is called after installing snapshot from leader
+        int reset(const int64_t next_log_index) override;
 
-    rocksdb::Slice* _construct_slice_array(
-                void* head_buf, 
-                const butil::IOBuf& buf, 
-                butil::Arena& arena); 
-    
-    rocksdb::Slice* _construct_slice_array(
-                void* head_buf, 
-                const std::vector<braft::PeerId>* peers, 
-                const std::vector<braft::PeerId>* old_peers,
-                butil::Arena& arena); 
-    
-    int _parse_meta(braft::LogEntry* entry, const rocksdb::Slice& value);
-    
-    int _encode_log_data_key(void* key_buf, size_t n, int64_t index);    
+        // Create an instance of this kind of LogStorage with the parameters encoded
+        // in |uri|
+        // Return the address referenced to the instance on success, nullptr otherwise.
+        LogStorage *new_instance(const std::string &uri) const override;
 
-    int _encode_log_meta_key(void* key_buf, size_t n);
-   
-    int _decode_log_data_key(const rocksdb::Slice& data_key, 
-                             int64_t& region_id, 
-                             int64_t& index);
+    private:
 
-    std::atomic<int64_t> _first_log_index;   
-    std::atomic<int64_t> _last_log_index;
-    int64_t _region_id; 
-    
-    RocksWrapper* _db; 
-    rocksdb::ColumnFamilyHandle* _raftlog_handle;
-    rocksdb::ColumnFamilyHandle* _binlog_handle;
-    bool _is_binlog_region = false;
+        MyRaftLogStorage(int64_t region_id, RocksWrapper *db,
+                         rocksdb::ColumnFamilyHandle *raftlog_handle,
+                         rocksdb::ColumnFamilyHandle *binlog_handle);
 
-    IndexTermMap _term_map;
-    bthread_mutex_t _mutex; // for term_map     
-}; // class 
+        int get_binlog_entry(rocksdb::Slice &raftlog_value_slice, std::string &binlog_value);
 
-} //namespace raft
+        int _build_key_value(SlicePartsVec &kv_raftlog_vec, SlicePartsVec &kv_binlog_vec,
+                             const braft::LogEntry *entry, butil::Arena &arena);
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
+        int _construct_slice_array(void *head_buf, const butil::IOBuf &binlog_buf, rocksdb::SliceParts *raftlog_value,
+                                   rocksdb::SliceParts *binlog_key, rocksdb::SliceParts *binlog_value,
+                                   butil::Arena &arena);
+
+        rocksdb::Slice *_construct_slice_array(
+                void *head_buf,
+                const butil::IOBuf &buf,
+                butil::Arena &arena);
+
+        rocksdb::Slice *_construct_slice_array(
+                void *head_buf,
+                const std::vector<braft::PeerId> *peers,
+                const std::vector<braft::PeerId> *old_peers,
+                butil::Arena &arena);
+
+        int _parse_meta(braft::LogEntry *entry, const rocksdb::Slice &value);
+
+        int _encode_log_data_key(void *key_buf, size_t n, int64_t index);
+
+        int _encode_log_meta_key(void *key_buf, size_t n);
+
+        int _decode_log_data_key(const rocksdb::Slice &data_key,
+                                 int64_t &region_id,
+                                 int64_t &index);
+
+        std::atomic<int64_t> _first_log_index;
+        std::atomic<int64_t> _last_log_index;
+        int64_t _region_id;
+
+        RocksWrapper *_db;
+        rocksdb::ColumnFamilyHandle *_raftlog_handle;
+        rocksdb::ColumnFamilyHandle *_binlog_handle;
+        bool _is_binlog_region = false;
+
+        IndexTermMap _term_map;
+        bthread_mutex_t _mutex; // for term_map
+    }; // class
+
+}  // namespace EA

@@ -22,105 +22,115 @@
 #include "elasticann/expr/fn_manager.h"
 
 namespace EA {
-class ScalarFnCall : public ExprNode {
-public:
-    virtual int init(const proto::ExprNode& node);
-    virtual int type_inferer();
-    virtual void children_swap();
-    virtual int open();
-    virtual ExprValue get_value(MemRow* row);
-    virtual ExprValue get_value(const ExprValue& value);
-    const proto::Function& fn() {
-        return _fn;
-    }
-    virtual void transfer_pb(proto::ExprNode* pb_node) {
-        ExprNode::transfer_pb(pb_node);
-        pb_node->mutable_fn()->CopyFrom(_fn);
-    }
-    ExprNode* get_last_insert_id() {
-        if (_fn.name() == "last_insert_id") {
-            return this;
-        }
-        return ExprNode::get_last_insert_id();
-    }
-private:
-    ExprValue multi_eq_value(MemRow* row) {
-        for (size_t i = 0; i < children(0)->children_size(); i++) {
-            auto left = children(0)->children(i)->get_value(row);
-            auto right = children(1)->children(i)->get_value(row);
-            if (left.compare_diff_type(right) != 0) {
-                return ExprValue::False();
-            }
-        }
-        return ExprValue::True();
-    }
+    class ScalarFnCall : public ExprNode {
+    public:
+        virtual int init(const proto::ExprNode &node);
 
-    ExprValue multi_ne_value(MemRow* row) {
-        for (size_t i = 0; i < children(0)->children_size(); i++) {
-            auto left = children(0)->children(i)->get_value(row);
-            auto right = children(1)->children(i)->get_value(row);
-            if (left.compare_diff_type(right) != 0) {
-                return ExprValue::True();
-            }
-        }
-        return ExprValue::False();
-    }
+        virtual int type_inferer();
 
-    ExprValue multi_lt_value(MemRow* row) {
-        for (size_t i = 0; i < children(0)->children_size(); i++) {
-            auto left = children(0)->children(i)->get_value(row);
-            auto right = children(1)->children(i)->get_value(row);
-            if (left.compare_diff_type(right) < 0) {
-                return ExprValue::True();
-            } else if (left.compare_diff_type(right) > 0) {
-                return ExprValue::False();
-            }
-        }
-        return ExprValue::False();
-    }
+        virtual void children_swap();
 
-    ExprValue multi_le_value(MemRow* row) {
-        for (size_t i = 0; i < children(0)->children_size(); i++) {
-            auto left = children(0)->children(i)->get_value(row);
-            auto right = children(1)->children(i)->get_value(row);
-            if (left.compare_diff_type(right) < 0) {
-                return ExprValue::True();
-            } else if (left.compare_diff_type(right) > 0) {
-                return ExprValue::False();
-            }
-        }
-        return ExprValue::True();
-    }
+        virtual int open();
 
-    ExprValue multi_gt_value(MemRow* row) {
-        for (size_t i = 0; i < children(0)->children_size(); i++) {
-            auto left = children(0)->children(i)->get_value(row);
-            auto right = children(1)->children(i)->get_value(row);
-            if (left.compare_diff_type(right) < 0) {
-                return ExprValue::False();
-            } else if (left.compare_diff_type(right) > 0) {
-                return ExprValue::True();
-            }
-        }
-        return ExprValue::False();
-    }
+        virtual ExprValue get_value(MemRow *row);
 
-    ExprValue multi_ge_value(MemRow* row) {
-        for (size_t i = 0; i < children(0)->children_size(); i++) {
-            auto left = children(0)->children(i)->get_value(row);
-            auto right = children(1)->children(i)->get_value(row);
-            if (left.compare_diff_type(right) < 0) {
-                return ExprValue::False();
-            } else if (left.compare_diff_type(right) > 0) {
-                return ExprValue::True();
-            }
+        virtual ExprValue get_value(const ExprValue &value);
+
+        const proto::Function &fn() {
+            return _fn;
         }
-        return ExprValue::True();
-    }
-protected:
-    proto::Function _fn;
-    bool _is_row_expr = false;
-    std::function<ExprValue(const std::vector<ExprValue>&)> _fn_call;
-};
+
+        virtual void transfer_pb(proto::ExprNode *pb_node) {
+            ExprNode::transfer_pb(pb_node);
+            pb_node->mutable_fn()->CopyFrom(_fn);
+        }
+
+        ExprNode *get_last_insert_id() {
+            if (_fn.name() == "last_insert_id") {
+                return this;
+            }
+            return ExprNode::get_last_insert_id();
+        }
+
+    private:
+        ExprValue multi_eq_value(MemRow *row) {
+            for (size_t i = 0; i < children(0)->children_size(); i++) {
+                auto left = children(0)->children(i)->get_value(row);
+                auto right = children(1)->children(i)->get_value(row);
+                if (left.compare_diff_type(right) != 0) {
+                    return ExprValue::False();
+                }
+            }
+            return ExprValue::True();
+        }
+
+        ExprValue multi_ne_value(MemRow *row) {
+            for (size_t i = 0; i < children(0)->children_size(); i++) {
+                auto left = children(0)->children(i)->get_value(row);
+                auto right = children(1)->children(i)->get_value(row);
+                if (left.compare_diff_type(right) != 0) {
+                    return ExprValue::True();
+                }
+            }
+            return ExprValue::False();
+        }
+
+        ExprValue multi_lt_value(MemRow *row) {
+            for (size_t i = 0; i < children(0)->children_size(); i++) {
+                auto left = children(0)->children(i)->get_value(row);
+                auto right = children(1)->children(i)->get_value(row);
+                if (left.compare_diff_type(right) < 0) {
+                    return ExprValue::True();
+                } else if (left.compare_diff_type(right) > 0) {
+                    return ExprValue::False();
+                }
+            }
+            return ExprValue::False();
+        }
+
+        ExprValue multi_le_value(MemRow *row) {
+            for (size_t i = 0; i < children(0)->children_size(); i++) {
+                auto left = children(0)->children(i)->get_value(row);
+                auto right = children(1)->children(i)->get_value(row);
+                if (left.compare_diff_type(right) < 0) {
+                    return ExprValue::True();
+                } else if (left.compare_diff_type(right) > 0) {
+                    return ExprValue::False();
+                }
+            }
+            return ExprValue::True();
+        }
+
+        ExprValue multi_gt_value(MemRow *row) {
+            for (size_t i = 0; i < children(0)->children_size(); i++) {
+                auto left = children(0)->children(i)->get_value(row);
+                auto right = children(1)->children(i)->get_value(row);
+                if (left.compare_diff_type(right) < 0) {
+                    return ExprValue::False();
+                } else if (left.compare_diff_type(right) > 0) {
+                    return ExprValue::True();
+                }
+            }
+            return ExprValue::False();
+        }
+
+        ExprValue multi_ge_value(MemRow *row) {
+            for (size_t i = 0; i < children(0)->children_size(); i++) {
+                auto left = children(0)->children(i)->get_value(row);
+                auto right = children(1)->children(i)->get_value(row);
+                if (left.compare_diff_type(right) < 0) {
+                    return ExprValue::False();
+                } else if (left.compare_diff_type(right) > 0) {
+                    return ExprValue::True();
+                }
+            }
+            return ExprValue::True();
+        }
+
+    protected:
+        proto::Function _fn;
+        bool _is_row_expr = false;
+        std::function<ExprValue(const std::vector<ExprValue> &)> _fn_call;
+    };
 }
 

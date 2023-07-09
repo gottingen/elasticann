@@ -115,7 +115,7 @@ namespace EA {
         int copy_from(std::unordered_set <int32_t> &tuple_ids, const MemRow *mem_row) {
             for (auto &tuple_id: tuple_ids) {
                 if ((int32_t)(_tuples.size()) <= tuple_id) {
-                    DB_WARNING("tuple not in memrow");
+                    TLOG_WARN("tuple not in memrow");
                     return -1;
                 }
                 if (!_tuples_assignd[tuple_id]) {
@@ -136,13 +136,13 @@ namespace EA {
         int decode_field(int32_t tuple_id, int32_t slot_id, proto::PrimitiveType field_type, const rocksdb::Slice &in) {
             auto tuple = get_tuple(tuple_id);
             if (tuple == nullptr) {
-                DB_WARNING("invalid tuple_id: %d", tuple_id);
+                TLOG_WARN("invalid tuple_id: {}", tuple_id);
                 return -1;
             }
             auto descriptor = tuple->GetDescriptor();
             auto field = descriptor->field(slot_id - 1);
             if (field == nullptr) {
-                DB_WARNING("invalid field: %d", slot_id);
+                TLOG_WARN("invalid field: {}", slot_id);
                 return -1;
             }
             return MessageHelper::decode_field(field, field_type, tuple, in);

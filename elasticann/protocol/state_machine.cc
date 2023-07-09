@@ -54,12 +54,12 @@ namespace EA {
                 if (ret == RET_SUCCESS) {
                     client->state = STATE_SEND_HANDSHAKE;
                     epoll_info->poll_events_mod(client, EPOLLIN);
-                    DB_WARNING_CLIENT(client, "handshake_send success");
+                    TLOG_WARN("{}, handshake_send success",*client);
                 } else if (ret == RET_WAIT_FOR_EVENT) {
                     epoll_info->poll_events_mod(client, EPOLLOUT);
                 } else {
-                    DB_FATAL_CLIENT(client, "Failed to send handshake packet to client."
-                                            "state=%d, ret=%d, errno=%d", client->state, ret, errno);
+                    TLOG_ERROR("{}, Failed to send handshake packet to client."
+                               "state={}, ret={}, errno={}", *client, static_cast<int>(client->state), ret, errno);
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                 }
@@ -68,7 +68,7 @@ namespace EA {
             }
             case STATE_SEND_HANDSHAKE: {
                 if (shutdown) {
-                    DB_WARNING_CLIENT(client, "socket is going to shutdown.");
+                    TLOG_WARN("{}, socket is going to shutdown.",*client);
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                     break;
@@ -81,18 +81,18 @@ namespace EA {
                 int ret = _auth_read(client);
                 auth_read_time_cost << cost.get_time();
                 if (ret == RET_SUCCESS) {
-                    DB_WARNING_CLIENT(client, "auth read success, cost:%ld", cost.get_time());
+                    TLOG_WARN("{}, auth read success, cost:{}", *client,cost.get_time());
                     if (!client->user_info->connection_inc()) {
                         char msg[256];
-                        snprintf(msg, 256, "Username %s has reach the max connection limit(%u)",
+                        snprintf(msg, 256, "Username {} has reach the max connection limit({})",
                                  client->username.c_str(),
                                  client->user_info->max_connection);
                         if (_wrapper->fill_auth_failed_packet(client, msg) != RET_SUCCESS) {
-                            DB_WARNING_CLIENT(client, "Failed to fill auth failed message.");
+                            TLOG_WARN("{}, Failed to fill auth failed message.",*client);
                         }
-                        DB_WARNING("Username %s has reach the max connection limit(%u)",
-                                   client->username.c_str(),
-                                   client->user_info->max_connection);
+                        TLOG_WARN("Username {} has reach the max connection limit({})",
+                                  client->username.c_str(),
+                                  client->user_info->max_connection);
                         client->state = STATE_ERROR;
                         run_machine(client, epoll_info, shutdown);
                         break;
@@ -102,21 +102,21 @@ namespace EA {
                     go_on = 1;
                 } else if (ret == RET_AUTH_FAILED) {
                     char msg[256];
-                    snprintf(msg, 256, "Access denied for user '%s'@'%s' (using password: YES)",
+                    snprintf(msg, 256, "Access denied for user '{}'@'{}' (using password: YES)",
                              client->username.c_str(), client->ip.c_str());
                     if (_wrapper->fill_auth_failed_packet(client, msg) != RET_SUCCESS) {
-                        DB_WARNING_CLIENT(client, "Failed to fill auth failed message.");
+                        TLOG_WARN("{}, Failed to fill auth failed message.",*client);
                     }
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                 } else if (ret == RET_WAIT_FOR_EVENT) { // Read auth info partly.
-                    DB_WARNING_CLIENT(client, "Read auth info partly, go on reading. ");
+                    TLOG_WARN("{}, Read auth info partly, go on reading. ",*client);
                     epoll_info->poll_events_mod(client, EPOLLIN);
                 } else {
                     //ret == RET_SHUTDOWN or others
-                    DB_WARNING_CLIENT(client, "read auth packet from client error: "
-                                              "state=%d ret=%d, errno=%d",
-                                      client->state, ret, errno);
+                    TLOG_WARN("{}, read auth packet from client error: "
+                                              "state={} ret={}, errno={}",*client,
+                                      static_cast<int>(client->state), ret, errno);
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                 }
@@ -137,12 +137,12 @@ namespace EA {
                     client->state = STATE_SEND_AUTH_RESULT;
                     epoll_info->poll_events_mod(client, EPOLLIN);
                 } else if (ret == RET_WAIT_FOR_EVENT) {
-                    DB_WARNING_CLIENT(client, "send auth info partly, go on sending.");
+                    TLOG_WARN("{}, send auth info partly, go on sending.",*client);
                     epoll_info->poll_events_mod(client, EPOLLOUT);
                 } else {
-                    DB_FATAL_CLIENT(client, "send auth result packet to client error "
-                                            "state=%d ret=%d,errno=%d",
-                                    client->state, ret, errno);
+                    TLOG_ERROR("{}, send auth result packet to client error "
+                               "state={} ret={},errno={}", *client,
+                               static_cast<int>(client->state), ret, errno);
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                 }
@@ -169,21 +169,21 @@ namespace EA {
                     epoll_info->poll_events_mod(client, EPOLLIN);
                     break;
                 } else if (ret == RET_COMMAND_SHUTDOWN || ret == RET_SHUTDOWN) {
-                    DB_TRACE_CLIENT(client, "Connect is closed by client.");
+                    TLOG_TRACE("{}, Connect is closed by client.", *client);
                     client->state = STATE_ERROR;
                     run_machine(client, epoll_info, shutdown);
                     break;
                 } else if (ret == RET_CMD_UNSUPPORT) {
-                    DB_WARNING_CLIENT(client, "un-supported query type.");
+                    TLOG_WARN("{}, un-supported query type.",*client);
                     client->state = STATE_ERROR_REUSE;
                     run_machine(client, epoll_info, shutdown);
                     break;
                 } else {
-                    DB_FATAL_CLIENT(client, "read query from client error "
-                                            "state=%d, ret=%d, errno=%d", client->state, ret, errno);
+                    TLOG_ERROR("{}, read query from client error "
+                               "state={}, ret={}, errno={}", *client, static_cast<int>(client->state), ret, errno);
                     _wrapper->make_err_packet(client,
                                               ER_ERROR_ON_READ,
-                                              "read query from client error, errno: %d-%s",
+                                              "read query from client error, errno: {}-{}",
                                               errno,
                                               strerror(errno));
                     client->state = STATE_ERROR;
@@ -196,8 +196,8 @@ namespace EA {
                 // Process query.
                 bool res = _query_process(client);
                 if (!res || STATE_ERROR == client->state || STATE_ERROR_REUSE == client->state) {
-                    DB_WARNING_CLIENT(client, "handle query failed. sql=[%s] state:%d",
-                                      client->query_ctx->sql.c_str(), client->state);
+                    TLOG_WARN("{}, handle query failed. sql=[{}] state:{}",*client,
+                                      client->query_ctx->sql.c_str(), static_cast<int>(client->state));
                     _wrapper->make_err_packet(client, ER_ERROR_COMMON, "handle query failed");
                     client->state = (client->state == STATE_ERROR) ? STATE_ERROR : STATE_ERROR_REUSE;
                     _print_query_time(client);
@@ -212,7 +212,7 @@ namespace EA {
                 } else if (STATE_SEND_AUTH_RESULT == client->state) {
                     epoll_info->poll_events_mod(client, EPOLLIN);
                 } else {
-                    DB_FATAL_CLIENT(client, "handle should not return state[%d]", client->state);
+                    TLOG_ERROR("{}, handle should not return state[{}]", *client, static_cast<int>(client->state));
                     _wrapper->make_err_packet(client, ER_ERROR_COMMON, "expected return state");
                     client->state = STATE_ERROR;
                     _print_query_time(client);
@@ -229,10 +229,10 @@ namespace EA {
                 int ret = 0;
                 ret = _send_result_to_client_and_reset_status(epoll_info, client);
                 if (ret == RET_WAIT_FOR_EVENT) {
-                    DB_WARNING_CLIENT(client, "send partly, wait for fd ready.");
+                    TLOG_WARN("{}, send partly, wait for fd ready.",*client);
                     break;
                 } else if (ret < 0 || ret == RET_SHUTDOWN) {
-                    DB_WARNING_CLIENT(client, "handle query failed. sql=[%s]",
+                    TLOG_WARN("{}, handle query failed. sql=[{}]",*client,
                                       client->query_ctx->sql.c_str());
                     client->state = STATE_ERROR;
                     _print_query_time(client);
@@ -246,19 +246,19 @@ namespace EA {
                         if (ret >= 0) {
                             ret = _send_result_to_client_and_reset_status(epoll_info, client);
                         } else {
-                            DB_WARNING_CLIENT(client, "query_more failed sql=[%s]", client->query_ctx->sql.c_str());
+                            TLOG_WARN("{}, query_more failed sql=[{}]", *client,client->query_ctx->sql.c_str());
                             break;
                         }
                     } while (ret == 0 && client->state == STATE_READ_QUERY_RESULT_MORE);
                 }
                 if (ret == RET_WAIT_FOR_EVENT) {
-                    DB_WARNING_CLIENT(client, "send partly, wait for fd ready.");
+                    TLOG_WARN("{}, send partly, wait for fd ready.",*client);
                 } else if (client->state == STATE_SEND_AUTH_RESULT) {
                     _print_query_time(client);
                     // query结束后及时释放内存
                     client->reset_query_ctx(new(std::nothrow)QueryContext(client->user_info, client->current_db));
                 } else if (ret < 0 || client->state == STATE_ERROR || ret == RET_SHUTDOWN) {
-                    DB_WARNING_CLIENT(client, "handle query failed. sql=[%s]",
+                    TLOG_WARN("{}, handle query failed. sql=[{}]",*client,
                                       client->query_ctx->sql.c_str());
                     client->state = STATE_ERROR;
                     _print_query_time(client);
@@ -276,7 +276,7 @@ namespace EA {
                 int ret = _send_result_to_client_and_reset_status(epoll_info, client);
                 // result send out
                 if (ret < 0 || ret == RET_SHUTDOWN) {
-                    DB_WARNING_CLIENT(client, "handle query failed. sql=[%s]",
+                    TLOG_WARN("{}, handle query failed. sql=[{}]",*client,
                                       client->query_ctx->sql.c_str());
                     client->state = STATE_ERROR;
                     _print_query_time(client);
@@ -286,7 +286,7 @@ namespace EA {
                     // query结束后及时释放内存
                     client->reset_query_ctx(new(std::nothrow)QueryContext(client->user_info, client->current_db));
                 } else if (client->state == STATE_READ_QUERY_RESULT && ret == RET_WAIT_FOR_EVENT) {
-                    DB_WARNING_CLIENT(client, "send partly, wait for fd ready.");
+                    TLOG_WARN("{}, send partly, wait for fd ready.",*client);
                 } else if (client->state == STATE_READ_QUERY_RESULT_MORE) {
                     run_machine(client, epoll_info, shutdown);
                 }
@@ -311,7 +311,7 @@ namespace EA {
                 break;
             }
             default: {
-                DB_FATAL("unknown state[%d]", client->state);
+                TLOG_ERROR("unknown state[{}]", static_cast<int>(client->state));
                 break;
             }
         }
@@ -324,14 +324,14 @@ namespace EA {
         shutdown = shutdown || client->state == STATE_ERROR;
         ret = PhysicalPlanner::full_export_next(client->query_ctx.get(), client->send_buf, shutdown);
         if (ret < 0) {
-            DB_WARNING_CLIENT(client, "Failed to PhysicalPlanner::batch_execute: %s",
+            TLOG_WARN("{}, Failed to PhysicalPlanner::batch_execute: {}",*client,
                               client->query_ctx->sql.c_str());
             if (client->query_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                 client->query_ctx->stat_info.error_code = ER_EXEC_PLAN_FAILED;
                 client->query_ctx->stat_info.error_msg << "exec physical plan failed";
             }
             _wrapper->make_err_packet(client,
-                                      client->query_ctx->stat_info.error_code, "%s",
+                                      client->query_ctx->stat_info.error_code, "{}",
                                       client->query_ctx->stat_info.error_msg.str().c_str());
 
             return ret;
@@ -453,12 +453,13 @@ namespace EA {
                     }
                 }
                 sql.resize(slow_idx);
-                DB_NOTICE_LONG(
-                        "common_query: family=[%s] table=[%s] op_type=[%d] cmd=[0x%x] plat=[%s] ip=[%s:%d] fd=[%d] "
-                        "cost=[%ld] field_time=[%ld %ld %ld %ld %ld %ld %ld %ld %ld] row=[%ld] scan_row=[%ld] bufsize=[%zu] "
-                        "key=[%d] changeid=[%lu] logid=[%lu] traceid=[%s] family_ip=[%s] cache=[%d] stmt_name=[%s] "
-                        "user=[%s] charset=[%s] errno=[%d] txn=[%lu:%d] 1pc=[%d] sign=[%lu] region_count=[%d] sqllen=[%lu] "
-                        "sql=[%s] id=[%ld] bkup=[%d] server_addr=[%s:%d]",
+                TLOG_INFO(
+                        "bthread:{} common_query: family=[{}] table=[{}] op_type=[{}] cmd=[{:#x}] plat=[{}] ip=[{}:{}] fd=[{}] "
+                        "cost=[{}] field_time=[{} {} {} {} {} {} {} {} {}] row=[{}] scan_row=[{}] bufsize=[{}] "
+                        "key=[{}] changeid=[{}] logid=[{}] traceid=[{}] family_ip=[{}] cache=[{}] stmt_name=[{}] "
+                        "user=[{}] charset=[{}] errno=[{}] txn=[{}:{}] 1pc=[{}] sign=[{}] region_count=[{}] sqllen=[{}] "
+                        "sql=[{}] id=[{}] bkup=[{}] server_addr=[{}:{}]",
+                        bthread_self(),
                         stat_info->family.c_str(),
                         stat_info->table.c_str(),
                         op_type,
@@ -502,27 +503,27 @@ namespace EA {
             }
         } else {
             if ('\x0e' == ctx->mysql_cmd) {
-                DB_DEBUG("stmt_query ip=[%s:%d] fd=[%d] cost=[%ld] key=[%d] "
-                         "cmd=[%d] type=[%d] user=[%s]",
-                         client->ip.c_str(),
-                         client->port,
-                         client->fd,
-                         stat_info->total_time,
-                         stat_info->partition_key,
-                         ctx->mysql_cmd,
-                         ctx->type,
-                         client->username.c_str());
+                TLOG_DEBUG("stmt_query ip=[{}:{}] fd=[{}] cost=[{}] key=[{}] "
+                           "cmd=[{}] type=[{}] user=[{}]",
+                           client->ip.c_str(),
+                           client->port,
+                           client->fd,
+                           stat_info->total_time,
+                           stat_info->partition_key,
+                           ctx->mysql_cmd,
+                           ctx->type,
+                           client->username.c_str());
             } else {
-                DB_DEBUG("stmt_query ip=[%s:%d] fd=[%d] cost=[%ld] key=[%d] "
-                         "cmd=[%d] type=[%d] user=[%s]",
-                         client->ip.c_str(),
-                         client->port,
-                         client->fd,
-                         stat_info->total_time,
-                         stat_info->partition_key,
-                         ctx->mysql_cmd,
-                         ctx->type,
-                         client->username.c_str());
+                TLOG_DEBUG("stmt_query ip=[{}:{}] fd=[{}] cost=[{}] key=[{}] "
+                           "cmd=[{}] type=[{}] user=[{}]",
+                           client->ip.c_str(),
+                           client->port,
+                           client->fd,
+                           stat_info->total_time,
+                           stat_info->partition_key,
+                           ctx->mysql_cmd,
+                           ctx->type,
+                           client->username.c_str());
             }
         }
         SchemaFactory::use_backup.set_bthread_local(false);
@@ -533,14 +534,14 @@ namespace EA {
 
     int StateMachine::_auth_read(SmartSocket sock) {
         if (!sock) {
-            DB_FATAL("sock==nullptr");
+            TLOG_ERROR("sock==nullptr");
             return RET_ERROR;
         }
         // Read packet to socket self buffer.
         int ret = _read_packet(sock);
         if (RET_SUCCESS != ret) {
             // Using debug log because of shutdown by client is normal,so no need to fatal.
-            DB_DEBUG_CLIENT(sock, "Failed to read packet");
+            TLOG_DEBUG("{}, Failed to read packet", *sock);
             return ret;
         }
         // Get charset.
@@ -549,7 +550,7 @@ namespace EA {
         uint64_t capability = 0;
         if (RET_SUCCESS !=
             _wrapper->protocol_get_length_fixed_int(packet, sock->packet_len + PACKET_HEADER_LEN, off, 4, capability)) {
-            DB_WARNING("read capability failed");
+            TLOG_WARN("read capability failed");
             return RET_ERROR;
         }
 
@@ -557,7 +558,7 @@ namespace EA {
         uint8_t charset_num = 0;
         if (RET_SUCCESS !=
             _wrapper->protocol_get_char(packet, sock->packet_len + PACKET_HEADER_LEN, off, &charset_num)) {
-            DB_FATAL_CLIENT(sock, "get charset_num failed, off=%d, len=1", off);
+            TLOG_ERROR("{}, get charset_num failed, off={}, len=1", *sock, off);
             return RET_ERROR;
         }
         if (charset_num == 28) {
@@ -567,7 +568,7 @@ namespace EA {
             sock->charset_name = "utf8";
             sock->charset_num = 33;
         } else {
-            DB_TRACE_CLIENT(sock, "unknown charset num: %u, charset will be set as gbk.",
+            TLOG_TRACE("{}, unknown charset num: {}, charset will be set as gbk.",*sock,
                             charset_num);
             sock->charset_name = "gbk";
             sock->charset_num = 28;
@@ -578,7 +579,7 @@ namespace EA {
         std::string username;
         if (0 != _wrapper->protocol_get_string(packet,
                                                sock->packet_len + PACKET_HEADER_LEN, off, username)) {
-            DB_FATAL_CLIENT(sock, "Username is null");
+            TLOG_ERROR("{}, Username is null", *sock);
             return RET_AUTH_FAILED;
         }
         //需要修改成权限类
@@ -587,11 +588,11 @@ namespace EA {
 
         if (sock->user_info == nullptr) {
             sock->user_info.reset(new UserInfo);
-            DB_WARNING("user name not exist [%s]", username.c_str());
+            TLOG_WARN("user name not exist [{}]", username.c_str());
             return RET_AUTH_FAILED;
         }
         if (sock->user_info->username.empty()) {
-            DB_WARNING_CLIENT(sock, "user name not exist [%s]", username.c_str());
+            TLOG_WARN("{}, user name not exist [{}]",*sock, username.c_str());
             return RET_AUTH_FAILED;
         }
         sock->username = sock->user_info->username;
@@ -605,36 +606,36 @@ namespace EA {
         }
         // Get password.
         if ((unsigned int) (sock->packet_len + PACKET_HEADER_LEN) < off + 1) {
-            DB_FATAL_CLIENT(sock, "packet_len=%d + 4 <= off=%d + 1",
-                            sock->packet_len, off);
+            TLOG_ERROR("{}, packet_len={} + 4 <= off={} + 1", *sock,
+                       sock->packet_len, off);
             return RET_ERROR;
         }
         uint8_t len = packet[off];
         off++;
         if (len == '\x00') {
-            DB_WARNING_CLIENT(sock, "Password len is:[%d]", len);
+            TLOG_WARN("{}, Password len is:[{}]", *sock,len);
             return RET_AUTH_FAILED;
         } else if (len == '\x14') {
             if ((unsigned int) (sock->packet_len + PACKET_HEADER_LEN) < (20 + off)) {
-                DB_FATAL("s->packet_len=%d + PACKET_HEADER_LEN=4 < 20 + off=%d",
-                         sock->packet_len, off);
+                TLOG_ERROR("s->packet_len={} + PACKET_HEADER_LEN=4 < 20 + off={}",
+                           sock->packet_len, off);
                 return RET_ERROR;
             }
             for (int idx = 0; idx < 20; idx++) {
                 if (*(packet + off + idx) != *(sock->user_info->scramble_password + idx)) {
-                    DB_WARNING_CLIENT(sock, "client connect Baikal with wrong password");
+                    TLOG_WARN("{}, client connect Baikal with wrong password",*sock);
                     return RET_AUTH_FAILED;
                 }
             }
             off += 20;
         } else {
-            DB_WARNING_CLIENT(sock, "client connect Baikal with wrong password, "
-                                    "client->scramble_len=%d should be 0 or 20", len);
+            TLOG_WARN("{}, client connect Baikal with wrong password, "
+                                    "client->scramble_len={} should be 0 or 20", *sock,len);
             return RET_AUTH_FAILED;
         }
 
         if (!sock->user_info->allow_addr(sock->ip)) {
-            DB_WARNING_CLIENT(sock, "client connect Baikal with invalid ip");
+            TLOG_WARN("{}, client connect Baikal with invalid ip", *sock);
             return RET_AUTH_FAILED;
         }
 
@@ -643,7 +644,7 @@ namespace EA {
         if (capability & CLIENT_CONNECT_WITH_DB) {
             if (0 != _wrapper->protocol_get_string(packet,
                                                    sock->packet_len + PACKET_HEADER_LEN, off, sock->current_db)) {
-                DB_FATAL_CLIENT(sock, "current_db is wrong");
+                TLOG_ERROR("{}, current_db is wrong", *sock);
                 return RET_AUTH_FAILED;
             }
         }
@@ -659,20 +660,20 @@ namespace EA {
 
         sock->header_read_len += read_len;
         if (ret == RET_WAIT_FOR_EVENT) {
-            DB_TRACE_CLIENT(sock, "Read is interrupt by event.");
+            TLOG_TRACE("{}, Read is interrupt by event.", *sock);
             return ret;
         } else if (ret != RET_SUCCESS) {
             if (read_len == 0) {
-                DB_DEBUG_CLIENT(sock, "Read length is 0. want_len:[%d],real_len:[%d]",
-                                PACKET_HEADER_LEN - sock->header_read_len, read_len);
+                TLOG_DEBUG("{}, Read length is 0. want_len:[{}],real_len:[{}]", *sock,
+                           PACKET_HEADER_LEN - sock->header_read_len, read_len);
             } else {
-                DB_FATAL_CLIENT(sock, "Failed to read head. want_len:[%d],real_len:[%d]",
-                                PACKET_HEADER_LEN - sock->header_read_len, read_len);
+                TLOG_ERROR("{}, Failed to read head. want_len:[{}],real_len:[{}]", *sock,
+                           PACKET_HEADER_LEN - sock->header_read_len, read_len);
             }
             return ret;
         } else if (sock->header_read_len < 4) {
-            DB_FATAL_CLIENT(sock, "Read head wait for event.want_len:[%d],real_len:[%d]",
-                            PACKET_HEADER_LEN - sock->header_read_len, read_len);
+            TLOG_ERROR("{}, Read head wait for event.want_len:[{}],real_len:[{}]", *sock,
+                       PACKET_HEADER_LEN - sock->header_read_len, read_len);
             return RET_WAIT_FOR_EVENT;
         }
 
@@ -693,7 +694,7 @@ namespace EA {
 
     int StateMachine::_read_packet(SmartSocket sock) {
         if (!sock || !sock->self_buf) {
-            DB_FATAL("sock == nullptr || self_buf == nullptr");
+            TLOG_ERROR("sock == nullptr || self_buf == nullptr");
             return RET_ERROR;
         }
         int ret = RET_SUCCESS;
@@ -702,7 +703,7 @@ namespace EA {
             if (sock->header_read_len != 4) {
                 ret = _read_packet_header(sock);
                 if (ret != RET_SUCCESS) {
-                    DB_TRACE_CLIENT(sock, "Read packet header not ok ret:%d.", ret);
+                    TLOG_TRACE("{}, Read packet header not ok ret:{}.", *sock,ret);
                     return ret;
                 }
             }
@@ -711,14 +712,14 @@ namespace EA {
 
             sock->packet_read_len += read_len;
             if (ret == RET_WAIT_FOR_EVENT) {
-                DB_TRACE_CLIENT(sock, "Read is interrupt by event.");
+                TLOG_TRACE("{}, Read is interrupt by event.",*sock);
                 return ret;
             } else if (ret != RET_SUCCESS) {
-                DB_WARNING_CLIENT(sock, "Failed to read body.want_len:[%d],real_len:[%d]",
+                TLOG_WARN("{}, Failed to read body.want_len:[{}],real_len:[{}]",*sock,
                                   sock->current_packet_len - sock->packet_read_len, read_len);
                 return ret;
             } else if (sock->current_packet_len > sock->packet_read_len) {
-                DB_WARNING_CLIENT(sock, "Read body wait for event.want_len:[%d],real_len:[%d]",
+                TLOG_WARN("{}, Read body wait for event.want_len:[{}],real_len:[{}]",
                                   sock->current_packet_len - sock->packet_read_len, read_len);
                 return RET_WAIT_FOR_EVENT;
             }
@@ -731,20 +732,20 @@ namespace EA {
 
     int StateMachine::_query_read(SmartSocket sock) {
         if (!sock) {
-            DB_FATAL("s==nullptr");
+            TLOG_ERROR("s==nullptr");
             return RET_ERROR;
         }
         sock->reset_query_ctx(new(std::nothrow)QueryContext(sock->user_info, sock->current_db));
         if (!sock->query_ctx) {
-            DB_FATAL("create query context instance failed");
+            TLOG_ERROR("create query context instance failed");
             return RET_ERROR;
         }
         int ret = _read_packet(sock);
         if (ret == RET_WAIT_FOR_EVENT) {
-            DB_TRACE_CLIENT(sock, "Read packet partly.");
+            TLOG_TRACE("{}, Read packet partly.",*sock);
             return ret;
         } else if (ret != RET_SUCCESS) {
-            DB_WARNING_CLIENT(sock, "Failed to read packet.[ret=%d]", ret);
+            TLOG_WARN("{}, Failed to read packet.[ret={}]", *sock, ret);
             return ret;
         }
         uint32_t off = PACKET_HEADER_LEN;
@@ -756,21 +757,21 @@ namespace EA {
         ret = _wrapper->protocol_get_char(packet, sock->packet_len + PACKET_HEADER_LEN, off,
                                           &(sock->query_ctx->mysql_cmd));
         if (ret != RET_SUCCESS) {
-            DB_FATAL_CLIENT(sock, "protocol_get_char failed off=%d, len=1", off);
+            TLOG_ERROR("{}, protocol_get_char failed off={}, len=1", *sock, off);
             return RET_ERROR;
         }
         packet_left -= 1;
 
         auto command = sock->query_ctx->mysql_cmd;
-        // DB_WARNING_CLIENT(sock, "command[%d]", command);
+        // TLOG_WARN("{}, command[{}]",*sock, command);
         // Check command valid
         if (!_wrapper->is_valid_command(command)) {
             const char *message = "denied command -_-||";
             if (!_wrapper->make_string_packet(sock, message)) {
-                DB_FATAL_CLIENT(sock, "Failed to fill string packet.");
+                TLOG_ERROR("{}, Failed to fill string packet.", *sock);
                 return RET_ERROR;
             }
-            DB_FATAL_CLIENT(sock, "invalid command[%d]", command);
+            TLOG_ERROR("{}, invalid command[{}]", *sock, command);
             return RET_CMD_UNSUPPORT;
         }
         if (_wrapper->is_shutdown_command(command)) {
@@ -797,7 +798,7 @@ namespace EA {
             if (RET_SUCCESS != _wrapper->protocol_get_length_fixed_int(packet,
                                                                        sock->packet_len + PACKET_HEADER_LEN, off, 4,
                                                                        stmt_id)) {
-                DB_FATAL("read stmt_id failed");
+                TLOG_ERROR("read stmt_id failed");
                 return RET_ERROR;
             }
             if (COM_STMT_RESET == command) {
@@ -813,7 +814,7 @@ namespace EA {
                     return RET_CMD_DONE;
                 }
             }
-            // DB_WARNING("stmt_id is: %lu", stmt_id);
+            // TLOG_WARN("stmt_id is: {}", stmt_id);
             sock->query_ctx->prepare_stmt_name = std::to_string(stmt_id);
             return RET_SUCCESS;
         } else {
@@ -823,13 +824,13 @@ namespace EA {
                 // off == 5 now.
                 ret = _wrapper->protocol_get_sql_string(packet, packet_left, off, sock->query_ctx->sql, sql_len);
                 if (ret != 0) {
-                    DB_FATAL_CLIENT(sock, "protocol_get_sql_string ret=%d", ret);
+                    TLOG_ERROR("{}, protocol_get_sql_string ret={}", *sock, ret);
                     return ret;
                 }
-                DB_DEBUG("sql is %d, %s", command, sock->query_ctx->sql.c_str());
+                TLOG_DEBUG("sql is {}, {}", command, sock->query_ctx->sql.c_str());
             } else {
-                DB_FATAL_CLIENT(sock, "server is read_only, so it can not "
-                                      "execute stmt_close statement, command:[%d]", command);
+                TLOG_ERROR("{}, server is read_only, so it can not "
+                           "execute stmt_close statement, command:[{}]", *sock, command);
                 _wrapper->make_err_packet(sock, ER_NOT_ALLOWED_COMMAND, "command not supported");
                 return RET_CMD_UNSUPPORT;
             }
@@ -840,15 +841,15 @@ namespace EA {
 
         // If use charset optimize, then don't support set charset.
         if (type == SQL_SET_CHARSET_NUM || type == SQL_SET_CHARACTER_SET_NUM) {
-            DB_FATAL_CLIENT(sock, "unsupport charset SQL [%s]", sock->query_ctx->sql.c_str());
+            TLOG_ERROR("{}, unsupport charset SQL [{}]", *sock, sock->query_ctx->sql.c_str());
             _wrapper->make_err_packet(sock, ER_UNKNOWN_CHARACTER_SET, "unsupport charset");
             return RET_CMD_UNSUPPORT;
         }
         if (SQL_UNKNOWN_NUM == sock->query_ctx->type) {
-            DB_WARNING_CLIENT(sock, "Query type is unknow. type=[%d] command=[%x].",
+            TLOG_WARN("{}, Query type is unknow. type=[{}] command=[{:#x}].",*sock,
                               sock->query_ctx->type, command);
             if (!_wrapper->make_simple_ok_packet(sock)) {
-                DB_FATAL_CLIENT(sock, "fill_ok_packet errro.");
+                TLOG_ERROR("{}, fill_ok_packet errro.", *sock);
                 return RET_CMD_UNSUPPORT;
             }
             return RET_CMD_UNSUPPORT;
@@ -860,19 +861,19 @@ namespace EA {
         uint8_t *packet = sock->self_buf->_data;
         uint32_t off = PACKET_HEADER_LEN + 1; // packet header(4) + cmd(1)
         // std::string data((char*)packet, sock->packet_len + PACKET_HEADER_LEN);
-        // DB_WARNING("data is: %s", str_to_hex(data).c_str());
+        // TLOG_WARN("data is: {}", str_to_hex(data).c_str());
 
         uint64_t stmt_id = 0;
         if (RET_SUCCESS !=
             _wrapper->protocol_get_length_fixed_int(packet, sock->packet_len + PACKET_HEADER_LEN, off, 4, stmt_id)) {
-            DB_WARNING("read stmt_id failed");
+            TLOG_WARN("read stmt_id failed");
             return RET_ERROR;
         }
-        //DB_WARNING("stmt_id is: %lu", stmt_id);
+        //TLOG_WARN("stmt_id is: {}", stmt_id);
         std::string stmt_name = std::to_string(stmt_id);
         auto iter = sock->prepared_plans.find(stmt_name);
         if (iter == sock->prepared_plans.end()) {
-            DB_WARNING("find stmt_id failed stmt_id:%lu", stmt_id);
+            TLOG_WARN("find stmt_id failed stmt_id:{}", stmt_id);
             return RET_ERROR;
         }
         sock->query_ctx->prepare_stmt_name = stmt_name;
@@ -880,14 +881,14 @@ namespace EA {
         uint64_t param_id = 0;
         if (RET_SUCCESS !=
             _wrapper->protocol_get_length_fixed_int(packet, sock->packet_len + PACKET_HEADER_LEN, off, 2, param_id)) {
-            DB_WARNING("read param_id failed");
+            TLOG_WARN("read param_id failed");
             return RET_ERROR;
         }
-        //DB_WARNING("param_id is: %lu", param_id);
+        //TLOG_WARN("param_id is: {}", param_id);
         auto prepare_ctx = iter->second;
         std::string &long_data = prepare_ctx->long_data_vars[param_id];
         long_data.append((char *) (packet + off), sock->packet_len + PACKET_HEADER_LEN - off);
-        //DB_WARNING("long data: %lu, %s", param_id, long_data.c_str());
+        //TLOG_WARN("long data: {}, {}", param_id, long_data.c_str());
         return RET_SUCCESS;
     }
 
@@ -895,15 +896,15 @@ namespace EA {
         uint8_t *packet = sock->self_buf->_data;
         uint32_t off = PACKET_HEADER_LEN + 1; // packet header(4) + cmd(1)
         // std::string data((char*)packet, sock->packet_len + PACKET_HEADER_LEN);
-        // DB_WARNING("data is: %s", str_to_hex(data).c_str());
+        // TLOG_WARN("data is: {}", str_to_hex(data).c_str());
 
         uint64_t stmt_id = 0;
         if (RET_SUCCESS !=
             _wrapper->protocol_get_length_fixed_int(packet, sock->packet_len + PACKET_HEADER_LEN, off, 4, stmt_id)) {
-            DB_FATAL("read stmt_id failed");
+            TLOG_ERROR("read stmt_id failed");
             return RET_ERROR;
         }
-        //DB_WARNING("stmt_id is: %lu", stmt_id);
+        //TLOG_WARN("stmt_id is: {}", stmt_id);
 
         std::string stmt_name = std::to_string(stmt_id);
         auto iter = sock->prepared_plans.find(stmt_name);
@@ -911,48 +912,48 @@ namespace EA {
             sock->query_ctx->stat_info.error_code = ER_UNKNOWN_STMT_HANDLER;
             sock->query_ctx->stat_info.error_msg << "Unknown prepared statement handler (" << stmt_name
                                                  << ") given to EXECUTE";
-            DB_WARNING("Unknown prepared statement handler (%s) given to EXECUTE", stmt_name.c_str());
+            TLOG_WARN("Unknown prepared statement handler ({}) given to EXECUTE", stmt_name.c_str());
             return RET_ERROR;
         }
         auto prepare_ctx = iter->second;
 
         uint8_t flags = 0;
         if (RET_SUCCESS != _wrapper->protocol_get_char(packet, sock->packet_len + PACKET_HEADER_LEN, off, &flags)) {
-            DB_FATAL("read stmt flags failed");
+            TLOG_ERROR("read stmt flags failed");
             return RET_ERROR;
         }
         // todo: flags support
         // https://dev.mysql.com/doc/refman/5.7/en/mysql-stmt-attr-set.html
         // https://dev.mysql.com/doc/internals/en/com-stmt-execute.html
-        //DB_WARNING("stmt_flags is: %u", flags);
+        //TLOG_WARN("stmt_flags is: {}", flags);
         if (flags != 0) {
-            DB_FATAL("stmt_flags non-zero is not supported: %u", flags);
+            TLOG_ERROR("stmt_flags non-zero is not supported: {}", flags);
             return RET_ERROR;
         }
         uint64_t iteration_count = 0;
         if (RET_SUCCESS != _wrapper->protocol_get_length_fixed_int(packet, sock->packet_len + PACKET_HEADER_LEN, off, 4,
                                                                    iteration_count)) {
-            DB_FATAL("read stmt_id failed");
+            TLOG_ERROR("read stmt_id failed");
             return RET_ERROR;
         }
         uint8_t new_parameter_bound_flag = 0;
         int num_params = prepare_ctx->placeholders.size();
-        //DB_WARNING("iteration_count is: %lu, param_count: %d", iteration_count, num_params);
+        //TLOG_WARN("iteration_count is: {}, param_count: {}", iteration_count, num_params);
 
         uint8_t *null_bitmap = nullptr;
         if (num_params > 0) {
             int null_bitmap_len = (num_params + 7) / 8;
-            // DB_WARNING("null_bitmap_len: %d, offset: %u", null_bitmap_len, off);
+            // TLOG_WARN("null_bitmap_len: {}, offset: {}", null_bitmap_len, off);
             null_bitmap = packet + off;
             off += null_bitmap_len;
             if (RET_SUCCESS != _wrapper->protocol_get_char(packet, sock->packet_len + PACKET_HEADER_LEN, off,
                                                            &new_parameter_bound_flag)) {
-                DB_FATAL("read stmt new_parameter_bound_flag failed");
+                TLOG_ERROR("read stmt new_parameter_bound_flag failed");
                 return RET_ERROR;
             }
         }
 
-        // DB_WARNING("new_parameter_bound_flag is: %u", new_parameter_bound_flag);
+        // TLOG_WARN("new_parameter_bound_flag is: {}", new_parameter_bound_flag);
         if (new_parameter_bound_flag == 1) {
             prepare_ctx->param_type.clear();
             uint8_t *type_ptr = packet + off;
@@ -961,7 +962,7 @@ namespace EA {
                 param_type.mysql_type = static_cast<MysqlType>(*(type_ptr + 2 * idx));
                 param_type.is_unsigned = *(type_ptr + 2 * idx + 1) == 0x80;
                 prepare_ctx->param_type.push_back(param_type);
-                // DB_WARNING("stmt_name: %s, mysql_type: %u, is_unsigned: %d",
+                // TLOG_WARN("stmt_name: {}, mysql_type: {}, is_unsigned: {}",
                 //     stmt_name.c_str(), param_type.mysql_type, param_type.is_unsigned);
             }
             off += (2 * num_params);
@@ -969,7 +970,7 @@ namespace EA {
 
         if (num_params > 0) {
             if (prepare_ctx->param_type.size() <= 0) {
-                DB_FATAL("empty param_types: %s", stmt_name.c_str());
+                TLOG_ERROR("empty param_types: {}", stmt_name.c_str());
                 return RET_ERROR;
             }
             for (int idx = 0; idx < num_params; ++idx) {
@@ -984,20 +985,20 @@ namespace EA {
                 } else {
                     bool is_null = (null_bitmap[idx / 8] >> (idx % 8)) & 0x01;
                     if (is_null || prepare_ctx->param_type[idx].mysql_type == MYSQL_TYPE_NULL) {
-                        // DB_WARNING("is_null: %d, type: %d", is_null, type_vec[idx].mysql_type);
+                        // TLOG_WARN("is_null: {}, type: {}", is_null, type_vec[idx].mysql_type);
                         expr_node.set_node_type(proto::NULL_LITERAL);
                         expr_node.set_col_type(proto::NULL_TYPE);
                     } else {
                         if (RET_SUCCESS != _wrapper->decode_binary_protocol_value(
                                 packet, sock->packet_len + PACKET_HEADER_LEN, off, prepare_ctx->param_type[idx],
                                 expr_node)) {
-                            DB_WARNING("decode_prepared_stmt_param_value failed num_params:%d, idx:%d", num_params,
-                                       idx);
+                            TLOG_WARN("decode_prepared_stmt_param_value failed num_params:{}, idx:{}", num_params,
+                                      idx);
                             return RET_ERROR;
                         }
                     }
                 }
-                //DB_WARNING("param_value: %d, %s", idx, expr_node.ShortDebugString().c_str());
+                //TLOG_WARN("param_value: {}, {}", idx, expr_node.ShortDebugString().c_str());
                 sock->query_ctx->param_values.push_back(expr_node);
             }
         }
@@ -1019,7 +1020,7 @@ namespace EA {
         }
         auto sql_len = client->query_ctx->sql.size();
         if (command != COM_STMT_EXECUTE && command != COM_STMT_CLOSE && sql_len == 0) {
-            DB_FATAL("SQL size is 0. command: %d", command);
+            TLOG_ERROR("SQL size is 0. command: {}", command);
             return false;
         }
         if (command == COM_INIT_DB) {     // 0x02 command: use database, set names, set charset...
@@ -1050,7 +1051,7 @@ namespace EA {
                     client->charset_num = 33;
                 }
                 if (reg.error_code() != 0) {
-                    DB_WARNING("charset regex match error.");
+                    TLOG_WARN("charset regex match error.");
                 }
                 _wrapper->make_simple_ok_packet(client);
                 client->state = STATE_READ_QUERY_RESULT;
@@ -1092,28 +1093,28 @@ namespace EA {
                 //对于正常的请求做限制
                 if (client->user_info->is_exceed_quota()) {
                     _wrapper->make_err_packet(client, ER_QUERY_EXCEED_QUOTA, "query exceed quota(qps)");
-                    DB_WARNING("query exceed quota, user:%s, query:%u, quota:%u, time:%ld",
-                               client->username.c_str(),
-                               client->user_info->query_count.load(),
-                               client->user_info->query_quota,
-                               client->user_info->query_cost.get_time());
+                    TLOG_WARN("query exceed quota, user:{}, query:{}, quota:{}, time:{}",
+                              client->username.c_str(),
+                              client->user_info->query_count.load(),
+                              client->user_info->query_quota,
+                              client->user_info->query_cost.get_time());
                     client->state = STATE_READ_QUERY_RESULT;
                     return true;
                 }
                 // 防止超大sql文本
                 if (sql_len > std::max(FLAGS_baikal_max_allowed_packet, (int64_t) 1024)) {
-                    DB_WARNING("sql too big sql_len: %ld", sql_len);
+                    TLOG_WARN("sql too big sql_len: {}", sql_len);
                     _wrapper->make_err_packet(client, ER_NET_PACKET_TOO_LARGE,
                                               "Packets larger than max_allowed_packet are not allowed");
                     client->state = STATE_ERROR_REUSE;
                     return true;
                 }
-                //DB_DEBUG_CLIENT(client, "Choose common handle cost time:[%ld(ms)]", cost.get_time());
+                //TLOG_DEBUG_CLIENT(client, "Choose common handle cost time:[{}(ms)]", cost.get_time());
                 ret = _handle_client_query_common_query(client);
                 client->state = (client->state == STATE_ERROR) ? STATE_ERROR : STATE_READ_QUERY_RESULT;
             }
         } else if (command == COM_FIELD_LIST) {   // 0x04 command:COM_FIELD_LIST
-            DB_WARNING_CLIENT(client, "Unsupport command[%s]", client->query_ctx->sql.c_str());
+            TLOG_WARN("{}, Unsupport command[{}]", *client, client->query_ctx->sql.c_str());
             _wrapper->make_err_packet(client, ER_NOT_ALLOWED_COMMAND, "command not supported");
             client->state = STATE_ERROR_REUSE;
         } else if (command == COM_STMT_PREPARE || command == COM_STMT_EXECUTE || command == COM_STMT_CLOSE) {
@@ -1123,7 +1124,7 @@ namespace EA {
             ret = _handle_client_query_common_query(client);
             client->state = STATE_READ_QUERY_RESULT;
         } else {                                 // Unsupport command.
-            DB_FATAL_CLIENT(client, "unsupport command[%s]", client->query_ctx->sql.c_str());
+            TLOG_ERROR("{}, unsupport command[{}]", *client, client->query_ctx->sql.c_str());
             _wrapper->make_err_packet(client, ER_NOT_ALLOWED_COMMAND, "command not supported");
             client->state = STATE_ERROR_REUSE;
         }
@@ -1146,7 +1147,7 @@ namespace EA {
             size_t len = ctx->sql.size();
             std::string comment;
             if (!RE2::Extract(ctx->sql, reg, "\\1", &comment)) {
-                DB_WARNING("extract commit error.");
+                TLOG_WARN("extract commit error.");
             }
             if (comment.size() != 0) {
                 ctx->comments.push_back(comment);
@@ -1167,33 +1168,33 @@ namespace EA {
                 root.Parse<0>(json_str.c_str());
                 if (root.HasParseError()) {
                     //rapidjson::ParseErrorCode code = root.GetParseError();
-                    //DB_WARNING("parse extra file error [code:%d][%s]", code, json_str.c_str());
+                    //TLOG_WARN("parse extra file error [code:{}][{}]", code, json_str.c_str());
                     continue;
                 }
                 auto json_iter = root.FindMember("region_id");
                 if (json_iter != root.MemberEnd()) {
                     ctx->debug_region_id = json_iter->value.GetInt64();
-                    DB_WARNING("debug_region_id: %ld", ctx->debug_region_id);
+                    TLOG_WARN("debug_region_id: {}", ctx->debug_region_id);
                 }
                 json_iter = root.FindMember("enable_2pc");
                 if (json_iter != root.MemberEnd()) {
                     ctx->enable_2pc = json_iter->value.GetInt64();
-                    DB_WARNING("enable_2pc: %d", ctx->enable_2pc);
+                    TLOG_WARN("enable_2pc: {}", ctx->enable_2pc);
                 }
                 json_iter = root.FindMember("full_export");
                 if (json_iter != root.MemberEnd()) {
                     ctx->is_full_export = json_iter->value.GetBool();
-                    DB_WARNING("full_export: %d", ctx->is_full_export);
+                    TLOG_WARN("full_export: {}", ctx->is_full_export);
                 }
                 json_iter = root.FindMember("single_store_concurrency");
                 if (json_iter != root.MemberEnd()) {
                     ctx->single_store_concurrency = json_iter->value.GetInt();
-                    DB_WARNING("single_store_concurrency: %d", ctx->single_store_concurrency);
+                    TLOG_WARN("single_store_concurrency: {}", ctx->single_store_concurrency);
                 }
                 json_iter = root.FindMember("ttl_duration");
                 if (json_iter != root.MemberEnd()) {
                     ctx->row_ttl_duration = json_iter->value.GetInt64();
-                    DB_DEBUG("row_ttl_duration: %ld", ctx->row_ttl_duration);
+                    TLOG_DEBUG("row_ttl_duration: {}", ctx->row_ttl_duration);
                 }
                 json_iter = root.FindMember("X-B3-TraceId");
                 if (json_iter != root.MemberEnd() && json_iter->value.IsString()) {
@@ -1202,10 +1203,10 @@ namespace EA {
                 json_iter = root.FindMember("peer_index");
                 if (json_iter != root.MemberEnd()) {
                     ctx->peer_index = json_iter->value.GetInt64();
-                    DB_WARNING("peer_index: %ld", ctx->peer_index);
+                    TLOG_WARN("peer_index: {}", ctx->peer_index);
                 }
             } catch (...) {
-                DB_WARNING("parse extra file error [%s]", json_str.c_str());
+                TLOG_WARN("parse extra file error [{}]", json_str.c_str());
                 continue;
             }
         }
@@ -1230,12 +1231,12 @@ namespace EA {
                                                                  turbo::ByAnyChar(" \t\n\r."),
                                                                  turbo::SkipEmpty());
             if (split_vec.size() < 2) {
-                DB_FATAL("use db fail, %s", sql.c_str());
+                TLOG_ERROR("use db fail, {}", sql.c_str());
                 return false;
             }
             db = remove_quote(split_vec[1].c_str(), '`');
         } else {
-            DB_FATAL("use db fail, %s", sql.c_str());
+            TLOG_ERROR("use db fail, {}", sql.c_str());
             return false;
         }
         std::string db_name = db;
@@ -1248,7 +1249,7 @@ namespace EA {
         });
         if (iter == dbs.end()) {
             _wrapper->make_err_packet(client, ER_DBACCESS_DENIED_ERROR,
-                                      "Access denied for user '%s' to database '%s'",
+                                      "Access denied for user '{}' to database '{}'",
                                       client->user_info->username.c_str(), db.c_str());
             client->state = STATE_READ_QUERY_RESULT;
             return false;
@@ -1278,7 +1279,7 @@ namespace EA {
 
     bool StateMachine::_handle_client_query_desc_table(SmartSocket client) {
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -1391,7 +1392,7 @@ namespace EA {
                     index_types.push_back(index);
                     extra_vec.push_back(proto::IndexState_Name(index_info.state));
                 }
-                row.push_back(turbo::FormatRange("{}",index_types, "|"));
+                row.push_back(turbo::FormatRange("{}", index_types, "|"));
             }
             row.push_back(field.default_value);
 
@@ -1401,14 +1402,14 @@ namespace EA {
                 //extra_vec.push_back(" ");
             }
 
-            row.push_back(turbo::FormatRange("{}",extra_vec, "|"));
+            row.push_back(turbo::FormatRange("{}", extra_vec, "|"));
 
             rows.push_back(row);
         }
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1422,22 +1423,22 @@ namespace EA {
             std::vector<ResultField> &fields,
             std::vector<std::vector<std::string> > &rows) {
         if (!sock) {
-            DB_FATAL("sock == nullptr.");
+            TLOG_ERROR("sock == nullptr.");
             return RET_ERROR;
         }
         if (fields.size() == 0) {
-            DB_FATAL("Field size is 0.");
+            TLOG_ERROR("Field size is 0.");
             return RET_ERROR;
         }
 
         //Result Set Header Packet
         int start_pos = sock->send_buf->_size;
         if (!sock->send_buf->byte_array_append_len((const uint8_t *) "\x01\x00\x00\x01", 4)) {
-            DB_FATAL("byte_array_append_len failed.");
+            TLOG_ERROR("byte_array_append_len failed.");
             return RET_ERROR;
         }
         if (!sock->send_buf->byte_array_append_length_coded_binary(fields.size())) {
-            DB_FATAL("byte_array_append_len failed. len:[%lu]", fields.size());
+            TLOG_ERROR("byte_array_append_len failed. len:[{}]", fields.size());
             return RET_ERROR;
         }
         int packet_body_len = sock->send_buf->_size - start_pos - 4;
@@ -1462,7 +1463,7 @@ namespace EA {
         for (uint32_t cnt = 0; cnt < rows.size(); ++cnt) {
             // Make row data packet
             if (!_wrapper->make_row_packet(sock->send_buf, rows[cnt], ++sock->packet_id)) {
-                DB_FATAL("make_row_packet failed");
+                TLOG_ERROR("make_row_packet failed");
                 return RET_ERROR;
             }
         }
@@ -1473,7 +1474,7 @@ namespace EA {
 
     int StateMachine::_query_result_send(SmartSocket sock) {
         if (!sock || sock->is_free) {
-            DB_FATAL("s==nullptr");
+            TLOG_ERROR("s==nullptr");
             return RET_ERROR;
         }
         return _wrapper->real_write(sock);
@@ -1482,7 +1483,7 @@ namespace EA {
     int StateMachine::_send_result_to_client_and_reset_status(EpollInfo *epoll_info,
                                                               SmartSocket client) {
         if (epoll_info == nullptr || client == nullptr) {
-            DB_FATAL("send_QueryStato_client param client null");
+            TLOG_ERROR("send_QueryStato_client param client null");
             return -1;
         }
         int ret = 0;
@@ -1505,8 +1506,8 @@ namespace EA {
                 epoll_info->poll_events_mod(client, EPOLLOUT);
                 break;
             default:
-                DB_FATAL_CLIENT(client, "Failed to send result: state=%d, ret=%d, errno=%d",
-                                client->state, ret, errno);
+                TLOG_ERROR("{}, Failed to send result: state={}, ret={}, errno={}", *client,
+                           static_cast<int>(client->state), ret, errno);
                 client_free(client, epoll_info);
                 break;
         }
@@ -1531,18 +1532,18 @@ namespace EA {
 
     void StateMachine::client_free(SmartSocket sock, EpollInfo *epoll_info) {
         if (!sock) {
-            DB_FATAL("s==nullptr");
+            TLOG_ERROR("s==nullptr");
             return;
         }
-        DB_WARNING_CLIENT(sock, "client_free, cmd=%d", sock->query_ctx->mysql_cmd);
+        TLOG_WARN("{}, client_free, cmd={}", *sock,sock->query_ctx->mysql_cmd);
         if (sock->fd == -1 || sock->is_free) {
-            DB_WARNING_CLIENT(sock, "sock is already free.");
+            TLOG_WARN("{}, sock is already free.", *sock);
             return;
         }
         if (sock->txn_id != 0) {
             sock->reset_query_ctx(new(std::nothrow)QueryContext(sock->user_info, sock->current_db));
             sock->query_ctx->sql = "rollback";
-            DB_WARNING("client free txn_id:%lu seq_id:%d need rollback", sock->txn_id, sock->seq_id);
+            TLOG_WARN("client free txn_id:{} seq_id:{} need rollback", sock->txn_id, sock->seq_id);
             _handle_client_query_common_query(sock);
         }
         if (sock->is_counted) {
@@ -1591,7 +1592,7 @@ namespace EA {
         }
         // Unknow number.
         if (ctx->sql.size() <= 0) {
-            DB_WARNING("query->sql is nullptr, command=%d", ctx->mysql_cmd);
+            TLOG_WARN("query->sql is nullptr, command={}", ctx->mysql_cmd);
             return SQL_UNKNOWN_NUM;
         }
         // Get sql type.
@@ -1654,7 +1655,7 @@ namespace EA {
 
     bool StateMachine::_handle_client_query_common_query(SmartSocket client) {
         if (client == nullptr) {
-            DB_FATAL("param invalid: socket==nullptr");
+            TLOG_ERROR("param invalid: socket==nullptr");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -1664,7 +1665,7 @@ namespace EA {
 
         if (SchemaFactory::get_instance()->is_big_sql(client->query_ctx->sql)) {
             _wrapper->make_err_packet(client,
-                                      ER_SQL_TOO_BIG, "%s",
+                                      ER_SQL_TOO_BIG, "{}",
                                       "sql too big");
             return false;
         }
@@ -1676,14 +1677,14 @@ namespace EA {
         int ret = 0;
         ret = LogicalPlanner::analyze(client->query_ctx.get());
         if (ret < 0) {
-            DB_WARNING_CLIENT(client, "Failed to LogicalPlanner::analyze: %s",
+            TLOG_WARN("{}, Failed to LogicalPlanner::analyze: {}",*client,
                               client->query_ctx->sql.c_str());
             if (client->query_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                 client->query_ctx->stat_info.error_code = ER_GEN_PLAN_FAILED;
                 client->query_ctx->stat_info.error_msg << "get logical plan failed";
             }
             _wrapper->make_err_packet(client,
-                                      client->query_ctx->stat_info.error_code, "%s",
+                                      client->query_ctx->stat_info.error_code, "{}",
                                       client->query_ctx->stat_info.error_msg.str().c_str());
             return false;
         }
@@ -1700,13 +1701,13 @@ namespace EA {
         }
         // const std::vector<proto::TupleDescriptor>& tuples = ctx->tuple_descs();
         // for (uint32_t idx = 0; idx < tuples.size(); ++idx) {
-        //     DB_WARNING("TupleDescriptor: %s", pb2json(tuples[idx]).c_str());
+        //     TLOG_WARN("TupleDescriptor: {}", pb2json(tuples[idx]).c_str());
         // }
         if (client->query_ctx->exec_prepared == false) {
             ret = client->query_ctx->create_plan_tree();
             if (ret < 0) {
-                DB_FATAL_CLIENT(client, "Failed to pb_plan to execnode: %s",
-                                client->query_ctx->sql.c_str());
+                TLOG_ERROR("{}, Failed to pb_plan to execnode: {}", *client,
+                           client->query_ctx->sql.c_str());
                 return false;
             }
         }
@@ -1719,7 +1720,7 @@ namespace EA {
             //为了不改动老逻辑。对于新逻辑 runtime_state的seq_id不起任何作用
             client->query_ctx->get_runtime_state()->seq_id = client->seq_id + 1;
         }
-        //DB_WARNING("client: %ld ,seq_id: %d", client.get(), client->seq_id);
+        //TLOG_WARN("client: {} ,seq_id: {}", client.get(), client->seq_id);
         ON_SCOPE_EXIT([client]() {
             if (client->txn_id == 0) {
                 client->on_commit_rollback();
@@ -1729,11 +1730,11 @@ namespace EA {
             }
         });
 
-        //DB_WARNING("create_plan_tree success, %s", client->query_ctx->sql.c_str());
+        //TLOG_WARN("create_plan_tree success, {}", client->query_ctx->sql.c_str());
         ret = PhysicalPlanner::analyze(client->query_ctx.get());
         if (ret < 0) {
-            DB_FATAL_CLIENT(client, "Failed to PhysicalPlanner::analyze: %s",
-                            client->query_ctx->sql.c_str());
+            TLOG_ERROR("{}, Failed to PhysicalPlanner::analyze: {}", *client,
+                       client->query_ctx->sql.c_str());
             // single SQL transaction need to reset connection transaction status
             if (client->query_ctx->get_runtime_state()->single_sql_autocommit()) {
                 client->on_commit_rollback();
@@ -1743,7 +1744,7 @@ namespace EA {
                 client->query_ctx->stat_info.error_msg << "get physical plan failed";
             }
             _wrapper->make_err_packet(client,
-                                      client->query_ctx->stat_info.error_code, "%s",
+                                      client->query_ctx->stat_info.error_code, "{}",
                                       client->query_ctx->stat_info.error_msg.str().c_str());
             return false;
         }
@@ -1766,7 +1767,7 @@ namespace EA {
             row.push_back(plan_str);
             rows.push_back(row);
             if (_make_common_resultset_packet(client, fields, rows) != 0) {
-                DB_FATAL_CLIENT(client, "Failed to make result packet.");
+                TLOG_ERROR("{}, Failed to make result packet.", *client);
                 _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
                 return false;
             }
@@ -1799,7 +1800,7 @@ namespace EA {
             }
 
             if (_make_common_resultset_packet(client, fields, rows) != 0) {
-                DB_FATAL_CLIENT(client, "Failed to make sql sign result packet.");
+                TLOG_ERROR("{}, Failed to make sql sign result packet.", *client);
                 _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
                 return false;
             }
@@ -1811,11 +1812,11 @@ namespace EA {
             return true;
         }
 
-        //DB_WARNING("client: %ld ,seq_id: %d", client.get(), client->seq_id);
+        //TLOG_WARN("client: {} ,seq_id: {}", client.get(), client->seq_id);
         // 不会有fether那一层，重构
         if (!client->query_ctx->is_full_export) {
             ret = PhysicalPlanner::execute(client->query_ctx.get(), client->send_buf);
-            //DB_WARNING("client: %ld ,seq_id: %d", client.get(), client->seq_id);
+            //TLOG_WARN("client: {} ,seq_id: {}", client.get(), client->seq_id);
             // 空值优化时可能执行不到TransactionNode
             // 单语句事务需要回退状态
             if (client->query_ctx->get_runtime_state()->single_sql_autocommit()) {
@@ -1832,14 +1833,14 @@ namespace EA {
             if (client->query_ctx->stat_info.error_code == ER_SQL_TOO_BIG) {
                 SchemaFactory::get_instance()->update_big_sql(client->query_ctx->sql);
             }
-            DB_WARNING_CLIENT(client, "Failed to PhysicalPlanner::execute: %s",
+            TLOG_WARN("{}, Failed to PhysicalPlanner::execute: {}",*client,
                               client->query_ctx->sql.c_str());
             if (client->query_ctx->stat_info.error_code == ER_ERROR_FIRST) {
                 client->query_ctx->stat_info.error_code = ER_EXEC_PLAN_FAILED;
                 client->query_ctx->stat_info.error_msg << "exec physical plan failed";
             }
             _wrapper->make_err_packet(client,
-                                      client->query_ctx->stat_info.error_code, "%s",
+                                      client->query_ctx->stat_info.error_code, "{}",
                                       client->query_ctx->stat_info.error_msg.str().c_str());
             return false;
         }

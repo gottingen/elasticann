@@ -16,60 +16,65 @@
 
 
 #pragma once
+
 #include "elasticann/expr/expr_node.h"
 
 namespace EA {
-class SlotRef : public ExprNode {
-public:
-    SlotRef()  {
-        _is_constant = false;
-    }
-    virtual int init(const proto::ExprNode& node) {
-        ExprNode::init(node);
-        _tuple_id = node.derive_node().tuple_id();
-        _slot_id = node.derive_node().slot_id();
-        _field_id = node.derive_node().field_id();
-        return 0;
-    }
-    virtual ExprValue get_value(MemRow* row) {
-        if (row == nullptr) {
-            return ExprValue::Null();
+    class SlotRef : public ExprNode {
+    public:
+        SlotRef() {
+            _is_constant = false;
         }
-        return row->get_value(_tuple_id, _slot_id).cast_to(_col_type);
-    }
-    virtual ExprValue get_value(const ExprValue& value) {
-        return value;
-    }
 
-    SlotRef* clone() {
-        SlotRef* s = new SlotRef;
-        s->_tuple_id = _tuple_id;
-        s->_field_id = _field_id;
-        s->_slot_id = _slot_id;
-        s->_node_type = _node_type;
-        s->_col_type = _col_type;
-        s->_col_flag = _col_flag;
-        return s;
-    }
+        virtual int init(const proto::ExprNode &node) {
+            ExprNode::init(node);
+            _tuple_id = node.derive_node().tuple_id();
+            _slot_id = node.derive_node().slot_id();
+            _field_id = node.derive_node().field_id();
+            return 0;
+        }
 
-    int32_t field_id() const {
-        return _field_id;
-    }
-    /*
-    void set_field_id(int32_t field_id) {
-        _field_id = field_id;
-    }
-    */
-    virtual void transfer_pb(proto::ExprNode* pb_node) {
-        ExprNode::transfer_pb(pb_node);
-        pb_node->mutable_derive_node()->set_tuple_id(_tuple_id);
-        pb_node->mutable_derive_node()->set_slot_id(_slot_id);
-        pb_node->mutable_derive_node()->set_field_id(_field_id);
-    }
+        virtual ExprValue get_value(MemRow *row) {
+            if (row == nullptr) {
+                return ExprValue::Null();
+            }
+            return row->get_value(_tuple_id, _slot_id).cast_to(_col_type);
+        }
 
-private:
-    int32_t _field_id;
-    friend ExprNode;
-};
+        virtual ExprValue get_value(const ExprValue &value) {
+            return value;
+        }
+
+        SlotRef *clone() {
+            SlotRef *s = new SlotRef;
+            s->_tuple_id = _tuple_id;
+            s->_field_id = _field_id;
+            s->_slot_id = _slot_id;
+            s->_node_type = _node_type;
+            s->_col_type = _col_type;
+            s->_col_flag = _col_flag;
+            return s;
+        }
+
+        int32_t field_id() const {
+            return _field_id;
+        }
+
+        /*
+        void set_field_id(int32_t field_id) {
+            _field_id = field_id;
+        }
+        */
+        virtual void transfer_pb(proto::ExprNode *pb_node) {
+            ExprNode::transfer_pb(pb_node);
+            pb_node->mutable_derive_node()->set_tuple_id(_tuple_id);
+            pb_node->mutable_derive_node()->set_slot_id(_slot_id);
+            pb_node->mutable_derive_node()->set_field_id(_field_id);
+        }
+
+    private:
+        int32_t _field_id;
+        friend ExprNode;
+    };
 }
 

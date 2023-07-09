@@ -28,41 +28,42 @@
 using google::protobuf::FieldDescriptorProto;
 
 namespace EA {
-class MemRow;
-//internal memory row meta-data for a query
-class MemRowDescriptor {
-public:
-    MemRowDescriptor() : _factory(nullptr), _proto(nullptr) {}
+    class MemRow;
 
-    virtual ~MemRowDescriptor() {
-        delete _proto;
-        _proto = nullptr;
-        delete _factory;
-        _factory = nullptr;
-    }
+    //internal memory row meta-data for a query
+    class MemRowDescriptor {
+    public:
+        MemRowDescriptor() : _factory(nullptr), _proto(nullptr) {}
 
-    int32_t init(std::vector<proto::TupleDescriptor>& tuple_desc);
+        virtual ~MemRowDescriptor() {
+            delete _proto;
+            _proto = nullptr;
+            delete _factory;
+            _factory = nullptr;
+        }
 
-    google::protobuf::Message* new_tuple_message(int32_t tuple_id);
+        int32_t init(std::vector<proto::TupleDescriptor> &tuple_desc);
 
-    std::unique_ptr<MemRow> fetch_mem_row();
+        google::protobuf::Message *new_tuple_message(int32_t tuple_id);
 
-    int tuple_size() {
-        return _id_tuple_mapping.size();
-    }
+        std::unique_ptr<MemRow> fetch_mem_row();
 
-    const std::map<int32_t, const google::protobuf::Message*>& id_tuple_mapping() const {
-        return _id_tuple_mapping;
-    }
+        int tuple_size() {
+            return _id_tuple_mapping.size();
+        }
 
-private:
-    google::protobuf::DescriptorPool          _pool;
-    google::protobuf::DynamicMessageFactory*  _factory;
-    google::protobuf::FileDescriptorProto*    _proto;
-    
-    // kv: tuple_id => DescriptorProto (message, tuple)
-    std::map<int32_t, const google::protobuf::Message*> _id_tuple_mapping;
+        const std::map<int32_t, const google::protobuf::Message *> &id_tuple_mapping() const {
+            return _id_tuple_mapping;
+        }
 
-};
+    private:
+        google::protobuf::DescriptorPool _pool;
+        google::protobuf::DynamicMessageFactory *_factory;
+        google::protobuf::FileDescriptorProto *_proto;
+
+        // kv: tuple_id => DescriptorProto (message, tuple)
+        std::map<int32_t, const google::protobuf::Message *> _id_tuple_mapping;
+
+    };
 }
 

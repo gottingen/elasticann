@@ -82,7 +82,7 @@ namespace EA {
             }
             if (index_has_null) {
                 ctx->return_empty = true;
-                DB_WARNING("normal predicate compare with null");
+                TLOG_WARN("normal predicate compare with null");
                 return 0;
             }
             if (ret < 0) {
@@ -266,7 +266,7 @@ namespace EA {
                 index_ids.push_back(index_id);
                 if (table_info_ptr->reverse_fields.count(field_id) == 0 &&
                     table_info_ptr->arrow_reverse_fields.count(field_id) == 0) {
-                    DB_DEBUG("table_id %ld field_id %d not all reverse list", table_id, field_id);
+                    TLOG_DEBUG("table_id {} field_id {} not all reverse list", table_id, field_id);
                     return;
                 }
             }
@@ -484,7 +484,7 @@ namespace EA {
         int32_t tuple_id = scan_node->tuple_id();
         auto table_info = _factory->get_table_info_ptr(table_id);
         if (table_info == nullptr) {
-            DB_WARNING("table info not found:%ld", table_id);
+            TLOG_WARN("table info not found:{}", table_id);
             return -1;
         }
 
@@ -547,7 +547,7 @@ namespace EA {
 
         auto pri_ptr = _factory->get_index_info_ptr(table_id);
         if (pri_ptr == nullptr) {
-            DB_WARNING("pk info not found:%ld", table_id);
+            TLOG_WARN("pk info not found:{}", table_id);
             return -1;
         }
         SmartRecord record_template = _factory->new_record(table_id);
@@ -562,27 +562,27 @@ namespace EA {
             }
             // 不在此处跳过disable的索引，在add_path处判断，这样learner可以使用
             // if (info_ptr->index_hint_status == proto::IHS_DISABLE) {
-            //     DB_DEBUG("index[%s] is disabled", info_ptr->name.c_str());
+            //     TLOG_DEBUG("index[{}] is disabled", info_ptr->name.c_str());
             //     continue;
             // }
             IndexInfo &index_info = *info_ptr;
             proto::IndexType index_type = index_info.type;
             auto index_state = index_info.state;
             if (index_state != proto::IS_PUBLIC) {
-                DB_DEBUG("DDL_LOG skip index [%ld] state [%s] ",
-                         index_id, proto::IndexState_Name(index_state).c_str());
+                TLOG_DEBUG("DDL_LOG skip index [{}] state [{}] ",
+                           index_id, proto::IndexState_Name(index_state).c_str());
                 continue;
             }
             if (index_info.type == proto::I_FULLTEXT && index_info.index_hint_status == proto::IHS_NORMAL) {
                 if (index_info.fields.size() == 1) {
                     if (fulltext_fields.count((index_info.fields[0].id << 5) + index_info.storage_type) == 1) {
-                        DB_WARNING("skip fulltext index %ld", index_id);
+                        TLOG_WARN("skip fulltext index {}", index_id);
                         continue;
                     } else {
                         fulltext_fields.insert((index_info.fields[0].id << 5) + index_info.storage_type);
                     }
                 } else {
-                    DB_FATAL("index %ld fulltext fields number error.", index_id);
+                    TLOG_ERROR("index {} fulltext fields number error.", index_id);
                     continue;
                 }
             }
@@ -644,7 +644,7 @@ namespace EA {
                 auto name_iter = _ctx->table_partition_names.find(table_id);
                 if (name_iter != _ctx->table_partition_names.end()) {
                     if (0 != _factory->get_partition_ids_by_name(table_id, name_iter->second, partition_ids)) {
-                        DB_WARNING("get partition failed.");
+                        TLOG_WARN("get partition failed.");
                         return -1;
                     }
                     scan_node->replace_partition(partition_ids, true);
@@ -670,7 +670,7 @@ namespace EA {
                         if (table_info->partition_num != 1) {
                             partition_index = table_info->partition_ptr->calc_partition(value);
                             if (partition_index < 0) {
-                                DB_WARNING("get partition number error, value:%s", value.get_string().c_str());
+                                TLOG_WARN("get partition number error, value:{}", value.get_string().c_str());
                                 return -1;
                             }
                         }
@@ -678,7 +678,7 @@ namespace EA {
                     }
                     scan_node->replace_partition(partition_ids, false);
                 } else {
-                    DB_WARNING("table_id:%ld pattern not supported.", table_id);
+                    TLOG_WARN("table_id:{} pattern not supported.", table_id);
                     for (int64_t i = 0; i < table_info->partition_num; ++i) {
                         partition_ids.emplace(i);
                     }

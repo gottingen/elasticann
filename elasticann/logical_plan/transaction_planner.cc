@@ -19,33 +19,33 @@
 #include "elasticann/logical_plan/transaction_planner.h"
 
 namespace EA {
-int TransactionPlanner::plan() {
-    auto client = _ctx->client_conn;
-    if (_ctx->stmt_type == parser::NT_START_TRANSACTION) {
-        if (client->txn_id == 0) {
-            plan_begin_txn();
-            DB_WARNING("begin a new transaction: %lu", client->txn_id);
+    int TransactionPlanner::plan() {
+        auto client = _ctx->client_conn;
+        if (_ctx->stmt_type == parser::NT_START_TRANSACTION) {
+            if (client->txn_id == 0) {
+                plan_begin_txn();
+                TLOG_WARN("begin a new transaction: {}", client->txn_id);
+            } else {
+                plan_commit_and_begin_txn();
+            }
+        } else if (_ctx->stmt_type == parser::NT_COMMIT_TRANSACTION) {
+            if (client->autocommit == true) {
+                plan_commit_txn();
+            } else {
+                plan_commit_and_begin_txn();
+            }
+        } else if (_ctx->stmt_type == parser::NT_ROLLBACK_TRANSACTION) {
+            if (client->autocommit == true) {
+                plan_rollback_txn();
+            } else {
+                plan_rollback_and_begin_txn();
+            }
         } else {
-            plan_commit_and_begin_txn();
+            TLOG_WARN("unsupported Trasanction command: {}", _ctx->stmt_type);
+            return -1;
         }
-    } else if (_ctx->stmt_type == parser::NT_COMMIT_TRANSACTION) {
-        if (client->autocommit == true) {
-            plan_commit_txn();
-        } else {
-            plan_commit_and_begin_txn();
-        }
-    } else if (_ctx->stmt_type == parser::NT_ROLLBACK_TRANSACTION) {
-        if (client->autocommit == true) {
-            plan_rollback_txn();
-        } else {
-            plan_rollback_and_begin_txn();
-        }
-    } else {
-        DB_WARNING("unsupported Trasanction command: %d", _ctx->stmt_type);
-        return -1;
+        _ctx->get_runtime_state()->set_single_sql_autocommit(false);
+        return 0;
     }
-    _ctx->get_runtime_state()->set_single_sql_autocommit(false);
-    return 0;
-}
 
 } // end of namespace EA

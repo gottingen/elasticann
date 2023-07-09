@@ -19,39 +19,40 @@
 #include "elasticann/exec/exec_node.h"
 
 namespace EA {
-DEFINE_bool(default_2pc, false, "default enable/disable 2pc for autocommit queries");
-QueryContext::~QueryContext() {
-    if (need_destroy_tree) {
-        ExecNode::destroy_tree(root);
-        root = nullptr;
-    }
-}
+    DEFINE_bool(default_2pc, false, "default enable/disable 2pc for autocommit queries");
 
-int QueryContext::create_plan_tree() {
-    need_destroy_tree = true;
-    return ExecNode::create_tree(plan, &root);
-}
-
-void QueryContext::update_ctx_stat_info(RuntimeState* state, int64_t query_total_time) {
-    stat_info.num_returned_rows += state->num_returned_rows();
-    stat_info.num_affected_rows += state->num_affected_rows();
-    stat_info.num_scan_rows += state->num_scan_rows();
-    stat_info.num_filter_rows += state->num_filter_rows();
-    stat_info.region_count += state->region_count;
-    if (stmt_type == parser::NT_SELECT && stat_info.error_code == 1000 && state->sign != 0) {
-        auto sql_info = SchemaFactory::get_instance()->get_sql_stat(state->sign);
-        if (sql_info == nullptr) {
-            sql_info = SchemaFactory::get_instance()->create_sql_stat(state->sign);
-        }
-        if (state->need_statistics) {
-            sql_info->update(query_total_time, stat_info.num_scan_rows);
+    QueryContext::~QueryContext() {
+        if (need_destroy_tree) {
+            ExecNode::destroy_tree(root);
+            root = nullptr;
         }
     }
-}
 
-int64_t QueryContext::get_ctx_total_time() {
-    gettimeofday(&(stat_info.end_stamp), nullptr);
-    stat_info.total_time = timestamp_diff(stat_info.start_stamp, stat_info.end_stamp);
-    return stat_info.total_time;
-}
+    int QueryContext::create_plan_tree() {
+        need_destroy_tree = true;
+        return ExecNode::create_tree(plan, &root);
+    }
+
+    void QueryContext::update_ctx_stat_info(RuntimeState *state, int64_t query_total_time) {
+        stat_info.num_returned_rows += state->num_returned_rows();
+        stat_info.num_affected_rows += state->num_affected_rows();
+        stat_info.num_scan_rows += state->num_scan_rows();
+        stat_info.num_filter_rows += state->num_filter_rows();
+        stat_info.region_count += state->region_count;
+        if (stmt_type == parser::NT_SELECT && stat_info.error_code == 1000 && state->sign != 0) {
+            auto sql_info = SchemaFactory::get_instance()->get_sql_stat(state->sign);
+            if (sql_info == nullptr) {
+                sql_info = SchemaFactory::get_instance()->create_sql_stat(state->sign);
+            }
+            if (state->need_statistics) {
+                sql_info->update(query_total_time, stat_info.num_scan_rows);
+            }
+        }
+    }
+
+    int64_t QueryContext::get_ctx_total_time() {
+        gettimeofday(&(stat_info.end_stamp), nullptr);
+        stat_info.total_time = timestamp_diff(stat_info.start_stamp, stat_info.end_stamp);
+        return stat_info.total_time;
+    }
 }

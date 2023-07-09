@@ -34,12 +34,12 @@ namespace EA {
 
     int Iconv::utf8_to_gbk(const char *psrc, const size_t nsrc, std::string &dst) {
         if (_cd_utf8_to_gbk == (iconv_t) -1) {
-            DB_FATAL("Fail to iconv open, _cd_utf8_to_gbk == (iconv_t)-1");
+            TLOG_ERROR("Fail to iconv open, _cd_utf8_to_gbk == (iconv_t)-1");
             return -1;
         }
 
         if (psrc == nullptr) {
-            DB_FATAL("psrc is Empty");
+            TLOG_ERROR("psrc is Empty");
             return -1;
         }
         if (nsrc <= 0) {
@@ -64,12 +64,12 @@ namespace EA {
 
     int Iconv::gbk_to_utf8(const char *psrc, const size_t nsrc, std::string &dst) {
         if (_cd_gbk_to_utf8 == (iconv_t) -1) {
-            DB_FATAL("Fail to iconv open, _cd_gbk_to_utf8 == (iconv_t)-1");
+            TLOG_ERROR("Fail to iconv open, _cd_gbk_to_utf8 == (iconv_t)-1");
             return -1;
         }
 
         if (psrc == nullptr) {
-            DB_FATAL("psrc is Empty");
+            TLOG_ERROR("psrc is Empty");
             return -1;
         }
         if (nsrc <= 0) {
@@ -146,7 +146,7 @@ namespace EA {
                 break;
             default:
                 if (FLAGS_enable_print_convert_log) {
-                    DB_WARNING("Invalid charset[%d]", charset);
+                    TLOG_WARN("Invalid charset[{}]", static_cast<int>(charset));
                 }
                 break;
         }
@@ -163,7 +163,7 @@ namespace EA {
                 return simple_seg_utf8(word, word_count, term_map);
             default:
                 if (FLAGS_enable_print_convert_log) {
-                    DB_WARNING("Invalid charset[%d]", charset);
+                    TLOG_WARN("Invalid charset[{}]", static_cast<int>(charset));
                 }
                 return -1;
         }
@@ -180,7 +180,7 @@ namespace EA {
                 return es_standard_utf8(word, term_map);
             default:
                 if (FLAGS_enable_print_convert_log) {
-                    DB_WARNING("Invalid charset[%d]", charset);
+                    TLOG_WARN("Invalid charset[{}]", static_cast<int>(charset));
                 }
                 return -1;
         }
@@ -196,7 +196,7 @@ namespace EA {
                 break;
             default:
                 if (FLAGS_enable_print_convert_log) {
-                    DB_WARNING("Invalid charset[%d]", charset);
+                    TLOG_WARN("Invalid charset[{}]", static_cast<int>(charset));
                 }
                 return -1;
         }
@@ -212,7 +212,7 @@ namespace EA {
                 return q2b_tolower_utf8_with_index(word);
             default:
                 if (FLAGS_enable_print_convert_log) {
-                    DB_WARNING("Invalid charset[%d]", charset);
+                    TLOG_WARN("Invalid charset[{}]", static_cast<int>(charset));
                 }
                 break;
         }
@@ -229,7 +229,7 @@ namespace EA {
         std::string word_tmp;
         if (iconv_tls.utf8_to_gbk(&word[0] + bom_len, word.size() - bom_len, word_tmp) != 0) {
             if (FLAGS_enable_print_convert_log) {
-                DB_WARNING("Fail to convert utf8 to gbk, %s|%s", word.c_str(), word_tmp.c_str());
+                TLOG_WARN("Fail to convert utf8 to gbk, {}|{}", word.c_str(), word_tmp.c_str());
             }
             return -1;
         }
@@ -245,7 +245,7 @@ namespace EA {
         std::string word_tmp;
         if (iconv_tls.gbk_to_utf8(&word[0], word.size(), word_tmp) != 0) {
             if (FLAGS_enable_print_convert_log) {
-                DB_WARNING("Fail to convert gbk to utf8, %s|%s", word.c_str(), word_tmp.c_str());
+                TLOG_WARN("Fail to convert gbk to utf8, {}|{}", word.c_str(), word_tmp.c_str());
             }
             return -1;
         }
@@ -289,7 +289,7 @@ namespace EA {
                 if (_q2b_gbk.count(word.substr(fast, 2)) == 1) {
                     word[slow++] = _q2b_gbk[word.substr(fast++, 2)][0];
                     if (std::ispunct(word[slow - 1])) {
-                        DB_DEBUG("insert index %zd", slow - 1);
+                        TLOG_DEBUG("insert index {}", slow - 1);
                         if (MAJOR_SEP.count(word[slow - 1]) == 1) {
                             sep_indexs.emplace_back(slow - 1, SeperateType::ST_MAJOR);
                         } else {
@@ -474,14 +474,14 @@ namespace EA {
             } else if (word[i] == delim) {
                 if (i - last > 0) {
                     split_word.push_back(word.substr(last, i - last));
-                    //DB_NOTICE("push i %d last %d %s",i, last, split_word.back().c_str());
+                    //TLOG_INFO("push i {} last {} {}",i, last, split_word.back().c_str());
                 }
                 last = i + 1;
             }
         }
         if (i - last > 0) {
             split_word.push_back(word.substr(last, i - last));
-            //DB_NOTICE("push i %d last %d %s",i, last, split_word.back().c_str());
+            //TLOG_INFO("push i {} last {} {}",i, last, split_word.back().c_str());
         }
     }
 
@@ -797,4 +797,3 @@ namespace EA {
 
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

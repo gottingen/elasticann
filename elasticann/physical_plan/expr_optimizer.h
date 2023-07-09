@@ -22,38 +22,41 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-class ExprOptimize {
-public:
-    /* 表达式类型推导
-     * agg tuple类型推导
-     * const表达式求值
-     */
-    int analyze(QueryContext* ctx) {
-        ExecNode* plan = ctx->root;
-        PacketNode* packet_node = static_cast<PacketNode*>(plan->get_node(proto::PACKET_NODE));
-        if (packet_node == nullptr) {
-            return -1;
-        }
-        int ret = 0;
-        if (packet_node->op_type() == proto::OP_UNION) {
-            analyze_union(ctx, packet_node);
-        }
-        
-        if (ctx->has_derived_table) {
-            ret = analyze_derived_table(ctx, packet_node);
-            if (ret < 0) {
-                return ret;
+
+    class ExprOptimize {
+    public:
+        /* 表达式类型推导
+         * agg tuple类型推导
+         * const表达式求值
+         */
+        int analyze(QueryContext *ctx) {
+            ExecNode *plan = ctx->root;
+            PacketNode *packet_node = static_cast<PacketNode *>(plan->get_node(proto::PACKET_NODE));
+            if (packet_node == nullptr) {
+                return -1;
             }
+            int ret = 0;
+            if (packet_node->op_type() == proto::OP_UNION) {
+                analyze_union(ctx, packet_node);
+            }
+
+            if (ctx->has_derived_table) {
+                ret = analyze_derived_table(ctx, packet_node);
+                if (ret < 0) {
+                    return ret;
+                }
+            }
+            ret = plan->expr_optimize(ctx);
+            if (ret == NOT_BOOL_ERRCODE) {
+                ctx->stat_info.error_code = ER_SQL_REFUSE;
+                ctx->stat_info.error_msg << "expression with non bool type";
+            }
+            return ret;
         }
-        ret = plan->expr_optimize(ctx);
-        if (ret == NOT_BOOL_ERRCODE) {
-            ctx->stat_info.error_code = ER_SQL_REFUSE;
-            ctx->stat_info.error_msg << "expression with non bool type";
-        }
-        return ret;
-    }
-    static void analyze_union(QueryContext* ctx, PacketNode* packet_node);
-    static int analyze_derived_table(QueryContext* ctx, PacketNode* packet_node);
-};
+
+        static void analyze_union(QueryContext *ctx, PacketNode *packet_node);
+
+        static int analyze_derived_table(QueryContext *ctx, PacketNode *packet_node);
+    };
 }
 

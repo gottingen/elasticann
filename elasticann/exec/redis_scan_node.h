@@ -24,26 +24,31 @@
 #include <brpc/redis.h>
 
 namespace EA {
-// 一个支持redis get的简单示例
-class RedisScanNode : public ScanNode {
-public:
-    RedisScanNode() {
-    }
-    virtual int init(const proto::PlanNode& node);
-    virtual int get_next(RuntimeState* state, RowBatch* batch, bool* eos);
-    virtual int open(RuntimeState* state);
-    virtual void close(RuntimeState* state);
-private:
-    // 对于kv来说，只需要改这个函数，就能支持其他的类似kv需求
-    // SmartRecord是kv数据源与BaikalDB的接口，是一个pb封装
-    // 与建表的字段一一对应
-    int get_by_key(SmartRecord record);
+    // 一个支持redis get的简单示例
+    class RedisScanNode : public ScanNode {
+    public:
+        RedisScanNode() {
+        }
 
-private:
-    brpc::Channel _redis_channel;
-    std::vector<SmartRecord> _primary_records;
-    size_t _idx = 0;
-    int64_t _index_id;
-};
+        virtual int init(const proto::PlanNode &node);
+
+        virtual int get_next(RuntimeState *state, RowBatch *batch, bool *eos);
+
+        virtual int open(RuntimeState *state);
+
+        virtual void close(RuntimeState *state);
+
+    private:
+        // 对于kv来说，只需要改这个函数，就能支持其他的类似kv需求
+        // SmartRecord是kv数据源与BaikalDB的接口，是一个pb封装
+        // 与建表的字段一一对应
+        int get_by_key(SmartRecord record);
+
+    private:
+        brpc::Channel _redis_channel;
+        std::vector<SmartRecord> _primary_records;
+        size_t _idx = 0;
+        int64_t _index_id;
+    };
 }
 

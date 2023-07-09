@@ -112,7 +112,7 @@ namespace EA {
 
     bool ShowHelper::execute(const SmartSocket &client) {
         if (client == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -150,7 +150,7 @@ namespace EA {
 
     bool ShowHelper::_show_abnormal_regions(const SmartSocket &client, const std::vector<std::string> &split_vec_arg) {
         if (client == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -183,7 +183,7 @@ namespace EA {
         }
         proto::QueryResponse res;
         MetaServerInteract::get_instance()->send_request("query", req, res);
-        //DB_WARNING("res:%s", res.ShortDebugString().c_str());
+        //TLOG_WARN("res:{}", res.ShortDebugString().c_str());
         std::vector<std::vector<std::string> > rows;
         rows.reserve(10);
         size_t max_size = 0;
@@ -233,7 +233,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -244,7 +244,7 @@ namespace EA {
 
     bool ShowHelper::_show_collation(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -318,7 +318,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to package mysql common result.");
+            TLOG_ERROR("{}, Failed to package mysql common result.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -329,7 +329,7 @@ namespace EA {
 
     bool ShowHelper::_show_databases(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr || !client->user_info) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -350,7 +350,7 @@ namespace EA {
         rows.reserve(10);
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (!factory) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
         std::vector<std::string> dbs = factory->get_db_list(client->user_info->all_database);
@@ -362,7 +362,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -374,7 +374,7 @@ namespace EA {
     bool ShowHelper::_show_tables(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || client->user_info == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -385,7 +385,7 @@ namespace EA {
             db = split_vec[3];
         }
         if (db == "") {
-            DB_WARNING("no database selected");
+            TLOG_WARN("no database selected");
             _wrapper->make_err_packet(client, ER_NO_DB_ERROR, "No database selected");
             client->state = STATE_READ_QUERY_RESULT;
             return false;
@@ -412,7 +412,7 @@ namespace EA {
         std::vector<std::string> tables = factory->get_table_list(
                 namespace_, db, client->user_info.get());
         for (uint32_t cnt = 0; cnt < tables.size(); ++cnt) {
-            //DB_NOTICE("table:%s", tables[cnt].c_str());
+            //TLOG_INFO("table:{}", tables[cnt].c_str());
             std::vector<std::string> row;
             row.emplace_back(tables[cnt]);
             rows.emplace_back(row);
@@ -420,8 +420,8 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
-            _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "%s", client->query_ctx->sql.c_str());
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
+            _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "{}", client->query_ctx->sql.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -432,7 +432,7 @@ namespace EA {
     bool ShowHelper::_show_create_table(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || client->user_info == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -661,15 +661,15 @@ namespace EA {
             if (info.partition_ptr != nullptr) {
                 oss << info.partition_ptr->to_str();
             } else {
-                DB_WARNING_CLIENT(client, "partition info is null");
+                TLOG_WARN("{}, partition info is null", *client);
             }
         }
         row.emplace_back(oss.str());
         rows.emplace_back(row);
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
-            _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "%s", client->query_ctx->sql.c_str());
+            TLOG_ERROR("{}, Failed to make result packet." ,*client);
+            _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "{}", client->query_ctx->sql.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -731,7 +731,7 @@ namespace EA {
                   });
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -812,18 +812,18 @@ namespace EA {
             const SmartSocket &sock = epoll_info->get_fd_mapping(idx);
             if (sock == nullptr || sock->is_free || sock->fd == -1 || sock->ip == "") {
                 if (sock != nullptr) {
-                    DB_WARNING_CLIENT(sock, "processlist, free:%d", sock->is_free);
+                    TLOG_WARN("{}, processlist, free:{}", *sock, sock->is_free);
                 }
                 continue;
             }
             if (!sock->user_info || !sock->query_ctx) {
-                DB_FATAL("param invalid");
+                TLOG_ERROR("param invalid");
                 return false;
             }
             if (only_show_doing_sql && sock->query_ctx->sql.size() == 0) {
                 continue;
             }
-            DB_WARNING_CLIENT(sock, "processlist, free:%d", sock->is_free);
+            TLOG_WARN("{}, processlist, free:{}", *sock, sock->is_free);
             std::vector<std::string> row;
             row.emplace_back(std::to_string(sock->conn_id));
             row.emplace_back(sock->user_info->username);
@@ -850,7 +850,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -861,7 +861,7 @@ namespace EA {
 
     bool ShowHelper::_show_warnings(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -894,7 +894,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to package mysql common result.");
+            TLOG_ERROR("{}, Failed to package mysql common result.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -906,7 +906,7 @@ namespace EA {
     bool ShowHelper::_show_cost(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -922,14 +922,14 @@ namespace EA {
         } else {
             factory->table_with_statistics_info(database_table);
         }
-        DB_WARNING("show cost");
+        TLOG_WARN("show cost");
         std::vector<std::vector<std::string> > rows;
         rows.reserve(10);
         for (auto &d_t_name: database_table) {
-            DB_WARNING("%s", d_t_name.c_str());
+            TLOG_WARN("{}", d_t_name.c_str());
             std::vector<std::string> split_vec = turbo::StrSplit(d_t_name, turbo::ByChar('.'));
             if (split_vec.size() != 3) {
-                DB_FATAL("databae table name:%s", d_t_name.c_str());
+                TLOG_ERROR("databae table name:{}", d_t_name.c_str());
                 continue;
             }
             rows.emplace_back(split_vec);
@@ -947,7 +947,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -962,13 +962,13 @@ namespace EA {
         re2::RE2::Options option;
         std::unique_ptr<re2::RE2> regex_ptr;
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (factory == nullptr || client == nullptr || client->user_info == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1003,7 +1003,7 @@ namespace EA {
         }
 
         if (current_db == "") {
-            DB_WARNING("no database selected");
+            TLOG_WARN("no database selected");
             _wrapper->make_err_packet(client, ER_NO_DB_ERROR, "No database selected");
             client->state = STATE_READ_QUERY_RESULT;
             return false;
@@ -1035,12 +1035,12 @@ namespace EA {
         rows.reserve(10);
         std::vector<std::string> tables = factory->get_table_list(
                 namespace_, current_db, client->user_info.get());
-        //DB_NOTICE("db:%s table.size:%d", current_db.c_str(), tables.size());
+        //TLOG_INFO("db:{} table.size:{}", current_db.c_str(), tables.size());
         for (uint32_t cnt = 0; cnt < tables.size(); ++cnt) {
-            //DB_NOTICE("table:%s", tables[cnt].c_str());
+            //TLOG_INFO("table:{}", tables[cnt].c_str());
             if (is_like_pattern) {
                 if (!RE2::FullMatch(tables[cnt], *regex_ptr)) {
-                    DB_NOTICE("not match");
+                    TLOG_INFO("not match");
                     continue;
                 }
             }
@@ -1052,8 +1052,8 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
-            _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "%s", client->query_ctx->sql.c_str());
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
+            _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "{}", client->query_ctx->sql.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -1064,7 +1064,7 @@ namespace EA {
     bool ShowHelper::_show_full_columns(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->user_info == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -1210,7 +1210,7 @@ namespace EA {
                                                                  turbo::SkipEmpty());
             if (is_like_pattern) {
                 if (!RE2::FullMatch(split_vec[split_vec.size() - 1], *regex_ptr)) {
-                    DB_NOTICE("not match");
+                    TLOG_INFO("not match");
                     continue;
                 }
             }
@@ -1240,7 +1240,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1252,7 +1252,7 @@ namespace EA {
     bool ShowHelper::_show_table_status(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->user_info == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -1408,7 +1408,7 @@ namespace EA {
             return false;
         }
         if (db == "") {
-            DB_WARNING("no database selected");
+            TLOG_WARN("no database selected");
             _wrapper->make_err_packet(client, ER_NO_DB_ERROR, "No database selected");
             client->state = STATE_READ_QUERY_RESULT;
             return false;
@@ -1444,7 +1444,7 @@ namespace EA {
                 if (_make_common_resultset_packet(client,
                                                   fields,
                                                   assign_table == "" ? _table_info_cache[key] : assign_rows) != 0) {
-                    DB_FATAL_CLIENT(client, "Failed to make result packet.");
+                    TLOG_ERROR("{}, Failed to make result packet.", *client);
                     _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
                     client->state = STATE_ERROR;
                     return false;
@@ -1501,7 +1501,7 @@ namespace EA {
         if (_make_common_resultset_packet(client,
                                           fields,
                                           assign_table == "" ? rows : assign_rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1513,7 +1513,7 @@ namespace EA {
     bool ShowHelper::_show_schema_conf(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -1534,14 +1534,14 @@ namespace EA {
 
         std::vector<std::string> database_table;
         factory->get_schema_conf_open(split_vec[2], database_table);
-        DB_WARNING("show schema_conf: %s", split_vec[2].c_str());
+        TLOG_WARN("show schema_conf: {}", split_vec[2].c_str());
         std::vector<std::vector<std::string> > rows;
         rows.reserve(10);
         for (auto &d_t_name: database_table) {
-            DB_WARNING("%s", d_t_name.c_str());
+            TLOG_WARN("{}", d_t_name.c_str());
             std::vector<std::string> split_vec = turbo::StrSplit(d_t_name, turbo::ByChar('.'));
             if (split_vec.size() != 3 && split_vec.size() != 4) {
-                DB_FATAL("database table name:%s", d_t_name.c_str());
+                TLOG_ERROR("database table name:{}", d_t_name.c_str());
                 continue;
             }
             rows.emplace_back(split_vec);
@@ -1565,7 +1565,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1635,7 +1635,7 @@ namespace EA {
                   });
 
         if (_make_common_resultset_packet(client, result_fields, result_rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1720,7 +1720,7 @@ namespace EA {
                   });
 
         if (_make_common_resultset_packet(client, result_fields, resutl_res_final) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1732,7 +1732,7 @@ namespace EA {
     bool ShowHelper::_show_binlogs_info(const SmartSocket &client, const std::vector<std::string> &split_params) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (factory == nullptr) {
-            DB_WARNING("factory is null, need check");
+            TLOG_WARN("factory is null, need check");
             return false;
         }
 
@@ -1743,7 +1743,7 @@ namespace EA {
             return false;
         } else if (split_params.size() == 3) {
             if (split_params[2] == "detailed") {
-                DB_WARNING("input parameter does not contain table_name");
+                TLOG_WARN("input parameter does not contain table_name");
                 return false;
             }
             input_table_name = split_params[2];
@@ -1756,7 +1756,7 @@ namespace EA {
                 input_partition_id = strtoll(split_params[3].c_str(), nullptr, 10);
             }
         } else if (split_params.size() > 4) {
-            DB_WARNING("input parameters counts is above four");
+            TLOG_WARN("input parameters counts is above four");
             return false;
         }
 
@@ -1827,7 +1827,7 @@ namespace EA {
     bool ShowHelper::_show_all_tables(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -1867,16 +1867,16 @@ namespace EA {
         if (type_func_map[split_vec[2]] != nullptr) {
             factory->get_table_by_filter(database_table, type_func_map[split_vec[2]]);
         } else {
-            DB_WARNING("not support type:%s", split_vec[2].c_str());
+            TLOG_WARN("not support type:{}", split_vec[2].c_str());
             return false;
         }
         std::vector<std::vector<std::string> > rows;
         rows.reserve(10);
         for (auto &d_t_name: database_table) {
-            DB_WARNING("%s", d_t_name.c_str());
+            TLOG_WARN("{}", d_t_name.c_str());
             std::vector<std::string> split_vec = turbo::StrSplit(d_t_name, turbo::ByChar('.'));
             if (split_vec.size() != 6) {
-                DB_FATAL("database table name:%s", d_t_name.c_str());
+                TLOG_ERROR("database table name:{}", d_t_name.c_str());
                 continue;
             }
             rows.emplace_back(split_vec);
@@ -1895,7 +1895,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1907,7 +1907,7 @@ namespace EA {
     bool ShowHelper::_show_region(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (factory == nullptr || client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -1932,7 +1932,7 @@ namespace EA {
             }
         }
         int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
-        DB_WARNING("table_id:%ld, region_id: %ld", table_id, region_id);
+        TLOG_WARN("table_id:{}, region_id: {}", table_id, region_id);
 
         // Make fields.
         std::vector<ResultField> fields;
@@ -1977,12 +1977,12 @@ namespace EA {
             row.emplace_back(region_info.ShortDebugString().c_str());
             rows.emplace_back(row);
         } else {
-            DB_WARNING("region: %ld does not exist", region_id);
+            TLOG_WARN("region: {} does not exist", region_id);
         }
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -1994,7 +1994,7 @@ namespace EA {
     bool ShowHelper::_show_store_region(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -2005,7 +2005,7 @@ namespace EA {
         }
         std::string store_addr = split_vec[3];
         int64_t region_id = strtoll(split_vec[4].c_str(), nullptr, 10);
-        DB_WARNING("region_id: %ld", region_id);
+        TLOG_WARN("region_id: {}", region_id);
 
         // Make fields.
         std::vector<ResultField> fields;
@@ -2057,12 +2057,12 @@ namespace EA {
             row.emplace_back(region_info.ShortDebugString().c_str());
             rows.emplace_back(row);
         } else {
-            DB_WARNING("region: %ld does not exist", region_id);
+            TLOG_WARN("region: {} does not exist", region_id);
         }
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2074,7 +2074,7 @@ namespace EA {
     bool ShowHelper::_show_virtual_index(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -2120,7 +2120,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2132,7 +2132,7 @@ namespace EA {
     bool ShowHelper::_show_variables(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         // type == SQL_SHOW_NUM
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -2275,7 +2275,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2287,13 +2287,13 @@ namespace EA {
     bool ShowHelper::_show_user(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (factory == nullptr || client == nullptr || split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
         auto info = factory->get_user_info(split_vec[2]);
         if (info == nullptr) {
-            DB_WARNING("user name not exist [%s]", split_vec[2].c_str());
+            TLOG_WARN("user name not exist [{}]", split_vec[2].c_str());
             _wrapper->make_err_packet(client, ER_NO_SUCH_USER, "No Such User");
             client->state = STATE_READ_QUERY_RESULT;
             return false;
@@ -2332,7 +2332,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2344,14 +2344,14 @@ namespace EA {
     bool ShowHelper::_show_privilege(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (factory == nullptr || client == nullptr || split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
         const std::string &username = split_vec[2];
         auto info = factory->get_user_info(username);
         if (info == nullptr) {
-            DB_WARNING("user name not exist [%s]", username.c_str());
+            TLOG_WARN("user name not exist [{}]", username.c_str());
             _wrapper->make_err_packet(client, ER_NO_SUCH_USER, "No Such User");
             client->state = STATE_READ_QUERY_RESULT;
             return false;
@@ -2402,7 +2402,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2414,7 +2414,7 @@ namespace EA {
     bool ShowHelper::_show_store_txn(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -2425,7 +2425,7 @@ namespace EA {
         }
         std::string store_addr = split_vec[2];
         int64_t region_id = strtoll(split_vec[3].c_str(), nullptr, 10);
-        DB_WARNING("region_id: %ld", region_id);
+        TLOG_WARN("region_id: {}", region_id);
 
         // Make fields.
         std::vector<ResultField> fields;
@@ -2456,7 +2456,7 @@ namespace EA {
         proto::StoreRes res;
         StoreInteract interact(store_addr);
         interact.send_request("query", req, res);
-        DB_WARNING("req:%s res:%s", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
         proto::RegionInfo region_info;
         for (auto txn_info: res.txn_infos()) {
             std::vector<std::string> row;
@@ -2473,7 +2473,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2504,7 +2504,7 @@ namespace EA {
 
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -2515,7 +2515,7 @@ namespace EA {
         } else if (split_vec.size() == 4 && turbo::EqualsIgnoreCase(split_vec[3], "column")) {
             show_column_ddl = true;
         } else if (split_vec.size() != 3) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             client->state = STATE_ERROR;
             return false;
         }
@@ -2523,13 +2523,13 @@ namespace EA {
         int64_t table_id;
         std::string full_name = client->user_info->namespace_ + "." + client->current_db + "." + table_name;
         if (factory->get_table_id(full_name, table_id) != 0) {
-            DB_FATAL("param invalid, no such table with table name: %s", full_name.c_str());
+            TLOG_ERROR("param invalid, no such table with table name: {}", full_name.c_str());
             client->state = STATE_ERROR;
             return false;
         }
         IndexInfo pri_info = factory->get_index_info(table_id);
         if (pri_info.id == -1) {
-            DB_FATAL("param invalid, no such table with table name: %s", full_name.c_str());
+            TLOG_ERROR("param invalid, no such table with table name: {}", full_name.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -2563,7 +2563,7 @@ namespace EA {
         request.set_op_type(proto::QUERY_DDLWORK);
         request.set_table_id(table_id);
         MetaServerInteract::get_instance()->send_request("query", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (show_region) {
             int work_done_count = 0;
             int work_idle_count = 0;
@@ -2714,7 +2714,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2726,7 +2726,7 @@ namespace EA {
     bool ShowHelper::_show_diff_region_size(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -2743,7 +2743,7 @@ namespace EA {
             ignore = true;
         }
         int64_t table_id = strtoll(split_vec[2].c_str(), nullptr, 10);
-        DB_WARNING("table_id: %ld", table_id);
+        TLOG_WARN("table_id: {}", table_id);
 
         // Make fields.
         std::vector<ResultField> fields;
@@ -2824,7 +2824,7 @@ namespace EA {
         }
         cond.wait();
         if (err) {
-            DB_FATAL("error");
+            TLOG_ERROR("error");
             client->state = STATE_ERROR;
             return false;
         }
@@ -2879,7 +2879,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2891,7 +2891,7 @@ namespace EA {
     bool ShowHelper::_show_global_ddl_work(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -2925,7 +2925,7 @@ namespace EA {
         int64_t table_id;
         std::string full_name = client->user_info->namespace_ + "." + client->current_db + "." + table_name;
         if (factory->get_table_id(full_name, table_id) != 0) {
-            DB_FATAL("param invalid, no such table with table name: %s", full_name.c_str());
+            TLOG_ERROR("param invalid, no such table with table name: {}", full_name.c_str());
             client->state = STATE_ERROR;
             return false;
         }
@@ -2938,7 +2938,7 @@ namespace EA {
         request.set_op_type(proto::QUERY_INDEX_DDL_WORK);
         request.set_table_id(table_id);
         MetaServerInteract::get_instance()->send_request("query", request, response);
-        //DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        //TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
 
         auto index_info = factory->get_index_info(table_id);
         for (auto &ddl: response.region_ddl_infos()) {
@@ -2968,7 +2968,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -2980,7 +2980,7 @@ namespace EA {
     bool ShowHelper::_show_partition_table(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             return false;
         }
 
@@ -3021,7 +3021,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3032,7 +3032,7 @@ namespace EA {
 
     bool ShowHelper::_show_network_segment(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3077,7 +3077,7 @@ namespace EA {
         request.set_op_type(proto::QUERY_NETWORK_SEGMENT);
         request.set_resource_tag(resource_tag);
         MetaServerInteract::get_instance()->send_request("query", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
 
         for (auto &info: response.instance_infos()) {
             std::vector<std::string> row = {info.resource_tag(), info.network_segment(), info.address()};
@@ -3085,7 +3085,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3096,7 +3096,7 @@ namespace EA {
 
     bool ShowHelper::_show_switch(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3129,7 +3129,7 @@ namespace EA {
         request.set_op_type(proto::QUERY_RESOURCE_TAG_SWITCH);
         request.set_resource_tag(resource_tag);
         MetaServerInteract::get_instance()->send_request("query", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         for (auto &info: response.resource_tag_infos()) {
             std::vector<std::string> row = {info.resource_tag(),
                                             info.peer_load_balance() ? "true" : "false",
@@ -3139,7 +3139,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3150,7 +3150,7 @@ namespace EA {
 
     bool ShowHelper::_show_instance_param(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr || client->query_ctx == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3181,7 +3181,7 @@ namespace EA {
         request.set_op_type(proto::QUERY_INSTANCE_PARAM);
         request.set_resource_tag(resource_tag_or_instance);
         MetaServerInteract::get_instance()->send_request("query", request, response);
-        DB_WARNING("req:%s res:%s", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
+        TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         for (auto &info: response.instance_params()) {
             for (auto &kv: info.params()) {
                 std::vector<std::string> row = {info.resource_tag_or_address(),
@@ -3193,7 +3193,7 @@ namespace EA {
         }
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3204,7 +3204,7 @@ namespace EA {
 
     bool ShowHelper::_show_engines(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3229,7 +3229,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3240,7 +3240,7 @@ namespace EA {
 
     bool ShowHelper::_show_charset(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3261,7 +3261,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3274,7 +3274,7 @@ namespace EA {
         // not-support yet: [WHERE expr]
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->user_info == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3358,7 +3358,7 @@ namespace EA {
     bool ShowHelper::_show_abnormal_switch(const SmartSocket &client, const std::vector<std::string> &split_vec) {
         SchemaFactory *factory = SchemaFactory::get_instance();
         if (client == nullptr || client->query_ctx == nullptr || factory == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3429,7 +3429,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3450,7 +3450,7 @@ namespace EA {
             std::vector<std::string> indexs;
             indexs.reserve(10);
             if (SchemaFactory::get_instance()->get_disable_indexs(indexs) != 0) {
-                DB_WARNING("get disable index error.");
+                TLOG_WARN("get disable index error.");
             }
             return _handle_client_query_template(client, "Disable Indexs", MYSQL_TYPE_VARCHAR,
                                                  indexs);
@@ -3462,7 +3462,7 @@ namespace EA {
                                                    const std::string &field_name, int32_t data_type,
                                                    const std::vector<std::string> &values) {
         if (client == nullptr) {
-            DB_FATAL("param invalid");
+            TLOG_ERROR("param invalid");
             //client->state = STATE_ERROR;
             return false;
         }
@@ -3490,7 +3490,7 @@ namespace EA {
 
         // Make mysql packet.
         if (_make_common_resultset_packet(client, fields, rows) != 0) {
-            DB_FATAL_CLIENT(client, "Failed to make result packet.");
+            TLOG_ERROR("{}, Failed to make result packet.", *client);
             _wrapper->make_err_packet(client, ER_MAKE_RESULT_PACKET, "Failed to make result packet.");
             client->state = STATE_ERROR;
             return false;
@@ -3503,22 +3503,22 @@ namespace EA {
                                                   std::vector<ResultField> &fields,
                                                   const std::vector<std::vector<std::string>> &rows) {
         if (!sock || !sock->send_buf) {
-            DB_FATAL("sock == nullptr.");
+            TLOG_ERROR("sock == nullptr.");
             return RET_ERROR;
         }
         if (fields.size() == 0) {
-            DB_FATAL("Field size is 0.");
+            TLOG_ERROR("Field size is 0.");
             return RET_ERROR;
         }
 
         //Result Set Header Packet
         int start_pos = sock->send_buf->_size;
         if (!sock->send_buf->byte_array_append_len((const uint8_t *) "\x01\x00\x00\x01", 4)) {
-            DB_FATAL("byte_array_append_len failed.");
+            TLOG_ERROR("byte_array_append_len failed.");
             return RET_ERROR;
         }
         if (!sock->send_buf->byte_array_append_length_coded_binary(fields.size())) {
-            DB_FATAL("byte_array_append_len failed. len:[%lu]", fields.size());
+            TLOG_ERROR("byte_array_append_len failed. len:[{}]", fields.size());
             return RET_ERROR;
         }
         int packet_body_len = sock->send_buf->_size - start_pos - 4;
@@ -3545,7 +3545,7 @@ namespace EA {
         for (uint32_t cnt = 0; cnt < rows.size(); ++cnt) {
             // Make row data packet
             if (!_wrapper->make_row_packet(sock->send_buf, rows[cnt], ++sock->packet_id)) {
-                DB_FATAL("make_row_packet failed");
+                TLOG_ERROR("make_row_packet failed");
                 return RET_ERROR;
             }
         }
@@ -3565,16 +3565,16 @@ namespace EA {
         re2::RE2 reg("family_table_tag_optype_plat=\\[(.*)\t(.*)\t.*\t.*\t.*sql=\\[(.*)\\]", option);
 
         if (!RE2::Extract(sample_sql, reg, "\\1", &database)) {
-            DB_WARNING("extract commit error.");
+            TLOG_WARN("extract commit error.");
         }
         if (!RE2::Extract(sample_sql, reg, "\\2", &table)) {
-            DB_WARNING("extract commit error.");
+            TLOG_WARN("extract commit error.");
         }
         if (!RE2::Extract(sample_sql, reg, "\\3", &sql)) {
-            DB_WARNING("extract commit error.");
+            TLOG_WARN("extract commit error.");
         }
 
-        DB_WARNING("sample_sql: %s, database: %s, table: %s, sql: %s", sample_sql.c_str(), database.c_str(),
+        TLOG_WARN("sample_sql: {}, database: {}, table: {}, sql: {}", sample_sql.c_str(), database.c_str(),
                    table.c_str(), sql.c_str());
     }
 }

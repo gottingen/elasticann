@@ -19,27 +19,8 @@
 #include "elasticann/store/store.h"
 
 namespace EA {
-void CanAddPeerSetter::set_can_add_peer(int64_t region_id) {
-    Store::get_instance()->set_can_add_peer_for_region(region_id);
-}
-}
+    void CanAddPeerSetter::set_can_add_peer(int64_t region_id) {
+        Store::get_instance()->set_can_add_peer_for_region(region_id);
+    }
+}  // namespace EA
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

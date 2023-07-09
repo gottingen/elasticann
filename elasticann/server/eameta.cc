@@ -29,10 +29,10 @@
 #include "turbo/strings/str_split.h"
 
 namespace EA {
-DECLARE_int32(meta_port);
-DECLARE_string(meta_listen);
-DECLARE_string(meta_server_bns);
-DECLARE_int32(meta_replica_number);
+    DECLARE_int32(meta_port);
+    DECLARE_string(meta_listen);
+    DECLARE_string(meta_server_bns);
+    DECLARE_int32(meta_replica_number);
 }
 
 int main(int argc, char **argv) {
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
         return -1;
     }
     TLOG_INFO("add raft to baidu-rpc server success");
-   
+
     int ret = 0;
     //this step must be before server.Start
     std::vector<braft::PeerId> peers;
@@ -67,13 +67,13 @@ int main(int argc, char **argv) {
     bool use_bns = false;
     //指定的是ip:port的形式
     std::vector<std::string> list_raft_peers = turbo::StrSplit(EA::FLAGS_meta_server_bns, ',');
-    for (auto & raft_peer : list_raft_peers) {
+    for (auto &raft_peer: list_raft_peers) {
         TLOG_INFO("raft_peer:{}", raft_peer.c_str());
         braft::PeerId peer(raft_peer);
         peers.push_back(peer);
     }
-     
-    EA::MetaServer* meta_server = EA::MetaServer::get_instance();
+
+    EA::MetaServer *meta_server = EA::MetaServer::get_instance();
     //注册处理meta逻辑的service服务
     if (0 != server.AddService(meta_server, brpc::SERVER_DOESNT_OWN_SERVICE)) {
         TLOG_ERROR("Fail to Add idonlyeService");
@@ -114,4 +114,3 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

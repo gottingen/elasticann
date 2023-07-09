@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (0 != desc->init(tuple_desc)) {
-        DB_WARNING("init failed");
+        TLOG_WARN("init failed");
         return -1;
     }
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         messages.push_back(msg);
     }
 
-    DB_WARNING("create message success");
+    TLOG_WARN("create message success");
 
     sleep(20);
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     }
     delete desc;
 
-    DB_WARNING("delete message success");
+    TLOG_WARN("delete message success");
 
     sleep(30);
 

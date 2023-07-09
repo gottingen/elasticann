@@ -19,8 +19,7 @@
 
 namespace EA {
 
-extern int register_myraft_extension();
+    extern int register_myraft_extension();
 
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

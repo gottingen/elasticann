@@ -37,9 +37,6 @@ gottingen/brpc@t_dev -DWITH_GLOG=OFF -DDOWNLOAD_GTEST=OFF -DCMAKE_BUILD_TYPE=rel
 ###################
 # braft
 gottingen/braft@titan_dev -DBRPC_WITH_GLOG=OFF -DWITH_DEBUG_SYMBOLS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=release
-##############
-# boost
-boost,http://downloads.sourceforge.net/project/boost/boost/1.63.0/boost_1_63_0.tar.bz2 --cmake boost -DBOOST_WITHOUT_PYTHON=1
 #############
 # sql client
-MariaDB/mariadb-connector-c@v3.2.0 -DWITH_MYSQLCOMPAT=OFF -DWITH_EXTERNAL_ZLIB=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=release
+#MariaDB/mariadb-connector-c@v3.2.0 -DWITH_MYSQLCOMPAT=OFF -DWITH_EXTERNAL_ZLIB=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=release

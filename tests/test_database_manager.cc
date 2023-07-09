@@ -33,12 +33,12 @@ public:
     DatabaseManagerTest() {
         _rocksdb = EA::MetaRocksdb::get_instance();
         if (!_rocksdb) {
-            DB_FATAL("create rocksdb handler failed");
+            TLOG_ERROR("create rocksdb handler failed");
             return;
         }
         int ret = _rocksdb->init();
         if (ret != 0) {
-            DB_FATAL("rocksdb init failed: code:%d", ret);
+            TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return;
         }
         _namespace_manager = EA::NamespaceManager::get_instance();
@@ -81,7 +81,7 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -95,7 +95,7 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[1].version());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_namespace_info_map[2].version());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
 
     int64_t max_namespace_id = _namespace_manager->get_max_namespace_id();
@@ -137,10 +137,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_id_map.size());
@@ -151,10 +151,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -168,10 +168,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_id_map.size());
@@ -182,10 +182,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(1, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
 
     //测试点：修改database的quota
@@ -204,10 +204,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_id_map.size());
@@ -218,10 +218,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_info_map[1].version());
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -234,10 +234,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(3, _database_manager->_database_id_map.size());
@@ -248,10 +248,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
     _database_manager->add_table_id(1, 1);
     DOCTEST_REQUIRE_EQ(1, _database_manager->_table_ids[1].size());
@@ -272,13 +272,13 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     EA::proto::QueryResponse response;
     query_request.set_op_type(EA::proto::QUERY_DATABASE);
     _query_database_manager->get_database_info(&query_request, &response);
-    DB_WARNING("database info: %s", response.DebugString().c_str());
+    TLOG_WARN("database info: {}", response.DebugString().c_str());
 
     response.clear_database_infos();
     query_request.set_namespace_name("FengChao");
     query_request.set_database("FC_Word");
     _query_database_manager->get_database_info(&query_request, &response);
-    DB_WARNING("database info: %s", response.DebugString().c_str());
+    TLOG_WARN("database info: {}", response.DebugString().c_str());
 
     int64_t database_id = _database_manager->get_database_id(std::string("FengChao") + "\001" + "FC_Word");
     DOCTEST_REQUIRE_EQ(database_id, 1);
@@ -301,10 +301,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_id_map.size());
@@ -314,10 +314,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_info_map[1].version());
     DOCTEST_REQUIRE_EQ(2, _database_manager->_table_ids.size());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -330,10 +330,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _namespace_manager->_database_ids[2].size());
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_id_map.size());
@@ -343,10 +343,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
 
     EA::proto::MetaManagerRequest request_drop_namespace;
@@ -364,10 +364,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids[1].size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_id_map.size());
@@ -377,10 +377,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_info_map[1].version());
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
     //做snapshot, 验证snapshot的正确性
     _schema_manager->load_snapshot();
@@ -391,10 +391,10 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_database_ids[1].size());
     DOCTEST_REQUIRE_EQ(1, _namespace_manager->_database_ids.size());
     for (auto &ns_mem: _namespace_manager->_namespace_info_map) {
-        DB_WARNING("NameSpacePb:%s", ns_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     for (auto &ns_id: _namespace_manager->_namespace_id_map) {
-        DB_WARNING("namespace_id:%ld, name:%s", ns_id.second, ns_id.first.c_str());
+        TLOG_WARN("namespace_id:{}, name:{}", ns_id.second, ns_id.first.c_str());
     }
     DOCTEST_REQUIRE_EQ(3, _database_manager->_max_database_id);
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_id_map.size());
@@ -404,9 +404,9 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids.size());
     DOCTEST_REQUIRE_EQ(2, _database_manager->_database_info_map[1].version());
     for (auto &db_mem: _database_manager->_database_info_map) {
-        DB_WARNING("DatabasePb:%s", db_mem.second.ShortDebugString().c_str());
+        TLOG_WARN("DatabasePb:{}", db_mem.second.ShortDebugString().c_str());
     }
     for (auto &db_id: _database_manager->_database_id_map) {
-        DB_WARNING("database_id:%ld, name:%s", db_id.second, db_id.first.c_str());
+        TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
 } // DOCTEST_TEST_CASE_FIXTURE

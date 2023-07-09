@@ -76,7 +76,7 @@ namespace EA {
             if (rex.ok()) {
                 set_internal_info();
             } else {
-                DB_WARNING("parser from string error [%s].", rex.ToString().c_str());
+                TLOG_WARN("parser from string error [{}].", rex.ToString().c_str());
             }
             return rex.ok();
         }
@@ -88,7 +88,7 @@ namespace EA {
             if (rex.ok()) {
                 set_internal_info();
             } else {
-                DB_WARNING("parser from array error [%s].", rex.ToString().c_str());
+                TLOG_WARN("parser from array error [{}].", rex.ToString().c_str());
             }
             return rex.ok();
         }
@@ -97,7 +97,7 @@ namespace EA {
             std::shared_ptr<arrow::Buffer> buffer;
             auto status = arrow::ipc::SerializeRecordBatch(*_result, arrow::default_memory_pool(), &buffer);
             if (!status.ok()) {
-                DB_WARNING("serializeToString error [%s].", status.ToString().c_str());
+                TLOG_WARN("serializeToString error [{}].", status.ToString().c_str());
                 return false;
             }
             *val = buffer->ToString();

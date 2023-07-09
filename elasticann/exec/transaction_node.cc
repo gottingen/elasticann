@@ -21,126 +21,127 @@
 #include "elasticann/protocol/network_server.h"
 
 namespace EA {
-int TransactionNode::init(const proto::PlanNode& node) {
-    int ret = 0;
-    ret = ExecNode::init(node);
-    if (ret < 0) {
-        DB_WARNING("ExecNode::init fail, ret:%d", ret);
-        return ret;
+    int TransactionNode::init(const proto::PlanNode &node) {
+        int ret = 0;
+        ret = ExecNode::init(node);
+        if (ret < 0) {
+            TLOG_WARN("ExecNode::init fail, ret:{}", ret);
+            return ret;
+        }
+        _txn_cmd = node.derive_node().transaction_node().txn_cmd();
+        _txn_timeout = node.derive_node().transaction_node().txn_timeout();
+        if (node.derive_node().transaction_node().has_txn_lock_timeout()) {
+            _txn_lock_timeout = node.derive_node().transaction_node().txn_lock_timeout();
+        }
+        return 0;
     }
-    _txn_cmd = node.derive_node().transaction_node().txn_cmd();
-    _txn_timeout = node.derive_node().transaction_node().txn_timeout();
-    if (node.derive_node().transaction_node().has_txn_lock_timeout()) {
-        _txn_lock_timeout = node.derive_node().transaction_node().txn_lock_timeout();
-    }
-    return 0;
-}
 
 //TODO set seq_id after rollback 
-int TransactionNode::open(RuntimeState* state) {
-    int64_t region_id = state->region_id();
-    int ret = 0;
-    TransactionPool* txn_pool = state->txn_pool();
-    if (_txn_cmd == proto::TXN_PREPARE
+    int TransactionNode::open(RuntimeState *state) {
+        int64_t region_id = state->region_id();
+        int ret = 0;
+        TransactionPool *txn_pool = state->txn_pool();
+        if (_txn_cmd == proto::TXN_PREPARE
             || _txn_cmd == proto::TXN_BEGIN_STORE
             || _txn_cmd == proto::TXN_COMMIT_STORE
             || _txn_cmd == proto::TXN_ROLLBACK_STORE) {
-        if (txn_pool == nullptr) {
-            DB_WARNING_STATE(state, "no txn_pool for store txn control cmd");
-            return -1;
+            if (txn_pool == nullptr) {
+                TLOG_WARN("{}, no txn_pool for store txn control cmd",*state);
+                return -1;
+            }
         }
-    }
-    if (_txn_cmd == proto::TXN_PREPARE) {
-        // for autocommit dml cmds
-        auto txn = txn_pool->get_txn(state->txn_id);
-        if (txn == nullptr) {
-            DB_WARNING_STATE(state, "get txn failed, no txn in pool, txn_id: %lu", state->txn_id);
-            return -1;
+        if (_txn_cmd == proto::TXN_PREPARE) {
+            // for autocommit dml cmds
+            auto txn = txn_pool->get_txn(state->txn_id);
+            if (txn == nullptr) {
+                TLOG_WARN("{}, get txn failed, no txn in pool, txn_id: {}", *state,state->txn_id);
+                return -1;
+            }
+            auto res = txn->prepare();
+            if (res.ok()) {
+                //TLOG_WARN("{}, prepare success, region_id: {}, txn_id: {}:{}", *state,region_id, state->txn_id, state->seq_id);
+                ret = txn->dml_num_affected_rows; // for autocommit dml, affected row is returned in commit node
+            } else if (res.IsExpired()) {
+                TLOG_WARN("{}, txn expired, region_id: {}, txn_id: {}:{}", *state,region_id, state->txn_id,
+                                 state->seq_id);
+                ret = -1;
+            } else {
+                TLOG_WARN("{}, unknown error: txn_id: {}:{}, errcode:{}, msg:{}",*state,
+                                 state->txn_id,
+                                 state->seq_id,
+                                 res.code(),
+                                 res.ToString().c_str());
+                ret = -1;
+            }
+            return ret;
+        } else if (_txn_cmd == proto::TXN_BEGIN_STORE) {
+            SmartTransaction txn;
+            ret = txn_pool->begin_txn(state->txn_id, txn, state->primary_region_id(), _txn_timeout, _txn_lock_timeout);
+            if (ret != 0) {
+                TLOG_WARN("{}, create txn failed: {}:{}", *state, state->txn_id, state->seq_id);
+                return -1;
+            }
+            state->set_txn(txn);
+            return 0;
+        } else if (_txn_cmd == proto::TXN_COMMIT_STORE) {
+            // TODO: commit failure requires infinite retry until succeed
+            auto txn = txn_pool->get_txn(state->txn_id);
+            if (txn == nullptr) {
+                TLOG_WARN("{}, get txn failed, no txn in pool, txn_id: {}", *state, state->txn_id);
+                return -1;
+            }
+            auto res = txn->commit();
+            if (res.ok()) {
+                //TLOG_WARN("{}, txn commit success, region_id: {}, txn_id: {}, seq_id:{}", *state,
+                //    region_id, state->txn_id, state->seq_id);
+                ret = txn->dml_num_affected_rows; // for autocommit dml, affected row is returned in commit node
+            } else if (res.IsExpired()) {
+                TLOG_WARN("{}, txn expired when commit, region_id: {}, txn_id: {}, seq_id:{}",*state,
+                                 region_id, state->txn_id, state->seq_id);
+                ret = -1;
+            } else {
+                TLOG_ERROR("unknown error, region_id: {}, txn_id: {}, err_code: {}, err_msg: {}",
+                         region_id, state->txn_id, res.code(), res.ToString().c_str());
+                ret = -1;
+            }
+            txn_pool->remove_txn(state->txn_id, true);
+            TxnLimitMap::get_instance()->erase(state->txn_id);
+            return ret;
+        } else if (_txn_cmd == proto::TXN_ROLLBACK_STORE) {
+            // TODO: rollback failure can be simply ignored
+            auto txn = txn_pool->get_txn(state->txn_id);
+            if (txn == nullptr) {
+                TLOG_WARN("{}, get txn failed, no txn in pool, txn_id: {}",*state, state->txn_id);
+                return -1;
+            }
+            auto res = txn->rollback();
+            if (res.ok()) {
+                TLOG_WARN("{}, txn rollback success, region_id: {}, txn_id: {}, seq_id:{}",*state,
+                                 region_id, state->txn_id, state->seq_id);
+            } else if (res.IsExpired()) {
+                TLOG_WARN("{}, txn expired when rollback, region_id: {}, txn_id: {}, seq_id:{}",*state,
+                                 region_id, state->txn_id, state->seq_id);
+            } else {
+                TLOG_ERROR("unknown error, region_id: {}, txn_id: {}, err_code: {}, err_msg: {}",
+                         region_id, state->txn_id, res.code(), res.ToString().c_str());
+            }
+            txn_pool->remove_txn(state->txn_id, true);
+            TxnLimitMap::get_instance()->erase(state->txn_id);
+            return 0;
         }
-        auto res = txn->prepare();
-        if (res.ok()) {
-            //DB_WARNING_STATE(state, "prepare success, region_id: %ld, txn_id: %lu:%d", region_id, state->txn_id, state->seq_id);
-            ret = txn->dml_num_affected_rows; // for autocommit dml, affected row is returned in commit node
-        } else if (res.IsExpired()) {
-            DB_WARNING_STATE(state, "txn expired, region_id: %ld, txn_id: %lu:%d", region_id, state->txn_id, state->seq_id);
-            ret = -1;
-        } else {
-            DB_WARNING_STATE(state, "unknown error: txn_id: %lu:%d, errcode:%d, msg:%s", 
-                state->txn_id, 
-                state->seq_id, 
-                res.code(), 
-                res.ToString().c_str());
-            ret = -1;
-        }
-        return ret;
-    } else if (_txn_cmd == proto::TXN_BEGIN_STORE) {
-        SmartTransaction txn;
-        ret = txn_pool->begin_txn(state->txn_id, txn, state->primary_region_id(), _txn_timeout, _txn_lock_timeout);
-        if (ret != 0) {
-            DB_WARNING_STATE(state, "create txn failed: %lu:%d", state->txn_id, state->seq_id);
-            return -1;
-        }
-        state->set_txn(txn);
         return 0;
-    } else if (_txn_cmd == proto::TXN_COMMIT_STORE) {
-        // TODO: commit failure requires infinite retry until succeed
-        auto txn = txn_pool->get_txn(state->txn_id);
-        if (txn == nullptr) {
-            DB_WARNING_STATE(state, "get txn failed, no txn in pool, txn_id: %lu", state->txn_id);
-            return -1;
-        }
-        auto res = txn->commit();
-        if (res.ok()) {
-            //DB_WARNING_STATE(state, "txn commit success, region_id: %ld, txn_id: %lu, seq_id:%d", 
-            //    region_id, state->txn_id, state->seq_id);
-            ret = txn->dml_num_affected_rows; // for autocommit dml, affected row is returned in commit node
-        } else if (res.IsExpired()) {
-            DB_WARNING_STATE(state, "txn expired when commit, region_id: %ld, txn_id: %lu, seq_id:%d", 
-                region_id, state->txn_id, state->seq_id);
-            ret = -1;
-        } else {
-            DB_FATAL("unknown error, region_id: %ld, txn_id: %lu, err_code: %d, err_msg: %s", 
-                region_id, state->txn_id, res.code(), res.ToString().c_str());
-            ret = -1;
-        }
-        txn_pool->remove_txn(state->txn_id, true);
-        TxnLimitMap::get_instance()->erase(state->txn_id);
-        return ret;
-    } else if (_txn_cmd == proto::TXN_ROLLBACK_STORE) {
-        // TODO: rollback failure can be simply ignored
-        auto txn = txn_pool->get_txn(state->txn_id);
-        if (txn == nullptr) {
-            DB_WARNING_STATE(state, "get txn failed, no txn in pool, txn_id: %lu", state->txn_id);
-            return -1;
-        }
-        auto res = txn->rollback();
-        if (res.ok()) {
-            DB_WARNING_STATE(state, "txn rollback success, region_id: %ld, txn_id: %lu, seq_id:%d", 
-                region_id, state->txn_id, state->seq_id);
-        } else if (res.IsExpired()) {
-            DB_WARNING_STATE(state, "txn expired when rollback, region_id: %ld, txn_id: %lu, seq_id:%d", 
-                region_id, state->txn_id, state->seq_id);
-        } else {
-            DB_FATAL("unknown error, region_id: %ld, txn_id: %lu, err_code: %d, err_msg: %s", 
-                region_id, state->txn_id, res.code(), res.ToString().c_str());
-        }
-        txn_pool->remove_txn(state->txn_id, true);
-        TxnLimitMap::get_instance()->erase(state->txn_id);
-        return 0;
     }
-    return 0;
-}
 
 // serialize a TransactionNode into protobuf PlanNode
-void TransactionNode::transfer_pb(int64_t region_id, proto::PlanNode* pb_node) {
-    ExecNode::transfer_pb(region_id, pb_node);
-    auto txn_node = pb_node->mutable_derive_node()->mutable_transaction_node();
-    txn_node->set_txn_cmd(_txn_cmd);
-    if (_txn_timeout != 0) {
-        txn_node->set_txn_timeout(_txn_timeout);
+    void TransactionNode::transfer_pb(int64_t region_id, proto::PlanNode *pb_node) {
+        ExecNode::transfer_pb(region_id, pb_node);
+        auto txn_node = pb_node->mutable_derive_node()->mutable_transaction_node();
+        txn_node->set_txn_cmd(_txn_cmd);
+        if (_txn_timeout != 0) {
+            txn_node->set_txn_timeout(_txn_timeout);
+        }
+        if (_txn_lock_timeout > 0) {
+            txn_node->set_txn_lock_timeout(_txn_lock_timeout);
+        }
     }
-    if (_txn_lock_timeout > 0) {
-        txn_node->set_txn_lock_timeout(_txn_lock_timeout);
-    }
-}
 }

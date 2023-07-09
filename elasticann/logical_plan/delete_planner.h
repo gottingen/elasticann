@@ -22,33 +22,37 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-class DeletePlanner : public LogicalPlanner {
-public:
+    class DeletePlanner : public LogicalPlanner {
+    public:
 
-    DeletePlanner(QueryContext* ctx) : 
-        LogicalPlanner(ctx) {}
+        DeletePlanner(QueryContext *ctx) :
+                LogicalPlanner(ctx) {}
 
-    virtual ~DeletePlanner() {}
+        virtual ~DeletePlanner() {}
 
-    virtual int plan();
+        virtual int plan();
 
-private:
-    // method to create plan node
-    int create_delete_node(proto::PlanNode* delete_node);
+    private:
+        // method to create plan node
+        int create_delete_node(proto::PlanNode *delete_node);
 
-    // method to create plan node
-    int create_truncate_node();
-    int parse_where();
-    int parse_orderby();
-    int parse_limit();
-    int reset_auto_incr_id();
+        // method to create plan node
+        int create_truncate_node();
 
-private:
-    parser::DeleteStmt*         _delete_stmt;
-    parser::TruncateStmt*       _truncate_stmt;
-    std::vector<proto::Expr>       _where_filters;
-    proto::Expr                    _limit_offset;
-    proto::Expr                    _limit_count;
-};
+        int parse_where();
+
+        int parse_orderby();
+
+        int parse_limit();
+
+        int reset_auto_incr_id();
+
+    private:
+        parser::DeleteStmt *_delete_stmt;
+        parser::TruncateStmt *_truncate_stmt;
+        std::vector<proto::Expr> _where_filters;
+        proto::Expr _limit_offset;
+        proto::Expr _limit_count;
+    };
 } //namespace EA
 

@@ -24,32 +24,32 @@
 #include "elasticann/common/meta_server_interact.h"
 
 namespace EA {
-int AutoInc::analyze(QueryContext* ctx) {
-    ExecNode* plan = ctx->root;
-    if (ctx->insert_records.size() == 0) {
-        return 0;
-    }
-    InsertNode* insert_node = static_cast<InsertNode*>(plan->get_node(proto::INSERT_NODE));
-    int64_t table_id = -1;
-    if (insert_node != nullptr) {
-        table_id = insert_node->table_id();
-    }
-    SchemaFactory* schema_factory = SchemaFactory::get_instance();
-    auto table_info_ptr = schema_factory->get_table_info_ptr(table_id);
-    if (table_info_ptr == nullptr || table_info_ptr->auto_inc_field_id == -1) {
-        return 0;
-    }
-    
-    return update_auto_inc(table_info_ptr, ctx->client_conn, ctx->use_backup, ctx->insert_records);
-}
+    int AutoInc::analyze(QueryContext *ctx) {
+        ExecNode *plan = ctx->root;
+        if (ctx->insert_records.size() == 0) {
+            return 0;
+        }
+        InsertNode *insert_node = static_cast<InsertNode *>(plan->get_node(proto::INSERT_NODE));
+        int64_t table_id = -1;
+        if (insert_node != nullptr) {
+            table_id = insert_node->table_id();
+        }
+        SchemaFactory *schema_factory = SchemaFactory::get_instance();
+        auto table_info_ptr = schema_factory->get_table_info_ptr(table_id);
+        if (table_info_ptr == nullptr || table_info_ptr->auto_inc_field_id == -1) {
+            return 0;
+        }
 
-int AutoInc::update_auto_inc(SmartTable table_info_ptr,
-                           NetworkSocket* client_conn,
-                           bool use_backup,
-                           std::vector<SmartRecord>& insert_records) {
-    int auto_id_count = 0;
-    int64_t max_id = 0;
-    for (auto& record : insert_records) {
+        return update_auto_inc(table_info_ptr, ctx->client_conn, ctx->use_backup, ctx->insert_records);
+    }
+
+    int AutoInc::update_auto_inc(SmartTable table_info_ptr,
+                                 NetworkSocket *client_conn,
+                                 bool use_backup,
+                                 std::vector<SmartRecord> &insert_records) {
+        int auto_id_count = 0;
+        int64_t max_id = 0;
+        for (auto &record: insert_records) {
             auto field = record->get_field_by_tag(table_info_ptr->auto_inc_field_id);
             ExprValue value = record->get_value(field);
             // 兼容mysql，值为0会分配自增id
@@ -61,55 +61,55 @@ int AutoInc::update_auto_inc(SmartTable table_info_ptr,
                     max_id = int_val;
                 }
             }
-    }
-    auto field_info = table_info_ptr->get_field_ptr(table_info_ptr->auto_inc_field_id);
-    // 通过字段注释可以标示:自增id不会随着插入id进行跳号,当插入的自增id来自于异构数据源时,用于避免自增id的双写冲突问题.
-    if (field_info != nullptr && field_info->noskip) {
-        max_id = 0;
-    }
-    if (auto_id_count == 0 && max_id == 0) {
-        return 0;
-    }
-    // 请求meta来获取自增id
-    proto::MetaManagerRequest request;
-    proto::MetaManagerResponse response;
-    request.set_op_type(proto::OP_GEN_ID_FOR_AUTO_INCREMENT);
-    auto auto_increment_ptr = request.mutable_auto_increment();
-    auto_increment_ptr->set_table_id(table_info_ptr->id);
-    auto_increment_ptr->set_count(auto_id_count);
-    auto_increment_ptr->set_start_id(max_id);
-    MetaServerInteract* interact = MetaServerInteract::get_auto_incr_instance();
-    if (use_backup) {
-        interact = MetaServerInteract::get_backup_instance();
-    }
-    if (interact->send_request("meta_manager", request, response) != 0) {
-        DB_FATAL("gen id from meta_server fail");
-        return -1; 
-    }
-    
-    if (auto_id_count == 0) {
-        if (max_id > 0) {
-            client_conn->last_insert_id = max_id;
+        }
+        auto field_info = table_info_ptr->get_field_ptr(table_info_ptr->auto_inc_field_id);
+        // 通过字段注释可以标示:自增id不会随着插入id进行跳号,当插入的自增id来自于异构数据源时,用于避免自增id的双写冲突问题.
+        if (field_info != nullptr && field_info->noskip) {
+            max_id = 0;
+        }
+        if (auto_id_count == 0 && max_id == 0) {
+            return 0;
+        }
+        // 请求meta来获取自增id
+        proto::MetaManagerRequest request;
+        proto::MetaManagerResponse response;
+        request.set_op_type(proto::OP_GEN_ID_FOR_AUTO_INCREMENT);
+        auto auto_increment_ptr = request.mutable_auto_increment();
+        auto_increment_ptr->set_table_id(table_info_ptr->id);
+        auto_increment_ptr->set_count(auto_id_count);
+        auto_increment_ptr->set_start_id(max_id);
+        MetaServerInteract *interact = MetaServerInteract::get_auto_incr_instance();
+        if (use_backup) {
+            interact = MetaServerInteract::get_backup_instance();
+        }
+        if (interact->send_request("meta_manager", request, response) != 0) {
+            TLOG_ERROR("gen id from meta_server fail");
+            return -1;
+        }
+
+        if (auto_id_count == 0) {
+            if (max_id > 0) {
+                client_conn->last_insert_id = max_id;
+            }
+            return 0;
+        }
+        int64_t start_id = response.start_id();
+        client_conn->last_insert_id = start_id;
+        for (auto &record: insert_records) {
+            auto field = record->get_field_by_tag(table_info_ptr->auto_inc_field_id);
+            ExprValue value = record->get_value(field);
+            if (value.is_null() || value.get_numberic<int64_t>() == 0) {
+                value.type = proto::INT64;
+                value._u.int64_val = start_id++;
+                record->set_value(field, value);
+            }
+        }
+        if (start_id != (int64_t) response.end_id()) {
+            TLOG_ERROR("gen id count not equal to request id count");
+            return -1;
         }
         return 0;
     }
-    int64_t start_id = response.start_id();
-    client_conn->last_insert_id = start_id;
-    for (auto& record : insert_records) {
-        auto field = record->get_field_by_tag(table_info_ptr->auto_inc_field_id);
-        ExprValue value = record->get_value(field);
-        if (value.is_null() || value.get_numberic<int64_t>() == 0) {
-            value.type = proto::INT64;
-            value._u.int64_val = start_id++;
-            record->set_value(field, value);
-        }
-    }
-    if (start_id != (int64_t)response.end_id()) {
-        DB_FATAL("gen id count not equal to request id count");
-        return -1;
-    }
-    return 0;
-}
 
 }
 

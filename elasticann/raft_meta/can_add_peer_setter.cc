@@ -22,4 +22,3 @@ void CanAddPeerSetter::set_can_add_peer(int64_t /*region_id*/) {
 }
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

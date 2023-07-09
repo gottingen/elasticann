@@ -157,7 +157,7 @@ namespace EA {
                     }
                 }
             } else {
-                DB_WARNING("exec is nullptr");
+                TLOG_WARN("exec is nullptr");
                 return false;
             }
         }
@@ -288,11 +288,11 @@ namespace EA {
                 ptr = nullptr;
             }
             schema_info->schema_ptrs.clear();
-            DB_NOTICE("reverse delete time:%ld", timer.get_time());
+            TLOG_DEBUG("reverse delete time:{}", timer.get_time());
         }
 
         virtual int get_next(SmartRecord record) {
-            //DB_WARNING("schema get_next()");
+            //TLOG_WARN("schema get_next()");
             auto schema_info = bthread_local_schema();
             if (schema_info == nullptr) {
                 return -1;
@@ -441,7 +441,7 @@ namespace EA {
         static BthreadLocal *bthread_local_schema() {
             void *data = SchemaLocalKey::get_instance()->get_specific();
             if (data == nullptr) {
-                DB_FATAL("reverse bthread local schema is nullptr");
+                TLOG_ERROR("reverse bthread local schema is nullptr");
                 return nullptr;
             }
 
@@ -571,7 +571,7 @@ namespace EA {
                     }
                 }
             } catch (std::exception &exp) {
-                DB_FATAL("pack weight or query words expection %s", exp.what());
+                TLOG_ERROR("pack weight or query words expection {}", exp.what());
             }
 
             return 0;
@@ -597,4 +597,3 @@ namespace EA {
 
 #include "reverse_index.hpp"
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

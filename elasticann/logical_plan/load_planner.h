@@ -17,30 +17,33 @@
 
 // Brief:  the class for generating and executing prepare statements
 #pragma once
+
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
 
-class LoadPlanner : public LogicalPlanner {
-public:
+    class LoadPlanner : public LogicalPlanner {
+    public:
 
-    LoadPlanner(QueryContext* ctx) : LogicalPlanner(ctx) {}
+        LoadPlanner(QueryContext *ctx) : LogicalPlanner(ctx) {}
 
-    virtual ~LoadPlanner() {}
+        virtual ~LoadPlanner() {}
 
-    virtual int plan();
+        virtual int plan();
 
-private:
-    int parse_load_info(proto::LoadNode* load_node, proto::InsertNode* insert_node);
-    int parse_field_list(proto::LoadNode* node, proto::InsertNode* insert_node);
-    int parse_set_list(proto::LoadNode* node);
+    private:
+        int parse_load_info(proto::LoadNode *load_node, proto::InsertNode *insert_node);
 
-private:
-    int64_t                   _table_id = 0;
-    parser::LoadDataStmt*     _load_stmt = nullptr;
-    std::vector<proto::SlotDescriptor>     _set_slots;
-    std::vector<proto::Expr>               _set_values;
-};
+        int parse_field_list(proto::LoadNode *node, proto::InsertNode *insert_node);
+
+        int parse_set_list(proto::LoadNode *node);
+
+    private:
+        int64_t _table_id = 0;
+        parser::LoadDataStmt *_load_stmt = nullptr;
+        std::vector<proto::SlotDescriptor> _set_slots;
+        std::vector<proto::Expr> _set_values;
+    };
 } //namespace EA

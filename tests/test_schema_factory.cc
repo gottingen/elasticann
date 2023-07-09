@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     EA::TimeCost cost;
     val_encoder->update_table(info);
-    DB_NOTICE("update_table cost: %lu", cost.get_time());
+    TLOG_INFO("update_table cost: {}", cost.get_time());
     cost.reset();
 
     auto record = val_encoder->new_record(1);
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
         bth.run(cal);
     }
     cond.wait();
-    DB_WARNING("cost:%ld", cost1.get_time());
+    TLOG_WARN("cost:{}", cost1.get_time());
     sleep(1);
     EA::TimeCost cost2;
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
         bth.run(cal2);
     }
     cond.wait();
-    DB_WARNING("cost:%ld", cost2.get_time());
+    TLOG_WARN("cost:{}", cost2.get_time());
     sleep(1);
     return 0;
 
@@ -127,20 +127,20 @@ int main(int argc, char *argv[]) {
         }
     }
     */
-    DB_NOTICE("set_field cost: %lu", cost.get_time());
+    TLOG_INFO("set_field cost: {}", cost.get_time());
     cost.reset();
 
     std::string message_str;
     int res = record->encode(message_str);
     assert(res == true);
-    DB_NOTICE("encode_fields cost: %lu", cost.get_time());
+    TLOG_INFO("encode_fields cost: {}", cost.get_time());
     cost.reset();
 
     auto out_record = val_encoder->new_record(1);
     res = out_record->decode(message_str);
     assert(res == true);
 
-    DB_NOTICE("decode_fields cost: %lu", cost.get_time());
+    TLOG_INFO("decode_fields cost: {}", cost.get_time());
     cost.reset();
 
     std::cout << "sizeof(float): " << sizeof(float) << std::endl;

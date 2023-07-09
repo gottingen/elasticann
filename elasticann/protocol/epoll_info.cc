@@ -32,7 +32,7 @@ bool EpollInfo::init() {
     _event_size = CONFIG_MPL_EPOLL_MAX_SIZE;
     _epfd = epoll_create(CONFIG_MPL_EPOLL_MAX_SIZE);
     if (_epfd < 0) {
-        DB_FATAL("epoll_create() failed.");
+        TLOG_ERROR("epoll_create() failed.");
         return false;
     }
     return true;
@@ -44,7 +44,7 @@ int EpollInfo::wait(uint32_t timeout) {
 
 bool EpollInfo::set_fd_mapping(int fd, SmartSocket sock) {
     if (fd < 0 || fd >= CONFIG_MPL_EPOLL_MAX_SIZE) {
-        DB_FATAL("Wrong fd[%d]", fd);
+        TLOG_ERROR("Wrong fd[{}]", fd);
         return false;
     }
     std::unique_lock<std::mutex> lock(_mutex);
@@ -54,7 +54,7 @@ bool EpollInfo::set_fd_mapping(int fd, SmartSocket sock) {
 
 SmartSocket EpollInfo::get_fd_mapping(int fd) {
     if (fd < 0 || fd >= CONFIG_MPL_EPOLL_MAX_SIZE) {
-        DB_FATAL("Wrong fd[%d]", fd);
+        TLOG_ERROR("Wrong fd[{}]", fd);
         return SmartSocket();
     }
     std::unique_lock<std::mutex> lock(_mutex);
@@ -95,7 +95,7 @@ bool EpollInfo::poll_events_mod(SmartSocket sock, unsigned int events) {
     ev.data.fd = sock->fd;
 
     if (0 > epoll_ctl(_epfd, EPOLL_CTL_MOD, sock->fd, &ev)){
-        DB_FATAL("poll_events_mod() epoll_ctl error:%m , epfd=%d, fd=%d, event=%d\n", 
+        TLOG_ERROR("poll_events_mod() epoll_ctl error: , epfd={}, fd={}, event={}\n",
                         _epfd, sock->fd, events);
         return false;
     }
@@ -115,8 +115,7 @@ bool EpollInfo::poll_events_add(SmartSocket sock, unsigned int events) {
     ev.data.fd = sock->fd;
 
     if (0 > epoll_ctl(_epfd, EPOLL_CTL_ADD, sock->fd, &ev)) {
-        DB_FATAL("poll_events_add_socket() epoll_ctl error:%m , epfd=%d, fd=%d\n", 
-                        _epfd, sock->fd);
+        TLOG_ERROR("poll_events_add_socket() epoll_ctl error: , epfd={}, fd={}\n",_epfd, sock->fd);
         return false;
     }
 
@@ -129,7 +128,7 @@ bool EpollInfo::poll_events_delete(SmartSocket sock) {
     ev.data.fd = sock->fd;
     
     if (epoll_ctl(_epfd, EPOLL_CTL_DEL, sock->fd, &ev) < 0) {
-        DB_FATAL("poll_events_delelte_socket() epoll_ctl error:%m, epfd=%d, fd=%d\n", 
+        TLOG_ERROR("poll_events_delelte_socket() epoll_ctl error:, epfd={}, fd={}\n",
                         _epfd, sock->fd);
         return false;
     }
@@ -145,7 +144,7 @@ bool EpollInfo::all_txn_time_large_then(int64_t query_time, int64_t table_id) {
         }
         if (smart_socket->is_txn_tid_exist(table_id) && smart_socket->txn_start_time != 0) {
             if (smart_socket->txn_start_time < query_time) {
-                DB_DEBUG("start_time %ld", smart_socket->txn_start_time);
+                TLOG_DEBUG("start_time {}", smart_socket->txn_start_time);
                 return false;
             }
         }

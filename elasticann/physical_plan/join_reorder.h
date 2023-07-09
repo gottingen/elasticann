@@ -20,9 +20,9 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-class JoinReorder {
-public:
-    int analyze(QueryContext* ctx);
-};
+    class JoinReorder {
+    public:
+        int analyze(QueryContext *ctx);
+    };
 }
 

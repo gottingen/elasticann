@@ -27,35 +27,40 @@
 #include "elasticann/common/schema_factory.h"
 
 namespace EA {
-class PlanRouter {
-public:
-    /* 通过主键索引获取所在的regions
-     */
-    int analyze(QueryContext* ctx);
-    int scan_plan_router(RocksdbScanNode* scan_node,  
-        const std::function<int32_t(int32_t, int32_t)>& get_slot_id,
-        const std::function<proto::TupleDescriptor*(int32_t)>& get_tuple_desc,
-        bool has_join,
-        const std::set<ExecNode*>& escape_get_region_infos);
+    class PlanRouter {
+    public:
+        /* 通过主键索引获取所在的regions
+         */
+        int analyze(QueryContext *ctx);
 
-    int scan_node_analyze(RocksdbScanNode* scan_node, 
-        QueryContext* ctx, bool has_join, const std::set<ExecNode*>& escape_get_region_infos);
- 
-private:
-    template<typename T>
-    int insert_node_analyze(T* node, QueryContext* ctx); 
-   
-    int truncate_node_analyze(TruncateNode* trunc_node, QueryContext* ctx);
-    int kill_node_analyze(KillNode* kill_node, QueryContext* ctx);
-    int transaction_node_analyze(TransactionNode* txn_node, QueryContext* ctx);
-    int select_index(proto::ScanNode* scan_node, std::vector<int>& multi_reverse_index);
-    bool _is_full_export = false;
-};
+        int scan_plan_router(RocksdbScanNode *scan_node,
+                             const std::function<int32_t(int32_t, int32_t)> &get_slot_id,
+                             const std::function<proto::TupleDescriptor *(int32_t)> &get_tuple_desc,
+                             bool has_join,
+                             const std::set<ExecNode *> &escape_get_region_infos);
 
-class PartitionAnalyze {
-public:
-    int analyze(QueryContext* ctx);
-};
+        int scan_node_analyze(RocksdbScanNode *scan_node,
+                              QueryContext *ctx, bool has_join, const std::set<ExecNode *> &escape_get_region_infos);
+
+    private:
+        template<typename T>
+        int insert_node_analyze(T *node, QueryContext *ctx);
+
+        int truncate_node_analyze(TruncateNode *trunc_node, QueryContext *ctx);
+
+        int kill_node_analyze(KillNode *kill_node, QueryContext *ctx);
+
+        int transaction_node_analyze(TransactionNode *txn_node, QueryContext *ctx);
+
+        int select_index(proto::ScanNode *scan_node, std::vector<int> &multi_reverse_index);
+
+        bool _is_full_export = false;
+    };
+
+    class PartitionAnalyze {
+    public:
+        int analyze(QueryContext *ctx);
+    };
 
 }
 

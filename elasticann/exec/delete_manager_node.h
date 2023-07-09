@@ -22,26 +22,32 @@
 #include "elasticann/exec/dml_node.h"
 
 namespace EA {
-class DeleteManagerNode : public DmlManagerNode {
-public:
-    DeleteManagerNode() {
-    }
-    virtual ~DeleteManagerNode() {
-    }
-    virtual int open(RuntimeState* state);
-    int open_global_delete(RuntimeState* state);
-    int init_delete_info(const proto::DeleteNode& delete_node);
-    int init_delete_info(const proto::UpdateNode& update_node);
-    std::vector<SmartRecord>& get_real_delete_records() {
-        return _del_scan_records;
-    }
+    class DeleteManagerNode : public DmlManagerNode {
+    public:
+        DeleteManagerNode() {
+        }
 
-    int process_binlog(RuntimeState* state, bool is_local);
+        virtual ~DeleteManagerNode() {
+        }
 
-private:
-    int64_t                         _table_id = -1;
-    int32_t                         _tuple_id = -1;
-    std::vector<proto::SlotDescriptor> _primary_slots;
-    SmartTable                      _table_info;
-};
+        virtual int open(RuntimeState *state);
+
+        int open_global_delete(RuntimeState *state);
+
+        int init_delete_info(const proto::DeleteNode &delete_node);
+
+        int init_delete_info(const proto::UpdateNode &update_node);
+
+        std::vector<SmartRecord> &get_real_delete_records() {
+            return _del_scan_records;
+        }
+
+        int process_binlog(RuntimeState *state, bool is_local);
+
+    private:
+        int64_t _table_id = -1;
+        int32_t _tuple_id = -1;
+        std::vector<proto::SlotDescriptor> _primary_slots;
+        SmartTable _table_info;
+    };
 }

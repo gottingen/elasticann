@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
 
     TimeCost cost;
     factory->reload_schema(info);
-    DB_NOTICE("reload_schema cost: %lu", cost.get_time());
+    TLOG_INFO("reload_schema cost: {}", cost.get_time());
     cost.reset();
 
     auto _rocksdb = EA::RocksWrapper::get_instance();

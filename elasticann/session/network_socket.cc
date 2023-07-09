@@ -16,7 +16,6 @@
 
 
 #include "elasticann/session/network_socket.h"
-#include "elasticann/logical_plan/query_context.h"
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/session/binlog_context.h"
 
@@ -29,8 +28,8 @@ namespace EA {
         send_buf = new DataBuffer;
         self_buf = new DataBuffer;
         if (send_buf == nullptr || self_buf == nullptr) {
-            DB_FATAL("New send_buf and self_buf have not enough memory."
-                     "send_buf_size:[%u],self_buf_size:[%d]",
+            TLOG_ERROR("New send_buf and self_buf have not enough memory."
+                     "send_buf_size:[{}],self_buf_size:[{}]",
                      SEND_BUF_DEFAULT_SIZE, SELF_BUF_DEFAULT_SIZE);
         }
 
@@ -106,7 +105,6 @@ namespace EA {
     std::atomic<uint64_t> NetworkSocket::txn_id_counter(1);
 
     NetworkSocket::~NetworkSocket() {
-        //DB_WARNING_CLIENT(this, "NetworkSocket close");
         if (fd > 0) {
             close(fd);
         }
@@ -168,7 +166,7 @@ namespace EA {
         seq_id = 0;
         primary_region_id = -1;
         auto time = butil::gettimeofday_us();
-        DB_DEBUG("set txn start time %ld", time);
+        TLOG_DEBUG("set txn start time {}", time);
         txn_start_time = time;
         txn_pri_region_last_exec_time = time;
     }
@@ -231,7 +229,7 @@ namespace EA {
     SmartSocket SocketFactory::create(SocketType type) {
         SmartSocket sock = SmartSocket(new NetworkSocket());
         if (sock == nullptr) {
-            DB_FATAL("Failed to new NetworkSocket.");
+            TLOG_ERROR("Failed to new NetworkSocket.");
             return SmartSocket();
         }
         sock->conn_id = _cur_conn_id++;
@@ -241,7 +239,7 @@ namespace EA {
             sock->socket_type = SERVER_SOCKET;
             int ret = socket(AF_INET, SOCK_STREAM, 0);
             if (ret < 0) {
-                DB_FATAL("Failed to set server socket.");
+                TLOG_ERROR("Failed to set server socket.");
                 return SmartSocket();
             }
             sock->fd = ret;

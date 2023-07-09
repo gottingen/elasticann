@@ -97,14 +97,14 @@ namespace EA {
             auto data_cf = _rocksdb->get_data_handle();
             s = _txn->GetForUpdate(read_opt, data_cf, _iter->key(), &pin_slice);
             if (!s.ok()) {
-                DB_WARNING("get for update failed:%s, term:%s, key:%s", s.ToString().c_str(),
+                TLOG_WARN("get for update failed:{}, term:{}, key:{}", s.ToString().c_str(),
                            term.c_str(), _iter->key().ToString(true).c_str());
                 return -1;
             }
             //rocksdb::Slice pin_slice = _iter->value();
 
             if (!node->ParseFromArray(pin_slice.data(), pin_slice.size())) {
-                DB_FATAL("parse first level from pb failed");
+                TLOG_ERROR("parse first level from pb failed");
                 return -1;
             }
             key = node->key();
@@ -112,7 +112,7 @@ namespace EA {
             if (_del) {
                 auto remove_res = _txn->Delete(data_cf, _iter->key());
                 if (!remove_res.ok()) {
-                    DB_WARNING("rocksdb delete error: code=%d, msg=%s",
+                    TLOG_WARN("rocksdb delete error: code={}, msg={}",
                                remove_res.code(), remove_res.ToString().c_str());
                     return -1;
                 }
@@ -148,7 +148,7 @@ namespace EA {
                 _first = false;
             }
             if (_index < _list.reverse_nodes_size()) {
-                //DB_WARNING("get %d index reverse node list size[%d]", _index, _list.reverse_nodes_size());
+                //TLOG_WARN("get {} index reverse node list size[{}]", _index, _list.reverse_nodes_size());
                 res = true;
                 key = (_list.mutable_reverse_nodes(_index))->key();
                 while (_index + 1 < _list.reverse_nodes_size()) {

@@ -18,26 +18,26 @@
 #include "elasticann/mem_row/mem_row_compare.h"
 
 namespace EA {
-int64_t MemRowCompare::compare(MemRow* left, MemRow* right) {
-    for (size_t i = 0; i < _slot_order_exprs.size(); i++) {
-        auto expr = _slot_order_exprs[i];
-        ExprValue left_value = expr->get_value(left);
-        ExprValue right_value = expr->get_value(right);
-        if (left_value.is_null() && right_value.is_null()) {
-            continue;
-        } else if (left_value.is_null()) {
-            return _is_null_first[i] ? -1 : 1;
-        } else if (right_value.is_null()) {
-            return _is_null_first[i] ? 1 : -1;
-        } else {
-            int64_t comp = left_value.compare(right_value);
-            //DB_WARNING("left_value.type:%d %lu right_value.type:%d %lu, comp:%ld", left_value.type ,left_value._u.uint64_val,right_value.type, right_value._u.uint64_val, comp);
-            if (comp != 0) {
-                return _is_asc[i] ? comp : -comp;
+    int64_t MemRowCompare::compare(MemRow *left, MemRow *right) {
+        for (size_t i = 0; i < _slot_order_exprs.size(); i++) {
+            auto expr = _slot_order_exprs[i];
+            ExprValue left_value = expr->get_value(left);
+            ExprValue right_value = expr->get_value(right);
+            if (left_value.is_null() && right_value.is_null()) {
+                continue;
+            } else if (left_value.is_null()) {
+                return _is_null_first[i] ? -1 : 1;
+            } else if (right_value.is_null()) {
+                return _is_null_first[i] ? 1 : -1;
+            } else {
+                int64_t comp = left_value.compare(right_value);
+                //TLOG_WARN("left_value.type:{} {} right_value.type:{} {}, comp:{}", left_value.type ,left_value._u.uint64_val,right_value.type, right_value._u.uint64_val, comp);
+                if (comp != 0) {
+                    return _is_asc[i] ? comp : -comp;
+                }
             }
         }
+        return 0;
     }
-    return 0;
-}
 }
 

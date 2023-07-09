@@ -64,25 +64,25 @@ namespace EA {
         //新建region，新建table 、add_peer(心跳返回)、split三个场景会调用
         //新建region，初始化raft, 并且写入到rocksdb中
         void init_region(google::protobuf::RpcController *controller,
-                                 const proto::InitRegion *request,
-                                 proto::StoreRes *response,
-                                 google::protobuf::Closure *done) override;
+                         const proto::InitRegion *request,
+                         proto::StoreRes *response,
+                         google::protobuf::Closure *done) override;
 
         //raft control method
         void region_raft_control(google::protobuf::RpcController *controller,
-                                         const proto::RaftControlRequest *request,
-                                         proto::RaftControlResponse *response,
-                                         google::protobuf::Closure *done) override;
+                                 const proto::RaftControlRequest *request,
+                                 proto::RaftControlResponse *response,
+                                 google::protobuf::Closure *done) override;
 
         void health_check(google::protobuf::RpcController *controller,
-                                  const proto::HealthCheck *request,
-                                  proto::StoreRes *response,
-                                  google::protobuf::Closure *done) override;
+                          const proto::HealthCheck *request,
+                          proto::StoreRes *response,
+                          google::protobuf::Closure *done) override;
 
         void query(google::protobuf::RpcController *controller,
-                           const proto::StoreReq *request,
-                           proto::StoreRes *response,
-                           google::protobuf::Closure *done) override;
+                   const proto::StoreReq *request,
+                   proto::StoreRes *response,
+                   google::protobuf::Closure *done) override;
 
         void async_apply_log_entry(google::protobuf::RpcController *controller,
                                    const proto::BatchStoreReq *request,
@@ -90,21 +90,21 @@ namespace EA {
                                    google::protobuf::Closure *done) override;
 
         void query_binlog(google::protobuf::RpcController *controller,
-                                  const proto::StoreReq *request,
-                                  proto::StoreRes *response,
-                                  google::protobuf::Closure *done) override;
+                          const proto::StoreReq *request,
+                          proto::StoreRes *response,
+                          google::protobuf::Closure *done) override;
 
         //删除region和region中的数据
         void remove_region(google::protobuf::RpcController *controller,
-                                   const proto::RemoveRegion *request,
-                                   proto::StoreRes *response,
-                                   google::protobuf::Closure *done) override;
+                           const proto::RemoveRegion *request,
+                           proto::StoreRes *response,
+                           google::protobuf::Closure *done) override;
 
         //恢复延迟删除的region
         void restore_region(google::protobuf::RpcController *controller,
-                                    const proto::RegionIds *request,
-                                    proto::StoreRes *response,
-                                    google::protobuf::Closure *done) override;
+                            const proto::RegionIds *request,
+                            proto::StoreRes *response,
+                            google::protobuf::Closure *done) override;
 
         virtual void add_peer(google::protobuf::RpcController *controller,
                               const proto::AddPeer *request,
@@ -283,11 +283,11 @@ namespace EA {
             traverse_copy_region_map([](const SmartRegion &region) {
                 region->shutdown();
             });
-            DB_WARNING("all region was shutdown");
+            TLOG_WARN("all region was shutdown");
             traverse_copy_region_map([](const SmartRegion &region) {
                 region->join();
             });
-            DB_WARNING("all region was join");
+            TLOG_WARN("all region was join");
         }
 
         bool is_shutdown() const {
@@ -301,41 +301,41 @@ namespace EA {
             _transfer_leader_queue.stop();
             _shutdown = true;
             _heart_beat_bth.join();
-            DB_WARNING("heart beat bth join");
+            TLOG_WARN("heart beat bth join");
             _db_statistic_bth.join();
-            DB_WARNING("db statistic bth join");
+            TLOG_WARN("db statistic bth join");
             _add_peer_queue.join();
-            DB_WARNING("_add_peer_queue join");
+            TLOG_WARN("_add_peer_queue join");
             _remove_region_queue.join();
-            DB_WARNING("_remove_region_queue join");
+            TLOG_WARN("_remove_region_queue join");
             _compact_queue.join();
-            DB_WARNING("_compact_queue join");
+            TLOG_WARN("_compact_queue join");
             _transfer_leader_queue.join();
-            DB_WARNING("_transfer_leader_queue join");
+            TLOG_WARN("_transfer_leader_queue join");
             _split_check_bth.join();
-            DB_WARNING("split check bth join");
+            TLOG_WARN("split check bth join");
             _merge_bth.join();
-            DB_WARNING("merge bth check bth join");
+            TLOG_WARN("merge bth check bth join");
             _merge_unsafe_bth.join();
-            DB_WARNING("merge unsafe bth check bth join");
+            TLOG_WARN("merge unsafe bth check bth join");
             _ttl_bth.join();
-            DB_WARNING("ttl bth check bth join");
+            TLOG_WARN("ttl bth check bth join");
             _delay_remove_data_bth.join();
-            DB_WARNING("delay_remove_region_bth bth check bth join");
+            TLOG_WARN("delay_remove_region_bth bth check bth join");
             _flush_bth.join();
-            DB_WARNING("flush check bth join");
+            TLOG_WARN("flush check bth join");
             _snapshot_bth.join();
-            DB_WARNING("snapshot bth join");
+            TLOG_WARN("snapshot bth join");
             _txn_clear_bth.join();
-            DB_WARNING("txn_clear bth join");
+            TLOG_WARN("txn_clear bth join");
             _binlog_timeout_check_bth.join();
-            DB_WARNING("binlog timeout check bth join");
+            TLOG_WARN("binlog timeout check bth join");
             _binlog_fake_bth.join();
-            DB_WARNING("fake binlog bth join");
+            TLOG_WARN("fake binlog bth join");
             _multi_thread_cond.wait();
-            DB_WARNING("_multi_thread_cond wait finish");
+            TLOG_WARN("_multi_thread_cond wait finish");
             _rocksdb->close();
-            DB_WARNING("rockdb close, quit success");
+            TLOG_WARN("rockdb close, quit success");
         }
 
         MetaServerInteract &get_meta_server_interact() {

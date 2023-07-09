@@ -202,7 +202,7 @@ namespace EA {
         }
 
     private:
-        MetaWriter()  = default;
+        MetaWriter() = default;
 
     private:
         RocksWrapper *_rocksdb{nullptr};

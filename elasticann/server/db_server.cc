@@ -55,50 +55,50 @@ int main(int argc, char **argv) {
     turbo::filesystem::path remove_path("init.success");
     turbo::filesystem::remove_all(remove_path);
     // Initail log
-    if (EA::init_log(argv[0]) != 0) {
+    if (!EA::init_tlog()) {
         fprintf(stderr, "log init failed.");
         return -1;
     }
-    DB_NOTICE("baikaldb starting");
-//    DB_WARNING("log file load success; GetMemoryReleaseRate:%f", 
+    TLOG_INFO("EA starting");
+//    TLOG_WARN("log file load success; GetMemoryReleaseRate:{}",
 //            MallocExtension::instance()->GetMemoryReleaseRate());
 
     // init singleton
     EA::FunctionManager::instance()->init();
     if (EA::SchemaFactory::get_instance()->init() != 0) {
-        DB_FATAL("SchemaFactory init failed");
+        TLOG_ERROR("SchemaFactory init failed");
         return -1;
     }
     if (EA::InformationSchema::get_instance()->init() != 0) {
-        DB_FATAL("InformationSchema init failed");
+        TLOG_ERROR("InformationSchema init failed");
         return -1;
     }
     if (EA::MetaServerInteract::get_instance()->init() != 0) {
-        DB_FATAL("meta server interact init failed");
+        TLOG_ERROR("meta server interact init failed");
         return -1;
     }
     if (EA::MetaServerInteract::get_auto_incr_instance()->init() != 0) {
-        DB_FATAL("meta server interact init failed");
+        TLOG_ERROR("meta server interact init failed");
         return -1;
     }
     if (EA::MetaServerInteract::get_tso_instance()->init() != 0) {
-        DB_FATAL("meta server interact init failed");
+        TLOG_ERROR("meta server interact init failed");
         return -1;
     }
     // 可以没有backup
     if (EA::MetaServerInteract::get_backup_instance()->init(true) != 0) {
-        DB_FATAL("meta server interact backup init failed");
+        TLOG_ERROR("meta server interact backup init failed");
         return -1;
     }
     if (EA::MetaServerInteract::get_backup_instance()->is_inited()) {
         if (EA::SchemaFactory::get_backup_instance()->init() != 0) {
-            DB_FATAL("SchemaFactory init failed");
+            TLOG_ERROR("SchemaFactory init failed");
             return -1;
         }
     }
 
     if (EA::TaskManager::get_instance()->init() != 0) {
-        DB_FATAL("init task manager error.");
+        TLOG_ERROR("init task manager error.");
         return -1;
     }
     EA::HandleHelper::get_instance()->init();
@@ -108,21 +108,20 @@ int main(int argc, char **argv) {
     // Initail server.
     EA::NetworkServer* server = EA::NetworkServer::get_instance();
     if (!server->init()) {
-        DB_FATAL("Failed to initail network server.");
+        TLOG_ERROR("Failed to initail network server.");
         return 1;
     }
     std::ofstream init_fs("init.success", std::ofstream::out | std::ofstream::trunc);
     if (!server->start()) {
-        DB_FATAL("Failed to start server.");
+        TLOG_ERROR("Failed to start server.");
     }
-    DB_NOTICE("Server shutdown gracefully.");
+    TLOG_INFO("Server shutdown gracefully.");
 
     // Stop server.
     server->stop();
     EA::MemoryGCHandler::get_instance()->close();
     EA::MemTrackerPool::get_instance()->close();
-    DB_NOTICE("Server stopped.");
+    TLOG_INFO("Server stopped.");
     return 0;
 }
 
-/* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
