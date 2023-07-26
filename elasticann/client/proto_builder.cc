@@ -261,6 +261,7 @@ namespace EA::client {
         }
         EA::proto::FieldInfo ret;
         ret.set_field_name(fv[0]);
+        return ret;
     }
 
     turbo::Status
@@ -287,6 +288,6 @@ namespace EA::client {
             return rs;
         }
         treq->set_table_name(OptionContext::get_instance()->table_name);
-
+        return turbo::OkStatus();
     }
 }  // namespace EA::client
