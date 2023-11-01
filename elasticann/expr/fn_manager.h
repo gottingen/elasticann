@@ -19,7 +19,7 @@
 
 #include <functional>
 #include "elasticann/common/expr_value.h"
-#include "elasticann/proto/expr.pb.h"
+#include "eaproto/db/expr.pb.h"
 #include "elasticann/common/object_manager.h"
 
 namespace EA {

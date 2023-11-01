@@ -15,7 +15,7 @@
 #ifndef ELASTICANN_ROUTER_ROUTER_SERVICE_H_
 #define ELASTICANN_ROUTER_ROUTER_SERVICE_H_
 
-#include "elasticann/proto/router.interface.pb.h"
+#include "eaproto/db/router.interface.pb.h"
 
 namespace EA {
 

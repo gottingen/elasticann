@@ -20,7 +20,7 @@
 
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/exec/fetcher_store.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 
 namespace EA {
     class TransactionManagerNode : public ExecNode {

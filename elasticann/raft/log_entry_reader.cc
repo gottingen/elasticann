@@ -20,7 +20,7 @@
 #include "elasticann/common/common.h"
 #include "elasticann/common/table_key.h"
 #include "elasticann/common/mut_table_key.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 namespace EA {
     int LogEntryReader::read_log_entry(int64_t region_id, int64_t log_index, std::string &log_entry) {

@@ -28,7 +28,7 @@
 #include "elasticann/expr/expr_node.h"
 #include <atomic>
 #include <map>
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 namespace EA {
 

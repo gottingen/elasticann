@@ -34,7 +34,7 @@
 #include "elasticann/engine/transaction_pool.h"
 #include "elasticann/engine/transaction.h"
 #include "elasticann/engine/rocks_wrapper.h"
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 
 namespace EA {
     /*

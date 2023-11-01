@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "elasticann/proto/meta.interface.pb.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 
 namespace EA {

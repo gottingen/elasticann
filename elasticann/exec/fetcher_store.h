@@ -25,7 +25,7 @@
 #include "elasticann/runtime/runtime_state.h"
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/session/network_socket.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 namespace EA {
     enum ErrorType {

@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "elasticann/proto/binlog.pb.h"
+#include "eaproto/db/binlog.pb.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/common/expr_value.h"
 #include "elasticann/common/schema_factory.h"

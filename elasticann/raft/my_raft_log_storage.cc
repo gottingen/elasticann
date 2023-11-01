@@ -19,7 +19,7 @@
 #include "elasticann/raft/raft_log_compaction_filter.h"
 #include "elasticann/raft/can_add_peer_setter.h"
 #include "elasticann/common/concurrency.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "turbo/strings/numbers.h"
 
 namespace EA {

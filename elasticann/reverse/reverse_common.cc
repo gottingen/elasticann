@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include <fstream>
 #include <gflags/gflags.h>
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 
 namespace EA {
     DEFINE_string(q2b_utf8_path, "./conf/q2b_utf8.dic", "q2b_utf8_path");

@@ -16,7 +16,7 @@
 #ifndef ELASTICANN_CLIENT_PROTO_BUILDER_H_
 #define ELASTICANN_CLIENT_PROTO_BUILDER_H_
 
-#include "elasticann/proto/router.interface.pb.h"
+#include "eaproto/db/router.interface.pb.h"
 #include "turbo/base/status.h"
 #include "turbo/base/result_status.h"
 #include <string>

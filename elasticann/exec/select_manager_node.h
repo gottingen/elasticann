@@ -22,7 +22,7 @@
 #include "elasticann/exec/scan_node.h"
 #include "elasticann/exec/limit_node.h"
 #include "elasticann/common/table_record.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "elasticann/runtime/sorter.h"
 #include "elasticann/mem_row/mem_row_compare.h"
 #include "elasticann/exec/fetcher_store.h"

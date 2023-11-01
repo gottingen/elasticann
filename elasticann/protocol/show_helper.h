@@ -21,7 +21,7 @@
 #include "elasticann/session/network_socket.h"
 #include "elasticann/common/meta_server_interact.h"
 #include "elasticann/protocol/mysql_wrapper.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 const std::string SQL_SHOW_ABNORMAL_REGIONS = "abnormal";              // show abnormal regions;
 const std::string SQL_SHOW_CREATE_TABLE = "create";                // show create table test;

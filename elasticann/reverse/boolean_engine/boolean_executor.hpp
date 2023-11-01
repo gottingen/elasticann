@@ -17,7 +17,7 @@
 
 #include <functional>
 #include <algorithm>
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 
 namespace EA {
 

@@ -22,7 +22,7 @@
 #include <mutex>
 #include "elasticann/meta_server/meta_server.h"
 #include "elasticann/meta_server/schema_manager.h"
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 
 namespace EA {
     class DatabaseManager {

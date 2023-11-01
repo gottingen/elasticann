@@ -21,7 +21,7 @@
 #include <brpc/channel.h>
 #include "elasticann/mem_row/mem_row_descriptor.h"
 #include "elasticann/protocol/data_buffer.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "elasticann/engine/transaction_pool.h"
 #include "elasticann/engine/transaction.h"
 #include "elasticann/reverse/reverse_index.h"

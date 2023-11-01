@@ -19,7 +19,7 @@
 
 #include <unordered_map>
 #include <bthread/mutex.h>
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/meta_server.h"
 

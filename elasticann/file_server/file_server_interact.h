@@ -22,37 +22,22 @@
 #include <brpc/server.h>
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/service/file_service.pb.h"
 #include "elasticann/common/common.h"
 
 namespace EA {
     DECLARE_int64(time_between_meta_connect_error_ms);
 
-    class MetaServerInteract {
+    class FileServerInteract {
     public:
         static const int RETRY_TIMES = 5;
 
-        static MetaServerInteract *get_instance() {
-            static MetaServerInteract _instance;
+        static FileServerInteract *get_instance() {
+            static FileServerInteract _instance;
             return &_instance;
         }
 
-        static MetaServerInteract *get_auto_incr_instance() {
-            static MetaServerInteract _instance;
-            return &_instance;
-        }
-
-        static MetaServerInteract *get_tso_instance() {
-            static MetaServerInteract _instance;
-            return &_instance;
-        }
-
-        static MetaServerInteract *get_backup_instance() {
-            static MetaServerInteract _instance;
-            return &_instance;
-        }
-
-        MetaServerInteract() {}
+        FileServerInteract()  = default;
 
         bool is_inited() {
             return _is_inited;

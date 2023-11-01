@@ -17,7 +17,7 @@
 #define ELASTICANN_CLIENT_SHOW_HELP_H_
 
 #include "turbo/base/status.h"
-#include "elasticann/proto/router.interface.pb.h"
+#include "eaproto/db/router.interface.pb.h"
 #include "turbo/format/table.h"
 
 namespace EA::client {

@@ -24,7 +24,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <iomanip>
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/common/key_encoder.h"
 #include "elasticann/common/lru_cache.h"

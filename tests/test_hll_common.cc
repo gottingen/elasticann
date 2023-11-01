@@ -24,7 +24,7 @@
 #include <ctime>
 #include <vector>
 #include <json2pb/pb_to_json.h>
-#include <elasticann/proto/meta.interface.pb.h>
+#include <eaproto/db/meta.interface.pb.h>
 #include "rapidjson/rapidjson.h"
 #include <braft/raft.h>
 #include "elasticann/common/common.h"

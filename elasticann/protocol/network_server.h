@@ -22,7 +22,7 @@
 #include "elasticann/protocol/state_machine.h"
 #include "elasticann/protocol/epoll_info.h"
 #include "elasticann/protocol/machine_driver.h"
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/common/common.h"
 #include "elasticann/common/meta_server_interact.h"

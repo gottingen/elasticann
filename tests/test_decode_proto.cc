@@ -15,7 +15,7 @@
 //
 #include <unordered_map>
 #include "elasticann/common/common.h"
-#include "elasticann/proto/test_decode.pb.h"
+#include "eaproto/db/test_decode.pb.h"
 #include "elasticann/common/tuple_record.h"
 #include "elasticann/common/mut_table_key.h"
 #include <bthread/unstable.h>

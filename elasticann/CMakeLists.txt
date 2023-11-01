@@ -74,7 +74,7 @@ carbin_cc_library(
         COPTS
         ${USER_CXX_FLAGS}
         DEPS
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
         ${CARBIN_DEPS_LINK}
 )
 
@@ -88,7 +88,22 @@ carbin_cc_library(
         COPTS
         ${USER_CXX_FLAGS}
         DEPS
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
+        elasticann::common
+        ${CARBIN_DEPS_LINK}
+)
+
+file(GLOB FILE_SERVER file_server/*.cc)
+
+carbin_cc_library(
+        NAMESPACE elasticann
+        NAME file_server
+        SOURCES
+        ${FILE_SERVER}
+        COPTS
+        ${USER_CXX_FLAGS}
+        DEPS
+        eaproto::eaproto_STATIC
         elasticann::common
         ${CARBIN_DEPS_LINK}
 )
@@ -106,7 +121,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
         PUBLIC
 )
 
@@ -123,7 +138,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
         PUBLIC
 )
 
@@ -139,7 +154,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
         PUBLIC
 )
 
@@ -154,7 +169,7 @@ carbin_cc_binary(
         "-Wno-strict-aliasing"
         DEPS
         ${CARBIN_DEPS_LINK}
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
         PUBLIC
 )
 
@@ -172,7 +187,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
-        elasticann::proto-object
+        eaproto::eaproto_STATIC
         PUBLIC
 )
 #[[

@@ -16,7 +16,7 @@
 
 
 #include "elasticann/logical_plan/kill_planner.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 #include "elasticann/session/network_socket.h"
 #include "elasticann/protocol/network_server.h"
 #include "elasticann/protocol/state_machine.h"

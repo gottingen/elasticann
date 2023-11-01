@@ -22,7 +22,7 @@
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/protocol/data_buffer.h"
 #include "elasticann/runtime/sorter.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 namespace EA {
     class PacketNode : public ExecNode {

@@ -21,7 +21,7 @@
 #include "elasticann/common/mut_table_key.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/engine/transaction.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 namespace EA {
     class MetaWriter {

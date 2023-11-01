@@ -20,7 +20,7 @@
 
 #include <unordered_set>
 #include "elasticann/common/schema_factory.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/dml.h"
 

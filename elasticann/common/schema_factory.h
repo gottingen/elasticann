@@ -29,8 +29,8 @@
 #include <bthread/execution_queue.h>
 #include "elasticann/common/common.h"
 #include "elasticann/common/expr_value.h"
-#include "elasticann/proto/meta.interface.pb.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/db/plan.pb.h"
 #include "elasticann/common/statistics.h"
 #include "elasticann/expr/expr_node.h"
 #include "elasticann/expr/literal.h"

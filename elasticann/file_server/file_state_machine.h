@@ -1,6 +1,5 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
-//
+// Copyright 2023 The Elastic-AI Authors.
+// part of Elastic AI Search
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,70 +14,34 @@
 //
 
 
-#pragma once
+#ifndef ELASTICANN_FILE_SERVER_FILE_STATE_MACHINE_H_
+#define ELASTICANN_FILE_SERVER_FILE_STATE_MACHINE_H_
 
 #include <braft/raft.h>
 #include "elasticann/common/common.h"
 #include "elasticann/raft/raft_control.h"
-#include "eaproto/db/meta.interface.pb.h"
-#include "eaproto/db/store.interface.pb.h"
+#include "eaproto/service/file_service.pb.h"
 
 namespace EA {
-    class BaseStateMachine;
+    class FileStateMachine;
 
-    struct MetaServerClosure : public braft::Closure {
+    struct FileServerClosure : public braft::Closure {
         virtual void Run();
 
         brpc::Controller *cntl;
-        BaseStateMachine *common_state_machine;
+        FileStateMachine *common_state_machine;
         google::protobuf::Closure *done;
-        proto::MetaManagerResponse *response;
+        proto::FileManageResponse *response;
         std::string request;
         int64_t raft_time_cost;
         int64_t total_time_cost;
         TimeCost time_cost;
-
-        proto::SchemaInfo create_table_schema_pb;
-        bool whether_level_table;
-        std::shared_ptr<std::vector<proto::InitRegion>> init_regions;
-        bool has_auto_increment = false;
-        int64_t start_region_id;
-        int create_table_ret = -1;
     };
 
-    struct TsoClosure : public braft::Closure {
-        TsoClosure() : sync_cond(nullptr) {};
-
-        TsoClosure(BthreadCond *cond) : sync_cond(cond) {};
-
-        virtual void Run();
-
-        brpc::Controller *cntl;
-        BaseStateMachine *common_state_machine;
-        google::protobuf::Closure *done;
-        proto::TsoResponse *response;
-        int64_t raft_time_cost;
-        int64_t total_time_cost;
-        TimeCost time_cost;
-        bool is_sync = false;
-        BthreadCond *sync_cond;
-    };
-
-    struct ApplyraftClosure : public google::protobuf::Closure {
-        virtual void Run() {
-            cond.decrease_signal();
-            delete this;
-        }
-
-        ApplyraftClosure(BthreadCond &cond) : cond(cond) {}
-
-        BthreadCond &cond;
-    };
-
-    class BaseStateMachine : public braft::StateMachine {
+    class FileStateMachine : public braft::StateMachine {
     public:
 
-        BaseStateMachine(int64_t dummy_region_id,
+        FileStateMachine(int64_t dummy_region_id,
                          const std::string &identify,
                          const std::string &file_path,
                          const braft::PeerId &peerId) :
@@ -88,7 +51,7 @@ namespace EA {
                 _file_path(file_path),
                 _check_migrate(&BTHREAD_ATTR_SMALL) {}
 
-        virtual ~BaseStateMachine() {}
+        virtual ~FileStateMachine() {}
 
         virtual int init(const std::vector<braft::PeerId> &peers);
 
@@ -109,8 +72,8 @@ namespace EA {
         }
 
         virtual void process(google::protobuf::RpcController *controller,
-                             const proto::MetaManagerRequest *request,
-                             proto::MetaManagerResponse *response,
+                             const proto::FileManageRequest *request,
+                             proto::FileManageResponse *response,
                              google::protobuf::Closure *done);
 
         virtual void start_check_migrate();
@@ -171,8 +134,6 @@ namespace EA {
     protected:
         braft::Node _node;
         std::atomic<bool> _is_leader;
-        int64_t _dummy_region_id;
-        std::string _file_path;
     private:
         Bthread _check_migrate;
         bool _check_start = false;
@@ -181,3 +142,6 @@ namespace EA {
 
 }  // namespace EA
 
+
+
+#endif  // ELASTICANN_FILE_SERVER_FILE_STATE_MACHINE_H_

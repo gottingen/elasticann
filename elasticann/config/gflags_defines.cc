@@ -21,3 +21,9 @@ DEFINE_int32(ea_rotation_hour, 2, "rotation hour");
 DEFINE_int32(ea_rotation_minute, 30, "rotation minutes");
 DEFINE_string(ea_log_base_name, "ea_log.txt", "base name for EA");
 DEFINE_int32(ea_log_save_days, 7, "ea log save days");
+
+DEFINE_string(ea_plugin_root, "./plugins", "ea flags plugin root");
+
+DEFINE_int32(ea_file_server_election_timeout_ms, 1000, "raft election timeout(ms)");
+DEFINE_int32(ea_file_server_snapshot_interval_s, 600, "raft snapshot interval(s)");
+DEFINE_string(ea_file_server_log_uri, "myraftlog://my_raft_log?id=", "raft log uri");

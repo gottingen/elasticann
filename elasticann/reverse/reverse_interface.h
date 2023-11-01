@@ -18,7 +18,7 @@
 #pragma once
 
 #include "elasticann/reverse/reverse_index.h"
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 #include "elasticann/reverse/boolean_engine/boolean_executor.h"
 #include "elasticann/reverse/boolean_engine/logical_query.h"
 #include "elasticann/common/schema_factory.h"

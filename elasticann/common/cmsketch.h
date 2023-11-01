@@ -18,7 +18,7 @@
 #pragma once
 
 #include "elasticann/common/common.h"
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 
 namespace EA {
 

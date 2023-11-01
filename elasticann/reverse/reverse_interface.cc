@@ -17,7 +17,7 @@
 
 #include "elasticann/reverse/reverse_interface.h"
 #include <fstream>
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 #include "elasticann/common/table_record.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/reader.h"

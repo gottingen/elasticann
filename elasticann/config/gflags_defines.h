@@ -26,4 +26,9 @@ DECLARE_int32(ea_rotation_minute);
 DECLARE_string(ea_log_base_name);
 DECLARE_int32(ea_log_save_days);
 
+DECLARE_string(ea_plugin_root);
+
+DECLARE_int32(ea_file_server_election_timeout_ms);
+DECLARE_int32(ea_file_server_snapshot_interval_s);
+
 #endif  // ELASTICANN_CONFIG_GFLAGS_DEFINES_H_

@@ -22,7 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include "elasticann/proto/test_decode.pb.h"
+#include "eaproto/db/test_decode.pb.h"
 #include "elasticann/common/expr_value.h"
 #include "elasticann/common/tuple_record.h"
 #include "elasticann/common/schema_factory.h"

@@ -22,7 +22,7 @@
 #include <brpc/server.h>
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "elasticann/common/common.h"
 
 namespace EA {

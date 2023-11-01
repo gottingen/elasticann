@@ -22,7 +22,6 @@
 #include "elasticann/common/table_key.h"
 #include "elasticann/runtime/runtime_state.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
-#include "elasticann/exec/exec_node.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/raft/my_raft_log_storage.h"
 #include "elasticann/raft/log_entry_reader.h"

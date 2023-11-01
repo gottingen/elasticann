@@ -18,7 +18,7 @@
 #pragma once
 
 #include "elasticann/common/store_interact.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 namespace EA {
     class RpcSender {

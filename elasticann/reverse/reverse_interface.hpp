@@ -16,7 +16,7 @@
 //
 
 
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/expr/slot_ref.h"
 

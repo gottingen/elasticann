@@ -18,7 +18,7 @@
 #pragma once
 
 #include <braft/raft.h>
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/common/common.h"
 #include "elasticann/common/meta_server_interact.h"
 

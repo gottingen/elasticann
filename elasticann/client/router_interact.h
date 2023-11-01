@@ -24,7 +24,7 @@
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
 #include "elasticann/client/option_context.h"
-#include "elasticann/proto/router.interface.pb.h"
+#include "eaproto/db/router.interface.pb.h"
 
 namespace EA::client {
 

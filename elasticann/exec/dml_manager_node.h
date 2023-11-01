@@ -21,7 +21,7 @@
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/exec/fetcher_store.h"
 #include "elasticann/exec/dml_node.h"
-#include "elasticann/proto/optype.pb.h"
+#include "eaproto/common/optype.pb.h"
 
 namespace EA {
     class DmlManagerNode : public ExecNode {

@@ -19,7 +19,7 @@
 #pragma once
 
 #include "elasticann/exec/exec_node.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 
 namespace EA {
     class TransactionNode : public ExecNode {

@@ -20,7 +20,7 @@
 
 #include "elasticann/logical_plan/logical_planner.h"
 #include "elasticann/logical_plan/query_context.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 
 namespace EA {
 
