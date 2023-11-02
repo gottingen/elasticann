@@ -47,8 +47,6 @@ namespace EA {
                          const braft::PeerId &peerId) :
                 _node(identify, peerId),
                 _is_leader(false),
-                _dummy_region_id(dummy_region_id),
-                _file_path(file_path),
                 _check_migrate(&BTHREAD_ATTR_SMALL) {}
 
         virtual ~FileStateMachine() {}

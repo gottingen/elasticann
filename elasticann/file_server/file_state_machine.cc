@@ -62,10 +62,10 @@ namespace EA {
         options.fsm = this;
         options.initial_conf = braft::Configuration(peers);
         options.snapshot_interval_s = FLAGS_snapshot_interval_s;
-        options.log_uri = FLAGS_log_uri + std::to_string(_dummy_region_id);
+        options.log_uri = FLAGS_log_uri;
         //options.stable_uri = FLAGS_stable_uri + "/meta_server";
-        options.raft_meta_uri = FLAGS_stable_uri + _file_path;
-        options.snapshot_uri = FLAGS_snapshot_uri + _file_path;
+        options.raft_meta_uri = FLAGS_stable_uri;// + _file_path;
+        options.snapshot_uri = FLAGS_snapshot_uri;// + _file_path;
         int ret = _node.init(options);
         if (ret < 0) {
             TLOG_ERROR("raft node init fail");
@@ -240,7 +240,6 @@ namespace EA {
         }
         proto::RaftControlRequest request;
         request.set_op_type(proto::SetPeer);
-        request.set_region_id(_dummy_region_id);
         std::set<std::string> peers_in_server;
         std::vector<braft::PeerId> peers;
         if (!_node.list_peers(&peers).ok()) {

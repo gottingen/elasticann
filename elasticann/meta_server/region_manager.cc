@@ -1807,7 +1807,7 @@ namespace EA {
                 if (leader_region_info.start_key().empty() &&
                     leader_region_info.end_key().empty()) {
                     //该region为第一个region直接添加
-                    TLOG_WARN("region_info: {} is new ", leader_region_info.ShortDebugString());
+                    TLOG_INFO("region_info: {} is new ", leader_region_info.ShortDebugString());
                     proto::MetaManagerRequest request;
                     request.set_op_type(proto::OP_UPDATE_REGION);
                     *(request.add_region_infos()) = leader_region_info;
