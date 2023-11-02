@@ -146,7 +146,7 @@ namespace EA {
         for (auto &already_room: _logical_physical_map) {
             pb_logical.add_logical_rooms(already_room.first);
         }
-        // 构造 rocksdb的key和value
+        // construct rocksdb key and value
         std::string value;
         if (!pb_logical.SerializeToString(&value)) {
             TLOG_WARN("request serializeToArray fail, request:{}",
@@ -156,11 +156,11 @@ namespace EA {
         }
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_logical_key(), value);
         if (ret < 0) {
-            TLOG_ERROR("add physical room:{} to rocksdb fail", request.ShortDebugString());
+            TLOG_ERROR("add logical room:{} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update values in memory
         BAIDU_SCOPED_LOCK(_physical_mutex);
         for (auto add_room: request.logical_rooms().logical_rooms()) {
             _logical_physical_map[add_room] = std::set<std::string>();
@@ -208,7 +208,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update values in memory
         BAIDU_SCOPED_LOCK(_physical_mutex);
         _logical_physical_map = tmp_map;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");

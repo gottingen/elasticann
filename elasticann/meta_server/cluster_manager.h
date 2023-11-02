@@ -119,8 +119,19 @@ namespace EA {
                                   proto::MetaManagerResponse *response,
                                   google::protobuf::Closure *done);
 
+        ///
+        /// \brief add logical room for cluster. called by meta_state_machine
+        ///        logical room is a list of value store in rocksdb.
+        /// \param [in] request logical room list store in request.logical_rooms().logical_rooms()
+        /// \param [out] done if and logical room has been already add to cluster, will return fail.
+
         void add_logical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief remove logical room for cluster. called by meta_state_machine
+        ///        logical room is a list of value store in rocksdb.
+        /// \param [in] request logical room list store in request.logical_rooms().logical_rooms()
+        /// \param [out] done if and logical room has not been add to cluster, will return fail.
         void drop_logical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
         void add_physical(const proto::MetaManagerRequest &request, braft::Closure *done);
