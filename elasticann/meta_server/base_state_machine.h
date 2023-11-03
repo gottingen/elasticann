@@ -27,7 +27,7 @@ namespace EA {
     class BaseStateMachine;
 
     struct MetaServerClosure : public braft::Closure {
-        virtual void Run();
+        void Run() override;
 
         brpc::Controller *cntl;
         BaseStateMachine *common_state_machine;
