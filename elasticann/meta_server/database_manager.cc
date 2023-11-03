@@ -21,7 +21,7 @@
 
 namespace EA {
     void DatabaseManager::create_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
-        //校验合法性
+        // check legal
         auto &database_info = const_cast<proto::DataBaseInfo &>(request.database_info());
         std::string namespace_name = database_info.namespace_name();
         std::string database_name = namespace_name + "\001" + database_info.database();
@@ -40,7 +40,7 @@ namespace EA {
         std::vector<std::string> rocksdb_keys;
         std::vector<std::string> rocksdb_values;
 
-        //准备database_info信息
+        // prepare database info
         int64_t tmp_database_id = _max_database_id + 1;
         database_info.set_database_id(tmp_database_id);
         database_info.set_namespace_id(namespace_id);
@@ -77,7 +77,7 @@ namespace EA {
         rocksdb_keys.push_back(construct_database_key(tmp_database_id));
         rocksdb_values.push_back(database_value);
 
-        //持久化分配出去database_id
+        // persist database_id
         std::string max_database_id_value;
         max_database_id_value.append((char *) &tmp_database_id, sizeof(int64_t));
         rocksdb_keys.push_back(construct_max_database_id_key());
@@ -88,7 +88,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update memory info
         set_database_info(database_info);
         set_max_database_id(tmp_database_id);
         NamespaceManager::get_instance()->add_database_id(namespace_id, tmp_database_id);
@@ -97,7 +97,7 @@ namespace EA {
     }
 
     void DatabaseManager::drop_database(const proto::MetaManagerRequest &request, braft::Closure *done) {
-        //合法性检查
+        // check
         auto &database_info = request.database_info();
         std::string namespace_name = database_info.namespace_name();
         std::string database_name = namespace_name + "\001" + database_info.database();
@@ -118,7 +118,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "database has table");
             return;
         }
-        //持久化数据
+        // persist to rocksdb
         int ret = MetaRocksdb::get_instance()->delete_meta_info(
                 std::vector<std::string>{construct_database_key(database_id)});
         if (ret < 0) {
@@ -126,9 +126,9 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存中database信息
+        // update database memory info
         erase_database_info(database_name);
-        //更新内存中namespace信息
+        // update namespace memory info
         NamespaceManager::get_instance()->delete_database_id(namespace_id, database_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
         TLOG_INFO("drop database success, request:{}", request.ShortDebugString());
@@ -185,7 +185,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update database values in memory
         set_database_info(tmp_database_info);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
         TLOG_INFO("modify database success, request:{}", request.ShortDebugString());
@@ -199,7 +199,7 @@ namespace EA {
         }
         TLOG_WARN("database snapshot:{}", database_pb.ShortDebugString());
         set_database_info(database_pb);
-        //更新内存中namespace的值
+        // update memory namespace values.
         NamespaceManager::get_instance()->add_database_id(
                 database_pb.namespace_id(),
                 database_pb.database_id());

@@ -37,31 +37,92 @@ namespace EA {
             return &instance;
         }
     public:
+
+        ///
+        /// \brief create database call by schema manager,
+        ///        fail on db exists and namespace not spec
+        ///        dbname = namespace_name + "\001" + database_info.database();
+        /// \param request
+        /// \param done
         void create_database(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief remove database call by schema manager,
+        ///        fail on db not exists and namespace not spec
+        ///        dbname = namespace_name + "\001" + database_info.database();
+        ///
+        /// \param request
+        /// \param done
         void drop_database(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief modify database call by schema manager,
+        ///        fail on db not exists and namespace not spec
+        ///        dbname = namespace_name + "\001" + database_info.database();
+        ///
+        /// \param request
+        /// \param done
         void modify_database(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief load database info by a pb serialized string,
+        ///        call by state machine snapshot load, so do not check legal,
+        ///        set it to memory directly
+        ///
+        /// \param request
+        /// \param done
         int load_database_snapshot(const std::string &value);
 
         void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
                                       proto::BaikalHeartBeatResponse *response);
 
+        ///
+        /// \brief clear data in memory
         void clear();
 
+        ///
+        /// \brief set max database id
+        /// \param max_database_id
         void set_max_database_id(int64_t max_database_id);
 
+        ///
+        /// \brief get max database id
+        /// \param max_database_id
         int64_t get_max_database_id();
 
+        ///
+        /// \brief add the table to database
+        ///        fail on database not exists. this condition
+        ///        has been check in TableManager. do not check again.
+        /// \param database_id
+        /// \param table_id
         void add_table_id(int64_t database_id, int64_t table_id);
 
+        ///
+        /// \brief remove the table from database
+        ///        call any
+        /// \param database_id
+        /// \param table_id
         void delete_table_id(int64_t database_id, int64_t table_id);
 
+        ///
+        /// \brief get dabase id by db name
+        /// \param database_name must be format as namespace + "." + database_name
+        /// \return
         int64_t get_database_id(const std::string &database_name);
 
+        ///
+        /// \brief get db info by database id
+        /// \param database_id
+        /// \param database_info
+        /// \return -1 db not exists
         int get_database_info(const int64_t &database_id, proto::DataBaseInfo &database_info);
 
+        ///
+        /// \brief get tables in database.
+        /// \param database_id
+        /// \param table_ids
+        /// \return
         int get_table_ids(const int64_t &database_id, std::set<int64_t> &table_ids);
     private:
         DatabaseManager();
@@ -74,10 +135,10 @@ namespace EA {
         std::string construct_max_database_id_key();
 
     private:
-        //std::mutex                                          _database_mutex;
+        //! std::mutex                                          _database_mutex;
         bthread_mutex_t _database_mutex;
         int64_t _max_database_id{0};
-        //databae name 与id 映射关系，name: namespace\001database
+        //! databae name --> databasse id，name: namespace\001database
         std::unordered_map<std::string, int64_t> _database_id_map;
         std::unordered_map<int64_t, proto::DataBaseInfo> _database_info_map;
         std::unordered_map<int64_t, std::set<int64_t>> _table_ids;
