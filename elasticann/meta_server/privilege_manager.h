@@ -36,17 +36,39 @@ namespace EA {
             bthread_mutex_destroy(&_user_mutex);
         }
 
+        ///
+        /// \brief privilege proxy called by meta state machine
+        /// \param controller
+        /// \param request
+        /// \param response
+        /// \param done
         void process_user_privilege(google::protobuf::RpcController *controller,
                                     const proto::MetaManagerRequest *request,
                                     proto::MetaManagerResponse *response,
                                     google::protobuf::Closure *done);
 
+        ///
+        /// \brief create a user
+        /// \param request
+        /// \param done
         void create_user(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief remove user privilege for namespace db and table
+        /// \param request
+        /// \param done
         void drop_user(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief add privilege for user, user should be created
+        /// \param request
+        /// \param done
         void add_privilege(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief drop privilege for user, user should be created
+        /// \param request
+        /// \param done
         void drop_privilege(const proto::MetaManagerRequest &request, braft::Closure *done);
 
         void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
