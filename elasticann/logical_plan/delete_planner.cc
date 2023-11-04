@@ -15,7 +15,7 @@
 
 
 #include "elasticann/logical_plan/delete_planner.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include <gflags/gflags.h>
 #include "elasticann/session/network_socket.h"
 

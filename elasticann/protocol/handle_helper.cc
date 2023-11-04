@@ -16,7 +16,7 @@
 
 #include "elasticann/protocol/handle_helper.h"
 #include "elasticann/logical_plan/query_context.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "turbo/strings/str_split.h"
 #include "turbo/strings/match.h"
 

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "elasticann/logical_plan/query_context.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
 

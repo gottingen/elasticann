@@ -37,6 +37,7 @@ file(GLOB SQLPARSER sqlparser/*.cc ${CMAKE_CURRENT_BINARY_DIR}/sqlparser/*.cc)
 file(GLOB STORE store/*.cc)
 file(GLOB COMMON common/*.cc)
 file(GLOB CONFIG config/*.cc)
+file(GLOB RPC rpc/*.cc)
 
 set(EA_COMMON
         ${COMMON}
@@ -55,6 +56,7 @@ set(EA_COMMON
         ${SQLPARSER}
         ${STORE}
         ${CONFIG}
+        ${RPC}
         )
 
 add_definitions(

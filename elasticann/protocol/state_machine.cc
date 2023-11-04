@@ -17,7 +17,7 @@
 #include "elasticann/protocol/state_machine.h"
 #include "elasticann/protocol/network_server.h"
 #include "elasticann/logical_plan/query_context.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include <rapidjson/reader.h>
 #include <rapidjson/document.h>
 #include "re2/re2.h"

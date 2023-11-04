@@ -32,7 +32,7 @@
 #include "elasticann/common/common.h"
 #include "elasticann/common/backup_stream.h"
 #include "elasticann/common/schema_factory.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/common/table_key.h"
 #include "elasticann/common/mut_table_key.h"
 #include "elasticann/store/meta_writer.h"

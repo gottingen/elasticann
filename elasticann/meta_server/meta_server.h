@@ -19,7 +19,7 @@
 #include <braft/raft.h>
 #include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/common/common.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
     class MetaStateMachine;

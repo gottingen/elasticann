@@ -18,7 +18,7 @@
 
 #include <gflags/gflags.h>
 #include "elasticann/store/rpc_sender.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/store/store.h"
 #include "elasticann/store/meta_writer.h"
 #include "elasticann/store/region.h"

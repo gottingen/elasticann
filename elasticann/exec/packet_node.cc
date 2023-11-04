@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/exec/packet_node.h"
 #include "elasticann/exec/full_export_node.h"
 #include "elasticann/runtime/runtime_state.h"

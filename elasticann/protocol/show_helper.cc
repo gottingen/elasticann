@@ -17,7 +17,7 @@
 #include <ctype.h>
 #include "elasticann/protocol/show_helper.h"
 #include "elasticann/protocol/network_server.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"

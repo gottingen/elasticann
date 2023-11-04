@@ -15,8 +15,8 @@
 
 
 #include "elasticann/meta_server/base_state_machine.h"
-#include "elasticann/common/meta_server_interact.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/region_manager.h"
 

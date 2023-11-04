@@ -16,8 +16,8 @@
 
 #include "elasticann/common/information_schema.h"
 #include "elasticann/runtime/runtime_state.h"
-#include "elasticann/common/meta_server_interact.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/session/network_socket.h"
 #include "elasticann/expr/scalar_fn_call.h"

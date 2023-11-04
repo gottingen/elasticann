@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "eaproto/db/store.interface.pb.h"
 
 namespace EA {

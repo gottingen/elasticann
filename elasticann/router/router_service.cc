@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "elasticann/router/router_service.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
     void RouterServiceImpl::meta_manager(::google::protobuf::RpcController* controller,

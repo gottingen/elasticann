@@ -16,7 +16,7 @@
 
 #include "elasticann/logical_plan/ddl_planner.h"
 #include "elasticann/common/expr_value.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/expr/expr_node.h"
 #include <rapidjson/reader.h>

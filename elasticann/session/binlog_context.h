@@ -18,7 +18,7 @@
 #include "elasticann/common/table_record.h"
 #include "elasticann/common/expr_value.h"
 #include "elasticann/common/schema_factory.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include <butil/endpoint.h>
 #include <brpc/channel.h>
 #include <brpc/server.h>

@@ -24,7 +24,7 @@
 #include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/common/common.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/common/baikal_heartbeat.h"
 
 namespace EA {

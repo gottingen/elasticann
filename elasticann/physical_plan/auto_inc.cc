@@ -20,7 +20,7 @@
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/exec/insert_node.h"
 #include "elasticann/session/network_socket.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
     int AutoInc::analyze(QueryContext *ctx) {

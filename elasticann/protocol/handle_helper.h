@@ -18,7 +18,7 @@
 
 #include "elasticann/common/common.h"
 #include "elasticann/session/network_socket.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/protocol/mysql_wrapper.h"
 
 // handle abnormal_region

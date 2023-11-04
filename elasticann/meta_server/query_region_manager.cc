@@ -15,7 +15,7 @@
 
 
 #include "elasticann/meta_server/query_region_manager.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/query_table_manager.h"
 #include "turbo/strings/str_split.h"

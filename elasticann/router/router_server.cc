@@ -17,7 +17,7 @@
 #include <gflags/gflags_declare.h>
 #include <brpc/server.h>
 #include "elasticann/common/tlog.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
 

@@ -14,8 +14,7 @@
 //
 
 
-#include "elasticann/common/meta_server_interact.h"
-#include <gflags/gflags.h>
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
 
