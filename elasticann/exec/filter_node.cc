@@ -32,9 +32,6 @@
 
 namespace EA {
 
-    DECLARE_bool(open_nonboolean_sql_forbid);
-    DECLARE_bool(open_nonboolean_sql_statistics);
-
     int FilterNode::init(const proto::PlanNode &node) {
         int ret = ExecNode::init(node);
         if (ret < 0) {

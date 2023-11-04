@@ -28,9 +28,6 @@
 #include "elasticann/meta_server/region_manager.h"
 #include <gflags/gflags.h>
 
-namespace EA {
-    DECLARE_string(db_path);
-}
 class PrivilegeManagerTest {
 public:
     PrivilegeManagerTest() {

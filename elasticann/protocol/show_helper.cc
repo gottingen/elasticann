@@ -22,7 +22,6 @@
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"
 
-DEFINE_int64(show_table_status_cache_time, 3600 * 1000 * 1000LL, "show table status cache time : 3600s");
 namespace EA {
 
     void ShowHelper::init() {

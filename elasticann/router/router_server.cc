@@ -20,8 +20,7 @@
 #include "elasticann/common/meta_server_interact.h"
 
 namespace EA {
-    DEFINE_string(router_listen, "0.0.0.0:8050", "router default ip port");
-    DECLARE_string(meta_server_bns);
+
 }  // namespace EA
 
 int main(int argc, char**argv) {

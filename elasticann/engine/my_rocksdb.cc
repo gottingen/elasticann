@@ -18,7 +18,6 @@
 #include "elasticann/engine/qos.h"
 
 namespace EA {
-    DEFINE_int32(rocksdb_cost_sample, 100, "rocksdb_cost_sample");
 
     namespace myrocksdb {
 

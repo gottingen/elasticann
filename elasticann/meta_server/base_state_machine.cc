@@ -21,15 +21,6 @@
 #include "elasticann/meta_server/region_manager.h"
 
 namespace EA {
-    DECLARE_string(meta_server_bns);
-    DECLARE_int32(meta_replica_number);
-
-    DEFINE_int32(snapshot_interval_s, 600, "raft snapshot interval(s)");
-    DEFINE_int32(election_timeout_ms, 1000, "raft election timeout(ms)");
-    DEFINE_string(log_uri, "myraftlog://my_raft_log?id=", "raft log uri");
-    DEFINE_string(stable_uri, "local://./raft_data/stable", "raft stable path");
-    DEFINE_string(snapshot_uri, "local://./raft_data/snapshot", "raft snapshot path");
-    DEFINE_int64(check_migrate_interval_us, 60 * 1000 * 1000LL, "check meta server migrate interval (60s)");
 
     void MetaServerClosure::Run() {
         if (!status().ok()) {
@@ -95,14 +86,14 @@ namespace EA {
 
     int BaseStateMachine::init(const std::vector<braft::PeerId> &peers) {
         braft::NodeOptions options;
-        options.election_timeout_ms = FLAGS_election_timeout_ms;
+        options.election_timeout_ms = FLAGS_meta_election_timeout_ms;
         options.fsm = this;
         options.initial_conf = braft::Configuration(peers);
-        options.snapshot_interval_s = FLAGS_snapshot_interval_s;
-        options.log_uri = FLAGS_log_uri + std::to_string(_dummy_region_id);
-        //options.stable_uri = FLAGS_stable_uri + "/meta_server";
-        options.raft_meta_uri = FLAGS_stable_uri + _file_path;
-        options.snapshot_uri = FLAGS_snapshot_uri + _file_path;
+        options.snapshot_interval_s = FLAGS_meta_snapshot_interval_s;
+        options.log_uri = FLAGS_meta_log_uri + std::to_string(_dummy_region_id);
+        //options.stable_uri = FLAGS_meta_stable_uri + "/meta_server";
+        options.raft_meta_uri = FLAGS_meta_stable_uri + _file_path;
+        options.snapshot_uri = FLAGS_meta_snapshot_uri + _file_path;
         int ret = _node.init(options);
         if (ret < 0) {
             TLOG_ERROR("raft node init fail");
@@ -201,7 +192,7 @@ namespace EA {
     void BaseStateMachine::start_check_migrate() {
         TLOG_INFO("start check migrate");
         static int64_t count = 0;
-        int64_t sleep_time_count = FLAGS_check_migrate_interval_us / (1000 * 1000LL); //以S为单位
+        int64_t sleep_time_count = FLAGS_meta_check_migrate_interval_us / (1000 * 1000LL); //以S为单位
         while (_node.is_leader()) {
             int time = 0;
             while (time < sleep_time_count) {

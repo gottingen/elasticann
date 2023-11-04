@@ -25,9 +25,6 @@
 #include "elasticann/common/common.h"
 
 namespace EA {
-    DECLARE_int32(store_request_timeout);
-    DECLARE_int32(store_connect_timeout);
-
 
     struct StoreReqOptions {
         int32_t request_timeout;

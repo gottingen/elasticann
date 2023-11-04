@@ -26,9 +26,7 @@
 #include "turbo/strings/str_split.h"
 
 namespace EA {
-    DECLARE_string(default_logical_room);
-    DECLARE_string(default_physical_room);
-    DECLARE_bool(need_check_slow);
+
     struct InstanceStateInfo {
         int64_t timestamp; //上次收到该实例心跳的时间戳
         proto::Status state; //实例状态

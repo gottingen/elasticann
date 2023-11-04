@@ -18,8 +18,6 @@
 #include "elasticann/store/region.h"
 
 namespace EA {
-    DEFINE_int64(streaming_max_buf_size, 60 * 1024 * 1024LL, "streaming max buf size : 60M");
-    DEFINE_int64(streaming_idle_timeout_ms, 1800 * 1000LL, "streaming idle time : 1800s");
 
     void Backup::process_download_sst(brpc::Controller *cntl,
                                       std::vector<std::string> &request_vec, SstBackupType backup_type) {
@@ -217,7 +215,7 @@ namespace EA {
             ON_SCOPE_EXIT(([this, region_ptr]() {
                 region_ptr->reset_allow_write();
             }));
-            int ret = region_ptr->_real_writing_cond.timed_wait(FLAGS_disable_write_wait_timeout_us * 10);
+            int ret = region_ptr->_real_writing_cond.timed_wait(FLAGS_store_disable_write_wait_timeout_us * 10);
             if (ret != 0) {
                 cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
                 TLOG_ERROR("_real_writing_cond wait timeout, region_id: {}", _region_id);
@@ -332,8 +330,8 @@ namespace EA {
             brpc::StreamId sd;
             brpc::StreamOptions stream_options;
             stream_options.handler = receiver.get();
-            stream_options.max_buf_size = FLAGS_streaming_max_buf_size;
-            stream_options.idle_timeout_ms = FLAGS_streaming_idle_timeout_ms;
+            stream_options.max_buf_size = FLAGS_store_streaming_max_buf_size;
+            stream_options.idle_timeout_ms = FLAGS_store_streaming_idle_timeout_ms;
             if (brpc::StreamAccept(&sd, *cntl, &stream_options) != 0) {
                 cntl->SetFailed("Fail to accept stream");
                 TLOG_WARN("fail to accept stream.");
@@ -446,8 +444,8 @@ namespace EA {
         brpc::StreamId sd;
         brpc::StreamOptions stream_options;
         stream_options.handler = receiver.get();
-        stream_options.max_buf_size = FLAGS_streaming_max_buf_size;
-        stream_options.idle_timeout_ms = FLAGS_streaming_idle_timeout_ms;
+        stream_options.max_buf_size = FLAGS_store_streaming_max_buf_size;
+        stream_options.idle_timeout_ms = FLAGS_store_streaming_idle_timeout_ms;
         if (brpc::StreamAccept(&sd, *cntl, &stream_options) != 0) {
             cntl->SetFailed("Fail to accept stream");
             TLOG_WARN("fail to accept stream.");

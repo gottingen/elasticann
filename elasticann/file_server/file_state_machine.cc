@@ -16,8 +16,6 @@
 #include "elasticann/file_server/file_server_interact.h"
 
 namespace EA {
-    DECLARE_string(meta_server_bns);
-    DECLARE_int32(meta_replica_number);
 
     DEFINE_int32(snapshot_interval_s, 600, "raft snapshot interval(s)");
     DEFINE_int32(election_timeout_ms, 1000, "raft election timeout(ms)");

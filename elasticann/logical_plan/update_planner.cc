@@ -18,7 +18,6 @@
 #include "elasticann/session/network_socket.h"
 
 namespace EA {
-    DEFINE_bool(open_non_where_sql_forbid, false, "open non where conjunct sql forbid switch default:false");
 
     int UpdatePlanner::plan() {
         if (_ctx->stmt == nullptr) {

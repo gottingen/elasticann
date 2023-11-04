@@ -27,7 +27,6 @@
 #include "elasticann/physical_plan/expr_optimizer.h"
 
 namespace EA {
-    DECLARE_string(log_plat_name);
 
     int PreparePlanner::plan() {
         auto client = _ctx->client_conn;

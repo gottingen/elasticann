@@ -28,8 +28,6 @@
 #include "elasticann/common/common.h"
 
 namespace EA {
-    DECLARE_bool(need_verify_ddl_permission);
-    DECLARE_bool(use_read_index);
 
     struct UserInfo {
     public:

@@ -19,10 +19,6 @@
 
 namespace EA {
 
-    DEFINE_bool(disable_writebatch_index, false,
-                "disable the indexing of transaction writebatch, if true the uncommitted data cannot be read");
-    DECLARE_int64(txn_kv_max_dml_row_size);
-
     int DeleteNode::init(const proto::PlanNode &node) {
         int ret = 0;
         ret = ExecNode::init(node);

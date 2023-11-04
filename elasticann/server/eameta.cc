@@ -27,13 +27,6 @@
 #include "turbo/files/filesystem.h"
 #include "turbo/strings/str_split.h"
 
-namespace EA {
-    DECLARE_int32(meta_port);
-    DECLARE_string(meta_listen);
-    DECLARE_string(meta_server_bns);
-    DECLARE_int32(meta_replica_number);
-}
-
 int main(int argc, char **argv) {
     google::SetCommandLineOption("flagfile", "conf/meta_gflags.conf");
     google::ParseCommandLineFlags(&argc, &argv, true);

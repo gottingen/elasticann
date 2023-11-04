@@ -22,7 +22,6 @@
 
 namespace EA {
     typedef std::shared_ptr<proto::RegionInfo> SmartRegionInfo;
-    DECLARE_int32(balance_periodicity);
 
     class SchemaManager {
     public:

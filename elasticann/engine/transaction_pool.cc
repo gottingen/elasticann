@@ -24,18 +24,6 @@
 #include "elasticann/store/region.h"
 
 namespace EA {
-    DECLARE_int64(retry_interval_us);
-    DEFINE_int32(transaction_clear_delay_ms, 600 * 1000,
-                 "delay duration to clear prepared and expired transactions");
-    DEFINE_int32(long_live_txn_interval_ms, 300 * 1000,
-                 "delay duration to clear prepared and expired transactions");
-    DEFINE_int64(clean_finished_txn_interval_us, 600 * 1000 * 1000LL,
-                 "clean_finished_txn_interval_us");
-    DEFINE_int64(1pc_out_fsm_interval_us, 20 * 1000 * 1000LL,
-                 "clean_finished_txn_interval_us");
-    // 分裂slow down max time：5s
-    DEFINE_int32(transaction_query_primary_region_interval_ms, 15 * 1000,
-                 "interval duration send request to primary region");
 
     int TransactionPool::init(int64_t region_id, bool use_ttl, int64_t online_ttl_base_expire_time_us) {
         _region_id = region_id;
@@ -49,7 +37,7 @@ namespace EA {
         if (_txn_count > 0) {
             return true;
         }
-        if (butil::gettimeofday_us() - _latest_active_txn_ts < FLAGS_1pc_out_fsm_interval_us) {
+        if (butil::gettimeofday_us() - _latest_active_txn_ts < FLAGS_one_pc_out_fsm_interval_us) {
             return true;
         }
         return false;

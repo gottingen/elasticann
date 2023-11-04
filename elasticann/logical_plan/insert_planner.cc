@@ -153,7 +153,7 @@ namespace EA {
             std::string alias_name = get_field_alias_name(_insert_stmt->on_duplicate[i]->name);
             if (alias_name.empty()) {
                 TLOG_WARN("get_field_alias_name failed: {}",
-                           _insert_stmt->on_duplicate[i]->name->to_string().c_str());
+                          _insert_stmt->on_duplicate[i]->name->to_string().c_str());
                 return -1;
             }
             std::string full_name = alias_name;

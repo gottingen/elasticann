@@ -21,8 +21,6 @@
 
 namespace EA {
 
-    DECLARE_int32(baikal_heartbeat_interval_us);
-
     void BaikalHeartBeat::construct_heart_beat_request(proto::BaikalHeartBeatRequest &request, bool is_backup) {
         SchemaFactory *factory = nullptr;
         if (is_backup) {

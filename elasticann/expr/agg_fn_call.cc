@@ -21,8 +21,6 @@
 
 namespace EA {
 
-    DEFINE_bool(transfor_hll_raw_to_sparse, false, "try transfor raw hll to sparse");
-
     int AggFnCall::init(const proto::ExprNode &node) {
         ExprNode::init(node);
         if (!node.has_fn()) {

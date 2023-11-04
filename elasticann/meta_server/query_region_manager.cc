@@ -25,10 +25,6 @@
 
 namespace EA {
 
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(store_dead_interval_times);
-    DECLARE_int32(region_faulty_interval_times);
-
     void QueryRegionManager::construct_query_region(const proto::RegionInfo *region_info,
                                                     proto::QueryRegion *query_region_info) {
         int64_t table_id = region_info->table_id();

@@ -19,7 +19,6 @@
 #include "elasticann/session/network_socket.h"
 
 namespace EA {
-    //DEFINE_int32(region_per_batch, 4, "request region number in a batch");
 
     int FullExportNode::init(const proto::PlanNode &node) {
         int ret = 0;

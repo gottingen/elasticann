@@ -20,7 +20,6 @@
 #include "elasticann/protocol/network_server.h"
 
 namespace EA {
-    DEFINE_int32(wait_after_prepare_us, 0, "wait time after prepare(us)");
 
     int TransactionManagerNode::exec_begin_node(RuntimeState *state, ExecNode *begin_node) {
         auto client_conn = state->client_conn();

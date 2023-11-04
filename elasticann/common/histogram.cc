@@ -16,7 +16,6 @@
 #include "elasticann/common/histogram.h"
 
 namespace EA {
-    DEFINE_int32(histogram_split_threshold_percent, 50, "histogram_split_threshold default 0.5");
 
     SampleSorter::SampleSorter(std::vector<std::shared_ptr<RowBatch> > &batch_vector, ExprNode *sort_expr) {
         _slot_order_exprs.push_back(sort_expr);

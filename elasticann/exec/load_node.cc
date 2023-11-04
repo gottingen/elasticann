@@ -22,8 +22,6 @@
 
 namespace EA {
 
-    DEFINE_uint64(row_batch_size, 200, "row_batch_size");
-
     int LoadNode::init(const proto::PlanNode &node) {
         int ret = 0;
         ret = ExecNode::init(node);

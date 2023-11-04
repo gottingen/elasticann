@@ -35,17 +35,6 @@
 #include "turbo/strings/numbers.h"
 
 namespace EA {
-    DECLARE_int64(retry_interval_us);
-    DEFINE_int64(binlog_timeout_us, 10 * 1000 * 1000LL, "binlog timeout us : 10s");
-    DEFINE_int64(binlog_warn_timeout_minute, 15, "binlog warn timeout min : 15min");
-    DEFINE_int64(read_binlog_max_size_bytes, 100 * 1024 * 1024, "100M");
-    DEFINE_int64(read_binlog_timeout_us, 10 * 1000 * 1000, "10s");
-    DEFINE_int64(check_point_rollback_interval_s, 60, "60s");
-    DEFINE_int64(binlog_multiget_batch, 1024, "1024");
-    DEFINE_int64(binlog_seek_batch, 10000, "10000");
-    DEFINE_int64(binlog_use_seek_interval_min, 60, "1h");
-    DEFINE_bool(binlog_force_get, false, "false");
-    DECLARE_int64(print_time_us);
 
     void print_oldest_ts(std::ostream &os, void *) {
         int64_t oldest_ts = RocksWrapper::get_instance()->get_oldest_ts_in_binlog_cf();
@@ -200,12 +189,12 @@ namespace EA {
             }
 
             for (const auto &iter: _binlog_param.ts_binlog_map) {
-                if (iter.second.time.get_time() > FLAGS_binlog_timeout_us) {
+                if (iter.second.time.get_time() > FLAGS_store_binlog_timeout_us) {
                     RocksdbVars::get_instance()->binlog_not_commit_max_cost << iter.second.time.get_time();
                     //告警
                     TLOG_WARN("region_id: {}, start_ts: {}, txn_id:{}, primary_region_id: {} timeout",
                                _region_id, iter.first, iter.second.txn_id, iter.second.primary_region_id);
-                    if (iter.second.time.get_time() > FLAGS_binlog_warn_timeout_minute * 60 * 1000 * 1000LL) {
+                    if (iter.second.time.get_time() > FLAGS_store_binlog_warn_timeout_minute * 60 * 1000 * 1000LL) {
                         TLOG_ERROR("region_id: {} not commited for a long time", _region_id);
                     }
 
@@ -652,7 +641,7 @@ namespace EA {
         if (ts <= _binlog_param.check_point_ts) {
             // check point 变小说明写入ts小于check point，告警
             if (tso::get_timestamp_internal(_binlog_param.check_point_ts) - tso::get_timestamp_internal(ts)
-                > FLAGS_check_point_rollback_interval_s) {
+                > FLAGS_store_check_point_rollback_interval_s) {
                 TLOG_ERROR("region_id: {}, new ts: {}, {}, < old check point ts: {}, {}, "
                          "check point rollback interval too long, remote_side: {}", _region_id, ts,
                          ts_to_datetime_str(ts).c_str(),
@@ -927,8 +916,8 @@ namespace EA {
         // _mode = interval_ms > FLAGS_binlog_use_seek_interval_min * 60000LL ? SEEK : MULTIGET;
         // _bacth_size = _mode == SEEK ? FLAGS_binlog_seek_batch : FLAGS_binlog_multiget_batch;
         _mode = MULTIGET;
-        _bacth_size = FLAGS_binlog_multiget_batch;
-        if (_oldest_ts_in_binlog_cf <= 0 || FLAGS_binlog_force_get) {
+        _bacth_size = FLAGS_store_binlog_multiget_batch;
+        if (_oldest_ts_in_binlog_cf <= 0 || FLAGS_store_binlog_force_get) {
             _mode = GET;
         }
     }
@@ -937,13 +926,13 @@ namespace EA {
     BinlogReadMgr::BinlogReadMgr(int64_t region_id, GetMode mode) : _region_id(region_id), _mode(mode) {
         _rocksdb = RocksWrapper::get_instance();
         _oldest_ts_in_binlog_cf = _rocksdb->get_oldest_ts_in_binlog_cf();
-        _bacth_size = _mode == SEEK ? FLAGS_binlog_seek_batch : FLAGS_binlog_multiget_batch;
+        _bacth_size = _mode == SEEK ? FLAGS_store_binlog_seek_batch : FLAGS_store_binlog_multiget_batch;
     }
 
     int BinlogReadMgr::binlog_add_to_response(int64_t commit_ts, const std::string &binlog_value,
                                               proto::StoreRes *response) {
-        if ((_total_binlog_size + binlog_value.size() < FLAGS_read_binlog_max_size_bytes &&
-             _time.get_time() < FLAGS_read_binlog_timeout_us)
+        if ((_total_binlog_size + binlog_value.size() < FLAGS_store_read_binlog_max_size_bytes &&
+             _time.get_time() < FLAGS_store_read_binlog_timeout_us)
             || _is_first_binlog) {
             _is_first_binlog = false;
             _total_binlog_size += binlog_value.size();

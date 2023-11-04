@@ -20,7 +20,6 @@
 #include "elasticann/exec/dml_node.h"
 
 namespace EA {
-    DECLARE_bool(check_condition_again_for_global_index);
 
     class LockPrimaryNode : public DMLNode {
     public:

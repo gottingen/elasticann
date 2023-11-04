@@ -24,7 +24,6 @@
 #include "elasticann/runtime/runtime_state.h"
 
 namespace EA {
-    DEFINE_string(redis_addr, "127.0.0.1:6379", "redis addr");
 
     int RedisScanNode::init(const proto::PlanNode &node) {
         int ret = 0;

@@ -20,8 +20,6 @@
 
 namespace EA {
 
-    DEFINE_bool(like_predicate_use_re2, false, "LikePredicate use re2");
-
     int InPredicate::open() {
         int ret = 0;
         ret = ExprNode::open();

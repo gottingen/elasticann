@@ -41,7 +41,6 @@ namespace EA {
     DEFINE_int32(backup_pv_threshold, 50, "backup_pv_threshold");
     DEFINE_double(backup_error_percent, 0.5, "use backup table if backup_error_percent > 0.5");
     DEFINE_int64(health_check_interval_us, 10 * 1000 * 1000, "health_check_interval_us");
-    DECLARE_bool(need_health_check);
     DEFINE_int64(health_check_store_timeout_ms, 2000, "health_check_store_timeout_ms");
     DEFINE_bool(fetch_instance_id, false, "fetch baikaldb instace id, used for generate transaction id");
     DEFINE_string(hostname, "HOSTNAME", "matrix instance name");
@@ -52,7 +51,6 @@ namespace EA {
     DEFINE_bool(enable_tcp_keep_alive, false, "enable tcp keepalive flag");
     DECLARE_int32(baikal_heartbeat_interval_us);
     DEFINE_bool(open_to_collect_slow_query_infos, false, "open to collect slow_query_infos, default: false");
-    DEFINE_int32(limit_slow_sql_size, 50, "each sign to slow query sql counts, default: 50");
     DEFINE_int32(slow_query_batch_size, 100, "slow query sql batch size, default: 100");
 
     static const std::string instance_table_name = "INTERNAL.baikaldb.__baikaldb_instance";

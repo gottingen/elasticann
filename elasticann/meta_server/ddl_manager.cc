@@ -23,14 +23,6 @@
 
 namespace EA {
 
-    DEFINE_int32(baikaldb_max_concurrent, 5, "ddl work baikaldb concurrent");
-    DEFINE_int32(single_table_ddl_max_concurrent, 50, "ddl work baikaldb concurrent");
-    DEFINE_int32(submit_task_number_per_round, 20, "submit task number per round");
-    DEFINE_int32(ddl_status_update_interval_us, 10 * 1000 * 1000, "ddl_status_update_interval(us)");
-    DEFINE_int32(max_region_num_ratio, 2, "max region number ratio");
-    DEFINE_int32(max_ddl_retry_time, 30, "max ddl retry time");
-    DECLARE_int32(baikal_heartbeat_interval_us);
-
     std::string construct_ddl_work_key(const std::string &identify, const std::initializer_list<int64_t> &ids) {
         std::string ddl_key;
         ddl_key = MetaServer::SCHEMA_IDENTIFY + identify;

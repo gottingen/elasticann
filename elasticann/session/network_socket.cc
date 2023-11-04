@@ -19,7 +19,7 @@
 #include "elasticann/session/binlog_context.h"
 
 namespace EA {
-    DECLARE_string(db_version);
+
     static UserInfo dummy;
     bvar::Adder<int64_t> NetworkSocket::bvar_prepare_count{"bvar_prepare_count"};
 

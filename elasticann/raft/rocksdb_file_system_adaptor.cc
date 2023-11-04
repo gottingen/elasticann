@@ -22,7 +22,6 @@
 #include "elasticann/raft/log_entry_reader.h"
 
 namespace EA {
-    DEFINE_int64(snapshot_timeout_min, 10, "snapshot_timeout_min : 10min");
 
     bool inline is_snapshot_data_file(const std::string &path) {
         butil::StringPiece sp(path);

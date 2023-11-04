@@ -19,8 +19,6 @@
 
 namespace EA {
 
-    DEFINE_bool(check_condition_again_for_global_index, false, "avoid write skew for global index if true");
-
     int LockPrimaryNode::init(const proto::PlanNode &node) {
         int ret = 0;
         ret = ExecNode::init(node);

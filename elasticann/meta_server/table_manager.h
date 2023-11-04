@@ -30,10 +30,6 @@
 #include "elasticann/config/gflags_defines.h"
 
 namespace EA {
-    DECLARE_int64(table_tombstone_gc_time_s);
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(pre_split_threashold);
-
 
     enum MergeStatus {
         MERGE_IDLE = 0, //空闲

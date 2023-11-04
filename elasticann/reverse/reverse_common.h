@@ -31,7 +31,7 @@
 #include "elasticann/engine/my_rocksdb.h"
 
 namespace EA {
-    DECLARE_bool(reverse_print_log);
+
     typedef std::shared_ptr<google::protobuf::Message> MessageSP;
     typedef std::pair<std::string, std::string> KeyRange;
     extern std::atomic_long g_statistic_insert_key_num;

@@ -19,7 +19,6 @@
 #include "elasticann/common/tuple_record.h"
 
 namespace EA {
-    DEFINE_bool(cstore_scan_fill_cache, true, "cstore_scan_fill_cache");
 
     TableIterator *Iterator::scan_primary(
             SmartTransaction txn,

@@ -57,7 +57,6 @@ namespace EA {
 }
 
 namespace EA {
-    DECLARE_int32(limit_slow_sql_size);
 
     class NetworkServer {
     public:

@@ -36,8 +36,6 @@
 using google::protobuf::RepeatedPtrField;
 
 namespace EA {
-    DECLARE_int32(single_store_concurrency);
-    DECLARE_int32(per_txn_max_num_locks);
 
     struct TxnLimitMap {
         static TxnLimitMap *get_instance() {

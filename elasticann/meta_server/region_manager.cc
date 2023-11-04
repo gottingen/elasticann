@@ -24,13 +24,6 @@
 #include "turbo/format/format.h"
 
 namespace EA {
-    DECLARE_int32(concurrency_num);
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(store_dead_interval_times);
-    DECLARE_int32(region_faulty_interval_times);
-    DEFINE_int64(modify_learner_peer_interval_us, 100 * 1000 * 1000LL, "modify learner peer interval");
-    DEFINE_int32(balance_add_peer_num, 10, "add peer num each time, default(10)");
-    BRPC_VALIDATE_GFLAG(balance_add_peer_num, brpc::PositiveInteger);
 
     //增加或者更新region信息
     //如果是增加，则需要更新表信息, 只有leader的上报会调用该接口

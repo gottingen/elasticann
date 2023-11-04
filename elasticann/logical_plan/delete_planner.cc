@@ -20,8 +20,6 @@
 #include "elasticann/session/network_socket.h"
 
 namespace EA {
-    DEFINE_bool(delete_all_to_truncate, false, "delete from xxx; treat as truncate");
-    DECLARE_bool(open_non_where_sql_forbid);
 
     int DeletePlanner::plan() {
         if (_ctx->stmt_type == parser::NT_TRUNCATE) {

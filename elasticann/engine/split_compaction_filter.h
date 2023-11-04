@@ -24,7 +24,6 @@
 #include "elasticann/engine/transaction.h"
 
 namespace EA {
-    DECLARE_int32(rocks_binlog_ttl_days);
 
     class SplitCompactionFilter : public rocksdb::CompactionFilter {
         struct FilterRegionInfo {

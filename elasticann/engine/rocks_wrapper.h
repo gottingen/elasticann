@@ -31,9 +31,6 @@
 #include "turbo/format/format.h"
 
 namespace EA {
-    DECLARE_int32(rocks_max_background_compactions);
-    DECLARE_int32(addpeer_rate_limit_level);
-    DECLARE_int32(level0_max_sst_num);
 
     enum KVMode {
         KEY_ONLY,

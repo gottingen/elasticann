@@ -22,11 +22,6 @@
 #include "eaproto/db/reverse.pb.h"
 
 namespace EA {
-    DEFINE_string(q2b_utf8_path, "./conf/q2b_utf8.dic", "q2b_utf8_path");
-    DEFINE_string(q2b_gbk_path, "./conf/q2b_gbk.dic", "q2b_gbk_path");
-    DEFINE_string(punctuation_path, "./conf/punctuation.dic", "punctuation_path");
-    DEFINE_bool(reverse_print_log, false, "reverse_print_log");
-    DEFINE_bool(enable_print_convert_log, false, "enable_print_convert_log");
 
     std::atomic_long g_statistic_insert_key_num = {0};
     std::atomic_long g_statistic_delete_key_num = {0};

@@ -21,8 +21,6 @@
 #include "elasticann/exec/scan_node.h"
 
 namespace EA {
-    DEFINE_int32(expect_bucket_count, 100, "expect_bucket_count");
-    DEFINE_bool(field_charsetnr_set_by_client, false, "set charsetnr by client");
 
     int PacketNode::init(const proto::PlanNode &node) {
         int ret = 0;

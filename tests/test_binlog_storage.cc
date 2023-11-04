@@ -24,7 +24,6 @@
 #include "elasticann/common/meta_server_interact.h"
 
 namespace EA {
-    DECLARE_string(meta_server_bns);
 
     int64_t get_tso() {
         proto::TsoRequest request;

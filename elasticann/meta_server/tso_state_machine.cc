@@ -27,11 +27,6 @@
 #include <braft/storage.h>
 
 namespace EA {
-    DECLARE_int32(election_timeout_ms);
-    DECLARE_string(log_uri);
-    DECLARE_string(stable_uri);
-    DECLARE_string(snapshot_uri);
-    DEFINE_int32(tso_snapshot_interval_s, 60, "tso raft snapshot interval(s)");
 
     int TsoTimer::init(TSOStateMachine *node, int timeout_ms) {
         int ret = RepeatedTimerTask::init(timeout_ms);
@@ -54,14 +49,14 @@ namespace EA {
         _tso_obj.last_save_physical = 0;
         //int ret = BaseStateMachine::init(peers);
         braft::NodeOptions options;
-        options.election_timeout_ms = FLAGS_election_timeout_ms;
+        options.election_timeout_ms = FLAGS_meta_election_timeout_ms;
         options.fsm = this;
         options.initial_conf = braft::Configuration(peers);
-        options.snapshot_interval_s = FLAGS_tso_snapshot_interval_s;
-        options.log_uri = FLAGS_log_uri + std::to_string(_dummy_region_id);
+        options.snapshot_interval_s = FLAGS_meta_tso_snapshot_interval_s;
+        options.log_uri = FLAGS_meta_log_uri + std::to_string(_dummy_region_id);
         //options.stable_uri = FLAGS_stable_uri + "/meta_server";
-        options.raft_meta_uri = FLAGS_stable_uri + _file_path;
-        options.snapshot_uri = FLAGS_snapshot_uri + _file_path;
+        options.raft_meta_uri = FLAGS_meta_stable_uri + _file_path;
+        options.snapshot_uri = FLAGS_meta_snapshot_uri + _file_path;
         int ret = _node.init(options);
         if (ret < 0) {
             TLOG_ERROR("raft node init fail");

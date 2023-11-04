@@ -25,7 +25,6 @@
 #include "elasticann/common/common.h"
 
 namespace EA {
-    DECLARE_int64(time_between_meta_connect_error_ms);
 
     class MetaServerInteract {
     public:

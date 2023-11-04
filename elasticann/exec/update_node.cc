@@ -20,8 +20,6 @@
 
 namespace EA {
 
-    DEFINE_int64(txn_kv_max_dml_row_size, 4096, "max dml rows to use kv mode, default(4096)");
-
     int UpdateNode::init(const proto::PlanNode &node) {
         int ret = 0;
         ret = ExecNode::init(node);

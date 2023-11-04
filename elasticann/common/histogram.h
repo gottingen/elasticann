@@ -22,7 +22,7 @@
 #include "elasticann/runtime/sorter.h"
 
 namespace EA {
-    DECLARE_int32(expect_bucket_count);
+
     struct BucketInfo {
         int distinct_cnt = 0;
         int bucket_size = 0;

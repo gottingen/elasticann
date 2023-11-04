@@ -22,10 +22,6 @@
 #include "elasticann/reverse/reverse_index.h"
 
 namespace EA {
-    DEFINE_bool(disable_wal, false, "disable rocksdb interanal WAL log, only use raft log");
-    DECLARE_int32(rocks_transaction_lock_timeout_ms);
-    DEFINE_int64(exec_1pc_out_fsm_timeout_ms, 5 * 1000, "exec 1pc out of fsm, timeout");
-    DEFINE_int64(exec_1pc_in_fsm_timeout_ms, 100, "exec 1pc in fsm, timeout");
 
     // value 出参，会remove prefix
     int64_t ttl_decode(rocksdb::Slice &value, const IndexInfo *const index_info, int64_t base_expire_time_us) {

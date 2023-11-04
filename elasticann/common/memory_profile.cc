@@ -22,14 +22,6 @@
 
 namespace EA {
 
-    DEFINE_int64(memory_gc_interval_s, 10, "mempry GC interval , default: 10s");
-    DEFINE_int64(memory_stats_interval_s, 60, "mempry GC interval , default: 60s");
-    DEFINE_int64(min_memory_use_size, 8589934592, "minimum memory use size , default: 8G");
-    DEFINE_int64(min_memory_free_size_to_release, 2147483648, "minimum memory free size to release, default: 2G");
-    DEFINE_int64(mem_tracker_gc_interval_s, 60, "do memory limit when row number more than #, default: 60");
-    DEFINE_int64(process_memory_limit_bytes, -1, "all memory use size, default: -1");
-    DEFINE_int64(query_memory_limit_ratio, 90, "query memory use ratio , default: 90%");
-
     void MemoryGCHandler::memory_gc_thread() {
 #ifdef BAIKAL_TCMALLOC
         char stats_buffer[1000] = {0};

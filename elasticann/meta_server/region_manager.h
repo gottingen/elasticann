@@ -29,8 +29,6 @@
 
 namespace EA {
 
-    DECLARE_int64(modify_learner_peer_interval_us);
-
     struct RegionStateInfo {
         int64_t timestamp; //上次收到该实例心跳的时间戳
         proto::Status status; //实例状态

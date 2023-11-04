@@ -18,7 +18,6 @@
 #include "elasticann/exec/exec_node.h"
 
 namespace EA {
-    DEFINE_bool(default_2pc, false, "default enable/disable 2pc for autocommit queries");
 
     QueryContext::~QueryContext() {
         if (need_destroy_tree) {

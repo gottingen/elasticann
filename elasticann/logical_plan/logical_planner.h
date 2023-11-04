@@ -37,7 +37,7 @@ namespace EA {
 
     static const int MAX_SQL_EXP_SIZE = 100;
 
-// Join Node is a binary tree, which must own both left & right children
+    // Join Node is a binary tree, which must own both left & right children
     struct JoinMemTmp {
         proto::JoinNode join_node;
         JoinMemTmp *left_node = nullptr;

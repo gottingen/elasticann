@@ -24,8 +24,6 @@
 #include "turbo/strings/match.h"
 
 namespace EA {
-    DEFINE_bool(unique_index_default_global, true, "unique_index_default_global");
-    DEFINE_bool(normal_index_default_global, false, "normal_index_default_global");
 
     int DDLPlanner::plan() {
         proto::MetaManagerRequest request;
@@ -101,7 +99,7 @@ namespace EA {
                 _factory->update_table(response.create_table_response().schema_info());
                 _factory->update_regions(response.create_table_response().region_infos());
                 TLOG_WARN("db process create_table_response: {}",
-                           response.create_table_response().ShortDebugString().c_str());
+                          response.create_table_response().ShortDebugString().c_str());
             }
         }
         return 0;
@@ -361,7 +359,7 @@ namespace EA {
             case proto::STRING: {
                 if (region_num <= 0 || end_key < start_key) {
                     TLOG_ERROR("pre split param not valid: start_key: {}, end_key: {}, region_num: {}",
-                             start_key.c_str(), end_key.c_str(), region_num);
+                               start_key.c_str(), end_key.c_str(), region_num);
                     return -1;
                 }
                 ExprValue start_key_value(proto::STRING);
@@ -379,7 +377,7 @@ namespace EA {
                     return -1;
                 }
                 TLOG_WARN("start_uint: {}, end_uint: {}, step: {}, prefix_len: {}, common_prefix: {}",
-                           start_uint64, end_uint64, step, prefix_len, common_prefix.c_str());
+                          start_uint64, end_uint64, step, prefix_len, common_prefix.c_str());
                 for (; start_uint64 <= end_uint64; start_uint64 += step) {
                     // uint64转string
                     uint64_t val = start_uint64;
@@ -425,7 +423,7 @@ namespace EA {
         const proto::IndexInfo *primary_index = nullptr;
         const proto::IndexInfo *gloabal_index = nullptr;
         TLOG_WARN("split_start_key: {}, split_end_key: {}, region_num: {}, pb: {}",
-                   start_key.c_str(), end_key.c_str(), region_num, table.ShortDebugString().c_str());
+                  start_key.c_str(), end_key.c_str(), region_num, table.ShortDebugString().c_str());
         for (auto &filed: table.fields()) {
             fields[filed.field_name()] = &filed;
         }
@@ -435,7 +433,7 @@ namespace EA {
                 for (auto &field_name: index_info.field_names()) {
                     if (fields.find(field_name) == fields.end()) {
                         TLOG_WARN("no matching filed: {}, table: {}", field_name.c_str(),
-                                   table.ShortDebugString().c_str());
+                                  table.ShortDebugString().c_str());
                         return -1;
                     }
                     primary_index_fields.emplace_back(fields[field_name]);
@@ -445,7 +443,7 @@ namespace EA {
                 for (auto &field_name: index_info.field_names()) {
                     if (fields.find(field_name) == fields.end()) {
                         TLOG_WARN("no matching filed: {}, table: {}", field_name.c_str(),
-                                   table.ShortDebugString().c_str());
+                                  table.ShortDebugString().c_str());
                         return -1;
                     }
                     global_index_fields.emplace_back(fields[field_name]);
@@ -555,7 +553,7 @@ namespace EA {
                     if (root.HasParseError()) {
                         rapidjson::ParseErrorCode code = root.GetParseError();
                         TLOG_WARN("parse create table json comments error [code:{}][{}]",
-                                   code, value);
+                                  code, value);
                         return -1;
                     }
                     auto json_iter = root.FindMember("segment_type");
@@ -629,7 +627,7 @@ namespace EA {
                         table.set_comment(option->str_value.value);
                         rapidjson::ParseErrorCode code = root.GetParseError();
                         TLOG_WARN("parse create table json comments error [code:{}][{}]",
-                                   code, option->str_value.value);
+                                  code, option->str_value.value);
                         continue;
 //                    return -1;
                     }
@@ -860,7 +858,7 @@ namespace EA {
         }
         if (!table.has_namespace_name()) {
             TLOG_WARN("no namespace set, use default: {}",
-                       _ctx->user_info->namespace_.c_str());
+                      _ctx->user_info->namespace_.c_str());
             table.set_namespace_name(_ctx->user_info->namespace_);
         }
         if (split_region_num > 0) {
@@ -923,7 +921,7 @@ namespace EA {
         table.set_namespace_name(_ctx->user_info->namespace_);
         table.set_if_exist(stmt->if_exist);
         TLOG_WARN("drop table: {}.{}.{}",
-                   table.namespace_name().c_str(), table.database().c_str(), table.table_name().c_str());
+                  table.namespace_name().c_str(), table.database().c_str(), table.table_name().c_str());
         return 0;
     }
 
@@ -951,7 +949,7 @@ namespace EA {
         table.set_table_name(table_name->table.value);
         table.set_namespace_name(_ctx->user_info->namespace_);
         TLOG_WARN("restore table: {}.{}.{}",
-                   table.namespace_name().c_str(), table.database().c_str(), table.table_name().c_str());
+                  table.namespace_name().c_str(), table.database().c_str(), table.table_name().c_str());
         return 0;
     }
 
@@ -1046,7 +1044,7 @@ namespace EA {
                         table->set_comment(table_option->str_value.value);
                         rapidjson::ParseErrorCode code = root.GetParseError();
                         TLOG_WARN("parse create table json comments error [code:{}][{}]",
-                                   code, table_option->str_value.value);
+                                  code, table_option->str_value.value);
                         return 0;
                     }
                     auto json_iter = root.FindMember("comment");
@@ -1544,7 +1542,7 @@ namespace EA {
                 if (root.HasParseError()) {
                     rapidjson::ParseErrorCode code = root.GetParseError();
                     TLOG_WARN("parse create table json comments error [code:{}][{}]",
-                               code, value);
+                              code, value);
                     return -1;
                 }
                 auto json_iter = root.FindMember("segment_type");

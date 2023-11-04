@@ -31,7 +31,6 @@
 #include "elasticann/common/tuple_record.h"
 
 namespace EA {
-    DECLARE_bool(disable_wal);
 
     class ReverseIndexBase;
 

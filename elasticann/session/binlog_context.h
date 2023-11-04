@@ -28,7 +28,6 @@
 
 namespace EA {
 
-    DECLARE_string(meta_server_bns);
 
     class TsoFetcher {
     public:

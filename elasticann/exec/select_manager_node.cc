@@ -23,7 +23,6 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-    DEFINE_bool(global_index_read_consistent, true, "double check for global and primary region consistency");
 
     int SelectManagerNode::open(RuntimeState *state) {
         START_LOCAL_TRACE(get_trace(), state->get_trace_cost(), OPEN_TRACE, ([state](TraceLocalNode &local_node) {

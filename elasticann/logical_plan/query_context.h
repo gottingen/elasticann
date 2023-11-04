@@ -26,11 +26,10 @@
 #include "elasticann/common/range.h"
 
 namespace EA {
-    DECLARE_bool(default_2pc);
 
     class ExecNode;
 
-// notice日志信息统计结构
+    // notice日志信息统计结构
     struct QueryStat {
         int64_t query_read_time;
         int64_t query_plan_time;

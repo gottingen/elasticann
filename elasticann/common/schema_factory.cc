@@ -27,7 +27,7 @@
 
 using google::protobuf::FileDescriptor;
 namespace EA {
-    DEFINE_bool(need_health_check, true, "need_health_check");
+
     BthreadLocal<bool> SchemaFactory::use_backup;
 
     int SchemaFactory::init() {

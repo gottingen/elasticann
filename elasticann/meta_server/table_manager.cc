@@ -29,13 +29,6 @@
 #include "turbo/strings/match.h"
 
 namespace EA {
-    DECLARE_int32(concurrency_num);
-    DEFINE_int32(region_replica_num, 3, "region replica num, default:3");
-    DEFINE_int32(learner_region_replica_num, 1, "learner region replica num, default:1");
-    DEFINE_int32(region_region_size, 100 * 1024 * 1024, "region size, default:100M");
-    DEFINE_int64(table_tombstone_gc_time_s, 3600 * 24 * 5, "time interval to clear table_tombstone. default(5d)");
-    DEFINE_uint64(statistics_heart_beat_bytesize, 256 * 1024 * 1024, "default(256M)");
-    DEFINE_int32(pre_split_threashold, 300, "pre_split_threashold for sync create table");
 
     void TableTimer::run() {
         TLOG_INFO("Table Timer run.");

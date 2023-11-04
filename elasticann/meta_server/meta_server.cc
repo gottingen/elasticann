@@ -32,13 +32,6 @@
 #include "elasticann/meta_server/ddl_manager.h"
 
 namespace EA {
-    DEFINE_string(meta_listen,"127.0.0.1:8010", "meta listen addr");
-    //DEFINE_int32(meta_port, 8010, "Meta port");
-    DEFINE_int32(meta_replica_number, 3, "Meta replica num");
-    DEFINE_int32(concurrency_num, 40, "concurrency num, default: 40");
-    DEFINE_int64(region_apply_raft_interval_ms, 1000LL,
-                 "region apply raft interval, default(1s)");
-    DECLARE_int64(flush_memtable_interval_us);
 
     const std::string MetaServer::CLUSTER_IDENTIFY(1, 0x01);
     const std::string MetaServer::LOGICAL_CLUSTER_IDENTIFY(1, 0x01);

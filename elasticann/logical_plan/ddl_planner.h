@@ -13,8 +13,6 @@
 // limitations under the License.
 //
 
-
-// Brief:  the class for generating and executing DDL SQL
 #pragma once
 
 #include "elasticann/logical_plan/logical_planner.h"

@@ -26,9 +26,7 @@
 #include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 
-namespace EA {
-    DECLARE_string(db_path);
-}
+
 class TestManagerTest {
 public:
     TestManagerTest() {

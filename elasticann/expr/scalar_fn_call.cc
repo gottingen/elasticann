@@ -21,7 +21,6 @@
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
-    DEFINE_bool(open_nonboolean_sql_forbid, false, "open nonboolean sqls forbid default:false");
 
     int ScalarFnCall::init(const proto::ExprNode &node) {
         int ret = 0;

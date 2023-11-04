@@ -20,7 +20,6 @@
 #include "elasticann/common/meta_server_interact.h"
 
 namespace EA {
-    DECLARE_string(meta_server_bns);
 
     class AutoInc {
     public:

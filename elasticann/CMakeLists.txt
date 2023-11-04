@@ -92,7 +92,7 @@ carbin_cc_library(
         elasticann::common
         ${CARBIN_DEPS_LINK}
 )
-
+#[[
 file(GLOB FILE_SERVER file_server/*.cc)
 
 carbin_cc_library(
@@ -107,7 +107,7 @@ carbin_cc_library(
         elasticann::common
         ${CARBIN_DEPS_LINK}
 )
-
+]]
 carbin_cc_binary(
         NAMESPACE elasticann
         NAME eameta
