@@ -32,9 +32,9 @@ namespace EA {
         std::vector<std::string> rocksdb_keys;
         std::vector<std::string> rocksdb_values;
 
-        //准备namespace信息
-        int64_t tmp_namespcae_id = _max_namespace_id + 1;
-        namespace_info.set_namespace_id(tmp_namespcae_id);
+        // prepare namespace info
+        int64_t tmp_namespace_id = _max_namespace_id + 1;
+        namespace_info.set_namespace_id(tmp_namespace_id);
         namespace_info.set_version(1);
 
         std::string namespace_value;
@@ -43,12 +43,12 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
-        rocksdb_keys.push_back(construct_namespace_key(tmp_namespcae_id));
+        rocksdb_keys.push_back(construct_namespace_key(tmp_namespace_id));
         rocksdb_values.push_back(namespace_value);
 
-        //持久化分配出去id的信息
+        // save to rocksdb
         std::string max_namespace_id_value;
-        max_namespace_id_value.append((char *) &tmp_namespcae_id, sizeof(int64_t));
+        max_namespace_id_value.append((char *) &tmp_namespace_id, sizeof(int64_t));
         rocksdb_keys.push_back(construct_max_namespace_id_key());
         rocksdb_values.push_back(max_namespace_id_value);
 
@@ -57,9 +57,9 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update values in memory
         set_namespace_info(namespace_info);
-        set_max_namespace_id(tmp_namespcae_id);
+        set_max_namespace_id(tmp_namespace_id);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
         TLOG_INFO("create namespace success, request:{}", request.ShortDebugString());
     }
