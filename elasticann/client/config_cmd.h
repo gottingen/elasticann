@@ -25,10 +25,15 @@ namespace EA::client {
     void setup_config_cmd(turbo::App &app);
 
     void run_config_cmd(turbo::App *app);
+
     void run_config_create_cmd();
+
     void run_config_list_cmd();
+
     void run_config_version_list_cmd();
+
     void run_config_get_cmd();
+
     void run_config_remove_cmd();
 }  // namespace EA::client
 

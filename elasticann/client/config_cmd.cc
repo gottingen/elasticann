@@ -51,9 +51,9 @@ namespace EA::client {
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_config_cmd(turbo::App* app) {
+    void run_config_cmd(turbo::App *app) {
         // Do stuff...
-        if(app->get_subcommands().empty()) {
+        if (app->get_subcommands().empty()) {
             turbo::Println("{}", app->help());
         }
     }
@@ -63,13 +63,13 @@ namespace EA::client {
         EA::proto::OpsServiceResponse response;
 
         ShowHelper sh;
-        auto rs= ProtoBuilder::make_config_create(&request);
-        if(!rs.ok()) {
+        auto rs = ProtoBuilder::make_config_create(&request);
+        if (!rs.ok()) {
             sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
-        if(!rs.ok()) {
+        if (!rs.ok()) {
             sh.rpc_error_status(rs, request);
             return;
         }
@@ -78,7 +78,7 @@ namespace EA::client {
     }
 
     void run_config_list_cmd() {
-        if(!OptionContext::get_instance()->config_name.empty()) {
+        if (!OptionContext::get_instance()->config_name.empty()) {
             run_config_version_list_cmd();
             return;
         }
@@ -86,13 +86,13 @@ namespace EA::client {
         EA::proto::OpsServiceResponse response;
 
         ShowHelper sh;
-        auto rs= ProtoBuilder::make_config_list(&request);
-        if(!rs.ok()) {
+        auto rs = ProtoBuilder::make_config_list(&request);
+        if (!rs.ok()) {
             sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
-        if(!rs.ok()) {
+        if (!rs.ok()) {
             sh.rpc_error_status(rs, request);
             return;
         }
@@ -105,13 +105,13 @@ namespace EA::client {
         EA::proto::OpsServiceResponse response;
 
         ShowHelper sh;
-        auto rs= ProtoBuilder::make_config_list_version(&request);
-        if(!rs.ok()) {
+        auto rs = ProtoBuilder::make_config_list_version(&request);
+        if (!rs.ok()) {
             sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
-        if(!rs.ok()) {
+        if (!rs.ok()) {
             sh.rpc_error_status(rs, request);
             return;
         }
@@ -124,13 +124,13 @@ namespace EA::client {
         EA::proto::OpsServiceResponse response;
 
         ShowHelper sh;
-        auto rs= ProtoBuilder::make_config_get(&request);
-        if(!rs.ok()) {
+        auto rs = ProtoBuilder::make_config_get(&request);
+        if (!rs.ok()) {
             sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
-        if(!rs.ok()) {
+        if (!rs.ok()) {
             sh.rpc_error_status(rs, request);
             return;
         }
@@ -143,13 +143,13 @@ namespace EA::client {
         EA::proto::OpsServiceResponse response;
 
         ShowHelper sh;
-        auto rs= ProtoBuilder::make_config_remove(&request);
-        if(!rs.ok()) {
+        auto rs = ProtoBuilder::make_config_remove(&request);
+        if (!rs.ok()) {
             sh.pre_send_error(rs, request);
             return;
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
-        if(!rs.ok()) {
+        if (!rs.ok()) {
             sh.rpc_error_status(rs, request);
             return;
         }
