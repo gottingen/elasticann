@@ -36,6 +36,11 @@ namespace EA {
                      ::EA::proto::OpsServiceResponse *response,
                      ::google::protobuf::Closure *done) override;
 
+        void ops_query(::google::protobuf::RpcController *controller,
+                        const ::EA::proto::QueryOpsServiceRequest *request,
+                        ::EA::proto::QueryOpsServiceResponse *response,
+                        ::google::protobuf::Closure *done) override;
+
         int init(const std::vector<braft::PeerId> &peers);
 
         bool have_data();

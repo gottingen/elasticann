@@ -14,6 +14,7 @@
 //
 #include "elasticann/ops/ops_server.h"
 #include "elasticann/ops/config_manager.h"
+#include "elasticann/ops/query_config_manager.h"
 #include "elasticann/ops/service_state_machine.h"
 #include "elasticann/ops/service_rocksdb.h"
 
@@ -25,24 +26,38 @@ namespace EA {
         brpc::ClosureGuard done_guard(done);
         auto op_type = request->op_type();
         switch (op_type) {
-            case EA::proto::OP_GET_CONFIG:{
-                ConfigManager::get_instance()->get_config(request, response);
-                break;
-            }
-            case EA::proto::OP_LIST_CONFIG:{
-                ConfigManager::get_instance()->list_config(request, response);
-                break;
-            }
-            case EA::proto::OP_LIST_CONFIG_VERSION:{
-                ConfigManager::get_instance()->list_config_version(request, response);
-                break;
-            }
             case EA::proto::OP_CREATE_CONFIG:{
                 _machine->process(controller, request, response, done_guard.release());
                 break;
             }
             case EA::proto::OP_REMOVE_CONFIG:{
                 _machine->process(controller, request, response, done_guard.release());
+                break;
+            }
+            default:{
+                response->set_errcode(proto::INPUT_PARAM_ERROR);
+                response->set_errmsg("invalid op_type");
+            }
+        }
+    }
+
+    void OpsServer::ops_query(::google::protobuf::RpcController *controller,
+                   const ::EA::proto::QueryOpsServiceRequest *request,
+                   ::EA::proto::QueryOpsServiceResponse *response,
+                   ::google::protobuf::Closure *done) {
+        brpc::ClosureGuard done_guard(done);
+        auto op_type = request->op_type();
+        switch (op_type) {
+            case EA::proto::QUERY_GET_CONFIG:{
+                QueryConfigManager::get_instance()->get_config(request, response);
+                break;
+            }
+            case EA::proto::QUERY_LIST_CONFIG:{
+                QueryConfigManager::get_instance()->list_config(request, response);
+                break;
+            }
+            case EA::proto::QUERY_LIST_CONFIG_VERSION:{
+                QueryConfigManager::get_instance()->list_config_version(request, response);
                 break;
             }
             default:{

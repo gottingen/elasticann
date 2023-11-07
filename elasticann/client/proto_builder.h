@@ -81,12 +81,12 @@ namespace EA::client {
         [[nodiscard]] static turbo::Status
         make_config_create(EA::proto::OpsServiceRequest *req);
         [[nodiscard]] static turbo::Status
-        make_config_list(EA::proto::OpsServiceRequest *req);
+        make_config_list(EA::proto::QueryOpsServiceRequest *req);
         [[nodiscard]] static turbo::Status
-        make_config_list_version(EA::proto::OpsServiceRequest *req);
+        make_config_list_version(EA::proto::QueryOpsServiceRequest *req);
 
         [[nodiscard]] static turbo::Status
-        make_config_get(EA::proto::OpsServiceRequest *req);
+        make_config_get(EA::proto::QueryOpsServiceRequest *req);
 
         [[nodiscard]] static turbo::Status
         make_config_remove(EA::proto::OpsServiceRequest *req);

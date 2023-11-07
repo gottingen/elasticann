@@ -289,23 +289,23 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_list(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_LIST_CONFIG);
+    ProtoBuilder::make_config_list(EA::proto::QueryOpsServiceRequest *req) {
+        req->set_op_type(EA::proto::QUERY_LIST_CONFIG);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_list_version(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_LIST_CONFIG_VERSION);
+    ProtoBuilder::make_config_list_version(EA::proto::QueryOpsServiceRequest *req) {
+        req->set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
         auto opt = OptionContext::get_instance();
-        req->mutable_config()->set_name(opt->config_name);
+        req->mutable_query_config()->set_name(opt->config_name);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_get(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_GET_CONFIG);
-        auto rc = req->mutable_config();
+    ProtoBuilder::make_config_get(EA::proto::QueryOpsServiceRequest *req) {
+        req->set_op_type(EA::proto::QUERY_GET_CONFIG);
+        auto rc = req->mutable_query_config();
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->config_name);
         if(!opt->config_version.empty()) {

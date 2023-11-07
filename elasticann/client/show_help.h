@@ -27,9 +27,15 @@ namespace EA::client {
 
         static std::string get_op_string(EA::proto::OpType type);
 
-        static std::string get_query_op_string(EA::proto::QueryOpType type);
+        static std::string get_op_string(EA::proto::QueryOpType type);
 
         std::string get_config_type_string(EA::proto::ConfigType type);
+
+        void show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt, const std::string &msg);
+        void show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt, const std::string &msg);
+
+        void rpc_error_status(const turbo::Status &s, EA::proto::OpType qt);
+        void rpc_error_status(const turbo::Status &s, EA::proto::QueryOpType qt);
 
         void pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
 
@@ -37,11 +43,7 @@ namespace EA::client {
 
         void pre_send_error(const turbo::Status &s, const EA::proto::QueryRequest &req);
 
-        void rpc_error_status(const turbo::Status &s, const EA::proto::QueryRequest &req);
-
-        void rpc_error_status(const turbo::Status &s, const EA::proto::OpsServiceRequest &req);
-
-        void rpc_error_status(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
+        void pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req);
 
         void show_meta_response(const std::string_view &server, const EA::proto::MetaManagerResponse &res);
 
@@ -56,11 +58,18 @@ namespace EA::client {
 
         void show_meta_query_physical_response(const EA::proto::QueryResponse &res);
 
-        void show_ops_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
-        void show_query_ops_config_list_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
-        void show_query_ops_config_list_version_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
-        void show_query_ops_config_get_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
+        void
+        show_query_ops_config_list_response(const std::string_view &server, const EA::proto::QueryOpsServiceResponse &res);
 
+        void show_query_ops_config_list_version_response(const std::string_view &server,
+                                                         const EA::proto::QueryOpsServiceResponse &res);
+
+        void
+        show_query_ops_config_get_response(const std::string_view &server, const EA::proto::QueryOpsServiceResponse &res);
+
+    private:
+        void show_response(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg);
+        void rpc_error_status(const turbo::Status &s, int qt, const std::string &qts);
     private:
         using Row_t = turbo::Table::Row_t;
         turbo::Table pre_send_result;
@@ -69,6 +78,24 @@ namespace EA::client {
         turbo::Table result_table;
 
     };
+
+    ///
+    /// inlines
+    ///
+    inline void ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt, const std::string &msg) {
+        show_response(server, code, static_cast<int>(qt), get_op_string(qt), msg);
+    }
+
+    inline void ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt, const std::string &msg) {
+        show_response(server, code, static_cast<int>(qt), get_op_string(qt), msg);
+    }
+
+    inline void ShowHelper::rpc_error_status(const turbo::Status &s, EA::proto::OpType qt) {
+        rpc_error_status(s, static_cast<int>(qt), get_op_string(qt));
+    }
+    inline void ShowHelper::rpc_error_status(const turbo::Status &s, EA::proto::QueryOpType qt) {
+        rpc_error_status(s, static_cast<int>(qt), get_op_string(qt));
+    }
 }  // namespace EA::client
 
 #endif  // ELASTICANN_CLIENT_SHOW_HELP_H_

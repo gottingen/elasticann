@@ -25,6 +25,7 @@ namespace EA {
         turbo::ModuleVersion version(create_request.version().major(), create_request.version().minor(),
                                      create_request.version().patch());
 
+        BAIDU_SCOPED_LOCK(_config_mutex);
         if (_configs.find(name) == _configs.end()) {
             _configs[name] = std::map<turbo::ModuleVersion, EA::proto::ConfigEntity>();
         }
@@ -64,6 +65,7 @@ namespace EA {
         auto &remove_request = request.config();
         auto &name = remove_request.name();
         bool remove_signal = remove_request.has_version();
+        BAIDU_SCOPED_LOCK(_config_mutex);
         if (!remove_signal) {
             remove_config_all(request, done);
             return;
@@ -119,73 +121,8 @@ namespace EA {
         SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
-    void ConfigManager::get_config(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response) {
-        response->set_op_type(request->op_type());
-        auto &get_request = request->config();
-        auto &name = get_request.name();
-        auto it = _configs.find(name);
-        if (it == _configs.end() || it->second.empty()) {
-            response->set_errmsg("config not exist");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
-            return;
-        }
-        turbo::ModuleVersion version;
-
-        if(!get_request.has_version()) {
-            // use newest
-            // version = it->second.rend()->first;
-            auto cit = it->second.rbegin();
-            *response->mutable_config() = cit->second;
-            response->set_errmsg("success");
-            response->set_errcode(proto::SUCCESS);
-            return;
-        }
-
-        version = turbo::ModuleVersion(get_request.version().major(), get_request.version().minor(),
-                                           get_request.version().patch());
-
-        auto cit = it->second.find(version);
-        if ( cit == it->second.end()) {
-            /// not exists
-            response->set_errmsg("config not exist");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
-            return;
-        }
-
-        *response->mutable_config() = cit->second;
-        response->set_errmsg("success");
-        response->set_errcode(proto::SUCCESS);
-    }
-
-    void ConfigManager::list_config(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response) {
-        response->set_op_type(request->op_type());
-        response->mutable_config_list()->Reserve(_configs.size());
-        for(auto it = _configs.begin(); it != _configs.end(); ++it) {
-            response->add_config_list(it->first);
-        }
-        response->set_errmsg("success");
-        response->set_errcode(proto::SUCCESS);
-    }
-
-    void ConfigManager::list_config_version(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response) {
-        response->set_op_type(request->op_type());
-        auto &get_request = request->config();
-        auto &name = get_request.name();
-        auto it = _configs.find(name);
-        if (it == _configs.end()) {
-            response->set_errmsg("config not exist");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
-            return;
-        }
-        response->mutable_versions()->Reserve(it->second.size());
-        for(auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
-            *(response->add_versions()) = vit->second.version();
-        }
-        response->set_errmsg("success");
-        response->set_errcode(proto::SUCCESS);
-    }
-
     int ConfigManager::load_snapshot() {
+        BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
         _configs.clear();
         std::string config_prefix = ServiceConstants::CONFIG_IDENTIFY;
         rocksdb::ReadOptions read_options;

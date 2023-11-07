@@ -51,8 +51,8 @@ namespace EA {
 
     }
     void RouterServiceImpl::ops_query(::google::protobuf::RpcController* controller,
-                   const ::EA::proto::OpsServiceRequest* request,
-                   ::EA::proto::OpsServiceResponse* response,
+                   const ::EA::proto::QueryOpsServiceRequest* request,
+                   ::EA::proto::QueryOpsServiceResponse* response,
                    ::google::protobuf::Closure* done) {
         brpc::ClosureGuard done_guard(done);
         auto ret = OpsServerInteract::get_instance()->send_request("ops_query", *request, *response);

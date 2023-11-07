@@ -22,34 +22,51 @@
 #include "turbo/container/flat_hash_map.h"
 #include "turbo/module/module_version.h"
 #include <braft/raft.h>
+#include <bthread/mutex.h>
 
 namespace EA {
 
     class ConfigManager {
     public:
-        static ConfigManager* get_instance() {
+        static ConfigManager *get_instance() {
             static ConfigManager ins;
             return &ins;
         }
+
+        ~ConfigManager();
 
         void create_config(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
         void remove_config(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
-        void get_config(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response);
-
-        void list_config(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response);
-
-        void list_config_version(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response);
-
         int load_snapshot();
 
         static std::string make_config_key(const std::string &name, const turbo::ModuleVersion &version);
+
     private:
+        ConfigManager();
+
+        friend class QueryConfigManager;
+
         int load_config_snapshot(const std::string &value);
+
         void remove_config_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+
     private:
+        bthread_mutex_t _config_mutex;
         turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::ConfigEntity>> _configs;
     };
+
+    ///
+    /// inlines
+    ///
+
+    inline ConfigManager::ConfigManager() {
+        bthread_mutex_init(&_config_mutex, nullptr);
+    }
+
+    inline ConfigManager::~ConfigManager() {
+        bthread_mutex_destroy(&_config_mutex);
+    }
 }  // namespace EA
 #endif  // ELASTICANN_OPS_CONFIG_MANAGER_H_

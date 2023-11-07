@@ -70,11 +70,10 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
-        sh.show_ops_response(OptionContext::get_instance()->server, response);
-
+        sh.show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(), response.errmsg());
     }
 
     void run_config_list_cmd() {
@@ -82,8 +81,8 @@ namespace EA::client {
             run_config_version_list_cmd();
             return;
         }
-        EA::proto::OpsServiceRequest request;
-        EA::proto::OpsServiceResponse response;
+        EA::proto::QueryOpsServiceRequest request;
+        EA::proto::QueryOpsServiceResponse response;
 
         ShowHelper sh;
         auto rs = ProtoBuilder::make_config_list(&request);
@@ -91,18 +90,18 @@ namespace EA::client {
             sh.pre_send_error(rs, request);
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
-        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(), response.errmsg());
         sh.show_query_ops_config_list_response(OptionContext::get_instance()->server, response);
     }
 
     void run_config_version_list_cmd() {
-        EA::proto::OpsServiceRequest request;
-        EA::proto::OpsServiceResponse response;
+        EA::proto::QueryOpsServiceRequest request;
+        EA::proto::QueryOpsServiceResponse response;
 
         ShowHelper sh;
         auto rs = ProtoBuilder::make_config_list_version(&request);
@@ -110,18 +109,18 @@ namespace EA::client {
             sh.pre_send_error(rs, request);
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
-        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(), response.errmsg());
         sh.show_query_ops_config_list_version_response(OptionContext::get_instance()->server, response);
     }
 
     void run_config_get_cmd() {
-        EA::proto::OpsServiceRequest request;
-        EA::proto::OpsServiceResponse response;
+        EA::proto::QueryOpsServiceRequest request;
+        EA::proto::QueryOpsServiceResponse response;
 
         ShowHelper sh;
         auto rs = ProtoBuilder::make_config_get(&request);
@@ -129,12 +128,12 @@ namespace EA::client {
             sh.pre_send_error(rs, request);
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
-        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(), response.errmsg());
         sh.show_query_ops_config_get_response(OptionContext::get_instance()->server, response);
     }
 
@@ -150,9 +149,9 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
-        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_response(OptionContext::get_instance()->server,response.errcode(), response.op_type(), response.errmsg());
     }
 }  // namespace EA::client

@@ -83,7 +83,7 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
         sh.show_meta_response(OptionContext::get_instance()->server, response);
@@ -100,7 +100,7 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
         sh.show_meta_response(OptionContext::get_instance()->server, response);
@@ -117,7 +117,7 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
         sh.show_meta_response(OptionContext::get_instance()->server, response);
@@ -135,7 +135,7 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
         sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
@@ -154,7 +154,7 @@ namespace EA::client {
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            sh.rpc_error_status(rs, request.op_type());
             return;
         }
         sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
