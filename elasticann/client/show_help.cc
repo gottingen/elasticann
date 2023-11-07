@@ -45,6 +45,14 @@ namespace EA::client {
                 return "move physical idc";
             case EA::proto::OP_CREATE_CONFIG:
                 return "create config";
+            case EA::proto::OP_LIST_CONFIG_VERSION:
+                return "list config version";
+            case EA::proto::OP_LIST_CONFIG:
+                return "list config";
+            case EA::proto::OP_GET_CONFIG:
+                return "get config";
+            case EA::proto::OP_REMOVE_CONFIG:
+                return "remove config";
             default:
                 return "unknown operation";
         }
@@ -62,6 +70,27 @@ namespace EA::client {
                 return "query physical";
             default:
                 return "unknown operation";
+        }
+    }
+
+    std::string ShowHelper::get_config_type_string(EA::proto::ConfigType type) {
+        switch (type) {
+            case EA::proto::CF_JSON:
+                return "json";
+            case EA::proto::CF_TEXT:
+                return "text";
+            case EA::proto::CF_INI:
+                return "ini";
+            case EA::proto::CF_YAML:
+                return "yaml";
+            case EA::proto::CF_XML:
+                return "xml";
+            case EA::proto::CF_GFLAGS:
+                return "gflags";
+            case EA::proto::CF_TOML:
+                return "toml";
+            default:
+                return "unknown format";
         }
     }
 
@@ -398,5 +427,59 @@ namespace EA::client {
             result_table[last].format().font_color(turbo::Color::yellow);
 
         }
+    }
+
+    void ShowHelper::show_query_ops_config_list_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res) {
+        if (res.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        auto &config_list = res.config_list();
+        result_table.add_row(Row_t{"config size", turbo::Format(config_list.size())});
+        auto last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(Row_t{"number","config"});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        int i = 0;
+        for (auto &ns: config_list) {
+            result_table.add_row(Row_t{turbo::Format(i++), ns});
+            last = result_table.size() - 1;
+            result_table[last].format().font_color(turbo::Color::yellow);
+
+        }
+    }
+    void ShowHelper::show_query_ops_config_list_version_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res) {
+        if (res.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        auto &config_versions = res.versions();
+        result_table.add_row(Row_t{"version size", turbo::Format(config_versions.size())});
+        auto last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(Row_t{"number","version"});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        int i = 0;
+        for (auto &ns: config_versions) {
+            result_table.add_row(Row_t{turbo::Format(i++), turbo::Format("{}.{}.{}", ns.major(), ns.minor(), ns.patch())});
+            last = result_table.size() - 1;
+            result_table[last].format().font_color(turbo::Color::yellow);
+
+        }
+    }
+    void ShowHelper::show_query_ops_config_get_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res) {
+        if (res.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+
+        result_table.add_row(Row_t{"version", turbo::Format("{}.{}.{}", res.config().version().major(), res.config().version().minor(), res.config().version().patch())});
+        auto last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(Row_t{"type", get_config_type_string(res.config().type())});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(Row_t{"size", turbo::Format(res.config().content().size())});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
     }
 }  // namespace EA::client

@@ -22,6 +22,7 @@
 #include "turbo/files/sequential_read_file.h"
 
 namespace EA::client {
+
     turbo::Status
     ProtoBuilder::make_namespace_create(EA::proto::MetaManagerRequest *req) {
         EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
@@ -263,22 +264,10 @@ namespace EA::client {
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->config_name);
         auto v = rc->mutable_version();
-        std::vector<std::string> vs = turbo::StrSplit(opt->config_version, ".");
-        if(vs.size() != 3)
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        int64_t m;
-        if(!turbo::SimpleAtoi(vs[0], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        auto st = string_to_version(opt->config_version, v);
+        if(!st.ok()) {
+            return st;
         }
-        v->set_major(m);
-        if(!turbo::SimpleAtoi(vs[1], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        }
-        v->set_minor(m);
-        if(!turbo::SimpleAtoi(vs[2], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        }
-        v->set_patch(m);
         if(!opt->config_data.empty()) {
             rc->set_content(opt->config_data);
             return turbo::OkStatus();
@@ -299,6 +288,65 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
+    [[nodiscard]] turbo::Status
+    ProtoBuilder::make_config_list(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_LIST_CONFIG);
+        return turbo::OkStatus();
+    }
+
+    [[nodiscard]] turbo::Status
+    ProtoBuilder::make_config_list_version(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_LIST_CONFIG_VERSION);
+        auto opt = OptionContext::get_instance();
+        req->mutable_config()->set_name(opt->config_name);
+        return turbo::OkStatus();
+    }
+
+    [[nodiscard]] turbo::Status
+    ProtoBuilder::make_config_get(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_GET_CONFIG);
+        auto rc = req->mutable_config();
+        auto opt = OptionContext::get_instance();
+        rc->set_name(opt->config_name);
+        if(!opt->config_version.empty()) {
+            auto v = rc->mutable_version();
+            return string_to_version(opt->config_version, v);
+        }
+        return turbo::OkStatus();
+    }
+
+    [[nodiscard]] turbo::Status
+    ProtoBuilder::make_config_remove(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
+        auto rc = req->mutable_config();
+        auto opt = OptionContext::get_instance();
+        rc->set_name(opt->config_name);
+        if(!opt->config_version.empty()) {
+            auto v = rc->mutable_version();
+            return string_to_version(opt->config_version, v);
+        }
+        return turbo::OkStatus();
+    }
+
+    turbo::Status ProtoBuilder::string_to_version(const std::string &str, EA::proto::Version*v) {
+        std::vector<std::string> vs = turbo::StrSplit(str, ".");
+        if(vs.size() != 3)
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        int64_t m;
+        if(!turbo::SimpleAtoi(vs[0], &m)) {
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        }
+        v->set_major(m);
+        if(!turbo::SimpleAtoi(vs[1], &m)) {
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        }
+        v->set_minor(m);
+        if(!turbo::SimpleAtoi(vs[2], &m)) {
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        }
+        v->set_patch(m);
+        return turbo::OkStatus();
+    }
     turbo::ResultStatus<EA::proto::FieldInfo> ProtoBuilder::string_to_table_field(const std::string &str) {
         // format: field_name:field_type
         std::vector<std::string> fv = turbo::StrSplit(str,':');

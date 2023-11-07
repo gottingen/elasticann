@@ -27,12 +27,25 @@ namespace EA::client {
         auto opt = OptionContext::get_instance();
         auto *ns = app.add_subcommand("config", "config operations");
         ns->callback([ns]() { run_config_cmd(ns); });
+
         auto cc = ns->add_subcommand("create", " create config");
         cc->add_option("-n,--name", opt->config_name, "config name")->required();
         cc->add_option("-d,--data", opt->config_data, "database name");
         cc->add_option("-f, --file", opt->config_file, "new namespace quota");
         cc->add_option("-v, --version", opt->config_version, "new namespace quota")->required();
         cc->callback([]() { run_config_create_cmd(); });
+        auto cl = ns->add_subcommand("list", " list config");
+        cl->add_option("-n,--name", opt->config_name, "config name");
+        cl->callback([]() { run_config_list_cmd(); });
+        auto cg = ns->add_subcommand("get", " get config");
+        cg->add_option("-n,--name", opt->config_name, "config name")->required();
+        cg->add_option("-v, --version", opt->config_version, "new namespace quota");
+        cg->callback([]() { run_config_get_cmd(); });
+
+        auto cr = ns->add_subcommand("remove", " remove config");
+        cr->add_option("-n,--name", opt->config_name, "config name")->required();
+        cr->add_option("-v, --version", opt->config_version, "new namespace quota");
+        cr->callback([]() { run_config_remove_cmd(); });
     }
 
     /// The function that runs our code.
@@ -62,5 +75,84 @@ namespace EA::client {
         }
         sh.show_ops_response(OptionContext::get_instance()->server, response);
 
+    }
+
+    void run_config_list_cmd() {
+        if(!OptionContext::get_instance()->config_name.empty()) {
+            run_config_version_list_cmd();
+            return;
+        }
+        EA::proto::OpsServiceRequest request;
+        EA::proto::OpsServiceResponse response;
+
+        ShowHelper sh;
+        auto rs= ProtoBuilder::make_config_list(&request);
+        if(!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        if(!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_query_ops_config_list_response(OptionContext::get_instance()->server, response);
+    }
+
+    void run_config_version_list_cmd() {
+        EA::proto::OpsServiceRequest request;
+        EA::proto::OpsServiceResponse response;
+
+        ShowHelper sh;
+        auto rs= ProtoBuilder::make_config_list_version(&request);
+        if(!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        if(!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_query_ops_config_list_version_response(OptionContext::get_instance()->server, response);
+    }
+
+    void run_config_get_cmd() {
+        EA::proto::OpsServiceRequest request;
+        EA::proto::OpsServiceResponse response;
+
+        ShowHelper sh;
+        auto rs= ProtoBuilder::make_config_get(&request);
+        if(!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        if(!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_ops_response(OptionContext::get_instance()->server, response);
+        sh.show_query_ops_config_get_response(OptionContext::get_instance()->server, response);
+    }
+
+    void run_config_remove_cmd() {
+        EA::proto::OpsServiceRequest request;
+        EA::proto::OpsServiceResponse response;
+
+        ShowHelper sh;
+        auto rs= ProtoBuilder::make_config_remove(&request);
+        if(!rs.ok()) {
+            sh.pre_send_error(rs, request);
+            return;
+        }
+        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        if(!rs.ok()) {
+            sh.rpc_error_status(rs, request);
+            return;
+        }
+        sh.show_ops_response(OptionContext::get_instance()->server, response);
     }
 }  // namespace EA::client

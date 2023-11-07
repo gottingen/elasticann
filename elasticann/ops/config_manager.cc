@@ -29,10 +29,17 @@ namespace EA {
             _configs[name] = std::map<turbo::ModuleVersion, EA::proto::ConfigEntity>();
         }
         auto it = _configs.find(name);
+        // do not rewrite.
         if (it->second.find(version) != it->second.end()) {
             /// already exists
             TLOG_INFO("config :{} version: {} exist", name, version.to_string());
             SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already exist");
+            return;
+        }
+        if(!it->second.empty() && it->second.rbegin()->first >= version) {
+            /// Version numbers must increase monotonically
+            TLOG_INFO("config :{} version: {} must be larger than current:{}", name, version.to_string(), it->second.rbegin()->first.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "Version numbers must increase monotonically");
             return;
         }
         std::string rocks_key = make_config_key(name, version);
@@ -82,6 +89,9 @@ namespace EA {
             return;
         }
         it->second.erase(version);
+        if(it->second.empty()) {
+            _configs.erase(name);
+        }
         SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
@@ -110,22 +120,30 @@ namespace EA {
     }
 
     void ConfigManager::get_config(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response) {
+        response->set_op_type(request->op_type());
         auto &get_request = request->config();
         auto &name = get_request.name();
-        if(!get_request.has_version()) {
-            //SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "no version");
-            response->set_errmsg("no version");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
-            return;
-        }
         auto it = _configs.find(name);
-        if (it == _configs.end()) {
+        if (it == _configs.end() || it->second.empty()) {
             response->set_errmsg("config not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
-        turbo::ModuleVersion version(get_request.version().major(), get_request.version().minor(),
-                                     get_request.version().patch());
+        turbo::ModuleVersion version;
+
+        if(!get_request.has_version()) {
+            // use newest
+            // version = it->second.rend()->first;
+            auto cit = it->second.rbegin();
+            *response->mutable_config() = cit->second;
+            response->set_errmsg("success");
+            response->set_errcode(proto::SUCCESS);
+            return;
+        }
+
+        version = turbo::ModuleVersion(get_request.version().major(), get_request.version().minor(),
+                                           get_request.version().patch());
+
         auto cit = it->second.find(version);
         if ( cit == it->second.end()) {
             /// not exists
@@ -140,6 +158,7 @@ namespace EA {
     }
 
     void ConfigManager::list_config(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response) {
+        response->set_op_type(request->op_type());
         response->mutable_config_list()->Reserve(_configs.size());
         for(auto it = _configs.begin(); it != _configs.end(); ++it) {
             response->add_config_list(it->first);
@@ -149,6 +168,7 @@ namespace EA {
     }
 
     void ConfigManager::list_config_version(const ::EA::proto::OpsServiceRequest *request, ::EA::proto::OpsServiceResponse *response) {
+        response->set_op_type(request->op_type());
         auto &get_request = request->config();
         auto &name = get_request.name();
         auto it = _configs.find(name);

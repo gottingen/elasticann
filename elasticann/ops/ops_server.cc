@@ -34,7 +34,7 @@ namespace EA {
                 break;
             }
             case EA::proto::OP_LIST_CONFIG_VERSION:{
-                ConfigManager::get_instance()->list_config(request, response);
+                ConfigManager::get_instance()->list_config_version(request, response);
                 break;
             }
             case EA::proto::OP_CREATE_CONFIG:{

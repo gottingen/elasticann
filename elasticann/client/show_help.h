@@ -29,6 +29,8 @@ namespace EA::client {
 
         static std::string get_query_op_string(EA::proto::QueryOpType type);
 
+        std::string get_config_type_string(EA::proto::ConfigType type);
+
         void pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
 
         void pre_send_error(const turbo::Status &s, const EA::proto::OpsServiceRequest &req);
@@ -43,8 +45,6 @@ namespace EA::client {
 
         void show_meta_response(const std::string_view &server, const EA::proto::MetaManagerResponse &res);
 
-        void show_ops_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
-
         void show_meta_query_response(const std::string_view &server, EA::proto::QueryOpType op,
                                       const EA::proto::QueryResponse &res);
 
@@ -55,6 +55,11 @@ namespace EA::client {
         void show_meta_query_logical_response(const EA::proto::QueryResponse &res);
 
         void show_meta_query_physical_response(const EA::proto::QueryResponse &res);
+
+        void show_ops_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
+        void show_query_ops_config_list_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
+        void show_query_ops_config_list_version_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
+        void show_query_ops_config_get_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
 
     private:
         using Row_t = turbo::Table::Row_t;
