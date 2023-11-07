@@ -94,14 +94,14 @@ carbin_cc_library(
         elasticann::common
         ${CARBIN_DEPS_LINK}
 )
-#[[
-file(GLOB FILE_SERVER file_server/*.cc)
+
+file(GLOB_RECURSE SERVICE_SERVER ops/*.cc)
 
 carbin_cc_library(
         NAMESPACE elasticann
         NAME file_server
         SOURCES
-        ${FILE_SERVER}
+        ${SERVICE_SERVER}
         COPTS
         ${USER_CXX_FLAGS}
         DEPS
@@ -109,7 +109,7 @@ carbin_cc_library(
         elasticann::common
         ${CARBIN_DEPS_LINK}
 )
-]]
+
 carbin_cc_binary(
         NAMESPACE elasticann
         NAME eameta
@@ -123,6 +123,24 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        eaproto::eaproto_STATIC
+        PUBLIC
+)
+
+carbin_cc_binary(
+        NAMESPACE elasticann
+        NAME eaops
+        SOURCES
+        ${META_SERVER}
+        ${RAFT_META}
+        server/eaops.cc
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-Wno-strict-aliasing"
+        DEPS
+        ${CARBIN_DEPS_LINK}
+        elasticann::common
+        elasticann::file_server
         eaproto::eaproto_STATIC
         PUBLIC
 )
@@ -156,6 +174,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::file_server
         eaproto::eaproto_STATIC
         PUBLIC
 )

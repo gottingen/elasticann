@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 #include "elasticann/client/schema_cmd.h"
+#include "elasticann/client/ops_cmd.h"
 #include "turbo/flags/flags.h"
 #include "turbo/format/print.h"
 #include "elasticann/client/option_context.h"
@@ -30,6 +31,7 @@ int main(int argc, char **argv) {
     // They are kept alive by a shared pointer in the
     // lambda function
     EA::client::setup_schema_cmd(app);
+    EA::client::setup_ops_cmd(app);
     // More setup if needed, i.e., other subcommands etc.
 
     TURBO_FLAGS_PARSE(app, argc, argv);

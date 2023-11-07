@@ -14,46 +14,45 @@
 //
 
 
-#ifndef ELASTICANN_FILE_SERVER_FILE_STATE_MACHINE_H_
-#define ELASTICANN_FILE_SERVER_FILE_STATE_MACHINE_H_
+#ifndef ELASTICANN_OPS_PLUGIN_PLUGIN_STATE_MACHINE_H_
+#define ELASTICANN_OPS_PLUGIN_PLUGIN_STATE_MACHINE_H_
 
 #include <braft/raft.h>
 #include "elasticann/common/common.h"
 #include "elasticann/raft/raft_control.h"
-#include "eaproto/service/file_service.pb.h"
+#include "eaproto/ops/ops.interface.pb.h"
 
 namespace EA {
-    class FileStateMachine;
+    class ServiceStateMachine;
 
-    struct FileServerClosure : public braft::Closure {
-        virtual void Run();
+    struct ServiceClosure : public braft::Closure {
+        void Run() override;
 
         brpc::Controller *cntl;
-        FileStateMachine *common_state_machine;
+        ServiceStateMachine *state_machine;
         google::protobuf::Closure *done;
-        proto::FileManageResponse *response;
+        proto::OpsServiceResponse *response;
         std::string request;
         int64_t raft_time_cost;
         int64_t total_time_cost;
         TimeCost time_cost;
     };
 
-    class FileStateMachine : public braft::StateMachine {
+    class ServiceStateMachine : public braft::StateMachine {
     public:
 
-        FileStateMachine(int64_t dummy_region_id,
-                         const std::string &identify,
+        ServiceStateMachine(const std::string &identify,
                          const std::string &file_path,
                          const braft::PeerId &peerId) :
                 _node(identify, peerId),
                 _is_leader(false),
                 _check_migrate(&BTHREAD_ATTR_SMALL) {}
 
-        virtual ~FileStateMachine() {}
+        ~ServiceStateMachine() override = default;
 
-        virtual int init(const std::vector<braft::PeerId> &peers);
+        int init(const std::vector<braft::PeerId> &peers);
 
-        virtual void raft_control(google::protobuf::RpcController *controller,
+        void raft_control(google::protobuf::RpcController *controller,
                                   const proto::RaftControlRequest *request,
                                   proto::RaftControlResponse *response,
                                   google::protobuf::Closure *done) {
@@ -69,43 +68,39 @@ namespace EA {
             common_raft_control(controller, request, response, done_guard.release(), &_node);
         }
 
-        virtual void process(google::protobuf::RpcController *controller,
-                             const proto::FileManageRequest *request,
-                             proto::FileManageResponse *response,
+        void process(google::protobuf::RpcController *controller,
+                             const proto::OpsServiceRequest *request,
+                             proto::OpsServiceResponse *response,
                              google::protobuf::Closure *done);
 
-        virtual void start_check_migrate();
+        void start_check_migrate();
 
-        virtual void check_migrate();
+        void check_migrate();
 
         // state machine method
-        virtual void on_apply(braft::Iterator &iter) = 0;
+        void on_apply(braft::Iterator &iter) override;
 
-        virtual void on_shutdown() {
+        void on_shutdown() override{
             TLOG_INFO("raft is shut down");
         };
 
-        virtual void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) = 0;
+        void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) override;
 
-        virtual int on_snapshot_load(braft::SnapshotReader *reader) = 0;
+        int on_snapshot_load(braft::SnapshotReader *reader) override;
 
-        virtual void on_leader_start();
+        void on_leader_start(int64_t term) override;
 
-        virtual void on_leader_start(int64_t term);
+        void on_leader_stop(const butil::Status &status) override;
 
-        virtual void on_leader_stop();
+        void on_error(const ::braft::Error &e) override;
 
-        virtual void on_leader_stop(const butil::Status &status);
+        void on_configuration_committed(const ::braft::Configuration &conf) override;
 
-        virtual void on_error(const ::braft::Error &e);
-
-        virtual void on_configuration_committed(const ::braft::Configuration &conf);
-
-        virtual butil::EndPoint get_leader() {
+        butil::EndPoint get_leader() {
             return _node.leader_id().addr;
         }
 
-        virtual void shutdown_raft() {
+        void shutdown_raft() {
             _node.shutdown(nullptr);
             TLOG_INFO("raft node was shutdown");
             _node.join();
@@ -114,7 +109,7 @@ namespace EA {
 
         void start_check_bns();
 
-        virtual bool is_leader() const {
+        bool is_leader() const {
             return _is_leader;
         }
 
@@ -129,6 +124,8 @@ namespace EA {
     private:
         virtual int send_set_peer_request(bool remove_peer, const std::string &change_peer);
 
+        void save_snapshot(braft::Closure *done, rocksdb::Iterator *iter, braft::SnapshotWriter *writer);
+
     protected:
         braft::Node _node;
         std::atomic<bool> _is_leader;
@@ -136,10 +133,17 @@ namespace EA {
         Bthread _check_migrate;
         bool _check_start = false;
         bool _have_data = false;
+        int64_t _applied_index{0};
     };
 
 }  // namespace EA
 
+#define SERVICE_SET_DONE_AND_RESPONSE(done, errcode, err_message) \
+    do {\
+        if (done && ((ServiceClosure*)done)->response) {\
+            ((ServiceClosure*)done)->response->set_errcode(errcode);\
+            ((ServiceClosure*)done)->response->set_errmsg(err_message);\
+        }\
+    }while (0);
 
-
-#endif  // ELASTICANN_FILE_SERVER_FILE_STATE_MACHINE_H_
+#endif  // ELASTICANN_OPS_PLUGIN_PLUGIN_STATE_MACHINE_H_

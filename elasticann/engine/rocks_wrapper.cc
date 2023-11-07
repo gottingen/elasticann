@@ -34,14 +34,17 @@ namespace EA {
     const std::string RocksWrapper::BIN_LOG_CF = "bin_log_new";
     const std::string RocksWrapper::DATA_CF = "data";
     const std::string RocksWrapper::METAINFO_CF = "meta_info";
+    const std::string RocksWrapper::SERVICE_CF = "service";
     std::atomic<int64_t> RocksWrapper::raft_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::data_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::mata_cf_remove_range_count = {0};
+    std::atomic<int64_t> RocksWrapper::service_cf_remove_range_count = {0};
 
     RocksWrapper::RocksWrapper() : _is_init(false), _txn_db(nullptr),
                                    _raft_cf_remove_range_count("raft_cf_remove_range_count"),
                                    _data_cf_remove_range_count("data_cf_remove_range_count"),
-                                   _mata_cf_remove_range_count("mata_cf_remove_range_count") {
+                                   _mata_cf_remove_range_count("mata_cf_remove_range_count"),
+                                   _service_cf_remove_range_count("service_cf_remove_range_count"){
     }
 
     int32_t RocksWrapper::init(const std::string &path) {
@@ -212,6 +215,14 @@ namespace EA {
         _meta_info_option.level_compaction_dynamic_level_bytes = FLAGS_rocks_data_dynamic_level_bytes;
         _meta_info_option.max_write_buffer_number_to_maintain = _meta_info_option.max_write_buffer_number;
 
+        //prefix: 0x01-0xFF,分别用来存储不同的meta信息
+        _service_option.prefix_extractor.reset(
+                rocksdb::NewFixedPrefixTransform(1));
+        _service_option.OptimizeLevelStyleCompaction();
+        _service_option.compaction_pri = rocksdb::kOldestSmallestSeqFirst;
+        _service_option.level_compaction_dynamic_level_bytes = FLAGS_rocks_data_dynamic_level_bytes;
+        _service_option.max_write_buffer_number_to_maintain = _service_option.max_write_buffer_number;
+
         _db_path = path;
         // List Column Family
         std::vector<std::string> column_family_names;
@@ -232,6 +243,8 @@ namespace EA {
                     column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(DATA_CF, _data_cf_option));
                 } else if (column_family_name == METAINFO_CF) {
                     column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(METAINFO_CF, _meta_info_option));
+                } else if (column_family_name == SERVICE_CF) {
+                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(SERVICE_CF, _service_option));
                 } else {
                     column_family_desc.push_back(
                             rocksdb::ColumnFamilyDescriptor(column_family_name,
@@ -333,6 +346,18 @@ namespace EA {
                 return -1;
             }
         }
+        if (0 == _column_families.count(SERVICE_CF)) {
+            rocksdb::ColumnFamilyHandle *metainfo_handle;
+            s = _txn_db->CreateColumnFamily(_service_option, SERVICE_CF, &metainfo_handle);
+            if (s.ok()) {
+                TLOG_INFO("create column family success, column family: {}", SERVICE_CF);
+                _column_families[SERVICE_CF] = metainfo_handle;
+            } else {
+                TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
+                           SERVICE_CF, s.ToString());
+                return -1;
+            }
+        }
         if (0 == _column_families.count(BIN_LOG_CF)) {
             //create bin_log column_familiy
             rocksdb::ColumnFamilyHandle *bin_log_handle;
@@ -378,6 +403,7 @@ namespace EA {
         auto raft_cf = get_raft_log_handle();
         auto data_cf = get_data_handle();
         auto mata_cf = get_meta_info_handle();
+        auto service_cf = get_service_handle();
         if (raft_cf != nullptr && column_family->GetID() == raft_cf->GetID()) {
             _raft_cf_remove_range_count << 1;
             raft_cf_remove_range_count++;
@@ -387,7 +413,11 @@ namespace EA {
         } else if (mata_cf != nullptr && column_family->GetID() == mata_cf->GetID()) {
             _mata_cf_remove_range_count << 1;
             mata_cf_remove_range_count++;
+        } else if (service_cf != nullptr && column_family->GetID() == service_cf->GetID()) {
+            _service_cf_remove_range_count << 1;
+            service_cf_remove_range_count++;
         }
+
         if (delete_files_in_range && FLAGS_delete_files_in_range) {
             auto s = rocksdb::DeleteFilesInRange(_txn_db, column_family, &begin, &end, false);
             if (!s.ok()) {
@@ -557,6 +587,18 @@ namespace EA {
             return nullptr;
         }
         return _column_families[METAINFO_CF];
+    }
+
+    rocksdb::ColumnFamilyHandle *RocksWrapper::get_service_handle() {
+        if (!_is_init) {
+            TLOG_ERROR("rocksdb has not been inited");
+            return nullptr;
+        }
+        if (0 == _column_families.count(SERVICE_CF)) {
+            TLOG_ERROR("rocksdb has no service column family");
+            return nullptr;
+        }
+        return _column_families[SERVICE_CF];
     }
 
     void RocksWrapper::begin_split_adjust_option() {

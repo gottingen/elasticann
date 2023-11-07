@@ -16,7 +16,7 @@
 #ifndef ELASTICANN_CLIENT_PROTO_BUILDER_H_
 #define ELASTICANN_CLIENT_PROTO_BUILDER_H_
 
-#include "eaproto/db/router.interface.pb.h"
+#include "eaproto/router/router.interface.pb.h"
 #include "turbo/base/status.h"
 #include "turbo/base/result_status.h"
 #include <string>
@@ -77,6 +77,10 @@ namespace EA::client {
         make_cluster_query_physical_list(EA::proto::QueryRequest *req);
         [[nodiscard]] static turbo::Status
         make_cluster_query_physical_info(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_config_create(EA::proto::OpsServiceRequest *req);
+
 
         [[nodiscard]] static turbo::Status
         make_table_create(EA::proto::MetaManagerRequest *req);

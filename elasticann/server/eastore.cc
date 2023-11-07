@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
     EA::Bthread bth;
     bth.run([]() {
         bthread_usleep(2 * 60 * 1000 * 1000);
-        TLOG_ERROR("store forse exit");
+        TLOG_ERROR("store force exit");
         exit(-1);
     });
     // 需要后关端口

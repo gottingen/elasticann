@@ -17,6 +17,9 @@
 #include "elasticann/client/option_context.h"
 #include "elasticann/client/validator.h"
 #include "turbo/strings/utility.h"
+#include "turbo/module/module_version.h"
+#include "turbo/files/filesystem.h"
+#include "turbo/files/sequential_read_file.h"
 
 namespace EA::client {
     turbo::Status
@@ -250,6 +253,49 @@ namespace EA::client {
             return rs;
         }
         req->set_physical_room(phys[0]);
+        return turbo::OkStatus();
+    }
+
+    [[nodiscard]] turbo::Status
+    ProtoBuilder::make_config_create(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_CREATE_CONFIG);
+        auto rc = req->mutable_config();
+        auto opt = OptionContext::get_instance();
+        rc->set_name(opt->config_name);
+        auto v = rc->mutable_version();
+        std::vector<std::string> vs = turbo::StrSplit(opt->config_version, ".");
+        if(vs.size() != 3)
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        int64_t m;
+        if(!turbo::SimpleAtoi(vs[0], &m)) {
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        }
+        v->set_major(m);
+        if(!turbo::SimpleAtoi(vs[1], &m)) {
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        }
+        v->set_minor(m);
+        if(!turbo::SimpleAtoi(vs[2], &m)) {
+            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+        }
+        v->set_patch(m);
+        if(!opt->config_data.empty()) {
+            rc->set_content(opt->config_data);
+            return turbo::OkStatus();
+        }
+        if(opt->config_file.empty()) {
+            return turbo::InvalidArgumentError("no config content");
+        }
+        turbo::SequentialReadFile file;
+        auto rs = file.open(opt->config_file);
+        if(!rs.ok()) {
+            return rs;
+        }
+        auto rr = file.read(&opt->config_data);
+        if(!rr.ok()) {
+            return rr.status();
+        }
+        rc->set_content(opt->config_data);
         return turbo::OkStatus();
     }
 

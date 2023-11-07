@@ -18,6 +18,7 @@
 #include <brpc/server.h>
 #include "elasticann/common/tlog.h"
 #include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/ops/ops_server_interact.h"
 
 namespace EA {
 
@@ -34,6 +35,7 @@ int main(int argc, char**argv) {
     TLOG_INFO("log file load success");
     // init meta interact
     EA::MetaServerInteract::get_instance()->init();
+    EA::OpsServerInteract::get_instance()->init();
 
     brpc::Server server;
     EA::RouterServiceImpl router;

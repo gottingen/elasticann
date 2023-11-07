@@ -48,9 +48,6 @@ namespace EA {
     DEFINE_int32(global_select_concurrency, 24, "global_select_concurrency");
     DEFINE_int64(store_heart_beat_interval_us, 30 * 1000 * 1000, "store heart interval (30 s)");
 
-    DEFINE_int64(table_tombstone_gc_time_s, 3600 * 24 * 5, "time interval to clear table_tombstone. default(5d)");
-
-    DEFINE_int32(pre_split_threashold, 300, "pre_split_threashold for sync create table");
 
     /// common
     DEFINE_int64(memory_gc_interval_s, 10, "mempry GC interval , default: 10s");
@@ -128,6 +125,8 @@ namespace EA {
     DEFINE_int32(max_region_num_ratio, 2, "max region number ratio");
     DEFINE_int32(max_ddl_retry_time, 30, "max ddl retry time");
     DEFINE_int32(baikal_heartbeat_interval_us, 10 * 1000 * 1000, "baikal_heartbeat_interval(us)");
+    DEFINE_int64(table_tombstone_gc_time_s, 3600 * 24 * 5, "time interval to clear table_tombstone. default(5d)");
+    DEFINE_int32(pre_split_threashold, 300, "pre_split_threashold for sync create table");
     /// for cluster management-table
     DEFINE_int32(region_replica_num, 3, "region replica num, default:3");
     DEFINE_int32(learner_region_replica_num, 1, "learner region replica num, default:1");
@@ -387,6 +386,23 @@ namespace EA {
     DEFINE_int64(store_min_sign_concurrency_timeout_ms, 1000, "min_sign_concurrency_timeout_ms, default: 1s");
     DEFINE_int32(store_not_leader_alarm_print_interval_s, 60, "not leader alarm print interval(s)");
 
+    /// for service
+    DEFINE_int64(time_between_service_connect_error_ms, 0, "time_between_meta_connect_error_ms. default(0ms)");
+    DEFINE_string(service_server_bns, "group.opera-qa-baikalMeta-000-yz.FENGCHAO.all", "meta server bns");
+    DEFINE_string(backup_service_server_bns, "", "backup_meta_server_bns");
+    DEFINE_int32(service_request_timeout, 30000, "service as server request timeout, default:30000ms");
+    DEFINE_int32(service_connect_timeout, 5000, "service as server connect timeout, default:5000ms");
+    DEFINE_int32(service_snapshot_interval_s, 600, "raft snapshot interval(s)");
+    DEFINE_int32(service_election_timeout_ms, 1000, "raft election timeout(ms)");
+    DEFINE_string(service_log_uri, "myraftlog://my_raft_log?id=", "raft log uri");
+    DEFINE_string(service_stable_uri, "local://./raft_data/stable", "raft stable path");
+    DEFINE_string(service_snapshot_uri, "local://./raft_data/snapshot", "raft snapshot path");
+    DEFINE_int64(service_check_migrate_interval_us, 60 * 1000 * 1000LL, "check meta server migrate interval (60s)");
+    DEFINE_string(service_plugin_data_root,"./plugin","plugin data dir");
+    DEFINE_string(service_db_path, "./rocks_db", "rocks db path");
+    DEFINE_string(service_snapshot_sst, "/service.sst","rocks sst file for service");
+    DEFINE_string(service_listen,"127.0.0.1:8011", "meta listen addr");
+    DEFINE_int32(service_replica_number, 3, "Service replica num");
     /// for router
     DEFINE_string(router_listen, "0.0.0.0:8050", "router default ip port");
 

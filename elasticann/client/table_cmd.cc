@@ -7,7 +7,7 @@
 #include "elasticann/client/option_context.h"
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
-#include "eaproto/db/router.interface.pb.h"
+#include "eaproto/router/router.interface.pb.h"
 #include "elasticann/client/proto_builder.h"
 #include "turbo/format/print.h"
 #include "elasticann/client/show_help.h"

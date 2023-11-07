@@ -49,6 +49,12 @@ namespace EA::client {
         std::string table_name;
         std::vector<std::string> table_fields;
         std::vector<std::string> table_indexes;
+
+        // for config
+        std::string config_name;
+        std::string config_data;
+        std::string config_file;
+        std::string config_version;
     };
 }  // namespace EA::client
 

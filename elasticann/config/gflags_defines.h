@@ -47,9 +47,6 @@ namespace EA {
     DECLARE_int32(global_select_concurrency);
     DECLARE_int64(store_heart_beat_interval_us);
 
-    DECLARE_int64(table_tombstone_gc_time_s);
-    DECLARE_int32(pre_split_threashold);
-
     /// for common
     DECLARE_int64(memory_gc_interval_s);
     DECLARE_int64(memory_stats_interval_s);
@@ -122,6 +119,8 @@ namespace EA {
     DECLARE_int32(max_region_num_ratio);
     DECLARE_int32(max_ddl_retry_time);
     DECLARE_int32(baikal_heartbeat_interval_us);
+    DECLARE_int64(table_tombstone_gc_time_s);
+    DECLARE_int32(pre_split_threashold);
     /// for cluster management-table
     DECLARE_int32(region_replica_num);
     DECLARE_int32(learner_region_replica_num);
@@ -345,7 +344,25 @@ namespace EA {
     DECLARE_int64(store_sign_concurrency_timeout_rate);
     DECLARE_int64(store_min_sign_concurrency_timeout_ms);
     DECLARE_int32(store_not_leader_alarm_print_interval_s);
-    
+
+    /// for file service
+    DECLARE_int64(time_between_service_connect_error_ms);
+    DECLARE_string(service_server_bns);
+    DECLARE_string(backup_service_server_bns);
+    DECLARE_int32(service_request_timeout);
+    DECLARE_int32(service_connect_timeout);
+    DECLARE_int32(service_snapshot_interval_s);
+    DECLARE_int32(service_election_timeout_ms);
+    DECLARE_string(service_log_uri);
+    DECLARE_string(service_stable_uri);
+    DECLARE_string(service_snapshot_uri);
+    DECLARE_int64(service_check_migrate_interval_us);
+    DECLARE_string(service_plugin_data_root);
+    DECLARE_string(service_db_path);
+    DECLARE_string(service_snapshot_sst);
+    DECLARE_string(service_listen);
+    DECLARE_int32(service_replica_number);
+
     /// for router
     DECLARE_string(router_listen);
 }  // namespace EA

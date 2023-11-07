@@ -14,6 +14,7 @@
 
 #include "elasticann/router/router_service.h"
 #include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/ops/ops_server_interact.h"
 
 namespace EA {
     void RouterServiceImpl::meta_manager(::google::protobuf::RpcController* controller,
@@ -36,5 +37,28 @@ namespace EA {
         if(ret != 0) {
             TLOG_ERROR("rpc to meta server:query error:{}", controller->ErrorText());
         }
+    }
+
+    void RouterServiceImpl::ops_manage(::google::protobuf::RpcController* controller,
+                    const ::EA::proto::OpsServiceRequest* request,
+                    ::EA::proto::OpsServiceResponse* response,
+                    ::google::protobuf::Closure* done) {
+        brpc::ClosureGuard done_guard(done);
+        auto ret = OpsServerInteract::get_instance()->send_request("ops_manage", *request, *response);
+        if(ret != 0) {
+            TLOG_ERROR("rpc to ops server:ops_manage error:{}", controller->ErrorText());
+        }
+
+    }
+    void RouterServiceImpl::ops_query(::google::protobuf::RpcController* controller,
+                   const ::EA::proto::OpsServiceRequest* request,
+                   ::EA::proto::OpsServiceResponse* response,
+                   ::google::protobuf::Closure* done) {
+        brpc::ClosureGuard done_guard(done);
+        auto ret = OpsServerInteract::get_instance()->send_request("ops_query", *request, *response);
+        if(ret != 0) {
+            TLOG_ERROR("rpc to meta server:query error:{}", controller->ErrorText());
+        }
+
     }
 }

@@ -51,9 +51,11 @@ namespace EA {
         static const std::string BIN_LOG_CF;
         static const std::string DATA_CF;
         static const std::string METAINFO_CF;
+        static const std::string SERVICE_CF;
         static std::atomic<int64_t> raft_cf_remove_range_count;
         static std::atomic<int64_t> data_cf_remove_range_count;
         static std::atomic<int64_t> mata_cf_remove_range_count;
+        static std::atomic<int64_t> service_cf_remove_range_count;
 
         virtual ~RocksWrapper() {}
 
@@ -152,6 +154,8 @@ namespace EA {
         rocksdb::ColumnFamilyHandle *get_data_handle();
 
         rocksdb::ColumnFamilyHandle *get_meta_info_handle();
+
+        rocksdb::ColumnFamilyHandle *get_service_handle();
 
         rocksdb::TransactionDB *get_db() {
             return _txn_db;
@@ -280,10 +284,12 @@ namespace EA {
         rocksdb::ColumnFamilyOptions _binlog_cf_option;
         rocksdb::ColumnFamilyOptions _data_cf_option;
         rocksdb::ColumnFamilyOptions _meta_info_option;
+        rocksdb::ColumnFamilyOptions _service_option;
         uint64_t _flush_file_number = 0;
         bvar::Adder<int64_t> _raft_cf_remove_range_count;
         bvar::Adder<int64_t> _data_cf_remove_range_count;
         bvar::Adder<int64_t> _mata_cf_remove_range_count;
+        bvar::Adder<int64_t> _service_cf_remove_range_count;
 
         std::atomic<int32_t> _split_num;
         bthread::Mutex _options_mutex;

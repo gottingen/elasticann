@@ -17,29 +17,36 @@
 #define ELASTICANN_CLIENT_SHOW_HELP_H_
 
 #include "turbo/base/status.h"
-#include "eaproto/db/router.interface.pb.h"
+#include "eaproto/router/router.interface.pb.h"
 #include "turbo/format/table.h"
 
 namespace EA::client {
     class ShowHelper {
     public:
         ~ShowHelper();
+
         static std::string get_op_string(EA::proto::OpType type);
 
         static std::string get_query_op_string(EA::proto::QueryOpType type);
 
         void pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
 
+        void pre_send_error(const turbo::Status &s, const EA::proto::OpsServiceRequest &req);
+
         void pre_send_error(const turbo::Status &s, const EA::proto::QueryRequest &req);
 
         void rpc_error_status(const turbo::Status &s, const EA::proto::QueryRequest &req);
+
+        void rpc_error_status(const turbo::Status &s, const EA::proto::OpsServiceRequest &req);
 
         void rpc_error_status(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
 
         void show_meta_response(const std::string_view &server, const EA::proto::MetaManagerResponse &res);
 
+        void show_ops_response(const std::string_view &server, const EA::proto::OpsServiceResponse &res);
+
         void show_meta_query_response(const std::string_view &server, EA::proto::QueryOpType op,
-                                             const EA::proto::QueryResponse &res);
+                                      const EA::proto::QueryResponse &res);
 
         void show_meta_query_ns_response(const EA::proto::QueryResponse &res);
 
@@ -48,6 +55,7 @@ namespace EA::client {
         void show_meta_query_logical_response(const EA::proto::QueryResponse &res);
 
         void show_meta_query_physical_response(const EA::proto::QueryResponse &res);
+
     private:
         using Row_t = turbo::Table::Row_t;
         turbo::Table pre_send_result;
