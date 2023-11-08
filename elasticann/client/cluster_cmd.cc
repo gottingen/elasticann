@@ -17,9 +17,9 @@
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
 #include "eaproto/router/router.interface.pb.h"
-#include "elasticann/client/proto_builder.h"
 #include "turbo/format/print.h"
 #include "elasticann/client/show_help.h"
+#include "elasticann/client/validator.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -86,164 +86,347 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_create_logical(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_create_logical(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_response( OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_logical_remove_cmd() {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_remove_logical(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_remove_logical(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_response( OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_physical_create_cmd() {
         turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_create_physical(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_create_physical(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_response( OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
     void run_physical_remove_cmd() {
         turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto r = ProtoBuilder::make_cluster_remove_physical(&request);
+        ScopeShower ss;
+        auto r = make_cluster_remove_physical(&request);
         if(!r.ok()) {
-            sh.pre_send_error(r, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(r, request)));
             return;
         }
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_response( OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
     void run_physical_move_cmd() {
         turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto r = ProtoBuilder::make_cluster_move_physical(&request);
+        ScopeShower ss;
+        auto r = make_cluster_move_physical(&request);
         if(!r.ok()) {
-            sh.pre_send_error(r, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(r, request)));
             return;
         }
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_response( OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_logical_list_cmd() {
         turbo::Println(turbo::color::green, "start to get logical list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_query_logical_list(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_query_logical_list(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_logical_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_logical_response(response);
+        ss.add_table(std::move(table));
     }
 
     void run_logical_info_cmd() {
         turbo::Println(turbo::color::green, "start to get logical info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_query_logical_info(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_query_logical_info(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_logical_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_logical_response(response);
+        ss.add_table(std::move(table));
     }
 
     void run_physical_list_cmd() {
         turbo::Println(turbo::color::green, "start to get physical list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_query_physical_list(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_query_physical_list(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_physical_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_physical_response(response);
+        ss.add_table(std::move(table));
     }
 
     void run_physical_info_cmd() {
         turbo::Println(turbo::color::green, "start to get physical info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_cluster_query_physical_info(&request);
+        ScopeShower ss;
+        auto rs = make_cluster_query_physical_info(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_physical_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_physical_response(response);
+        ss.add_table(std::move(table));
     }
+
+    turbo::Table show_meta_query_logical_response(const EA::proto::QueryResponse &res) {
+        turbo::Table result;
+        auto &idcs = res.physical_rooms();
+        result.add_row(turbo::Table::Row_t{"logical idc size", turbo::Format(idcs.size())});
+        auto last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+        result.add_row(turbo::Table::Row_t{"logical", "physicals"});
+        last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+        for (auto &ns: idcs) {
+            auto phys = ns.physical_rooms();
+            result.add_row(turbo::Table::Row_t{ns.logical_room(), turbo::FormatRange("{}", phys, ", ")});
+            last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::yellow);
+        }
+        return result;
+    }
+
+    turbo::Table show_meta_query_physical_response(const EA::proto::QueryResponse &res) {
+        turbo::Table result;
+        auto &phyis = res.physical_instances();
+        result.add_row(turbo::Table::Row_t{"physical idc size", turbo::Format(phyis.size())});
+        auto last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+        result.add_row(turbo::Table::Row_t{"logical", "physicals", "instance"});
+        last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+        for (auto &ns: phyis) {
+            auto phys = ns.instances();
+            result.add_row(turbo::Table::Row_t{ns.logical_room(), ns.physical_room(), turbo::FormatRange("{}", phys, ", ")});
+            last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::yellow);
+
+        }
+        return result;
+    }
+
+
+    turbo::Status make_cluster_create_logical(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_ADD_LOGICAL);
+        EA::proto::LogicalRoom *loc_req = req->mutable_logical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        loc_req->mutable_logical_rooms()->Reserve(rs.size());
+        for (size_t i = 0; i < rs.size(); i++) {
+            loc_req->add_logical_rooms()->assign(rs[i]);
+        }
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_remove_logical(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_DROP_LOGICAL);
+        EA::proto::LogicalRoom *loc_req = req->mutable_logical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        loc_req->mutable_logical_rooms()->Reserve(rs.size());
+        for (size_t i = 0; i < rs.size(); i++) {
+            loc_req->add_logical_rooms()->assign(rs[i]);
+        }
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_create_physical(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_ADD_PHYSICAL);
+        EA::proto::PhysicalRoom *phy_req = req->mutable_physical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        if (rs.size() != 1) {
+            return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", rs.size());
+        }
+        phy_req->set_logical_room(rs[0]);
+
+        auto &ps = OptionContext::get_instance()->physical_idc;
+        for (size_t i = 0; i < rs.size(); i++) {
+            phy_req->add_physical_rooms()->assign(ps[i]);
+        }
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_remove_physical(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_DROP_PHYSICAL);
+        EA::proto::PhysicalRoom *phy_req = req->mutable_physical_rooms();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        if (rs.size() != 1) {
+            return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", rs.size());
+        }
+        phy_req->set_logical_room(rs[0]);
+
+        auto &ps = OptionContext::get_instance()->physical_idc;
+        for (size_t i = 0; i < rs.size(); i++) {
+            phy_req->add_physical_rooms()->assign(ps[i]);
+        }
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_move_physical(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_MOVE_PHYSICAL);
+        auto *phy_req = req->mutable_move_physical_request();
+        auto &rs = OptionContext::get_instance()->logical_idc;
+        if (rs.size() != 2) {
+            return turbo::InvalidArgumentError("create physical idc need 2 logical but you have given: {}", rs.size());
+        }
+        phy_req->set_old_logical_room(rs[0]);
+        phy_req->set_new_logical_room(rs[1]);
+        auto &ps = OptionContext::get_instance()->physical_idc;
+        if (ps.size() != 1) {
+            return turbo::InvalidArgumentError("move physical idc need 1 physical but you have given: {}", rs.size());
+        }
+        phy_req->set_physical_room(ps[0]);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_query_logical_list(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_LOGICAL);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_query_logical_info(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_LOGICAL);
+        auto &locs = OptionContext::get_instance()->logical_idc;
+        if (locs.size() != 1) {
+            return turbo::InvalidArgumentError("list logical idc need 1 logical but you have given: {}", locs.size());
+        }
+        auto rs = CheckValidNameType(locs[0]);
+        if (!rs.ok()) {
+            return rs;
+        }
+        req->set_logical_room(locs[0]);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_query_physical_list(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_PHYSICAL);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_cluster_query_physical_info(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_PHYSICAL);
+        auto &phys = OptionContext::get_instance()->physical_idc;
+        if (phys.size() != 1) {
+            return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}",
+                                               phys.size());
+        }
+        auto rs = CheckValidNameType(phys[0]);
+        if (!rs.ok()) {
+            return rs;
+        }
+        req->set_physical_room(phys[0]);
+        return turbo::OkStatus();
+    }
+
 
 }  // namespace EA::client

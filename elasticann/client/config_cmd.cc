@@ -17,7 +17,6 @@
 #include "eaproto/router/router.interface.pb.h"
 #include "turbo/format/print.h"
 #include "elasticann/client/show_help.h"
-#include "elasticann/client/proto_builder.h"
 #include "elasticann/client/router_interact.h"
 #include "turbo/module/module_version.h"
 #include "turbo/files/filesystem.h"

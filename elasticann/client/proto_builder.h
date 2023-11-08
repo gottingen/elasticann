@@ -27,56 +27,6 @@ namespace EA::client {
 
     class ProtoBuilder {
     public:
-        [[nodiscard]] static turbo::Status
-        make_namespace_create(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_namespace_remove(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_namespace_modify(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_namespace_query(EA::proto::QueryRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_database_create(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_database_remove(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_database_modify(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_database_list(EA::proto::QueryRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_database_info(EA::proto::QueryRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_cluster_create_logical(EA::proto::MetaManagerRequest *req);
-        [[nodiscard]] static turbo::Status
-        make_cluster_remove_logical(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status make_cluster_create_physical(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_cluster_remove_physical(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_cluster_move_physical(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_cluster_query_logical_list(EA::proto::QueryRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_cluster_query_logical_info(EA::proto::QueryRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_cluster_query_physical_list(EA::proto::QueryRequest *req);
-        [[nodiscard]] static turbo::Status
-        make_cluster_query_physical_info(EA::proto::QueryRequest *req);
 
         turbo::Status
         make_table_create(EA::proto::MetaManagerRequest *req);

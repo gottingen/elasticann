@@ -17,9 +17,9 @@
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
 #include "eaproto/router/router.interface.pb.h"
-#include "elasticann/client/proto_builder.h"
 #include "elasticann/client/show_help.h"
 #include "turbo/format/print.h"
+#include "elasticann/client/validator.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -75,90 +75,203 @@ namespace EA::client {
         turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs= ProtoBuilder::make_database_create(&request);
+        ScopeShower ss;
+        auto rs= make_database_create(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_response(OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
     void run_db_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_database_remove(&request);
+        ScopeShower ss;
+        auto rs = make_database_remove(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_response(OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
     void run_db_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_database_modify(&request);
+        ScopeShower ss;
+        auto rs = make_database_modify(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_response(OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_db_list_cmd() {
-        turbo::Println(turbo::color::green, "start to get namespace list");
+        turbo::Println(turbo::color::green, "start to get database list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_database_list(&request);
+        ScopeShower ss;
+        auto rs = make_database_list(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_db_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_db_response(response);
+        ss.add_table(std::move(table));
     }
 
     void run_db_info_cmd() {
-        turbo::Println(turbo::color::green, "start to get namespace list");
+        turbo::Println(turbo::color::green, "start to get database list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_database_info(&request);
+        ScopeShower ss;
+        auto rs = make_database_info(&request);
         if(!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if(!rs.ok()) {
-            sh.rpc_error_status(rs, request.op_type());
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_db_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_db_response(response);
+        ss.add_table(std::move(table));
+    }
+
+    turbo::Table show_meta_query_db_response(const EA::proto::QueryResponse &res) {
+        turbo::Table result;
+        auto &dbs = res.database_infos();
+        result.add_row(turbo::Table::Row_t{"database size", turbo::Format(dbs.size())});
+        auto last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+        turbo::Table sumary;
+        sumary.add_row({"namespace", "database", "id", "version", "quota", "replica number", "resource tag",
+                                "region split lines"});
+        for (auto &ns: dbs) {
+            sumary.add_row(
+                    turbo::Table::Row_t{ns.namespace_name(), ns.database(), turbo::Format(ns.database_id()),
+                          turbo::Format(ns.version()),
+                          turbo::Format(ns.quota()), turbo::Format(ns.replica_num()), ns.resource_tag(),
+                          turbo::Format(ns.region_split_lines())});
+            last = sumary.size() - 1;
+            sumary[last].format().font_color(turbo::Color::green);
+        }
+        result.add_row({"summary info",
+                        sumary});
+        last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+        return result;
+    }
+
+    turbo::Status make_database_create(EA::proto::MetaManagerRequest *req) {
+        EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
+        req->set_op_type(EA::proto::OP_CREATE_DATABASE);
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        db_req->set_database(OptionContext::get_instance()->db_name);
+        db_req->set_quota(OptionContext::get_instance()->db_quota);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_database_remove(EA::proto::MetaManagerRequest *req) {
+        EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
+        req->set_op_type(EA::proto::OP_DROP_DATABASE);
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        db_req->set_database(OptionContext::get_instance()->db_name);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_database_modify(EA::proto::MetaManagerRequest *req) {
+        req->set_op_type(EA::proto::OP_MODIFY_DATABASE);
+        EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        db_req->set_database(OptionContext::get_instance()->db_name);
+        db_req->set_quota(OptionContext::get_instance()->db_quota);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_database_list(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_DATABASE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_database_info(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_DATABASE);
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        req->set_database(OptionContext::get_instance()->db_name);
+        return turbo::OkStatus();
     }
 
 }  // namespace EA::client

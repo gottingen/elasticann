@@ -40,17 +40,6 @@ namespace EA::client {
 
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req);
 
-        void show_meta_response(const std::string_view &server, const EA::proto::MetaManagerResponse &res);
-
-        void show_meta_query_response(const std::string_view &server, EA::proto::QueryOpType op,
-                                      const EA::proto::QueryResponse &res);
-
-        void show_meta_query_ns_response(const EA::proto::QueryResponse &res);
-
-        void show_meta_query_db_response(const EA::proto::QueryResponse &res);
-
-        void show_meta_query_logical_response(const EA::proto::QueryResponse &res);
-
         void show_meta_query_physical_response(const EA::proto::QueryResponse &res);
 
     private:

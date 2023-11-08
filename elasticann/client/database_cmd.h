@@ -16,6 +16,9 @@
 #define ELASTICANN_CLIENT_DATABASE_CMD_H_
 
 #include "turbo/flags/flags.h"
+#include "eaproto/router/router.interface.pb.h"
+#include "turbo/format/table.h"
+#include "turbo/base/status.h"
 #include <string>
 
 namespace EA::client {
@@ -37,6 +40,23 @@ namespace EA::client {
     void run_db_list_cmd();
 
     void run_db_info_cmd();
+
+    [[nodiscard]] turbo::Status
+    make_database_create(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_database_remove(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_database_modify(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_database_list(EA::proto::QueryRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_database_info(EA::proto::QueryRequest *req);
+
+    turbo::Table show_meta_query_db_response(const EA::proto::QueryResponse &res);
 
 }  // namespace EA::client
 
