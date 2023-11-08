@@ -37,8 +37,8 @@ namespace EA::client {
         inputs->add_option("-d,--data", opt->config_data, "config content");
         inputs->add_option("-f, --file", opt->config_file, "local config file");
         inputs->require_option(1);
-        cc->add_option("-v, --version", opt->config_version, "new namespace quota")->required();
-        cc->add_option("-t, --type", opt->config_type, "new namespace quota")->default_val("json");
+        cc->add_option("-v, --version", opt->config_version, "config version [1.2.3]")->required();
+        cc->add_option("-t, --type", opt->config_type, "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
 
         cc->callback([]() { run_config_create_cmd(); });
         auto cl = ns->add_subcommand("list", " list config");
@@ -53,7 +53,7 @@ namespace EA::client {
 
         auto cr = ns->add_subcommand("remove", " remove config");
         cr->add_option("-n,--name", opt->config_name, "config name")->required();
-        cr->add_option("-v, --version", opt->config_version, "config version");
+        cr->add_option("-v, --version", opt->config_version, "config version [1.2.3]");
         cr->callback([]() { run_config_remove_cmd(); });
     }
 
