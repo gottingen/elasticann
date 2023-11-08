@@ -40,8 +40,6 @@ namespace EA::client {
 
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req);
 
-        void show_meta_query_physical_response(const EA::proto::QueryResponse &res);
-
     private:
         static turbo::Table show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg);
         static turbo::Table rpc_error_status_impl(const turbo::Status &s, int qt, const std::string &qts);
