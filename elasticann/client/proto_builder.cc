@@ -16,10 +16,8 @@
 #include "elasticann/client/proto_builder.h"
 #include "elasticann/client/option_context.h"
 #include "elasticann/client/validator.h"
+#include "elasticann/client/proto_help.h"
 #include "turbo/strings/utility.h"
-#include "turbo/module/module_version.h"
-#include "turbo/files/filesystem.h"
-#include "turbo/files/sequential_read_file.h"
 
 namespace EA::client {
 
@@ -257,96 +255,6 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_create(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_CREATE_CONFIG);
-        auto rc = req->mutable_config();
-        auto opt = OptionContext::get_instance();
-        rc->set_name(opt->config_name);
-        auto v = rc->mutable_version();
-        auto st = string_to_version(opt->config_version, v);
-        if(!st.ok()) {
-            return st;
-        }
-        if(!opt->config_data.empty()) {
-            rc->set_content(opt->config_data);
-            return turbo::OkStatus();
-        }
-        if(opt->config_file.empty()) {
-            return turbo::InvalidArgumentError("no config content");
-        }
-        turbo::SequentialReadFile file;
-        auto rs = file.open(opt->config_file);
-        if(!rs.ok()) {
-            return rs;
-        }
-        auto rr = file.read(&opt->config_data);
-        if(!rr.ok()) {
-            return rr.status();
-        }
-        rc->set_content(opt->config_data);
-        return turbo::OkStatus();
-    }
-
-    [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_list(EA::proto::QueryOpsServiceRequest *req) {
-        req->set_op_type(EA::proto::QUERY_LIST_CONFIG);
-        return turbo::OkStatus();
-    }
-
-    [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_list_version(EA::proto::QueryOpsServiceRequest *req) {
-        req->set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
-        auto opt = OptionContext::get_instance();
-        req->mutable_query_config()->set_name(opt->config_name);
-        return turbo::OkStatus();
-    }
-
-    [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_get(EA::proto::QueryOpsServiceRequest *req) {
-        req->set_op_type(EA::proto::QUERY_GET_CONFIG);
-        auto rc = req->mutable_query_config();
-        auto opt = OptionContext::get_instance();
-        rc->set_name(opt->config_name);
-        if(!opt->config_version.empty()) {
-            auto v = rc->mutable_version();
-            return string_to_version(opt->config_version, v);
-        }
-        return turbo::OkStatus();
-    }
-
-    [[nodiscard]] turbo::Status
-    ProtoBuilder::make_config_remove(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
-        auto rc = req->mutable_config();
-        auto opt = OptionContext::get_instance();
-        rc->set_name(opt->config_name);
-        if(!opt->config_version.empty()) {
-            auto v = rc->mutable_version();
-            return string_to_version(opt->config_version, v);
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status ProtoBuilder::string_to_version(const std::string &str, EA::proto::Version*v) {
-        std::vector<std::string> vs = turbo::StrSplit(str, ".");
-        if(vs.size() != 3)
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        int64_t m;
-        if(!turbo::SimpleAtoi(vs[0], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        }
-        v->set_major(m);
-        if(!turbo::SimpleAtoi(vs[1], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        }
-        v->set_minor(m);
-        if(!turbo::SimpleAtoi(vs[2], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
-        }
-        v->set_patch(m);
-        return turbo::OkStatus();
-    }
     turbo::ResultStatus<EA::proto::FieldInfo> ProtoBuilder::string_to_table_field(const std::string &str) {
         // format: field_name:field_type
         std::vector<std::string> fv = turbo::StrSplit(str,':');

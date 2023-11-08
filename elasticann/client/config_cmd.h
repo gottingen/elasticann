@@ -17,6 +17,9 @@
 #define ELASTICANN_CLIENT_CONFIG_CMD_H_
 
 #include "turbo/flags/flags.h"
+#include "eaproto/router/router.interface.pb.h"
+#include "turbo/base/status.h"
+#include "turbo/format/table.h"
 #include <string>
 
 
@@ -35,6 +38,31 @@ namespace EA::client {
     void run_config_get_cmd();
 
     void run_config_remove_cmd();
+
+    [[nodiscard]] turbo::Status
+    make_config_create(EA::proto::OpsServiceRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_config_list(EA::proto::QueryOpsServiceRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_config_list_version(EA::proto::QueryOpsServiceRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_config_get(EA::proto::QueryOpsServiceRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_config_remove(EA::proto::OpsServiceRequest *req);
+
+
+    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryOpsServiceResponse &res);
+
+    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryOpsServiceResponse &res);
+
+    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryOpsServiceResponse &res, const turbo::Status &save_status);
+
+    turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryOpsServiceResponse &res);
+
 }  // namespace EA::client
 
 #endif // ELASTICANN_CLIENT_CONFIG_CMD_H_

@@ -55,6 +55,7 @@ namespace EA::client {
         std::string config_data;
         std::string config_file;
         std::string config_version;
+        std::string config_type;
     };
 }  // namespace EA::client
 

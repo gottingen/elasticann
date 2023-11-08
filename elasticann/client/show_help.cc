@@ -14,85 +14,13 @@
 //
 
 #include "elasticann/client/show_help.h"
+#include "elasticann/client/proto_help.h"
 #include "turbo/format/print.h"
-
+#include "turbo/times/civil_time.h"
+#include "turbo/times/time.h"
 
 namespace EA::client {
-
-    std::string ShowHelper::get_op_string(EA::proto::OpType type) {
-        switch (type) {
-            case EA::proto::OP_CREATE_NAMESPACE:
-                return "create namespace";
-            case EA::proto::OP_DROP_NAMESPACE:
-                return "remove namespace";
-            case EA::proto::OP_MODIFY_NAMESPACE:
-                return "modify namespace";
-            case EA::proto::OP_CREATE_DATABASE:
-                return "create database";
-            case EA::proto::OP_DROP_DATABASE:
-                return "remove database";
-            case EA::proto::OP_MODIFY_DATABASE:
-                return "modify database";
-            case EA::proto::OP_ADD_LOGICAL:
-                return "add logical idc";
-            case EA::proto::OP_DROP_LOGICAL:
-                return "remove logical idc";
-            case EA::proto::OP_ADD_PHYSICAL:
-                return "create physical idc";
-            case EA::proto::OP_DROP_PHYSICAL:
-                return "remove physical idc";
-            case EA::proto::OP_MOVE_PHYSICAL:
-                return "move physical idc";
-            case EA::proto::OP_CREATE_CONFIG:
-                return "create config";
-            case EA::proto::OP_REMOVE_CONFIG:
-                return "remove config";
-            default:
-                return "unknown operation";
-        }
-    }
-
-    std::string ShowHelper::get_op_string(EA::proto::QueryOpType type) {
-        switch (type) {
-            case EA::proto::QUERY_NAMESPACE:
-                return "query namespace";
-            case EA::proto::QUERY_DATABASE:
-                return "query database";
-            case EA::proto::QUERY_LOGICAL:
-                return "query logical";
-            case EA::proto::QUERY_PHYSICAL:
-                return "query physical";
-            case EA::proto::QUERY_LIST_CONFIG_VERSION:
-                return "list config version";
-            case EA::proto::QUERY_LIST_CONFIG:
-                return "list config";
-            case EA::proto::QUERY_GET_CONFIG:
-                return "get config";
-            default:
-                return "unknown operation";
-        }
-    }
-
-    std::string ShowHelper::get_config_type_string(EA::proto::ConfigType type) {
-        switch (type) {
-            case EA::proto::CF_JSON:
-                return "json";
-            case EA::proto::CF_TEXT:
-                return "text";
-            case EA::proto::CF_INI:
-                return "ini";
-            case EA::proto::CF_YAML:
-                return "yaml";
-            case EA::proto::CF_XML:
-                return "xml";
-            case EA::proto::CF_GFLAGS:
-                return "gflags";
-            case EA::proto::CF_TOML:
-                return "toml";
-            default:
-                return "unknown format";
-        }
-    }
+    using Row_t = turbo::Table::Row_t;
 
     ShowHelper::~ShowHelper() {
         std::cout << pre_send_result << std::endl;
@@ -101,166 +29,185 @@ namespace EA::client {
         std::cout << result_table << std::endl;
     }
 
-    void ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
-        meta_response_result.add_row(Row_t{"status", "server", "op code", "op string", "error code", "error message"});
+    turbo::Table ShowHelper::show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
+        turbo::Table response_result;
+        response_result.add_row(Row_t{"status", "server", "op code", "op string", "error code", "error message"});
         if (code != EA::proto::SUCCESS) {
-            meta_response_result.add_row(
+            response_result.add_row(
                     Row_t{"fail", server, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
         } else {
-            meta_response_result.add_row(
+            response_result.add_row(
                     Row_t{"success", server, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
         }
-        auto last = meta_response_result.size() - 1;
-        meta_response_result[last][0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold});
+        auto last = response_result.size() - 1;
+        response_result[last][0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold});
 
         if (code == EA::proto::SUCCESS) {
-            meta_response_result[last][1].format().font_color(turbo::Color::yellow);
+            response_result[last][1].format().font_color(turbo::Color::yellow);
         } else {
-            meta_response_result[last][1].format().font_color(turbo::Color::red);
+            response_result[last][1].format().font_color(turbo::Color::red);
         }
+        return response_result;
     }
 
-    void ShowHelper::rpc_error_status(const turbo::Status &s, int qt, const std::string &qts) {
+    turbo::Table ShowHelper::rpc_error_status_impl(const turbo::Status &s, int qt, const std::string &qts) {
+        turbo::Table result;
+        result.add_row(Row_t{"status", "op code", "op string", "error code", "error message"});
+        auto last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::yellow).font_style({turbo::FontStyle::bold});
         if (s.ok()) {
-            return;
+            result.add_row(
+                    Row_t{"success", turbo::Format(qt), qts,
+                          turbo::Format("{}", static_cast<int>(s.code())), s.message()});
+            last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::green);
+            result[last][1].format().font_color(turbo::Color::yellow);
+            result[last][2].format().font_color(turbo::Color::yellow);
+            result[last][3].format().font_color(turbo::Color::green);
+            result[last][4].format().font_color(turbo::Color::green);
+        } else {
+            result.add_row(
+                    Row_t{"fail", turbo::Format(qt), qts,
+                          turbo::Format("{}", static_cast<int>(s.code())), s.message()});
+            last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::red);
+            result[last][1].format().font_color(turbo::Color::yellow);
+            result[last][2].format().font_color(turbo::Color::yellow);
+            result[last][3].format().font_color(turbo::Color::red);
+            result[last][4].format().font_color(turbo::Color::red);
         }
-        rpc_result.add_row(Row_t{"status", "op code", "op string", "error code", "error message"});
-        auto last = rpc_result.size() - 1;
-        rpc_result[last].format().font_color(turbo::Color::yellow).font_style({turbo::FontStyle::bold});
-
-        rpc_result.add_row(
-                Row_t{"fail", turbo::Format(qt), qts,
-                      turbo::Format("{}", static_cast<int>(s.code())), s.message()});
-        last = rpc_result.size() - 1;
-        rpc_result[last][0].format().font_color(turbo::Color::red);
-        rpc_result[last][1].format().font_color(turbo::Color::yellow);
-        rpc_result[last][2].format().font_color(turbo::Color::yellow);
-        rpc_result[last][3].format().font_color(turbo::Color::red);
-        rpc_result[last][4].format().font_color(turbo::Color::red);
+        return result;
     }
 
-    void ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req) {
-        pre_send_result.add_row(Row_t{"status", "op code", "op string", "error message"});
-        pre_send_result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req) {
+        turbo::Table result;
+        result.add_row(Row_t{"status", "op code", "op string", "error message"});
+        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
                 turbo::FontAlign::center);
         if (!req.has_op_type()) {
-            pre_send_result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last].format().font_color(turbo::Color::red).font_style(
+            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
+            auto last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else if (!s.ok()) {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())), get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::red).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())), get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::green).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::green).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         }
+        return result;
     }
 
-    void ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::QueryRequest &req) {
-        pre_send_result.add_row(Row_t{"status", "op code", "op string", "error message"});
-        pre_send_result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::QueryRequest &req) {
+        turbo::Table result;
+        result.add_row(Row_t{"status", "op code", "op string", "error message"});
+        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
                 turbo::FontAlign::center);
         if (!req.has_op_type()) {
-            pre_send_result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last].format().font_color(turbo::Color::red).font_style(
+            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
+            auto last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else if (!s.ok()) {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())),
                           get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::red).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())),
                           get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::green).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::green).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         }
-
+        return result;
     }
 
-    void ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::OpsServiceRequest &req) {
-        pre_send_result.add_row(Row_t{"status", "op code", "op string", "error message"});
-        pre_send_result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::OpsServiceRequest &req) {
+        turbo::Table result;
+        result.add_row(Row_t{"status", "op code", "op string", "error message"});
+        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
                 turbo::FontAlign::center);
         if (!req.has_op_type()) {
-            pre_send_result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last].format().font_color(turbo::Color::red).font_style(
+            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
+            auto last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else if (!s.ok()) {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())),
                           get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::red).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())),
                           get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::green).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::green).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         }
+        return result;
 
     }
 
-    void ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req) {
-        pre_send_result.add_row(Row_t{"status", "op code", "op string", "error message"});
-        pre_send_result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req) {
+        turbo::Table result;
+        result.add_row(Row_t{"status", "op code", "op string", "error message"});
+        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
                 turbo::FontAlign::center);
         if (!req.has_op_type()) {
-            pre_send_result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last].format().font_color(turbo::Color::red).font_style(
+            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
+            auto last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else if (!s.ok()) {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())),
                           get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::red).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::red).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         } else {
-            pre_send_result.add_row(
+            result.add_row(
                     Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())),
                           get_op_string(req.op_type()),
                           s.message()});
-            auto last = pre_send_result.size() - 1;
-            pre_send_result[last][0].format().font_color(turbo::Color::green).font_style(
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::green).font_style(
                     {turbo::FontStyle::bold}).font_align(
                     turbo::FontAlign::center);
         }
+        return result;
 
     }
 
@@ -412,65 +359,4 @@ namespace EA::client {
         }
     }
 
-    void ShowHelper::show_query_ops_config_list_response(const std::string_view &server,
-                                                         const EA::proto::QueryOpsServiceResponse &res) {
-        if (res.errcode() != EA::proto::SUCCESS) {
-            return;
-        }
-        auto &config_list = res.config_response().config_list();
-        result_table.add_row(Row_t{"config size", turbo::Format(config_list.size())});
-        auto last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        result_table.add_row(Row_t{"number", "config"});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        int i = 0;
-        for (auto &ns: config_list) {
-            result_table.add_row(Row_t{turbo::Format(i++), ns});
-            last = result_table.size() - 1;
-            result_table[last].format().font_color(turbo::Color::yellow);
-
-        }
-    }
-
-    void ShowHelper::show_query_ops_config_list_version_response(const std::string_view &server,
-                                                                 const EA::proto::QueryOpsServiceResponse &res) {
-        if (res.errcode() != EA::proto::SUCCESS) {
-            return;
-        }
-        auto &config_versions = res.config_response().versions();
-        result_table.add_row(Row_t{"version size", turbo::Format(config_versions.size())});
-        auto last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        result_table.add_row(Row_t{"number", "version"});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        int i = 0;
-        for (auto &ns: config_versions) {
-            result_table.add_row(
-                    Row_t{turbo::Format(i++), turbo::Format("{}.{}.{}", ns.major(), ns.minor(), ns.patch())});
-            last = result_table.size() - 1;
-            result_table[last].format().font_color(turbo::Color::yellow);
-
-        }
-    }
-
-    void ShowHelper::show_query_ops_config_get_response(const std::string_view &server,
-                                                        const EA::proto::QueryOpsServiceResponse &res) {
-        if (res.errcode() != EA::proto::SUCCESS) {
-            return;
-        }
-
-        result_table.add_row(Row_t{"version", turbo::Format("{}.{}.{}", res.config_response().config().version().major(),
-                                                            res.config_response().config().version().minor(),
-                                                            res.config_response().config().version().patch())});
-        auto last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        result_table.add_row(Row_t{"type", get_config_type_string(res.config_response().config().type())});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        result_table.add_row(Row_t{"size", turbo::Format(res.config_response().config().content().size())});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-    }
 }  // namespace EA::client

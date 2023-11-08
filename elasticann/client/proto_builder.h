@@ -78,23 +78,8 @@ namespace EA::client {
         [[nodiscard]] static turbo::Status
         make_cluster_query_physical_info(EA::proto::QueryRequest *req);
 
-        [[nodiscard]] static turbo::Status
-        make_config_create(EA::proto::OpsServiceRequest *req);
-        [[nodiscard]] static turbo::Status
-        make_config_list(EA::proto::QueryOpsServiceRequest *req);
-        [[nodiscard]] static turbo::Status
-        make_config_list_version(EA::proto::QueryOpsServiceRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_config_get(EA::proto::QueryOpsServiceRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_config_remove(EA::proto::OpsServiceRequest *req);
-
-        [[nodiscard]] static turbo::Status
+        turbo::Status
         make_table_create(EA::proto::MetaManagerRequest *req);
-
-        static turbo::Status string_to_version(const std::string &str, EA::proto::Version*v);
     private:
         static turbo::ResultStatus<EA::proto::FieldInfo> string_to_table_field(const std::string &str);
     };
