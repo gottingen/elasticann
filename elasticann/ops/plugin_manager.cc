@@ -388,6 +388,7 @@ namespace EA {
     int PluginManager::load_snapshot() {
         BAIDU_SCOPED_LOCK(_plugin_mutex);
         BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
+        TLOG_INFO("start to load plugins snapshot");
         _plugins.clear();
         _tombstone_plugins.clear();
         std::string plugin_prefix = ServiceConstants::PLUGIN_IDENTIFY;
@@ -396,13 +397,14 @@ namespace EA {
         read_options.total_order_seek = false;
         RocksWrapper *db = RocksWrapper::get_instance();
         std::unique_ptr<rocksdb::Iterator> iter(
-                db->new_iterator(read_options, db->get_meta_info_handle()));
+                db->new_iterator(read_options, db->get_service_handle()));
         iter->Seek(plugin_prefix);
         for (; iter->Valid(); iter->Next()) {
             if (load_plugin_snapshot(iter->value().ToString()) != 0) {
                 return -1;
             }
         }
+        TLOG_INFO("load plugins snapshot done");
         return 0;
     }
 
