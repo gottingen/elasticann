@@ -110,6 +110,16 @@ namespace EA::client {
                 return "create config";
             case EA::proto::OP_REMOVE_CONFIG:
                 return "remove config";
+            case EA::proto::OP_CREATE_PLUGIN:
+                return "create plugin";
+            case EA::proto::OP_REMOVE_PLUGIN:
+                return "remove plugin";
+            case EA::proto::OP_RESTORE_TOMBSTONE_PLUGIN:
+                return "restore plugin";
+            case EA::proto::OP_REMOVE_TOMBSTONE_PLUGIN:
+                return "remove tombstone plugin";
+            case EA::proto::OP_UPLOAD_PLUGIN:
+                return "restore plugin";
             default:
                 return "unknown operation";
         }
@@ -131,6 +141,20 @@ namespace EA::client {
                 return "list config";
             case EA::proto::QUERY_GET_CONFIG:
                 return "get config";
+            case EA::proto::QUERY_PLUGIN_INFO:
+                return "plugin info";
+            case EA::proto::QUERY_LIST_PLUGIN:
+                return "plugin info";
+            case EA::proto::QUERY_LIST_PLUGIN_VERSION:
+                return "list plugin version";
+            case EA::proto::QUERY_TOMBSTONE_PLUGIN_INFO:
+                return "tombstone plugin info";
+            case EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN:
+                return "tombstone list plugin";
+            case EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN_VERSION:
+                return "tombstone list plugin version";
+            case EA::proto::QUERY_DOWNLOAD_PLUGIN:
+                return "download plugin";
             default:
                 return "unknown operation";
         }
