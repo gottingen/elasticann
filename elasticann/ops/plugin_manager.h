@@ -57,7 +57,7 @@ namespace EA {
 
         friend class QueryPluginManager;
 
-        int load_config_snapshot(const std::string &value);
+        int load_plugin_snapshot(const std::string &value);
 
         void remove_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
         void restore_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);

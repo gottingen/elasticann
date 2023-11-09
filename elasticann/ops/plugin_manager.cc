@@ -36,7 +36,7 @@ namespace EA {
             if (tit->second.find(version) != tit->second.end()) {
                 /// already exists
                 TLOG_INFO("plugin :{} version: {} is tombstone", name, version.to_string());
-                SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already removed");
+                SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "plugin already removed");
                 return;
             }
         }
@@ -50,7 +50,7 @@ namespace EA {
         if (it->second.find(version) != it->second.end()) {
             /// already exists
             TLOG_INFO("plugin :{} version: {} exist", name, version.to_string());
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already exist");
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "plugin already exist");
             return;
         }
         if (!it->second.empty() && it->second.rbegin()->first >= version) {
@@ -115,7 +115,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_plugin_mutex);
         auto it = _plugins.find(name);
         if (it == _plugins.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "plugin not exist");
             return;
         }
         turbo::ModuleVersion version(upload_request.plugin().version().major(), upload_request.plugin().version().minor(),
@@ -123,8 +123,8 @@ namespace EA {
         auto pit = it->second.find(version);
         if (pit == it->second.end()) {
             /// not exists
-            TLOG_INFO("config :{} version: {} not exist", name, version.to_string());
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
+            TLOG_INFO("plugin :{} version: {} not exist", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "plugin not exist");
         }
 
         auto libname = make_plugin_path(name, version, pit->second.platform());
@@ -191,7 +191,7 @@ namespace EA {
         }
         auto it = _plugins.find(name);
         if (it == _plugins.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "plugin not exist");
             return;
         }
         turbo::ModuleVersion version(remove_request.version().major(), remove_request.version().minor(),
@@ -199,8 +199,8 @@ namespace EA {
         auto pit = it->second.find(version);
         if (pit == it->second.end()) {
             /// not exists
-            TLOG_INFO("config :{} version: {} not exist", name, version.to_string());
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
+            TLOG_INFO("plugin :{} version: {} not exist", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "plugin not exist");
         }
 
         /// mark move to tombstone and write to rocksdb
@@ -241,7 +241,7 @@ namespace EA {
         auto &name = remove_request.name();
         auto it = _plugins.find(name);
         if (it == _plugins.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "plugin not exist");
             return;
         }
         std::vector<std::string> keys;
@@ -295,7 +295,7 @@ namespace EA {
         }
         auto it = _tombstone_plugins.find(name);
         if (it == _tombstone_plugins.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "plugin not exist");
             return;
         }
         turbo::ModuleVersion version(restore_request.version().major(), restore_request.version().minor(),
@@ -345,7 +345,7 @@ namespace EA {
         auto &name = restore_request.name();
         auto it = _tombstone_plugins.find(name);
         if (it == _tombstone_plugins.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "plugin not exist");
             return;
         }
         std::vector<std::string> keys;
@@ -390,23 +390,23 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
         _plugins.clear();
         _tombstone_plugins.clear();
-        std::string config_prefix = ServiceConstants::PLUGIN_IDENTIFY;
+        std::string plugin_prefix = ServiceConstants::PLUGIN_IDENTIFY;
         rocksdb::ReadOptions read_options;
         read_options.prefix_same_as_start = true;
         read_options.total_order_seek = false;
         RocksWrapper *db = RocksWrapper::get_instance();
         std::unique_ptr<rocksdb::Iterator> iter(
                 db->new_iterator(read_options, db->get_meta_info_handle()));
-        iter->Seek(config_prefix);
+        iter->Seek(plugin_prefix);
         for (; iter->Valid(); iter->Next()) {
-            if (load_config_snapshot(iter->value().ToString()) != 0) {
+            if (load_plugin_snapshot(iter->value().ToString()) != 0) {
                 return -1;
             }
         }
         return 0;
     }
 
-    int PluginManager::load_config_snapshot(const std::string &value) {
+    int PluginManager::load_plugin_snapshot(const std::string &value) {
         proto::PluginEntiry plugin_pb;
         if (!plugin_pb.ParseFromString(value)) {
             TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
