@@ -18,6 +18,7 @@
 #include "elasticann/ops/service_rocksdb.h"
 #include "elasticann/ops/service_state_machine.h"
 #include "elasticann/ops/file_util.h"
+#include "turbo/files/utility.h"
 
 namespace EA {
     void PluginManager::create_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
@@ -148,14 +149,14 @@ namespace EA {
         }
         if(pit->second.finish()) {
             /// check sum
-            std::string cksm;
-            int64_t nszie = md5_sum_file(file_path, cksm);
-            if(nszie < 0) {
+            int64_t nszie;
+            auto cksm = turbo::FileUtility::md5_sum_file(file_path, &nszie);
+            if(!cksm.ok()) {
                 TLOG_WARN("upload plugin :{} version: {} check md5 fail", name, version.to_string());
                 SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "check md5 fail");
             }
-            if(cksm != pit->second.cksm()) {
-                TLOG_WARN("upload plugin :{} version: {} check md5 fail, expect: {} get: {}", name, version.to_string(),  pit->second.cksm(), cksm);
+            if(cksm.value() != pit->second.cksm()) {
+                TLOG_WARN("upload plugin :{} version: {} check md5 fail, expect: {} get: {}", name, version.to_string(),  pit->second.cksm(), cksm.value());
                 SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "md5 not match");
             }
         }

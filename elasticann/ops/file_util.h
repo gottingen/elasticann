@@ -35,7 +35,5 @@ namespace EA {
 
     ssize_t full_pwrite(int fd, const void* data, size_t len, off_t offset);
 
-    int64_t md5_sum_file(const std::string& file, std::string& cksm);
-
 }  // namespace EA
 #endif  // ELASTICANN_OPS_FILE_UTIL_H_

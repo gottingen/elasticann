@@ -14,7 +14,7 @@
 //
 
 #include "elasticann/ops/file_util.h"
-#include "elasticann/ops/md5.h"
+
 namespace EA {
 
     ssize_t full_pread(int fd, void* data, size_t len, off_t offset) {
@@ -53,34 +53,6 @@ namespace EA {
             }
         }
         return size - left;
-    }
-
-    int64_t md5_sum_file(const std::string& file, std::string& cksm) {
-        static const size_t kMD5bufferSize = 8192;
-        FILE* fp;
-        if ((fp = fopen(file.c_str(), "rb")) == nullptr) {
-            return -1;
-        }
-        int64_t n = 0;
-        MD5Context ctx;
-        MD5Digest digest;
-        std::string buf;
-        MD5Init(&ctx);
-        while (true) {
-            buf.resize(kMD5bufferSize);
-            size_t len = fread(&buf[0], 1, buf.size(), fp);
-            if (len > 0) {
-                buf.resize(len);
-                MD5Update(&ctx, buf);
-                n += len;
-            } else {
-                break;
-            }
-        }
-        fclose(fp);
-        MD5Final(&digest, &ctx);
-        cksm = MD5DigestToBase16(digest);
-        return n;
     }
 
 }

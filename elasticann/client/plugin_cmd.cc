@@ -24,6 +24,7 @@
 #include "turbo/files/sequential_read_file.h"
 #include "turbo/times/clock.h"
 #include "elasticann/ops/file_util.h"
+#include "turbo/files/utility.h"
 
 namespace EA::client {
 
@@ -243,12 +244,12 @@ namespace EA::client {
             return turbo::NotFoundError("file size < 0");
         }
         rc->set_size(file_size);
-        std::string md5;
-        auto nsize = md5_sum_file(opt->plugin_file, md5);
-        if (nsize <= 0) {
-            return turbo::NotFoundError("md5 file error");
+        int64_t nsize;
+        auto cksm = turbo::FileUtility::md5_sum_file(opt->plugin_file, &nsize);
+        if (!cksm.ok()) {
+            return cksm.status();
         }
-        rc->set_cksm(md5);
+        rc->set_cksm(cksm.value());
         return turbo::OkStatus();
     }
 
