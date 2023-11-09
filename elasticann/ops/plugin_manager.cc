@@ -12,245 +12,476 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-/*
+
 #include "elasticann/ops/plugin_manager.h"
-#include "elasticann/ops/plugin/plugin_state_machine.h"
-#include "elasticann/common/common.h"
+#include "elasticann/ops/constants.h"
+#include "elasticann/ops/service_rocksdb.h"
+#include "elasticann/ops/service_state_machine.h"
 #include "elasticann/ops/file_util.h"
 
 namespace EA {
-    PluginEntity::PluginEntity(const std::string &name, const turbo::ModuleVersion &v) {
-        turbo::filesystem::path pp(FLAGS_service_plugin_data_root);
-        auto file_name = PluginManager::make_plugin_file_name(name, v);
-        pp /= file_name;
-        path = pp.string();
-    }
-    PluginEntity::~PluginEntity() {
-        close();
+    void PluginManager::create_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
+        if (!request.has_plugin()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "empty plugin request");
+            return;
+        }
+        auto &create_request = request.plugin().plugin();
+        auto &name = create_request.name();
+        turbo::ModuleVersion version(create_request.version().major(), create_request.version().minor(),
+                                     create_request.version().patch());
+        {
+            BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
+            auto tit = _tombstone_plugins.find(name);
+            // do not rewrite.
+            if (tit->second.find(version) != tit->second.end()) {
+                /// already exists
+                TLOG_INFO("plugin :{} version: {} is tombstone", name, version.to_string());
+                SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already removed");
+                return;
+            }
+        }
+
+        BAIDU_SCOPED_LOCK(_plugin_mutex);
+        if (_plugins.find(name) == _plugins.end()) {
+            _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+        }
+        auto it = _plugins.find(name);
+        // do not rewrite.
+        if (it->second.find(version) != it->second.end()) {
+            /// already exists
+            TLOG_INFO("plugin :{} version: {} exist", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already exist");
+            return;
+        }
+        if (!it->second.empty() && it->second.rbegin()->first >= version) {
+            /// Version numbers must increase monotonically
+            TLOG_INFO("plugin :{} version: {} must be larger than current:{}", name, version.to_string(),
+                      it->second.rbegin()->first.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR,
+                                          "Version numbers must increase monotonically");
+            return;
+        }
+        std::string rocks_key = make_plugin_key(name, version);
+        std::string rocks_value;
+        EA::proto::PluginEntiry entity;
+        auto st = transfer_info_to_entity(&create_request, &entity);
+        if (!st.ok()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, std::string(st.message()));
+            return;
+        }
+        if (!entity.SerializeToString(&rocks_value)) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            return;
+        }
+
+        int ret = ServiceRocksdb::get_instance()->put_meta_info(rocks_key, rocks_value);
+        if (ret < 0) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            return;
+        }
+        it->second[version] = entity;
+        TLOG_INFO("plugin :{} version: {} create", name, version.to_string());
+        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
-    bool PluginEntity::open() {
-        if(fd > 0) {
-            return true;
+    void PluginManager::upload_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
+        /// check valid
+        if (!request.has_plugin()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "miss field plugin plugin");
+            return;
         }
-        fd = ::open(path.c_str(), O_RDWR | O_CREAT, 0644);
+        auto &upload_request = request.plugin();
+        if (!request.plugin().has_offset()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "miss field plugin offset");
+            return;
+        }
+
+        if (!request.plugin().has_content()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "miss field plugin content");
+            return;
+        }
+        if (!request.plugin().content().empty()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "empty plugin content");
+            return;
+        }
+
+        if (!upload_request.plugin().has_version()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "miss field plugin version");
+            return;
+        }
+
+        auto &name = upload_request.plugin().name();
+
+        BAIDU_SCOPED_LOCK(_plugin_mutex);
+        auto it = _plugins.find(name);
+        if (it == _plugins.end()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            return;
+        }
+        turbo::ModuleVersion version(upload_request.plugin().version().major(), upload_request.plugin().version().minor(),
+                                     upload_request.plugin().version().patch());
+        auto pit = it->second.find(version);
+        if (pit == it->second.end()) {
+            /// not exists
+            TLOG_INFO("config :{} version: {} not exist", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
+        }
+
+        auto libname = make_plugin_path(name, version, pit->second.platform());
+        std::string file_path = FLAGS_service_plugin_data_root + "/" + libname;
+        int fd = ::open(file_path.c_str(), O_RDWR | O_CREAT, 0644);
         if(fd < 0) {
-            return false;
+            TLOG_WARN("upload plugin :{} version: {} open file error", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "open file error");
         }
-        int64_t n = md5_sum_file(path, cksm);
-        if(n < 0) {
-            TLOG_ERROR("fail to md5 sum {}", path);
-        }
-        return true;
-    }
-
-    void PluginEntity::close() {
-        if(fd > 0) {
-            ::close(fd);
-            fd = -1;
-        }
-    }
-
-    PluginManager::PluginManager() {
-        if(!turbo::filesystem::exists(FLAGS_service_plugin_data_root)) {
-            turbo::filesystem::create_directories(FLAGS_service_plugin_data_root);
-        }
-    }
-
-    std::string PluginManager::make_plugin_file_name(const std::string &name, const turbo::ModuleVersion &v) {
-        return turbo::Format("lib{}.so.{}", name, v.to_string());
-    }
-
-    void PluginManager::create_plugin(const ::EA::proto::FileManageRequest &request, braft::Closure *done) {
-        auto &create_req = const_cast<EA::proto::CreatePluginRequest &>(request.create_plugin());
-        std::string plugin_name = create_req.name();
-        auto &plugin_proto_version = const_cast<EA::proto::Version &>(create_req.version());
-        turbo::ModuleVersion plugin_version(plugin_proto_version.major(), plugin_proto_version.minor(),
-                                            plugin_proto_version.patch());
-
-        std::unique_lock l(_meta_lock);
-        /// if the plugin already upload finish, response false;
-        if(get_ready_plugin_ptr(plugin_name, plugin_version)) {
-            TLOG_WARN("create plugin already commit request:{}", request.ShortDebugString());
-            SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "plugin already commit")
-            return;
-        }
-        /// if the plugin already removed, response false;
-        if(get_remove_plugin_ptr(plugin_name, plugin_version)) {
-            TLOG_WARN("create plugin version removed request:{}", request.ShortDebugString());
-            SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "plugin already removed")
-            return;
-        }
-
-        /// if the plugin already removed, response false;
-        if(get_uploading_plugin_ptr(plugin_name, plugin_version)) {
-            TLOG_WARN("create plugin failed already exists request:{}", request.ShortDebugString());
-            SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "plugin already exists")
-            return;
-        }
-
-
-        if (_uploading_plugin_map.find(plugin_name) == _uploading_plugin_map.end()) {
-            _uploading_plugin_map[plugin_name] = std::make_shared<Plugin>(plugin_name);
-        }
-        auto it = _uploading_plugin_map.find(plugin_name);
-        auto &entities = it->second->entities;
-
-        if (entities.find(plugin_version) != entities.end()) {
-            TLOG_WARN("create plugin version exists request:{}", request.ShortDebugString());
-            SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "plugin already exists")
-            return;
-        }
-
-        entities[plugin_version] = std::shared_ptr<PluginEntity>();
-        SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
-    }
-
-    void PluginManager::upload_plugin(const ::EA::proto::FileManageRequest &request,  braft::Closure *done) {
-        auto &upload_req = const_cast<EA::proto::UploadPluginRequest &>(request.upload_plugin());
-        std::string plugin_name = upload_req.name();
-        auto &plugin_proto_version = const_cast<EA::proto::Version &>(upload_req.version());
-        turbo::ModuleVersion plugin_version(plugin_proto_version.major(), plugin_proto_version.minor(),
-                                            plugin_proto_version.patch());
-
-        std::unique_lock l(_meta_lock);
-        auto r = get_uploading_plugin_ptr(plugin_name, plugin_version);
-        if(r == nullptr) {
-            TLOG_ERROR("upload plugin failed for plugin not create, request: {}", request.ShortDebugString());
-            SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "plugin not create")
-            return;
-        }
-        ssize_t nw = full_pwrite(r->fd, upload_req.content().data(), upload_req.content().size(), upload_req.offset());
+        ssize_t nw = full_pwrite(fd, upload_request.content().data(), upload_request.content().size(), upload_request.offset());
         if(nw < 0) {
-            r->close();
-            TLOG_ERROR("upload plugin failed to pwrite, request: {}", request.ShortDebugString());
-            SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "plugin not create")
+            TLOG_WARN("upload plugin :{} version: {} open file error", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "open file error");
+        }
+
+        pit->second.set_upload_size(upload_request.offset() + nw);
+        ::fsync(fd);
+        ftruncate(fd,  pit->second.upload_size());
+        if(pit->second.upload_size() == pit->second.size()) {
+            pit->second.set_finish(true);
+        }
+        if(pit->second.finish()) {
+            /// check sum
+            std::string cksm;
+            int64_t nszie = md5_sum_file(file_path, cksm);
+            if(nszie < 0) {
+                TLOG_WARN("upload plugin :{} version: {} check md5 fail", name, version.to_string());
+                SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "check md5 fail");
+            }
+            if(cksm != pit->second.cksm()) {
+                TLOG_WARN("upload plugin :{} version: {} check md5 fail, expect: {} get: {}", name, version.to_string(),  pit->second.cksm(), cksm);
+                SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "md5 not match");
+            }
+        }
+        ::close(fd);
+        /// persist
+        std::string rocks_key = make_plugin_key(name, version);
+        std::string rocks_value;
+        if (!pit->second.SerializeToString(&rocks_value)) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
-        if (upload_req.offset() + (int64_t) (upload_req.content().size()) == upload_req.size()) {
-            fsync(r->fd);
-            int ret = ftruncate(r->fd, upload_req.size());
-            int64_t nszie = md5_sum_file(r->path, r->cksm);
-            if (nszie < 0) {
-                TLOG_ERROR("Fail to cksm model: {} , ftruncate ret: {}", r->path, ret);
-                SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "Fail to cksm plugin")
-                return;
-            }
-            TLOG_INFO("{} persist at path: {} has computed size:{} and received size:{} has computed cksm:{} and received cksm:",
-                      plugin_name, r->path, r->size, nszie, upload_req.size(), r->cksm, upload_req.cksm());
-            if (upload_req.cksm() != r->cksm) {
-                TLOG_ERROR("invalid md5 cksm, while computed cksm: {} , expected cksm: {}",r->cksm , upload_req.cksm());
-                SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "Fail to cksm plugin")
-                return;
-            } else {
-                r->size = upload_req.size();
-            }
-            r->finish = true;
-            make_plugin_ready(plugin_name, plugin_version);
+
+        int ret = ServiceRocksdb::get_instance()->put_meta_info(rocks_key, rocks_value);
+        if (ret < 0) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            return;
         }
-        SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
-    void PluginManager::remove_plugin(const ::EA::proto::FileManageRequest &request, braft::Closure *done) {
-        auto &remove_plugin = const_cast<EA::proto::RemovePluginRequest &>(request.remove_plugin());
-        std::string plugin_name = remove_plugin.name();
-        std::unique_lock l(_meta_lock);
-        if(remove_plugin.has_version()) {
-            auto &plugin_proto_version = const_cast<EA::proto::Version &>(remove_plugin.version());
-            turbo::ModuleVersion plugin_version(plugin_proto_version.major(), plugin_proto_version.minor(),
-                                                plugin_proto_version.patch());
-            remove_signal(plugin_name, plugin_version, done);
+    void PluginManager::remove_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
+        if (!request.has_plugin()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "empty plugin request");
+            return;
+        }
+        auto &remove_request = request.plugin().plugin();
+        auto &name = remove_request.name();
+        bool remove_signal = remove_request.has_version();
+        BAIDU_SCOPED_LOCK(_plugin_mutex);
+        if (!remove_signal) {
+            remove_plugin_all(request, done);
+            return;
+        }
+        auto it = _plugins.find(name);
+        if (it == _plugins.end()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            return;
+        }
+        turbo::ModuleVersion version(remove_request.version().major(), remove_request.version().minor(),
+                                     remove_request.version().patch());
+        auto pit = it->second.find(version);
+        if (pit == it->second.end()) {
+            /// not exists
+            TLOG_INFO("config :{} version: {} not exist", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
+        }
+
+        /// mark move to tombstone and write to rocksdb
+        std::string rocks_key = make_plugin_key(name, version);
+        std::string rocks_value;
+        pit->second.set_tombstone(true);
+        if (!pit->second.SerializeToString(&rocks_value)) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            return;
+        }
+
+        int ret = ServiceRocksdb::get_instance()->put_meta_info(rocks_key, rocks_value);
+        if (ret < 0) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            return;
+        }
+
+        /// update memory
+        {
+            /// move to tombstone
+            BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
+            if (_tombstone_plugins.find(name) == _tombstone_plugins.end()) {
+                _tombstone_plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+            }
+            _tombstone_plugins[name][version] = pit->second;
+        }
+        /// erase from plugins
+        it->second.erase(version);
+        /// if no version under plugin, remove it
+        if (it->second.empty()) {
+            _plugins.erase(name);
+        }
+        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+    }
+
+    void PluginManager::remove_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
+        auto &remove_request = request.plugin().plugin();
+        auto &name = remove_request.name();
+        auto it = _plugins.find(name);
+        if (it == _plugins.end()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            return;
+        }
+        std::vector<std::string> keys;
+        std::vector<std::string> values;
+
+        for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
+            std::string key = make_plugin_key(name, vit->first);
+            std::string value;
+            vit->second.set_tombstone(true);
+            if (!vit->second.SerializeToString(&value)) {
+                SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+                return;
+            }
+            keys.push_back(key);
+            values.push_back(value);
+        }
+
+        int ret = ServiceRocksdb::get_instance()->put_meta_info(keys, values);
+        if (ret < 0) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            return;
+        }
+        /// update memory
+        {
+            /// move to tombstone
+            BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
+            if (_tombstone_plugins.find(name) == _tombstone_plugins.end()) {
+                _tombstone_plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+            }
+            auto tomb_it = _tombstone_plugins.find(name);
+            for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
+                tomb_it->second[vit->first] = vit->second;
+            }
+        }
+        _plugins.erase(name);
+        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+    }
+
+    void PluginManager::restore_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
+        if (!request.has_plugin()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "empty plugin request");
+            return;
+        }
+        auto &restore_request = request.plugin().plugin();
+        auto &name = restore_request.name();
+        bool remove_signal = restore_request.has_version();
+        BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
+        if (!remove_signal) {
+            restore_plugin_all(request, done);
+            return;
+        }
+        auto it = _tombstone_plugins.find(name);
+        if (it == _tombstone_plugins.end()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            return;
+        }
+        turbo::ModuleVersion version(restore_request.version().major(), restore_request.version().minor(),
+                                     restore_request.version().patch());
+        auto pit = it->second.find(version);
+        if (pit == it->second.end()) {
+            /// not exists
+            TLOG_INFO("plugin :{} version: {} not exist", name, version.to_string());
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "plugin not exist");
+        }
+
+        /// mark move to tombstone and write to rocksdb
+        std::string rocks_key = make_plugin_key(name, version);
+        std::string rocks_value;
+        pit->second.set_tombstone(false);
+        if (!pit->second.SerializeToString(&rocks_value)) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            return;
+        }
+
+        int ret = ServiceRocksdb::get_instance()->put_meta_info(rocks_key, rocks_value);
+        if (ret < 0) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "write from db fail");
+            return;
+        }
+
+        /// update memory
+        {
+            /// move to normal
+            BAIDU_SCOPED_LOCK(_plugin_mutex);
+            if (_plugins.find(name) == _plugins.end()) {
+                _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+            }
+            _plugins[name][version] = pit->second;
+        }
+        /// erase from plugins
+        it->second.erase(version);
+        /// if no version under plugin, remove it
+        if (it->second.empty()) {
+            _plugins.erase(name);
+        }
+        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+    }
+
+    void PluginManager::restore_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
+        auto &restore_request = request.plugin().plugin();
+        auto &name = restore_request.name();
+        auto it = _tombstone_plugins.find(name);
+        if (it == _tombstone_plugins.end()) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            return;
+        }
+        std::vector<std::string> keys;
+        std::vector<std::string> values;
+
+
+        for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
+            std::string key = make_plugin_key(name, vit->first);
+            std::string value;
+            vit->second.set_tombstone(false);
+            if (!vit->second.SerializeToString(&value)) {
+                SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+                return;
+            }
+            keys.push_back(key);
+            values.push_back(value);
+        }
+
+        int ret = ServiceRocksdb::get_instance()->put_meta_info(keys, values);
+        if (ret < 0) {
+            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            return;
+        }
+        /// update memory
+        {
+            /// move to tombstone
+            BAIDU_SCOPED_LOCK(_plugin_mutex);
+            if (_plugins.find(name) == _plugins.end()) {
+                _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+            }
+            auto normal_it = _plugins.find(name);
+            for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
+                normal_it->second[vit->first] = vit->second;
+            }
+        }
+        _tombstone_plugins.erase(name);
+        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+    }
+
+    int PluginManager::load_snapshot() {
+        BAIDU_SCOPED_LOCK(_plugin_mutex);
+        BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
+        _plugins.clear();
+        _tombstone_plugins.clear();
+        std::string config_prefix = ServiceConstants::PLUGIN_IDENTIFY;
+        rocksdb::ReadOptions read_options;
+        read_options.prefix_same_as_start = true;
+        read_options.total_order_seek = false;
+        RocksWrapper *db = RocksWrapper::get_instance();
+        std::unique_ptr<rocksdb::Iterator> iter(
+                db->new_iterator(read_options, db->get_meta_info_handle()));
+        iter->Seek(config_prefix);
+        for (; iter->Valid(); iter->Next()) {
+            if (load_config_snapshot(iter->value().ToString()) != 0) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    int PluginManager::load_config_snapshot(const std::string &value) {
+        proto::PluginEntiry plugin_pb;
+        if (!plugin_pb.ParseFromString(value)) {
+            TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
+            return -1;
+        }
+        if(plugin_pb.tombstone()) {
+            if (_tombstone_plugins.find(plugin_pb.name()) == _tombstone_plugins.end()) {
+                _tombstone_plugins[plugin_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+            }
+            auto it = _tombstone_plugins.find(plugin_pb.name());
+            turbo::ModuleVersion version(plugin_pb.version().major(), plugin_pb.version().minor(),
+                                         plugin_pb.version().patch());
+            it->second[version] = plugin_pb;
         } else {
-            remove_all(plugin_name, done);
-        }
-    }
-
-    void PluginManager::remove_signal(const std::string &name, const turbo::ModuleVersion &version, braft::Closure *done) {
-
-         /// from ready
-        auto it = _plugin_map.find(name);
-        if (it != _plugin_map.end()) {
-            auto eit = it->second->entities.find(version);
-            if(eit != it->second->entities.end()) {
-                add_plugin(_removed_plugin_map, name);
+            if (_plugins.find(plugin_pb.name()) == _plugins.end()) {
+                _plugins[plugin_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
             }
-            return;
+            auto it = _plugins.find(plugin_pb.name());
+            turbo::ModuleVersion version(plugin_pb.version().major(), plugin_pb.version().minor(),
+                                         plugin_pb.version().patch());
+            it->second[version] = plugin_pb;
         }
+
+        return 0;
     }
 
-    void PluginManager::remove_all(const std::string &name, braft::Closure *done) {
-
+    std::string PluginManager::make_plugin_key(const std::string &name, const turbo::ModuleVersion &version) {
+        return ServiceConstants::PLUGIN_IDENTIFY + name + version.to_string();
     }
 
-    std::shared_ptr<PluginEntity> PluginManager::get_ready_plugin_ptr(const std::string &name, const turbo::ModuleVersion &version) {
-        auto it = _plugin_map.find(name);
-        if (it == _plugin_map.end()) {
-            return nullptr;
+    turbo::Status
+    PluginManager::transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntiry *entity) {
+        entity->set_upload_size(0);
+        entity->set_finish(false);
+        entity->set_tombstone(false);
+        entity->set_name(info->name());
+        entity->set_time(info->time());
+        entity->set_platform(info->platform());
+        entity->set_size(info->size());
+        if (!info->has_cksm()) {
+            return turbo::InvalidArgumentError("no chsm");
         }
-        auto eit = it->second->entities.find(version);
-        if(eit == it->second->entities.end()) {
-            return nullptr;
+        entity->set_cksm(info->cksm());
+        if (!info->has_time()) {
+            return turbo::InvalidArgumentError("no time");
         }
-        return eit->second;
+        entity->set_time(info->time());
+        if (!info->has_version()) {
+            return turbo::InvalidArgumentError("no version");
+        }
+        *(entity->mutable_version()) = info->version();
+        return turbo::OkStatus();
     }
 
-    std::shared_ptr<PluginEntity> PluginManager::get_uploading_plugin_ptr(const std::string &name, const turbo::ModuleVersion &version) {
-        auto it = _uploading_plugin_map.find(name);
-        if (it == _uploading_plugin_map.end()) {
-            return nullptr;
-        }
-        auto eit = it->second->entities.find(version);
-        if(eit == it->second->entities.end()) {
-            return nullptr;
-        }
-        return eit->second;
+    void PluginManager::transfer_entity_to_info(const EA::proto::PluginEntiry *entity, EA::proto::PluginInfo *info) {
+        info->set_upload_size(entity->upload_size());
+        info->set_finish(entity->finish());
+        info->set_tombstone(entity->tombstone());
+        info->set_name(entity->name());
+        info->set_time(entity->time());
+        info->set_platform(entity->platform());
+        info->set_size(entity->size());
+        info->set_cksm(entity->cksm());
+        info->set_time(entity->time());
+        *(info->mutable_version()) = entity->version();
     }
 
-    std::shared_ptr<PluginEntity> PluginManager::get_remove_plugin_ptr(const std::string &name, const turbo::ModuleVersion &version) {
-        auto it = _removed_plugin_map.find(name);
-        if (it == _removed_plugin_map.end()) {
-            return nullptr;
-        }
-        auto eit = it->second->entities.find(version);
-        if(eit == it->second->entities.end()) {
-            return nullptr;
-        }
-        return eit->second;
-    }
-
-    bool PluginManager::make_plugin_ready(const std::string &name, const turbo::ModuleVersion &version) {
-        auto it = _uploading_plugin_map.find(name);
-        if (it == _uploading_plugin_map.end()) {
-            TLOG_ERROR("fatal error for commit plugin no plugin");
-            return false;
-        }
-        auto eit = it->second->entities.find(version);
-        if(eit == it->second->entities.end()) {
-            TLOG_ERROR("fatal error for commit plugin no version");
-            return false;
+    std::string PluginManager::make_plugin_path(const std::string &name, const turbo::ModuleVersion &version, EA::proto::Platform platform) {
+        if(platform == EA::proto::PF_lINUX) {
+            return turbo::Format("lib{}.so.{}", name,version.to_string());
+        } else if(platform == EA::proto::PF_OSX) {
+            return turbo::Format("lib{}.{}.dylib", name,version.to_string());
+        } else {
+            return turbo::Format("lib{}.{}.dll", name,version.to_string());
         }
 
-        if (_plugin_map.find(name) == _plugin_map.end()) {
-            _plugin_map[name] = std::make_shared<Plugin>(name);
-        }
-        auto rit = _plugin_map.find(name);
-        if(rit->second->entities.find(version) != rit->second->entities.end()) {
-            TLOG_ERROR("fatal error for commit plugin no version");
-            return false;
-        }
-        rit->second->entities[version] = eit->second;
-
-        /// remove uploading map;
-        it->second->entities.erase(version);
-        if(it->second->entities.empty()) {
-            _uploading_plugin_map.erase(name);
-        }
-        return true;
-    }
-    void PluginManager::add_plugin(PluginMap &map, const std::string &name) {
-        if(map.find(name) == map.end()) {
-            map[name] = std::make_shared<Plugin>(name);
-        }
     }
 }  // namespace EA
-*/

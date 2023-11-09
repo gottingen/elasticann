@@ -14,6 +14,7 @@
 //
 #include "elasticann/client/ops_cmd.h"
 #include "elasticann/client/config_cmd.h"
+#include "elasticann/client/plugin_cmd.h"
 #include "elasticann/client/option_context.h"
 #include "turbo/format/print.h"
 
@@ -27,6 +28,7 @@ namespace EA::client {
         auto opt = OptionContext::get_instance();
         auto *sub = app.add_subcommand("ops", "ops operations");
         EA::client::setup_config_cmd(*sub);
+        EA::client::setup_plugin_cmd(*sub);
         // Add options to sub, binding them to opt.
         sub->add_option("-s,--server", opt->server, "server address")->default_val("127.0.0.0:8050");
         // Set the run function as callback to be called when this subcommand is issued.

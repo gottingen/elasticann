@@ -27,12 +27,15 @@ namespace EA {
             return &ins;
         }
 
-        void get_config(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
-
-        void list_config(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+        void
+        get_config(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
 
         void
-        list_config_version(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+        list_config(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+
+        void
+        list_config_version(const ::EA::proto::QueryOpsServiceRequest *request,
+                            ::EA::proto::QueryOpsServiceResponse *response);
     };
 }  // namespace EA
 

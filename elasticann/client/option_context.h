@@ -56,6 +56,13 @@ namespace EA::client {
         std::string config_file;
         std::string config_version;
         std::string config_type;
+
+        // for plugin
+        std::string plugin_name;
+        std::string plugin_file;
+        std::string plugin_version;
+        std::string plugin_type;
+        bool query_tombstone{false};
     };
 }  // namespace EA::client
 

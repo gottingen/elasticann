@@ -58,6 +58,30 @@ namespace EA::client {
         return turbo::InvalidArgumentError("unknown format '{}'", str);
     }
 
+    std::string platform_to_string(EA::proto::Platform type) {
+        switch (type) {
+            case EA::proto::PF_lINUX:
+                return "linux";
+            case EA::proto::PF_OSX:
+                return "osx";
+            case EA::proto::PF_WINDOWS:
+                return "windows";
+            default:
+                return "unknown format";
+        }
+    }
+    turbo::ResultStatus<EA::proto::Platform> string_to_platform(const std::string &str) {
+        auto lc = turbo::StrToLower(str);
+        if(str == "linux") {
+            return EA::proto::PF_lINUX;
+        } else if(str == "osx") {
+            return EA::proto::PF_OSX;
+        } else if(str == "windows") {
+            return EA::proto::PF_WINDOWS;
+        }
+        return turbo::InvalidArgumentError("unknown platform '{}'", str);
+    }
+
     std::string get_op_string(EA::proto::OpType type) {
         switch (type) {
             case EA::proto::OP_CREATE_NAMESPACE:

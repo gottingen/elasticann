@@ -15,6 +15,7 @@
 #include "elasticann/ops/service_state_machine.h"
 #include "elasticann/ops/ops_server_interact.h"
 #include "elasticann/ops/config_manager.h"
+#include "elasticann/ops/plugin_manager.h"
 #include "elasticann/ops/constants.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/engine/sst_file_writer.h"
@@ -221,6 +222,11 @@ namespace EA {
                     TLOG_ERROR("ClusterManager load snapshot fail");
                     return -1;
                 }
+                ret =PluginManager::get_instance()->load_snapshot();
+                if (ret != 0) {
+                    TLOG_ERROR("PluginManager load snapshot fail");
+                    return -1;
+                }
             }
         }
         set_have_data(true);
@@ -361,6 +367,22 @@ namespace EA {
                 }
                 case proto::OP_REMOVE_CONFIG: {
                     ConfigManager::get_instance()->remove_config(request, done);
+                    break;
+                }
+                case proto::OP_CREATE_PLUGIN: {
+                    PluginManager::get_instance()->create_plugin(request, done);
+                    break;
+                }
+                case proto::OP_REMOVE_PLUGIN: {
+                    PluginManager::get_instance()->remove_plugin(request, done);
+                    break;
+                }
+                case proto::OP_RESTORE_TOMBSTONE_PLUGIN: {
+                    PluginManager::get_instance()->restore_plugin(request, done);
+                    break;
+                }
+                case proto::OP_UPLOAD_PLUGIN: {
+                    PluginManager::get_instance()->upload_plugin(request, done);
                     break;
                 }
                 default: {

@@ -15,6 +15,7 @@
 #include "elasticann/ops/ops_server.h"
 #include "elasticann/ops/config_manager.h"
 #include "elasticann/ops/query_config_manager.h"
+#include "elasticann/ops/query_plugin_manager.h"
 #include "elasticann/ops/service_state_machine.h"
 #include "elasticann/ops/service_rocksdb.h"
 
@@ -31,6 +32,22 @@ namespace EA {
                 break;
             }
             case EA::proto::OP_REMOVE_CONFIG:{
+                _machine->process(controller, request, response, done_guard.release());
+                break;
+            }
+            case EA::proto::OP_CREATE_PLUGIN:{
+                _machine->process(controller, request, response, done_guard.release());
+                break;
+            }
+            case EA::proto::OP_UPLOAD_PLUGIN:{
+                _machine->process(controller, request, response, done_guard.release());
+                break;
+            }
+            case EA::proto::OP_REMOVE_PLUGIN:{
+                _machine->process(controller, request, response, done_guard.release());
+                break;
+            }
+            case EA::proto::OP_RESTORE_TOMBSTONE_PLUGIN:{
                 _machine->process(controller, request, response, done_guard.release());
                 break;
             }
@@ -58,6 +75,34 @@ namespace EA {
             }
             case EA::proto::QUERY_LIST_CONFIG_VERSION:{
                 QueryConfigManager::get_instance()->list_config_version(request, response);
+                break;
+            }
+            case EA::proto::QUERY_DOWNLOAD_PLUGIN:{
+                QueryPluginManager::get_instance()->download_plugin(request, response);
+                break;
+            }
+            case EA::proto::QUERY_PLUGIN_INFO:{
+                QueryPluginManager::get_instance()->plugin_info(request, response);
+                break;
+            }
+            case EA::proto::QUERY_TOMBSTONE_PLUGIN_INFO:{
+                QueryPluginManager::get_instance()->tombstone_plugin_info(request, response);
+                break;
+            }
+            case EA::proto::QUERY_LIST_PLUGIN:{
+                QueryPluginManager::get_instance()->list_plugin(request, response);
+                break;
+            }
+            case EA::proto::QUERY_LIST_PLUGIN_VERSION:{
+                QueryPluginManager::get_instance()->list_plugin_version(request, response);
+                break;
+            }
+            case EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN:{
+                QueryPluginManager::get_instance()->tombstone_list_plugin(request, response);
+                break;
+            }
+            case EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN_VERSION:{
+                QueryPluginManager::get_instance()->tombstone_list_plugin_version(request, response);
                 break;
             }
             default:{

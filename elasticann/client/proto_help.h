@@ -26,6 +26,10 @@ namespace EA::client {
 
     turbo::ResultStatus<EA::proto::ConfigType> string_to_config_type(const std::string &str);
 
+    std::string platform_to_string(EA::proto::Platform type);
+
+    turbo::ResultStatus<EA::proto::Platform> string_to_platform(const std::string &str);
+
     std::string get_op_string(EA::proto::OpType type);
 
     std::string get_op_string(EA::proto::QueryOpType type);

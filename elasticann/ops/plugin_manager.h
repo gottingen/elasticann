@@ -17,75 +17,77 @@
 #ifndef ELASTICANN_OPS_PLUGIN_MANAGER_H_
 #define ELASTICANN_OPS_PLUGIN_MANAGER_H_
 
-#include <braft/raft.h>
-#include "eaproto/service/file_service.pb.h"
-#include <string>
-#include <string_view>
-#include <memory>
-#include <turbo/container/flat_hash_map.h>
+#include "turbo/container/flat_hash_map.h"
+#include "eaproto/ops/ops.interface.pb.h"
+#include "turbo/container/flat_hash_map.h"
 #include "turbo/module/module_version.h"
+#include "turbo/files/filesystem.h"
+#include "turbo/base/status.h"
+#include <braft/raft.h>
+#include <bthread/mutex.h>
+#include "elasticann/config/gflags_defines.h"
 
 namespace EA {
 
-    struct PluginEntity {
-        PluginEntity(const std::string &name, const turbo::ModuleVersion &v);
-        ~PluginEntity();
-        int         fd{-1};
-        int64_t    size{0};
-        std::string cksm;
-        std::string path;
-        bool finish{false};
-        bool open();
-        void close();
-    };
-
-    struct Plugin {
-        explicit Plugin(const std::string_view &n) : name(n) {
-
-        }
-
-        const std::string name;
-        /// version string -> PluginEntity
-        std::map<turbo::ModuleVersion, std::shared_ptr<PluginEntity>> entities;
-    };
-
     class PluginManager {
-    public:
-        typedef turbo::flat_hash_map<std::string, std::shared_ptr<Plugin>> PluginMap;
     public:
         static PluginManager *get_instance() {
             static PluginManager ins;
             return &ins;
         }
-        static std::string make_plugin_file_name(const std::string &name, const turbo::ModuleVersion &v);
 
-        void create_plugin(const ::EA::proto::FileManageRequest &request, braft::Closure *done);
+        ~PluginManager();
 
-        void upload_plugin(const ::EA::proto::FileManageRequest &request, braft::Closure *done);
+        void create_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
-        void remove_plugin(const ::EA::proto::FileManageRequest &request, braft::Closure *done);
+        void upload_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+
+        void remove_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+
+        void restore_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+
+        int load_snapshot();
+
+        static std::string make_plugin_key(const std::string &name, const turbo::ModuleVersion &version);
+
+        static std::string make_plugin_path(const std::string &name, const turbo::ModuleVersion &version, EA::proto::Platform platform);
 
     private:
         PluginManager();
 
+        friend class QueryPluginManager;
 
-        std::shared_ptr<PluginEntity> get_ready_plugin_ptr(const std::string &name, const turbo::ModuleVersion &version);
-        std::shared_ptr<PluginEntity> get_uploading_plugin_ptr(const std::string &name, const turbo::ModuleVersion &version);
-        std::shared_ptr<PluginEntity> get_remove_plugin_ptr(const std::string &name, const turbo::ModuleVersion &version);
-        bool make_plugin_ready(const std::string &name, const turbo::ModuleVersion &version);
-        void remove_signal(const std::string &name, const turbo::ModuleVersion &version, braft::Closure *done);
+        int load_config_snapshot(const std::string &value);
 
-        void remove_all(const std::string &name, braft::Closure *done);
-        void add_plugin(PluginMap &map, const std::string &name);
+        void remove_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+        void restore_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
+        static turbo::Status transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntiry*entity);
+        static void transfer_entity_to_info(const EA::proto::PluginEntiry *info, EA::proto::PluginInfo*entity);
     private:
-        /// finish upload plugins
-        std::mutex _meta_lock;
-        PluginMap _plugin_map;
-        /// uploading plugins
-        PluginMap _uploading_plugin_map;
-        PluginMap _removed_plugin_map;
+        bthread_mutex_t _plugin_mutex;
+        bthread_mutex_t _tombstone_plugin_mutex;
+        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>> _plugins;
+        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>> _tombstone_plugins;
     };
+
+    ///
+    /// inlines
+    ///
+
+    inline PluginManager::PluginManager() {
+        bthread_mutex_init(&_plugin_mutex, nullptr);
+        bthread_mutex_init(&_tombstone_plugin_mutex, nullptr);
+        std::error_code ec;
+        if(!turbo::filesystem::exists(FLAGS_service_plugin_data_root, ec)) {
+            turbo::filesystem::create_directories(FLAGS_service_plugin_data_root, ec);
+        }
+    }
+
+    inline PluginManager::~PluginManager() {
+        bthread_mutex_destroy(&_plugin_mutex);
+        bthread_mutex_destroy(&_tombstone_plugin_mutex);
+    }
 }  // namespace EA
 
 #endif  // ELASTICANN_OPS_PLUGIN_MANAGER_H_

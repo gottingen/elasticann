@@ -398,7 +398,7 @@ namespace EA {
     DEFINE_string(service_stable_uri, "local://./raft_data/stable", "raft stable path");
     DEFINE_string(service_snapshot_uri, "local://./raft_data/snapshot", "raft snapshot path");
     DEFINE_int64(service_check_migrate_interval_us, 60 * 1000 * 1000LL, "check meta server migrate interval (60s)");
-    DEFINE_string(service_plugin_data_root,"./plugin","plugin data dir");
+    DEFINE_string(service_plugin_data_root,"./service_data/plugin","plugin data dir");
     DEFINE_string(service_db_path, "./rocks_db", "rocks db path");
     DEFINE_string(service_snapshot_sst, "/service.sst","rocks sst file for service");
     DEFINE_string(service_listen,"127.0.0.1:8011", "meta listen addr");

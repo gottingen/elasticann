@@ -185,6 +185,8 @@ carbin_cc_binary(
         NAME eacli
         SOURCES
         ${CLIENT_SRC}
+        ${PROJECT_SOURCE_DIR}/elasticann/ops/file_util.cc
+        ${PROJECT_SOURCE_DIR}/elasticann/ops/md5.cc
         COPTS
         ${USER_CXX_FLAGS}
         "-Wno-strict-aliasing"
