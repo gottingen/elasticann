@@ -19,24 +19,22 @@
 #include "eaproto/ops/ops.interface.pb.h"
 #include "turbo/container/flat_hash_map.h"
 #include "elasticann/common/lru_cache.h"
+#include "elasticann/config/gflags_defines.h"
+#include "turbo/files/filesystem.h"
+#include <bthread/mutex.h>
+#include <memory>
 
 namespace EA {
 
-    struct CacheFd {
+    struct CacheFile {
         int fd{-1};
-        ~CacheFd() {
-            if(fd > 0) {
-                ::close(fd);
-                fd = -1;
-            }
-        }
-        void release() {
-            if(fd > 0) {
-                ::close(fd);
-                fd = -1;
-            }
-        }
+
+        ~CacheFile();
+
+        std::string file_path;
     };
+    typedef std::shared_ptr<CacheFile> CacheFilePtr;
+
     class QueryPluginManager {
     public:
         static QueryPluginManager *get_instance() {
@@ -44,14 +42,22 @@ namespace EA {
             return &ins;
         }
 
+        ~QueryPluginManager();
+
+        static const std::string kReadLinkDir;
+
+        void init();
+
         void
-        download_plugin(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+        download_plugin(const ::EA::proto::QueryOpsServiceRequest *request,
+                        ::EA::proto::QueryOpsServiceResponse *response);
 
         void
         list_plugin(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
 
         void
-        tombstone_list_plugin(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+        tombstone_list_plugin(const ::EA::proto::QueryOpsServiceRequest *request,
+                              ::EA::proto::QueryOpsServiceResponse *response);
 
         void
         list_plugin_version(const ::EA::proto::QueryOpsServiceRequest *request,
@@ -59,19 +65,33 @@ namespace EA {
 
         void
         tombstone_list_plugin_version(const ::EA::proto::QueryOpsServiceRequest *request,
-                            ::EA::proto::QueryOpsServiceResponse *response);
+                                      ::EA::proto::QueryOpsServiceResponse *response);
 
 
         void
         plugin_info(const ::EA::proto::QueryOpsServiceRequest *request,
-                            ::EA::proto::QueryOpsServiceResponse *response);
+                    ::EA::proto::QueryOpsServiceResponse *response);
 
         void
         tombstone_plugin_info(const ::EA::proto::QueryOpsServiceRequest *request,
-                    ::EA::proto::QueryOpsServiceResponse *response);
+                              ::EA::proto::QueryOpsServiceResponse *response);
+
     private:
-        Cache<std::string,CacheFd> _cache;
+        QueryPluginManager();
+
+    private:
+        friend class CacheFile;
+        Cache<std::string, CacheFilePtr> _cache;
+        bthread_mutex_t _file_mutex;
     };
+
+    inline QueryPluginManager::QueryPluginManager() {
+        bthread_mutex_init(&_file_mutex, nullptr);
+    }
+
+    inline QueryPluginManager::~QueryPluginManager() {
+        bthread_mutex_destroy(&_file_mutex);
+    }
 }  // namespace EA
 
 #endif  // ELASTICANN_OPS_QUERY_PLUGIN_MANAGER_H_

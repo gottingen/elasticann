@@ -36,6 +36,11 @@ namespace EA::client {
 
     turbo::Status string_to_version(const std::string &str, EA::proto::Version*v);
 
+    std::string version_to_string(const EA::proto::Version &v);
+
+    std::string make_plugin_filename(const std::string &name, const EA::proto::Version &version,
+                                     EA::proto::Platform platform);
+
 }  // namespace EA::client
 
 #endif  // ELASTICANN_CLIENT_PROTO_HELP_H_

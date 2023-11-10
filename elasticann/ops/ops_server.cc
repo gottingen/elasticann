@@ -51,6 +51,10 @@ namespace EA {
                 _machine->process(controller, request, response, done_guard.release());
                 break;
             }
+            case EA::proto::OP_REMOVE_TOMBSTONE_PLUGIN:{
+                _machine->process(controller, request, response, done_guard.release());
+                break;
+            }
             default:{
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 response->set_errmsg("invalid op_type");
@@ -133,6 +137,8 @@ namespace EA {
             return -1;
         }
         TLOG_INFO("service state machine init success");
+        /// clean read links
+        QueryPluginManager::get_instance()->init();
         return 0;
     }
 

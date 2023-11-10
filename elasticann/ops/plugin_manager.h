@@ -46,11 +46,18 @@ namespace EA {
 
         void restore_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
+        void remove_tombstone_plugin(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+
         int load_snapshot();
+
+        int load_snapshot_file(const std::string& file_path);
+
+        int save_snapshot(const std::string &base_dir, const std::string &prefix, std::vector<std::string> &files);
 
         static std::string make_plugin_key(const std::string &name, const turbo::ModuleVersion &version);
 
-        static std::string make_plugin_path(const std::string &name, const turbo::ModuleVersion &version, EA::proto::Platform platform);
+        static std::string make_plugin_filename(const std::string &name, const turbo::ModuleVersion &version, EA::proto::Platform platform);
+        static std::string make_plugin_store_path(const std::string &name, const turbo::ModuleVersion &version, EA::proto::Platform platform);
 
     private:
         PluginManager();
@@ -60,6 +67,7 @@ namespace EA {
         int load_plugin_snapshot(const std::string &value);
 
         void remove_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
+        void remove_tombstone_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
         void restore_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
         static turbo::Status transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntiry*entity);

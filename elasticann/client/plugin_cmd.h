@@ -31,6 +31,10 @@ namespace EA::client {
 
     void run_plugin_create_cmd();
 
+    void run_plugin_upload_cmd();
+
+    void run_plugin_download_cmd();
+
     void run_plugin_remove_cmd();
 
     void run_plugin_restore_cmd();
@@ -45,6 +49,9 @@ namespace EA::client {
     make_plugin_create(EA::proto::OpsServiceRequest *req);
 
     [[nodiscard]] turbo::Status
+    make_plugin_upload(EA::proto::OpsServiceRequest *req);
+
+    [[nodiscard]] turbo::Status
     make_plugin_remove(EA::proto::OpsServiceRequest *req);
 
     [[nodiscard]] turbo::Status
@@ -55,6 +62,9 @@ namespace EA::client {
 
     [[nodiscard]] turbo::Status
     make_plugin_list(EA::proto::QueryOpsServiceRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_plugin_download(EA::proto::QueryOpsServiceRequest *req);
 
     [[nodiscard]] turbo::Status
     make_list_plugin_version(EA::proto::QueryOpsServiceRequest *req);

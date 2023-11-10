@@ -19,6 +19,26 @@
 
 namespace EA {
 
+    CacheFile::~CacheFile() {
+        {
+            BAIDU_SCOPED_LOCK(QueryPluginManager::get_instance()->_file_mutex);
+            if (fd > 0) {
+                ::close(fd);
+                fd = -1;
+            }
+            turbo::filesystem::remove(file_path);
+        }
+    }
+
+    const std::string QueryPluginManager::kReadLinkDir = FLAGS_service_plugin_data_root + "/read_link";
+
+    void QueryPluginManager::init() {
+        std::error_code ec;
+        if (turbo::filesystem::exists(kReadLinkDir, ec)) {
+            turbo::filesystem::remove_all(kReadLinkDir, ec);
+        }
+        turbo::filesystem::create_directories(kReadLinkDir, ec);
+    }
     void
     QueryPluginManager::download_plugin(const ::EA::proto::QueryOpsServiceRequest *request,
                                         ::EA::proto::QueryOpsServiceResponse *response) {
@@ -29,7 +49,8 @@ namespace EA {
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
-        turbo::ModuleVersion version = turbo::ModuleVersion(download_request.version().major(), download_request.version().minor(),
+        turbo::ModuleVersion version = turbo::ModuleVersion(download_request.version().major(),
+                                                            download_request.version().minor(),
                                                             download_request.version().patch());
         EA::proto::PluginEntiry entity;
         auto &name = download_request.name();
@@ -43,12 +64,17 @@ namespace EA {
                 return;
             }
             auto pit = it->second.find(version);
-            if(pit == it->second.end()) {
+            if (pit == it->second.end()) {
                 response->set_errmsg("plugin not exist");
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 return;
             }
             entity = pit->second;
+            if (!entity.finish()) {
+                response->set_errmsg("plugin not upload finish");
+                response->set_errcode(proto::INPUT_PARAM_ERROR);
+                return;
+            }
         }
 
         if (!download_request.has_offset()) {
@@ -64,29 +90,46 @@ namespace EA {
         }
         std::string key = PluginManager::make_plugin_key(name, version);
 
-        CacheFd cfd;
-        auto libname = PluginManager::make_plugin_path(name, version, entity.platform());
-        std::string file_path = FLAGS_service_plugin_data_root + "/" + libname;
-        if(_cache.find(key, &cfd) != 0) {
-            int fd = ::open(file_path.c_str(), O_RDONLY, 0644);
-            if(fd < 0 ) {
+        CacheFilePtr cache_file;
+        auto libname = PluginManager::make_plugin_filename(name, version, entity.platform());
+        std::string source_path = turbo::Format("{}/{}", FLAGS_service_plugin_data_root, libname);
+        std::string link_path = turbo::Format("{}/read_link/{}", FLAGS_service_plugin_data_root, libname);
+
+        if (_cache.find(key, &cache_file) != 0) {
+            {
+                BAIDU_SCOPED_LOCK(_file_mutex);
+                std::error_code ec;
+                if(!turbo::filesystem::exists(link_path, ec)) {
+                    turbo::filesystem::create_hard_link(source_path, link_path, ec);
+                    if(ec) {
+                        response->set_errmsg("create plugin read link file error");
+                        response->set_errcode(proto::INTERNAL_ERROR);
+                        return;
+                    }
+                }
+            }
+            int fd = ::open(link_path.c_str(), O_RDONLY, 0644);
+            if (fd < 0) {
                 response->set_errmsg("read plugin file error");
                 response->set_errcode(proto::INTERNAL_ERROR);
                 return;
             }
-            _cache.add(key, cfd);
+            cache_file = std::make_shared<CacheFile>();
+            cache_file->fd = fd;
+            cache_file->file_path = link_path;
+            _cache.add(key, cache_file);
         }
+
         auto len = download_request.count();
         auto offset = download_request.offset();
-        char* buf = new char[len];
+        char *buf = new char[len];
         if (offset + len > entity.size()) {
             len = entity.size() - offset;
         }
-        ssize_t n = full_pread(cfd.fd, buf, len, offset);
-        // do not close, cache it.
-        cfd.release();
+        ssize_t n = full_pread(cache_file->fd, buf, len, offset);
+
         if (n < 0 || n != (ssize_t) len) {
-            TLOG_ERROR("Fail to pread plugin:{} for req:{}", file_path, request->DebugString());
+            TLOG_ERROR("Fail to pread plugin:{} for req:{}", source_path, request->DebugString());
             response->set_errcode(proto::INTERNAL_ERROR);
             response->set_errmsg("plugin:" + name + " read failed");
             delete[] buf;

@@ -164,6 +164,27 @@ namespace EA {
             TLOG_WARN("Error while adding file to writer");
             return;
         }
+        /// plugin files;
+        std::string plugin_base_path = snapshot_path + "/plugins";
+        std::error_code ec;
+        turbo::filesystem::create_directories(plugin_base_path, ec);
+        if(ec) {
+            TLOG_WARN("Error while create plugin file snapshot path:{}", plugin_base_path);
+            return;
+        }
+        std::vector<std::string> files;
+        if(PluginManager::get_instance()->save_snapshot(snapshot_path, "/plugins",files) != 0) {
+            done->status().set_error(EINVAL, "Fail to snapshot plugin");
+            TLOG_WARN("Fail to snapshot plugin");
+            return;
+        }
+        for(auto & f: files) {
+            if (writer->add_file(f) != 0) {
+                done->status().set_error(EINVAL, "Fail to add file");
+                TLOG_WARN("Error while adding file to writer: {}", "/plugins/" + f);
+                return;
+            }
+        }
     }
 
     int ServiceStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
@@ -225,6 +246,13 @@ namespace EA {
                 ret =PluginManager::get_instance()->load_snapshot();
                 if (ret != 0) {
                     TLOG_ERROR("PluginManager load snapshot fail");
+                    return -1;
+                }
+            }
+            if(turbo::StartsWith(file, "/plugins")) {
+                int ret =PluginManager::get_instance()->load_snapshot_file(reader->get_path() + file);
+                if (ret != 0) {
+                    TLOG_ERROR("PluginManager load snapshot file fail");
                     return -1;
                 }
             }
@@ -379,6 +407,10 @@ namespace EA {
                 }
                 case proto::OP_RESTORE_TOMBSTONE_PLUGIN: {
                     PluginManager::get_instance()->restore_plugin(request, done);
+                    break;
+                }
+                case proto::OP_REMOVE_TOMBSTONE_PLUGIN: {
+                    PluginManager::get_instance()->remove_tombstone_plugin(request, done);
                     break;
                 }
                 case proto::OP_UPLOAD_PLUGIN: {

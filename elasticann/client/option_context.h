@@ -62,6 +62,7 @@ namespace EA::client {
         std::string plugin_file;
         std::string plugin_version;
         std::string plugin_type;
+        int64_t     plugin_block_size{4096};
         bool query_tombstone{false};
     };
 }  // namespace EA::client

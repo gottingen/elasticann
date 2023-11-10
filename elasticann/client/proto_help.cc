@@ -40,19 +40,19 @@ namespace EA::client {
 
     turbo::ResultStatus<EA::proto::ConfigType> string_to_config_type(const std::string &str) {
         auto lc = turbo::StrToLower(str);
-        if(lc == "json") {
+        if (lc == "json") {
             return EA::proto::CF_JSON;
-        } else if(lc == "text") {
+        } else if (lc == "text") {
             return EA::proto::CF_TEXT;
-        } else if(lc == "ini") {
+        } else if (lc == "ini") {
             return EA::proto::CF_INI;
-        } else if(lc == "yaml") {
+        } else if (lc == "yaml") {
             return EA::proto::CF_YAML;
-        } else if(lc == "xml") {
+        } else if (lc == "xml") {
             return EA::proto::CF_XML;
-        }else if(lc == "gflags") {
+        } else if (lc == "gflags") {
             return EA::proto::CF_GFLAGS;
-        }else if(lc == "toml") {
+        } else if (lc == "toml") {
             return EA::proto::CF_TOML;
         }
         return turbo::InvalidArgumentError("unknown format '{}'", str);
@@ -70,13 +70,14 @@ namespace EA::client {
                 return "unknown format";
         }
     }
+
     turbo::ResultStatus<EA::proto::Platform> string_to_platform(const std::string &str) {
         auto lc = turbo::StrToLower(str);
-        if(str == "linux") {
+        if (str == "linux") {
             return EA::proto::PF_lINUX;
-        } else if(str == "osx") {
+        } else if (str == "osx") {
             return EA::proto::PF_OSX;
-        } else if(str == "windows") {
+        } else if (str == "windows") {
             return EA::proto::PF_WINDOWS;
         }
         return turbo::InvalidArgumentError("unknown platform '{}'", str);
@@ -119,7 +120,7 @@ namespace EA::client {
             case EA::proto::OP_REMOVE_TOMBSTONE_PLUGIN:
                 return "remove tombstone plugin";
             case EA::proto::OP_UPLOAD_PLUGIN:
-                return "restore plugin";
+                return "upload plugin";
             default:
                 return "unknown operation";
         }
@@ -160,24 +161,40 @@ namespace EA::client {
         }
     }
 
-    turbo::Status string_to_version(const std::string &str, EA::proto::Version*v) {
+    turbo::Status string_to_version(const std::string &str, EA::proto::Version *v) {
         std::vector<std::string> vs = turbo::StrSplit(str, ".");
-        if(vs.size() != 3)
+        if (vs.size() != 3)
             return turbo::InvalidArgumentError("version error, should be like 1.2.3");
         int64_t m;
-        if(!turbo::SimpleAtoi(vs[0], &m)) {
+        if (!turbo::SimpleAtoi(vs[0], &m)) {
             return turbo::InvalidArgumentError("version error, should be like 1.2.3");
         }
         v->set_major(m);
-        if(!turbo::SimpleAtoi(vs[1], &m)) {
+        if (!turbo::SimpleAtoi(vs[1], &m)) {
             return turbo::InvalidArgumentError("version error, should be like 1.2.3");
         }
         v->set_minor(m);
-        if(!turbo::SimpleAtoi(vs[2], &m)) {
+        if (!turbo::SimpleAtoi(vs[2], &m)) {
             return turbo::InvalidArgumentError("version error, should be like 1.2.3");
         }
         v->set_patch(m);
         return turbo::OkStatus();
+    }
+
+    std::string version_to_string(const EA::proto::Version &v) {
+        return turbo::Format("{}.{}.{}", v.major(), v.minor(), v.patch());
+    }
+
+    std::string make_plugin_filename(const std::string &name, const EA::proto::Version &version,
+                                     EA::proto::Platform platform) {
+        if (platform == EA::proto::PF_lINUX) {
+            return turbo::Format("lib{}.so.{}.{}.{}", name, version.major(), version.minor(), version.patch());
+        } else if (platform == EA::proto::PF_OSX) {
+            return turbo::Format("lib{}.{}.{}.{}.dylib", name, version.major(), version.minor(), version.patch());
+        } else {
+            return turbo::Format("lib{}.{}.{}.{}.dll", name, version.major(), version.minor(), version.patch());
+        }
+
     }
 
 }  // namespace EA::client

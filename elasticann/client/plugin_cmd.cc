@@ -41,6 +41,15 @@ namespace EA::client {
         cc->add_option("-f, --file", opt->plugin_file, "local plugin file")->required();
         cc->callback([]() { run_plugin_create_cmd(); });
 
+        // upload
+        auto cp = ns->add_subcommand("upload", " upload plugin");
+        cp->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
+        cp->add_option("-v, --version", opt->plugin_version, "plugin version [1.2.3]")->required();
+        cp->add_option("-p, --platform", opt->plugin_type, "platform type [linux|osx|windows]")->default_val("linux");
+        cp->add_option("-f, --file", opt->plugin_file, "local plugin file")->required();
+        cp->add_option("-b, --block", opt->plugin_block_size, "block size once")->default_val(int64_t{4096});
+        cp->callback([]() { run_plugin_upload_cmd(); });
+
         /// list/ list version
         auto cl = ns->add_subcommand("list", " list plugin");
         cl->add_option("-n,--name", opt->plugin_name, "plugin name");
@@ -54,8 +63,17 @@ namespace EA::client {
         cg->add_option("-v, --version", opt->plugin_version, "plugin version");
         cg->callback([]() { run_plugin_info_cmd(); });
 
+        /// download
+        auto cd = ns->add_subcommand("download", " download plugin info");
+        cd->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
+        cd->add_option("-v, --version", opt->plugin_version, "plugin version");
+        cd->add_option("-f, --file", opt->plugin_file, "local plugin file");
+        cd->add_option("-b, --block", opt->plugin_block_size, "block size once")->default_val(int64_t{4096});
+        cd->callback([]() { run_plugin_download_cmd(); });
+
         /// remove
         auto cr = ns->add_subcommand("remove", " remove plugin");
+        cr->add_flag("-t,--tombstone", opt->query_tombstone, "plugin name")->default_val(false);
         cr->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
         cr->add_option("-v, --version", opt->plugin_version, "plugin version [1.2.3]");
         cr->callback([]() { run_plugin_remove_cmd(); });
@@ -97,6 +115,189 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
 
+    void run_plugin_upload_cmd() {
+        EA::proto::QueryOpsServiceRequest request;
+        EA::proto::QueryOpsServiceResponse response;
+        {
+
+            ScopeShower ss;
+            auto rs = make_plugin_info(&request);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
+                return;
+            }
+            rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
+                return;
+            }
+            auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+                                                   response.op_type(),
+                                                   response.errmsg());
+            ss.add_table(std::move(table));
+            if (response.errcode() != EA::proto::SUCCESS) {
+                return;
+            }
+
+            // already upload
+            if (response.plugin_response().plugin().finish()) {
+                table = show_query_ops_plugin_info_response(response);
+                ss.add_table(std::move(table));
+                return;
+            }
+        }
+        auto upload_size = response.plugin_response().plugin().upload_size();
+        auto total_size = response.plugin_response().plugin().size();
+
+        EA::proto::OpsServiceRequest upload_request;
+        EA::proto::OpsServiceResponse upload_response;
+        ScopeShower ss;
+        auto rs = make_plugin_upload(&upload_request);
+        if (!rs.ok()) {
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, upload_request)));
+            return;
+        }
+        auto block = OptionContext::get_instance()->plugin_block_size;
+        std::string buf;
+        buf.reserve(block);
+        turbo::SequentialReadFile file;
+        rs = file.open(OptionContext::get_instance()->plugin_file);
+        if (!rs.ok()) {
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, upload_request)));
+            return;
+        }
+        rs = file.skip(upload_size);
+        if (!rs.ok()) {
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, upload_request)));
+            return;
+        }
+        turbo::Println("upload size:{} total size: {} block size: {}", upload_size, total_size, block);
+        while (upload_size < total_size) {
+            buf.clear();
+            auto frs = file.read(&buf, block);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::pre_send_error(frs.status(), upload_request)));
+                return;
+            }
+            turbo::Println("offset:{} count: {}", upload_size, frs.value());
+            upload_request.mutable_plugin()->set_offset(upload_size);
+            upload_request.mutable_plugin()->set_count(frs.value());
+            upload_request.mutable_plugin()->set_content(buf);
+            auto r = RouterInteract::get_instance()->send_request("ops_manage", upload_request, upload_response);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::rpc_error_status(r, upload_request.op_type())));
+                return;
+            }
+            upload_size += frs.value();
+        }
+
+
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, upload_response.errcode(),
+                                               upload_response.op_type(),
+                                               upload_response.errmsg());
+        ss.add_table(std::move(table));
+    }
+
+    void run_plugin_download_cmd() {
+        auto opt = OptionContext::get_instance();
+        EA::proto::QueryOpsServiceRequest request;
+        EA::proto::QueryOpsServiceResponse response;
+        {
+
+            ScopeShower ss;
+            auto rs = make_plugin_info(&request);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
+                return;
+            }
+            rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
+                return;
+            }
+            auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+                                                   response.op_type(),
+                                                   response.errmsg());
+            ss.add_table(std::move(table));
+            if (response.errcode() != EA::proto::SUCCESS) {
+                return;
+            }
+
+            // already upload
+            if (!response.plugin_response().plugin().finish()) {
+                table = show_query_ops_plugin_info_response(response);
+                ss.add_table(std::move(table));
+                return;
+            }
+        }
+
+        auto &plugin_info = response.plugin_response().plugin();
+        opt->plugin_version = version_to_string(plugin_info.version());
+        auto total_size = plugin_info.size();
+        auto download_size = 0;
+        auto cksm = plugin_info.cksm();
+
+        EA::proto::QueryOpsServiceRequest download_request;
+        EA::proto::QueryOpsServiceResponse download_response;
+        ScopeShower ss;
+        auto rs = make_plugin_download(&download_request);
+        if (!rs.ok()) {
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, download_request)));
+            return;
+        }
+        auto block = opt->plugin_block_size;
+        turbo::SequentialWriteFile file;
+        std::string file_path = opt->plugin_file;
+        if(file_path.empty()) {
+            file_path = make_plugin_filename(plugin_info.name(), plugin_info.version(), plugin_info.platform());
+        }
+        rs = file.open(file_path, true);
+        if (!rs.ok()) {
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, download_request)));
+            return;
+        }
+
+        int64_t current_block_size;
+        turbo::Println("need to download count: {}", total_size);
+        while (download_size < total_size) {
+            auto left = total_size - download_size;
+            if(left > block) {
+                current_block_size = block;
+            } else {
+                current_block_size = left;
+            }
+            download_request.mutable_query_plugin()->set_offset(download_size);
+            download_request.mutable_query_plugin()->set_count(current_block_size);
+            auto r = RouterInteract::get_instance()->send_request("ops_query", download_request, download_response);
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::rpc_error_status(r, download_request.op_type())));
+                return;
+            }
+            auto frs = file.write(download_response.plugin_response().content().data(), download_response.plugin_response().content().size());
+            if (!rs.ok()) {
+                ss.add_table(std::move(ShowHelper::pre_send_error(frs, download_request)));
+                return;
+            }
+            download_size += download_response.plugin_response().content().size();
+            turbo::Println("offset:{} count: {}", download_size, current_block_size);
+        }
+        file.close();
+        auto download_cksm = turbo::FileUtility::md5_sum_file(file_path);
+        if(!download_cksm.ok()) {
+            turbo::Println("cksm download:{} fail : {}", file_path, download_cksm.status().message());
+            return;
+        }
+        if(cksm != download_cksm.value()) {
+            turbo::Println("cksm download plugin :{} fail, get:{} expect:{} ", file_path, download_cksm.value(), cksm);
+            return;
+        }
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, download_response.errcode(),
+                                               download_response.op_type(),
+                                               download_response.errmsg());
+        ss.add_table(std::move(table));
+    }
+
+
     void run_plugin_remove_cmd() {
         EA::proto::OpsServiceRequest request;
         EA::proto::OpsServiceResponse response;
@@ -112,7 +313,8 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+                                               response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
     }
@@ -132,7 +334,8 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+                                               response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
     }
@@ -254,10 +457,49 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_remove(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_REMOVE_PLUGIN);
+    make_plugin_upload(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_UPLOAD_PLUGIN);
         auto rc = req->mutable_plugin()->mutable_plugin();
         auto opt = OptionContext::get_instance();
+        rc->set_name(opt->plugin_name);
+        rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
+        auto r = string_to_platform(opt->plugin_type);
+        if (!r.ok()) {
+            return r.status();
+        }
+        rc->set_platform(r.value());
+        auto v = rc->mutable_version();
+        auto st = string_to_version(opt->plugin_version, v);
+        if (!st.ok()) {
+            return st;
+        }
+        std::error_code ec;
+        if (!turbo::filesystem::exists(opt->plugin_file, ec)) {
+            return turbo::NotFoundError("plugin file not found");
+        }
+        auto file_size = turbo::filesystem::file_size(opt->plugin_file);
+        if (file_size <= 0) {
+            return turbo::NotFoundError("file size < 0");
+        }
+        rc->set_size(file_size);
+        int64_t nsize;
+        auto cksm = turbo::FileUtility::md5_sum_file(opt->plugin_file, &nsize);
+        if (!cksm.ok()) {
+            return cksm.status();
+        }
+        rc->set_cksm(cksm.value());
+        return turbo::OkStatus();
+    }
+
+    [[nodiscard]] turbo::Status
+    make_plugin_remove(EA::proto::OpsServiceRequest *req) {
+        auto opt = OptionContext::get_instance();
+        if (opt->query_tombstone) {
+            req->set_op_type(EA::proto::OP_REMOVE_TOMBSTONE_PLUGIN);
+        } else {
+            req->set_op_type(EA::proto::OP_REMOVE_PLUGIN);
+        }
+        auto rc = req->mutable_plugin()->mutable_plugin();
         rc->set_name(opt->plugin_name);
         if (!opt->plugin_version.empty()) {
             auto v = rc->mutable_version();
@@ -284,7 +526,7 @@ namespace EA::client {
         auto opt = OptionContext::get_instance();
         if (opt->query_tombstone) {
             req->set_op_type(EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN);
-        }else {
+        } else {
             req->set_op_type(EA::proto::QUERY_LIST_PLUGIN);
         }
         return turbo::OkStatus();
@@ -381,6 +623,16 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
+    [[nodiscard]] turbo::Status
+    make_plugin_download(EA::proto::QueryOpsServiceRequest *req) {
+        auto opt = OptionContext::get_instance();
+        req->set_op_type(EA::proto::QUERY_DOWNLOAD_PLUGIN);
+        auto rc = req->mutable_query_plugin();
+        rc->set_name(opt->plugin_name);
+        auto v = rc->mutable_version();
+        return string_to_version(opt->plugin_version, v);
+    }
+
     turbo::Table show_query_ops_plugin_info_response(const EA::proto::QueryOpsServiceResponse &res) {
         turbo::Table result_table;
         auto result = res.plugin_response().plugin();
@@ -439,6 +691,5 @@ namespace EA::client {
 
         return result_table;
     }
-
 
 }  // namespace EA::client
