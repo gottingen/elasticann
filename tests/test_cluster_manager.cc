@@ -24,7 +24,6 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include <gflags/gflags.h>
 
-DECLARE_string(default_logical_room);
 
 class ClusterManagerTest {
 public:

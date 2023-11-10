@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,13 +26,6 @@
 #include "elasticann/common/memory_profile.h"
 #include "turbo/files/filesystem.h"
 #include "turbo/strings/str_split.h"
-
-namespace EA {
-    DECLARE_int32(meta_port);
-    DECLARE_string(meta_listen);
-    DECLARE_string(meta_server_bns);
-    DECLARE_int32(meta_replica_number);
-}
 
 int main(int argc, char **argv) {
     google::SetCommandLineOption("flagfile", "conf/meta_gflags.conf");

@@ -18,7 +18,7 @@
 #include "elasticann/common/common.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
 #include "elasticann/protocol/data_buffer.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 using google::protobuf::RepeatedPtrField;
 

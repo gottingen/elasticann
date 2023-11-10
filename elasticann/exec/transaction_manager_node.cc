@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +20,6 @@
 #include "elasticann/protocol/network_server.h"
 
 namespace EA {
-    DEFINE_int32(wait_after_prepare_us, 0, "wait time after prepare(us)");
 
     int TransactionManagerNode::exec_begin_node(RuntimeState *state, ExecNode *begin_node) {
         auto client_conn = state->client_conn();

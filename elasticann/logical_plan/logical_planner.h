@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 #include <unordered_set>
 #include "elasticann/common/schema_factory.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 #include "elasticann/logical_plan/query_context.h"
 #include "elasticann/sqlparser/dml.h"
 
@@ -38,7 +37,7 @@ namespace EA {
 
     static const int MAX_SQL_EXP_SIZE = 100;
 
-// Join Node is a binary tree, which must own both left & right children
+    // Join Node is a binary tree, which must own both left & right children
     struct JoinMemTmp {
         proto::JoinNode join_node;
         JoinMemTmp *left_node = nullptr;

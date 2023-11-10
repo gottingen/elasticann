@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,13 +15,11 @@
 
 
 #include "elasticann/logical_plan/delete_planner.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include <gflags/gflags.h>
 #include "elasticann/session/network_socket.h"
 
 namespace EA {
-    DEFINE_bool(delete_all_to_truncate, false, "delete from xxx; treat as truncate");
-    DECLARE_bool(open_non_where_sql_forbid);
 
     int DeletePlanner::plan() {
         if (_ctx->stmt_type == parser::NT_TRUNCATE) {

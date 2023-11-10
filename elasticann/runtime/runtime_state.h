@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +20,7 @@
 #include <brpc/channel.h>
 #include "elasticann/mem_row/mem_row_descriptor.h"
 #include "elasticann/protocol/data_buffer.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "elasticann/engine/transaction_pool.h"
 #include "elasticann/engine/transaction.h"
 #include "elasticann/reverse/reverse_index.h"
@@ -37,8 +36,6 @@
 using google::protobuf::RepeatedPtrField;
 
 namespace EA {
-    DECLARE_int32(single_store_concurrency);
-    DECLARE_int32(per_txn_max_num_locks);
 
     struct TxnLimitMap {
         static TxnLimitMap *get_instance() {

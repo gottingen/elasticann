@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +21,6 @@
 #include <iterator>
 
 namespace EA {
-
-    DEFINE_uint64(row_batch_size, 200, "row_batch_size");
 
     int LoadNode::init(const proto::PlanNode &node) {
         int ret = 0;

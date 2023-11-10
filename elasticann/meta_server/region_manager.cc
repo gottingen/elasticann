@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,20 +17,13 @@
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/common/common.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "turbo/format/format.h"
 
 namespace EA {
-    DECLARE_int32(concurrency_num);
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(store_dead_interval_times);
-    DECLARE_int32(region_faulty_interval_times);
-    DEFINE_int64(modify_learner_peer_interval_us, 100 * 1000 * 1000LL, "modify learner peer interval");
-    DEFINE_int32(balance_add_peer_num, 10, "add peer num each time, default(10)");
-    BRPC_VALIDATE_GFLAG(balance_add_peer_num, brpc::PositiveInteger);
 
     //增加或者更新region信息
     //如果是增加，则需要更新表信息, 只有leader的上报会调用该接口
@@ -1807,7 +1799,7 @@ namespace EA {
                 if (leader_region_info.start_key().empty() &&
                     leader_region_info.end_key().empty()) {
                     //该region为第一个region直接添加
-                    TLOG_WARN("region_info: {} is new ", leader_region_info.ShortDebugString());
+                    TLOG_INFO("region_info: {} is new ", leader_region_info.ShortDebugString());
                     proto::MetaManagerRequest request;
                     request.set_op_type(proto::OP_UPDATE_REGION);
                     *(request.add_region_infos()) = leader_region_info;

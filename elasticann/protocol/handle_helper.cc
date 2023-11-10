@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +16,7 @@
 
 #include "elasticann/protocol/handle_helper.h"
 #include "elasticann/logical_plan/query_context.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "turbo/strings/str_split.h"
 #include "turbo/strings/match.h"
 

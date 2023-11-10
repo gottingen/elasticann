@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +18,7 @@
 #pragma once
 
 #include "elasticann/exec/exec_node.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/plan.pb.h"
 
 namespace EA {
     class TransactionNode : public ExecNode {

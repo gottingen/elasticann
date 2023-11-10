@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +20,6 @@
 #include "turbo/strings/str_split.h"
 
 namespace EA {
-
-    DECLARE_int32(baikal_heartbeat_interval_us);
 
     void BaikalHeartBeat::construct_heart_beat_request(proto::BaikalHeartBeatRequest &request, bool is_backup) {
         SchemaFactory *factory = nullptr;

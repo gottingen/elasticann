@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +18,9 @@
 
 #include "elasticann/common/common.h"
 #include "elasticann/session/network_socket.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/protocol/mysql_wrapper.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 
 const std::string SQL_SHOW_ABNORMAL_REGIONS = "abnormal";              // show abnormal regions;
 const std::string SQL_SHOW_CREATE_TABLE = "create";                // show create table test;

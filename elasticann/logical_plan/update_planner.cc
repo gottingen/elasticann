@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +18,6 @@
 #include "elasticann/session/network_socket.h"
 
 namespace EA {
-    DEFINE_bool(open_non_where_sql_forbid, false, "open non where conjunct sql forbid switch default:false");
 
     int UpdatePlanner::plan() {
         if (_ctx->stmt == nullptr) {

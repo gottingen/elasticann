@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,13 +21,6 @@
 #include "elasticann/exec/packet_node.h"
 
 namespace EA {
-    DEFINE_int32(per_txn_max_num_locks, 1000000, "max num locks per txn default 100w");
-    DEFINE_int64(row_number_to_check_memory, 4096, "do memory limit when row number more than #, default: 4096");
-    DECLARE_int32(single_store_concurrency);
-    DECLARE_int64(baikaldb_alive_time_s);
-    DEFINE_int32(time_length_to_delete_message, 1,
-                 "hours length to delete mem_row_descriptor of sql : default one hour");
-    DEFINE_bool(limit_unappropriate_sql, false, "limit concurrency as one when select sql is unappropriate");
 
     int RuntimeState::init(const proto::StoreReq &req,
                            const proto::Plan &plan,

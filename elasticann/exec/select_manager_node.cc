@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +23,6 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-    DEFINE_bool(global_index_read_consistent, true, "double check for global and primary region consistency");
 
     int SelectManagerNode::open(RuntimeState *state) {
         START_LOCAL_TRACE(get_trace(), state->get_trace_cost(), OPEN_TRACE, ([state](TraceLocalNode &local_node) {

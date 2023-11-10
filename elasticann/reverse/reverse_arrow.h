@@ -39,7 +39,7 @@
 #include <memory>
 
 #include "elasticann/common/common.h"
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 #include "turbo/platform/port.h"
 
 TURBO_DISABLE_GCC_WARNING(-Wdeprecated-declarations)

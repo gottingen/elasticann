@@ -16,10 +16,9 @@
 #include "elasticann/client/option_context.h"
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
-#include "elasticann/proto/router.interface.pb.h"
-#include "elasticann/client/proto_builder.h"
 #include "elasticann/client/show_help.h"
 #include "turbo/format/print.h"
+#include "elasticann/client/validator.h"
 
 namespace EA::client {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
@@ -73,18 +72,20 @@ namespace EA::client {
                        OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        auto rs = ProtoBuilder::make_namespace_create(&request);
-        ShowHelper sh;
+        auto rs = make_namespace_create(&request);
+        ScopeShower ss;
         if (!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_response(OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_ns_remove_cmd() {
@@ -92,18 +93,20 @@ namespace EA::client {
                        OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_namespace_remove(&request);
+        ScopeShower ss;
+        auto rs = make_namespace_remove(&request);
         if (!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_response(OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_ns_modify_cmd() {
@@ -111,56 +114,145 @@ namespace EA::client {
                        OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_namespace_modify(&request);
+        ScopeShower ss;
+        auto rs = make_namespace_modify(&request);
         if (!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_response(OptionContext::get_instance()->server, response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
     }
 
     void run_ns_list_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_namespace_query(&request);
+        ScopeShower ss;
+        auto rs = make_namespace_query(&request);
         if (!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if (!rs.ok()) {
-           sh.rpc_error_status(rs, request);
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_ns_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_ns_response(response);
+        ss.add_table(std::move(table));
     }
 
     void run_ns_info_cmd() {
         turbo::Println(turbo::color::green, "start to get namespace info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
-        ShowHelper sh;
-        auto rs = ProtoBuilder::make_namespace_query(&request);
+        ScopeShower ss;
+        auto rs = make_namespace_query(&request);
         if (!rs.ok()) {
-            sh.pre_send_error(rs, request);
+            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
         rs = RouterInteract::get_instance()->send_request("query", request, response);
         if (!rs.ok()) {
-            sh.rpc_error_status(rs, request);
+            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        sh.show_meta_query_response(OptionContext::get_instance()->server, request.op_type(), response);
-        sh.show_meta_query_ns_response(response);
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table(std::move(table));
+        if(response.errcode() != EA::proto::SUCCESS) {
+            return;
+        }
+        table = show_meta_query_ns_response(response);
+        ss.add_table(std::move(table));
+    }
+
+    turbo::Table show_meta_query_ns_response(const EA::proto::QueryResponse &res) {
+        turbo::Table result;
+        auto &nss = res.namespace_infos();
+        result.add_row(
+                turbo::Table::Row_t{"namespace", "id", "version", "quota", "replica number", "resource tag", "region split lines"});
+        auto last = result.size() - 1;
+        result[last].format().font_color(turbo::Color::green);
+
+
+        for (auto &ns: nss) {
+            result.add_row(
+                    turbo::Table::Row_t{ns.namespace_name(),
+                          turbo::Format(ns.namespace_id()),
+                          turbo::Format(ns.version()),
+                          turbo::Format(ns.quota()),
+                          turbo::Format(ns.replica_num()),
+                          ns.resource_tag(),
+                          turbo::Format(ns.region_split_lines())});
+            last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::green);
+        }
+        return result;
+    }
+
+    turbo::Status
+    make_namespace_create(EA::proto::MetaManagerRequest *req) {
+        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        ns_req->set_quota(OptionContext::get_instance()->namespace_quota);
+        req->set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status
+    make_namespace_remove(EA::proto::MetaManagerRequest *req) {
+        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        req->set_op_type(EA::proto::OP_DROP_NAMESPACE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status
+    make_namespace_modify(EA::proto::MetaManagerRequest *req) {
+        EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
+        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!rs.ok()) {
+            return rs;
+        }
+        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        ns_req->set_quota(OptionContext::get_instance()->namespace_quota);
+        req->set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+        return turbo::OkStatus();
+    }
+
+    turbo::Status make_namespace_query(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_NAMESPACE);
+        if (!OptionContext::get_instance()->namespace_name.empty()) {
+            req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+            auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+            if (!rs.ok()) {
+                return rs;
+            }
+        }
+        return turbo::OkStatus();
     }
 
 }  // namespace EA::client

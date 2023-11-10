@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,8 +28,8 @@
 #include <bthread/execution_queue.h>
 #include "elasticann/common/common.h"
 #include "elasticann/common/expr_value.h"
-#include "elasticann/proto/meta.interface.pb.h"
-#include "elasticann/proto/plan.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/db/plan.pb.h"
 #include "elasticann/common/statistics.h"
 #include "elasticann/expr/expr_node.h"
 #include "elasticann/expr/literal.h"

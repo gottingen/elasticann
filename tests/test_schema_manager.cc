@@ -23,9 +23,6 @@
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/engine/rocks_wrapper.h"
 
-namespace EA {
-    DECLARE_string(db_path);
-}
 
 class SchemaManagerTest  {
 public:

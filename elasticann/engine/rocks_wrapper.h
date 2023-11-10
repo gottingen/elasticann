@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,9 +31,6 @@
 #include "turbo/format/format.h"
 
 namespace EA {
-    DECLARE_int32(rocks_max_background_compactions);
-    DECLARE_int32(addpeer_rate_limit_level);
-    DECLARE_int32(level0_max_sst_num);
 
     enum KVMode {
         KEY_ONLY,
@@ -55,9 +51,11 @@ namespace EA {
         static const std::string BIN_LOG_CF;
         static const std::string DATA_CF;
         static const std::string METAINFO_CF;
+        static const std::string SERVICE_CF;
         static std::atomic<int64_t> raft_cf_remove_range_count;
         static std::atomic<int64_t> data_cf_remove_range_count;
         static std::atomic<int64_t> mata_cf_remove_range_count;
+        static std::atomic<int64_t> service_cf_remove_range_count;
 
         virtual ~RocksWrapper() {}
 
@@ -156,6 +154,8 @@ namespace EA {
         rocksdb::ColumnFamilyHandle *get_data_handle();
 
         rocksdb::ColumnFamilyHandle *get_meta_info_handle();
+
+        rocksdb::ColumnFamilyHandle *get_service_handle();
 
         rocksdb::TransactionDB *get_db() {
             return _txn_db;
@@ -284,10 +284,12 @@ namespace EA {
         rocksdb::ColumnFamilyOptions _binlog_cf_option;
         rocksdb::ColumnFamilyOptions _data_cf_option;
         rocksdb::ColumnFamilyOptions _meta_info_option;
+        rocksdb::ColumnFamilyOptions _service_option;
         uint64_t _flush_file_number = 0;
         bvar::Adder<int64_t> _raft_cf_remove_range_count;
         bvar::Adder<int64_t> _data_cf_remove_range_count;
         bvar::Adder<int64_t> _mata_cf_remove_range_count;
+        bvar::Adder<int64_t> _service_cf_remove_range_count;
 
         std::atomic<int32_t> _split_num;
         bthread::Mutex _options_mutex;

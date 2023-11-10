@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +13,6 @@
 // limitations under the License.
 //
 
-
 #pragma once
 
 #include <unordered_map>
@@ -24,25 +22,50 @@ namespace EA {
     class AutoIncrStateMachine : public EA::BaseStateMachine {
     public:
 
-        AutoIncrStateMachine(const braft::PeerId &peerId) :
+        explicit AutoIncrStateMachine(const braft::PeerId &peerId) :
                 BaseStateMachine(1, "auto_incr_raft", "/auto_incr", peerId) {}
 
-        virtual ~AutoIncrStateMachine() {}
+        ~AutoIncrStateMachine() override = default;
 
-        // state machine method
-        virtual void on_apply(braft::Iterator &iter);
+        /// state machine method override
+        void on_apply(braft::Iterator &iter) override;
 
+        ///
+        /// \brief table inc id initialize
+        /// \param request [in]
+        /// \param done [out]
         void add_table_id(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief table inc id removing
+        /// \param request [in]
+        /// \param done [out]
         void drop_table_id(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief gen a table inc id by given count in request
+        /// \param request [in]
+        /// \param done [out]
         void gen_id(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief reset a table inc by start_id or increment_id, if backwards,
+        ///        increment_info.force() should be enabled.
+        /// \param request [in]
+        /// \param done [out]
         void update(const proto::MetaManagerRequest &request, braft::Closure *done);
 
-        virtual void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done);
+        ///
+        /// \brief override BaseStateMachine::on_snapshot_save
+        /// \param writer   braft snapshot writer.
+        /// \param done
+        void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) override;
 
-        virtual int on_snapshot_load(braft::SnapshotReader *reader);
+        ///
+        /// \brief override BaseStateMachine::on_snapshot_load
+        /// \param writer   braft snapshot writer.
+        /// \param done
+        int on_snapshot_load(braft::SnapshotReader *reader)  override;
 
     private:
         void save_auto_increment(std::string &max_id_string);
@@ -50,6 +73,10 @@ namespace EA {
         void save_snapshot(braft::Closure *done,
                            braft::SnapshotWriter *writer,
                            std::string max_id_string);
+        ///
+        /// \brief load json table_id --> max_id from json file
+        /// \param max_id_file
+        /// \return
 
         int load_auto_increment(const std::string &max_id_file);
 

@@ -49,6 +49,21 @@ namespace EA::client {
         std::string table_name;
         std::vector<std::string> table_fields;
         std::vector<std::string> table_indexes;
+
+        // for config
+        std::string config_name;
+        std::string config_data;
+        std::string config_file;
+        std::string config_version;
+        std::string config_type;
+
+        // for plugin
+        std::string plugin_name;
+        std::string plugin_file;
+        std::string plugin_version;
+        std::string plugin_type;
+        int64_t     plugin_block_size{4096};
+        bool query_tombstone{false};
     };
 }  // namespace EA::client
 

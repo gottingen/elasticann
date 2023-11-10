@@ -17,11 +17,11 @@
 #include <gflags/gflags_declare.h>
 #include <brpc/server.h>
 #include "elasticann/common/tlog.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/ops/ops_server_interact.h"
 
 namespace EA {
-    DEFINE_string(router_listen, "0.0.0.0:8050", "router default ip port");
-    DECLARE_string(meta_server_bns);
+
 }  // namespace EA
 
 int main(int argc, char**argv) {
@@ -35,6 +35,7 @@ int main(int argc, char**argv) {
     TLOG_INFO("log file load success");
     // init meta interact
     EA::MetaServerInteract::get_instance()->init();
+    EA::OpsServerInteract::get_instance()->init();
 
     brpc::Server server;
     EA::RouterServiceImpl router;

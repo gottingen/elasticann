@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +15,8 @@
 
 
 #include <unordered_set>
-#include "elasticann/common/meta_server_interact.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/region_manager.h"
@@ -30,13 +29,6 @@
 #include "turbo/strings/match.h"
 
 namespace EA {
-    DECLARE_int32(concurrency_num);
-    DEFINE_int32(region_replica_num, 3, "region replica num, default:3");
-    DEFINE_int32(learner_region_replica_num, 1, "learner region replica num, default:1");
-    DEFINE_int32(region_region_size, 100 * 1024 * 1024, "region size, default:100M");
-    DEFINE_int64(table_tombstone_gc_time_s, 3600 * 24 * 5, "time interval to clear table_tombstone. default(5d)");
-    DEFINE_uint64(statistics_heart_beat_bytesize, 256 * 1024 * 1024, "default(256M)");
-    DEFINE_int32(pre_split_threashold, 300, "pre_split_threashold for sync create table");
 
     void TableTimer::run() {
         TLOG_INFO("Table Timer run.");
@@ -194,7 +186,7 @@ namespace EA {
             table_mem.whether_level_table = true;
             upper_table_name = database_name + "\001" + table_info.upper_table_name();
         }
-        //校验合法性, 准备数据
+        // check request and prepare data
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
             TLOG_WARN("request namespace:{} not exist", namespace_name);
@@ -221,7 +213,7 @@ namespace EA {
             return;
         }
 
-        //分配table_id
+        // alloc table_id
         int64_t max_table_id_tmp = _max_table_id;
         table_info.set_table_id(++max_table_id_tmp);
         table_mem.main_table_id = max_table_id_tmp;
@@ -236,7 +228,7 @@ namespace EA {
             table_info.set_upper_table_id(upper_table_id);
             if (table_info.has_partition_num()) {
                 TLOG_WARN("table：{} is leve, partition num should be equal to upper table",
-                           table_name);
+                          table_name);
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table already exist");
                 return;
             }
@@ -258,7 +250,7 @@ namespace EA {
                 table_info.set_replica_num(FLAGS_region_replica_num);
             }
         }
-        //分配field_id
+        // alloc field_id
         bool has_auto_increment = false;
         auto ret = alloc_field_id(table_info, has_auto_increment, table_mem);
         if (ret < 0) {
@@ -446,10 +438,10 @@ namespace EA {
         }
         SET_RESPONSE(response, proto::SUCCESS, "success");
         TLOG_WARN("create table, table_id: {}, table_name:{}, alloc start_region_id: {}, end_region_id: {}",
-                   schema_pb.table_id(),
-                   schema_pb.table_name(),
-                   start_region_id,
-                   RegionManager::get_instance()->get_max_region_id());
+                  schema_pb.table_id(),
+                  schema_pb.table_name(),
+                  start_region_id,
+                  RegionManager::get_instance()->get_max_region_id());
         return 0;
     }
 
@@ -464,7 +456,7 @@ namespace EA {
                 IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "table not exist");
                 return;
             }
-            TLOG_WARN("input table not exit, request: {}", request.ShortDebugString());
+            TLOG_WARN("input table not exist, request: {}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table not exist");
             return;
         }
@@ -487,13 +479,13 @@ namespace EA {
         std::string drop_table_value;
         if (!schema_info.SerializeToString(&drop_table_value)) {
             TLOG_WARN("request serializeToArray fail, request:{}",
-                       request.ShortDebugString());
+                      request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         //delete_rocksdb_keys.push_back(construct_table_key(drop_table_id));
-        // 删表后保留一个墓碑，帮助region上报时的gc工作
-        // TODO 如果后续墓碑残留太多，应该有相应的清理线程
+        // reserve a tombstone for table，region reporter will do the gc work
+        // TODO tombstone is too many?  or a thread to do the work
         write_rocksdb_keys.push_back(construct_table_key(drop_table_id));
         write_rocksdb_values.push_back(drop_table_value);
 
@@ -505,9 +497,9 @@ namespace EA {
             }
             drop_index_ids.push_back(index_info.index_id());
         }
-        //drop_region_ids用来保存该表的所有region，用来给store发送remove_region
+        //drop_region_ids save all the region of table，for send remove_region request to store
         std::vector<std::int64_t> drop_region_ids;
-        //如果table下有region， 直接删除region信息
+        // if table has region， remove region info
         for (auto &drop_index_id: drop_index_ids) {
             for (auto &partition_region: _table_info_map[drop_index_id].partition_regions) {
                 for (auto &drop_region_id: partition_region.second) {
@@ -517,7 +509,7 @@ namespace EA {
                 }
             }
         }
-        //如果是层次表，需要修改顶层表的low_tables信息
+        // if the table is level table，need to modify top level table's low_tables info
         proto::SchemaInfo top_schema_pb;
         int64_t top_table_id = _table_info_map[drop_table_id].schema_pb.top_table_id();
         if (_table_info_map[drop_table_id].schema_pb.has_upper_table_name()
@@ -533,7 +525,7 @@ namespace EA {
             std::string top_table_value;
             if (!top_schema_pb.SerializeToString(&top_table_value)) {
                 TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
-                           top_schema_pb.ShortDebugString());
+                          top_schema_pb.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
                 return;
             }
@@ -548,19 +540,21 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //删除内存中的值
+        // remove values in memory
         std::vector<proto::SchemaInfo> schema_infos;
         if (_table_info_map[drop_table_id].schema_pb.has_upper_table_name()
             && _table_info_map.find(top_table_id) != _table_info_map.end()) {
             set_table_pb(top_schema_pb);
             schema_infos.push_back(top_schema_pb);
         }
+        // move to tombstone
         erase_table_info(drop_table_id);
         schema_infos.push_back(schema_info);
         put_incremental_schemainfo(apply_index, schema_infos);
         DatabaseManager::get_instance()->delete_table_id(database_id, drop_table_id);
         if (is_table_in_fast_importer(drop_table_id)) {
-            // 正在快速导入，删表把快速导入标志清掉，报警，可能需要人工恢复store rocksdb标志
+            // is fast loading，remove table will reset the flags by fast loading，throw a
+            // error，need manual ops restore rocksdb flag
             TLOG_ERROR("drop table: {}, drop table is in_fast_import", drop_table_id);
             cancel_in_fast_importer(drop_table_id);
         }
@@ -579,7 +573,7 @@ namespace EA {
                                             braft::Closure *done) {
         std::vector<std::string> delete_rocksdb_keys;
         int64_t table_id = request.table_info().table_id();
-        // 删除rocksdb
+        // remove rocksdb
         delete_rocksdb_keys.emplace_back(construct_table_key(table_id));
         delete_rocksdb_keys.emplace_back(construct_statistics_key(table_id));
 
@@ -629,7 +623,7 @@ namespace EA {
                     proto::MetaManagerResponse response;
                     MetaServerInteract::get_instance()->send_request("meta_manager", request, response);
                     TLOG_WARN("send table tombstone gc,table_id:{} schema_pb:{}",
-                               schema_pb.table_id(), schema_pb.ShortDebugString());
+                              schema_pb.table_id(), schema_pb.ShortDebugString());
                 });
                 break;
             }
@@ -662,11 +656,11 @@ namespace EA {
         std::string table_value;
         if (!schema_info.SerializeToString(&table_value)) {
             TLOG_WARN("request serializeToArray fail, request:{}",
-                       request.ShortDebugString());
+                      request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
-        // 恢复rocksdb
+        // recover rocksdb
         write_rocksdb_keys.push_back(construct_table_key(table_id));
         write_rocksdb_values.push_back(table_value);
 
@@ -700,7 +694,7 @@ namespace EA {
                 std::set<std::string> instances;
                 ClusterManager::get_instance()->get_instances(resource_tag, instances);
                 TLOG_WARN("restore table, resource_tag:{}, instances.size:{}",
-                           resource_tag, instances.size());
+                          resource_tag, instances.size());
                 for (auto &instance: instances) {
                     proto::RegionIds request;
                     request.set_table_id(table_id);
@@ -743,7 +737,7 @@ namespace EA {
             return;
         }
         proto::SchemaInfo mem_schema_pb = _table_info_map[table_id].schema_pb;
-        //更新数据
+        // persist value of rocksdb
         mem_schema_pb.set_table_name(request.table_info().new_table_name());
         mem_schema_pb.set_version(mem_schema_pb.version() + 1);
         auto ret = update_schema_for_rocksdb(table_id, mem_schema_pb, done);
@@ -751,7 +745,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存
+        // update memory value
         set_table_pb(mem_schema_pb);
         std::vector<proto::SchemaInfo> schema_infos{mem_schema_pb};
         put_incremental_schemainfo(apply_index, schema_infos);
@@ -789,7 +783,7 @@ namespace EA {
         }
         proto::SchemaInfo mem_schema_pb = _table_info_map[table_id].schema_pb;
         proto::SchemaInfo new_mem_schema_pb = _table_info_map[new_table_id].schema_pb;
-        //更新数据
+        // swap data
         mem_schema_pb.set_table_name(request.table_info().new_table_name());
         mem_schema_pb.set_version(mem_schema_pb.version() + 1);
         new_mem_schema_pb.set_table_name(request.table_info().table_name());
@@ -797,14 +791,14 @@ namespace EA {
         std::string table_value;
         if (!mem_schema_pb.SerializeToString(&table_value)) {
             TLOG_WARN("request serializeToArray fail, pb:{}",
-                       mem_schema_pb.ShortDebugString());
+                      mem_schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         std::string new_table_value;
         if (!new_mem_schema_pb.SerializeToString(&new_table_value)) {
             TLOG_WARN("request serializeToArray fail, pb:{}",
-                       new_mem_schema_pb.ShortDebugString());
+                      new_mem_schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
@@ -817,7 +811,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存
+        // update memory
         set_table_pb(mem_schema_pb);
         set_table_pb(new_mem_schema_pb);
         std::vector<proto::SchemaInfo> schema_infos{mem_schema_pb, new_mem_schema_pb};
@@ -914,10 +908,10 @@ namespace EA {
                                   proto::SchemaConf *p_conf = mem_schema_pb.mutable_schema_conf();
                                   if (schema_conf.storage_compute_separate()) {
                                       for (auto &index: mem_schema_pb.indexs()) {
-                                          TLOG_WARN("index:{}", index.ShortDebugString());
+                                          TLOG_INFO("index:{}", index.ShortDebugString());
                                           if (index.index_type() == proto::I_FULLTEXT) {
-                                              TLOG_WARN("table has fulltext index, request:{}",
-                                                         request.ShortDebugString());
+                                              TLOG_INFO("table has fulltext index, request:{}",
+                                                        request.ShortDebugString());
                                               IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
                                                                    "fulltext not support kv mode");
                                               return;
@@ -975,7 +969,7 @@ namespace EA {
             _table_info_map[table_id].statistics_version = version;
         }
 
-        //增加op version
+        //inc op version
         proto::SchemaInfo mem_schema_pb = _table_info_map[table_id].schema_pb;
         update_op_version(mem_schema_pb.mutable_schema_conf(), "update cost statistics");
         mem_schema_pb.set_version(mem_schema_pb.version() + 1);
@@ -1059,7 +1053,7 @@ namespace EA {
                               [](const proto::MetaManagerRequest &request, proto::SchemaInfo &mem_schema_pb,
                                  braft::Closure *done) {
                                   if (mem_schema_pb.ttl_duration() > 0 && request.table_info().ttl_duration() > 0) {
-                                      // 只修改ttl
+                                      // only change ttl
                                       mem_schema_pb.set_ttl_duration(request.table_info().ttl_duration());
                                   } else if (mem_schema_pb.ttl_duration() <= 0 &&
                                              request.table_info().ttl_duration() > 0) {
@@ -1088,7 +1082,7 @@ namespace EA {
                                       mem_schema_pb.set_online_ttl_expire_time_us(online_ttl_expire_time_us);
                                   } else {
                                       TLOG_WARN("update fail, resuest.ttl_duration:{} mem_schema_pb.ttl_duration:{}",
-                                                 request.table_info().ttl_duration(), mem_schema_pb.ttl_duration());
+                                                request.table_info().ttl_duration(), mem_schema_pb.ttl_duration());
                                       return;
                                   }
 
@@ -1139,13 +1133,13 @@ namespace EA {
         for (auto &field: request.table_info().fields()) {
             if (_table_info_map[table_id].field_id_map.count(field.field_name()) != 0) {
                 TLOG_WARN("field name:{} has already existed, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name already exist");
                 return;
             }
             if (field.has_auto_increment() && field.auto_increment()) {
                 TLOG_WARN("not support auto increment, field name:{}, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field can not be auto_increment");
                 return;
             }
@@ -1189,21 +1183,21 @@ namespace EA {
         for (auto &field: request.table_info().fields()) {
             if (_table_info_map[table_id].field_id_map.count(field.field_name()) == 0) {
                 TLOG_WARN("field name:{} not existed, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name not exist");
                 return;
             }
             auto field_id = _table_info_map[table_id].field_id_map[field.field_name()];
             if (check_filed_is_linked(table_id, field_id)) {
                 TLOG_WARN("field name:{} is binlog link field, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is binlog link field");
                 return;
             }
             if (mem_schema_pb.has_partition_info()) {
                 if (mem_schema_pb.partition_info().field_info().field_name() == field.field_name()) {
                     TLOG_WARN("field name:{} is partitiion field, request:{}",
-                               field.field_name(), request.ShortDebugString());
+                              field.field_name(), request.ShortDebugString());
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is partitiion field");
                     return;
                 }
@@ -1220,7 +1214,7 @@ namespace EA {
                                       field_name);
                 if (iter != drop_field_names.end()) {
                     TLOG_WARN("field name:{} is an index column, request:{}",
-                               field_name, request.ShortDebugString());
+                              field_name, request.ShortDebugString());
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is an index column");
                     return;
                 }
@@ -1270,13 +1264,13 @@ namespace EA {
         for (auto &field: request.table_info().fields()) {
             if (_table_info_map[table_id].field_id_map.count(field.field_name()) == 0) {
                 TLOG_WARN("field name:{} not existed, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name not exist");
                 return;
             }
             if (check_filed_is_linked(table_id, _table_info_map[table_id].field_id_map[field.field_name()])) {
                 TLOG_WARN("field name:{} is binlog link field, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is binlog link field");
                 return;
             }
@@ -1287,7 +1281,7 @@ namespace EA {
             }
             if (_table_info_map[table_id].field_id_map.count(field.new_field_name()) != 0) {
                 TLOG_WARN("new field name:{} already existed, request:{}",
-                           field.new_field_name(), request.ShortDebugString());
+                          field.new_field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "new field name already exist");
                 return;
             }
@@ -1355,14 +1349,14 @@ namespace EA {
             std::string field_name = field.field_name();
             if (_table_info_map[table_id].field_id_map.count(field_name) == 0) {
                 TLOG_WARN("field name:{} not existed, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name not exist");
                 return;
             }
             auto field_id = _table_info_map[table_id].field_id_map[field_name];
             if (check_filed_is_linked(table_id, field_id)) {
                 TLOG_WARN("field name:{} is binlog link field, request:{}",
-                           field.field_name(), request.ShortDebugString());
+                          field.field_name(), request.ShortDebugString());
                 IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "field name is binlog link field");
                 return;
             }
@@ -1437,7 +1431,7 @@ namespace EA {
                 proto::SchemaInfo *new_table_info = response->add_schema_change_info();
                 *new_table_info = table_info_map.second.schema_pb;
                 TLOG_DEBUG("table_id[{}] add schema info [{}] ", table_id,
-                         new_table_info->ShortDebugString());
+                           new_table_info->ShortDebugString());
                 //TLOG_WARN("add or update table_name:{}, table_id:{}",
                 //            new_table_info->table_name(), new_table_info->table_id());
             }
@@ -1530,8 +1524,8 @@ namespace EA {
             }
             if (response->ByteSizeLong() + stat_pb.ByteSizeLong() > FLAGS_statistics_heart_beat_bytesize) {
                 TLOG_WARN("response size: {}, statistics size: {}, big than {}; count: {}",
-                           response->ByteSizeLong(), stat_pb.ByteSizeLong(), FLAGS_statistics_heart_beat_bytesize,
-                           upd_cnt);
+                          response->ByteSizeLong(), stat_pb.ByteSizeLong(), FLAGS_statistics_heart_beat_bytesize,
+                          upd_cnt);
                 break;
             }
             upd_cnt++;
@@ -1848,7 +1842,7 @@ namespace EA {
         std::string table_value;
         if (!simple_table_info.SerializeToString(&table_value)) {
             TLOG_WARN("request serializeToArray fail when create not level table, request:{}",
-                       simple_table_info.ShortDebugString());
+                      simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -1858,7 +1852,7 @@ namespace EA {
         int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values);
         if (ret < 0) {
             TLOG_WARN("add new not level table:{} to rocksdb fail",
-                       simple_table_info.ShortDebugString());
+                      simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -1907,11 +1901,11 @@ namespace EA {
             }
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
             TLOG_WARN("create table, table_id:{}, table_name:{}, max_table_id: {}"
-                       " alloc start_region_id:{}, end_region_id :{}",
-                       table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name(),
-                       max_table_id_tmp,
-                       start_region_id,
-                       RegionManager::get_instance()->get_max_region_id());
+                      " alloc start_region_id:{}, end_region_id :{}",
+                      table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name(),
+                      max_table_id_tmp,
+                      start_region_id,
+                      RegionManager::get_instance()->get_max_region_id());
         }
         return 0;
     }
@@ -1920,13 +1914,13 @@ namespace EA {
         MetaServerInteract meta_server_interact;
         if (meta_server_interact.init() != 0) {
             TLOG_ERROR("meta server interact init fail when send auto increment {}",
-                     request.ShortDebugString());
+                       request.ShortDebugString());
             return -1;
         }
         proto::MetaManagerResponse response;
         if (meta_server_interact.send_request("meta_manager", request, response) != 0) {
             TLOG_WARN("send_auto_increment_request fail, response:{}",
-                       response.ShortDebugString());
+                      response.ShortDebugString());
             return -1;
         }
         return 0;
@@ -1951,8 +1945,8 @@ namespace EA {
                 auto ret = store_interact.send_request(log_id, "init_region", init_region_request, res);
                 if (ret < 0) {
                     TLOG_ERROR("create table fail, address:{}, region_id: {}",
-                             init_region_request.region_info().leader(),
-                             region_id);
+                               init_region_request.region_info().leader(),
+                               region_id);
                     success = false;
                     return;
                 }
@@ -1969,7 +1963,7 @@ namespace EA {
         concurrency_cond.wait(-FLAGS_concurrency_num);
         if (!success) {
             TLOG_ERROR("create table:{} fail",
-                     (namespace_name + "." + database + "." + table_name));
+                       (namespace_name + "." + database + "." + table_name));
             send_drop_table_request(namespace_name, database, table_name);
             return -1;
         }
@@ -2007,7 +2001,7 @@ namespace EA {
         std::string table_value;
         if (!table_mem.schema_pb.SerializeToString(&table_value)) {
             TLOG_WARN("request serializeToArray fail when create table, request:{}",
-                       table_mem.schema_pb.ShortDebugString());
+                      table_mem.schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -2028,7 +2022,7 @@ namespace EA {
         top_table.set_version(table_mem.schema_pb.version() + 1);
         if (!top_table.SerializeToString(&top_table_value)) {
             TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
-                       top_table.ShortDebugString());
+                      top_table.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -2063,14 +2057,14 @@ namespace EA {
         std::string table_value;
         if (!schema_info.SerializeToString(&table_value)) {
             TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
-                       schema_info.ShortDebugString());
+                      schema_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
         int ret = MetaRocksdb::get_instance()->put_meta_info(construct_table_key(table_id), table_value);
         if (ret < 0) {
             TLOG_WARN("update schema info to rocksdb fail, request：{}",
-                       schema_info.ShortDebugString());
+                      schema_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -2084,14 +2078,14 @@ namespace EA {
         std::string stat_value;
         if (!stat_info.SerializeToString(&stat_value)) {
             TLOG_WARN("request serializeToArray fail when update upper table, request:{}",
-                       stat_info.ShortDebugString());
+                      stat_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
         int ret = MetaRocksdb::get_instance()->put_meta_info(construct_statistics_key(table_id), stat_value);
         if (ret < 0) {
             TLOG_WARN("update statistics info to rocksdb fail, request：{}",
-                       stat_info.ShortDebugString());
+                      stat_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -2118,7 +2112,7 @@ namespace EA {
             return;
         }
         TLOG_WARN("drop table success, namespace:{}, database:{}, table_name:{}",
-                   namespace_name, database, table_name);
+                  namespace_name, database, table_name);
     }
 
     void TableManager::check_table_exist_for_peer(const proto::StoreHeartBeatRequest *request,
@@ -2139,8 +2133,8 @@ namespace EA {
             }
             if (_table_tombstone_map.find(main_table_id) != _table_tombstone_map.end()) {
                 TLOG_WARN("table id:{} has be deleted, drop region_id:{} not exit, store_address:{}",
-                           main_table_id, peer_info.region_id(),
-                           request->instance_info().address());
+                          main_table_id, peer_info.region_id(),
+                          request->instance_info().address());
                 response->add_delete_region_ids(peer_info.region_id());
                 continue;
             } else if (table_iter != _table_info_map.end()) {
@@ -2149,12 +2143,12 @@ namespace EA {
 
             // 老逻辑，使用墓碑删除，后续可以删掉这段逻辑
             TLOG_WARN("table id:{} according to region_id:{} not exit, drop region_id, store_address:{}",
-                       main_table_id, peer_info.region_id(),
-                       request->instance_info().address());
+                      main_table_id, peer_info.region_id(),
+                      request->instance_info().address());
             //为了安全暂时关掉这个删除region的功能，后续稳定再打开，目前先报fatal(todo)
             if (SchemaManager::get_instance()->get_unsafe_decision()) {
                 TLOG_WARN("store response add delete region according to table id no exist, region_id: {}",
-                           peer_info.region_id());
+                          peer_info.region_id());
                 response->add_delete_region_ids(peer_info.region_id());
             }
         }
@@ -2204,7 +2198,7 @@ namespace EA {
             //一个表只能有一个自增列
             if (has_auto_increment == true) {
                 TLOG_WARN("table:{} has one more auto_increment field, field {}",
-                           table_name, field_name);
+                          table_name, field_name);
                 return -1;
             }
             proto::PrimitiveType data_type = table_info.fields(i).mysql_type();
@@ -2217,12 +2211,12 @@ namespace EA {
                 && data_type != proto::UINT32
                 && data_type != proto::UINT64) {
                 TLOG_WARN("table:{} auto_increment field not interger, field {}",
-                           table_name, field_name);
+                          table_name, field_name);
                 return -1;
             }
             if (table_info.fields(i).can_null()) {
                 TLOG_WARN("table:{} auto_increment field can not null, field {}",
-                           table_name, field_name);
+                          table_name, field_name);
                 return -1;
             }
             has_auto_increment = true;
@@ -2241,8 +2235,8 @@ namespace EA {
                 std::string field_name = table_info.indexs(i).field_names(j);
                 if (table_mem.field_id_map.find(field_name) == table_mem.field_id_map.end()) {
                     TLOG_WARN("filed name:{} of index was not exist in table:{}",
-                               field_name,
-                               table_name);
+                              field_name,
+                              table_name);
                     return -1;
                 }
                 int32_t field_id = table_mem.field_id_map[field_name];
@@ -2308,7 +2302,7 @@ namespace EA {
         auto iter = startkey_regiondesc_map.lower_bound(start_key);
         if (iter == startkey_regiondesc_map.end()) {
             TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                       table_id, str_to_hex(start_key));
+                      table_id, str_to_hex(start_key));
         } else if (iter->first == start_key) {
             TLOG_WARN("table_id:{} start_key:{} exist", table_id, str_to_hex(start_key));
             return -1;
@@ -2320,7 +2314,7 @@ namespace EA {
         }
         --iter;
         TLOG_WARN("table_id:{} start_key:{} region_id:{}",
-                   table_id, str_to_hex(start_key), iter->second.region_id);
+                  table_id, str_to_hex(start_key), iter->second.region_id);
         return iter->second.region_id;
     }
 
@@ -2339,11 +2333,11 @@ namespace EA {
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
             TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                       table_id, str_to_hex(start_key));
+                      table_id, str_to_hex(start_key));
             return -1;
         }
         TLOG_WARN("table_id:{} start_key:{} region_id:{}",
-                   table_id, str_to_hex(start_key), iter->second.region_id);
+                  table_id, str_to_hex(start_key), iter->second.region_id);
         return iter->second.region_id;
     }
 
@@ -2357,17 +2351,17 @@ namespace EA {
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
             TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                       table_id, str_to_hex(start_key));
+                      table_id, str_to_hex(start_key));
             return -1;
         }
         if (iter->second.region_id != region_id) {
             TLOG_WARN("table_id:{} diff region_id({}, {})",
-                       table_id, iter->second.region_id, region_id);
+                      table_id, iter->second.region_id, region_id);
             return -1;
         }
         startkey_regiondesc_map.erase(start_key);
         TLOG_WARN("table_id:{} erase region_id:{}",
-                   table_id, region_id);
+                  table_id, region_id);
         return 0;
     }
 
@@ -2382,19 +2376,19 @@ namespace EA {
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
             TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                       table_id, str_to_hex(start_key));
+                      table_id, str_to_hex(start_key));
             return -1;
         }
         auto src_iter = iter;
         auto dst_iter = ++iter;
         if (dst_iter == startkey_regiondesc_map.end()) {
             TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                       table_id, str_to_hex(end_key));
+                      table_id, str_to_hex(end_key));
             return -1;
         }
         if (dst_iter->first != end_key) {
             TLOG_WARN("table_id:{} start key nonsequence {} vs {}", table_id,
-                       str_to_hex(dst_iter->first), str_to_hex(end_key));
+                      str_to_hex(dst_iter->first), str_to_hex(end_key));
             return -1;
         }
         if (src_iter->second.merge_status == MERGE_IDLE
@@ -2402,18 +2396,18 @@ namespace EA {
             src_iter->second.merge_status = MERGE_SRC;
             dst_iter->second.merge_status = MERGE_DST;
             TLOG_WARN("table_id:{} merge src region_id:{}, dst region_id:{}",
-                       table_id, src_iter->second.region_id, dst_iter->second.region_id);
+                      table_id, src_iter->second.region_id, dst_iter->second.region_id);
             return dst_iter->second.region_id;
         } else if (src_iter->second.merge_status == MERGE_SRC
                    && dst_iter->second.merge_status == MERGE_DST) {
             TLOG_WARN("table_id:{} merge again src region_id:{}, dst region_id:{}",
-                       table_id, src_iter->second.region_id, dst_iter->second.region_id);
+                      table_id, src_iter->second.region_id, dst_iter->second.region_id);
             return dst_iter->second.region_id;
         } else {
             TLOG_WARN("table_id:{} merge get next region fail, src region_id:{}, "
-                       "merge_status:{}; dst region_id:{}, merge_status:{}",
-                       table_id, src_iter->second.region_id, src_iter->second.merge_status,
-                       dst_iter->second.region_id, dst_iter->second.merge_status);
+                      "merge_status:{}; dst region_id:{}, merge_status:{}",
+                      table_id, src_iter->second.region_id, src_iter->second.merge_status,
+                      dst_iter->second.region_id, dst_iter->second.merge_status);
             return -1;
         }
     }
@@ -2434,13 +2428,13 @@ namespace EA {
                                 get_region_info(iter->second.region_id);
                         if (first_region == nullptr) {
                             TLOG_ERROR("table_id:{}, can`t find region_id:{} start_key:{}, in region info map",
-                                     table_id, iter->second.region_id, str_to_hex(iter->first));
+                                       table_id, iter->second.region_id, str_to_hex(iter->first));
                             continue;
                         }
                         TLOG_WARN("table_id:{}, first region_id:{}, version:{}, key({}, {})",
-                                   table_id, first_region->region_id(), first_region->version(),
-                                   str_to_hex(first_region->start_key()),
-                                   str_to_hex(first_region->end_key()));
+                                  table_id, first_region->region_id(), first_region->version(),
+                                  str_to_hex(first_region->start_key()),
+                                  str_to_hex(first_region->end_key()));
                         pre_region = first_region;
                         is_first_region = false;
                         continue;
@@ -2449,20 +2443,20 @@ namespace EA {
                             get_region_info(iter->second.region_id);
                     if (cur_region == nullptr) {
                         TLOG_ERROR("table_id:{}, can`t find region_id:{} start_key:{}, in region info map",
-                                 table_id, iter->second.region_id, str_to_hex(iter->first));
+                                   table_id, iter->second.region_id, str_to_hex(iter->first));
                         is_first_region = true;
                         continue;
                     }
                     if (pre_region->end_key() != cur_region->start_key()) {
                         TLOG_ERROR("table_id:{}, key nonsequence (region_id, version, "
-                                 "start_key, end_key) pre vs cur ({}, {}, {}, {}) vs "
-                                 "({}, {}, {}, {})", table_id,
-                                 pre_region->region_id(), pre_region->version(),
-                                 str_to_hex(pre_region->start_key()),
-                                 str_to_hex(pre_region->end_key()),
-                                 cur_region->region_id(), cur_region->version(),
-                                 str_to_hex(cur_region->start_key()),
-                                 str_to_hex(cur_region->end_key()));
+                                   "start_key, end_key) pre vs cur ({}, {}, {}, {}) vs "
+                                   "({}, {}, {}, {})", table_id,
+                                   pre_region->region_id(), pre_region->version(),
+                                   str_to_hex(pre_region->start_key()),
+                                   str_to_hex(pre_region->end_key()),
+                                   cur_region->region_id(), cur_region->version(),
+                                   str_to_hex(cur_region->start_key()),
+                                   str_to_hex(cur_region->end_key()));
                         is_first_region = true;
                         continue;
                     }
@@ -2486,7 +2480,7 @@ namespace EA {
         if (region_info.start_key() == region_info.end_key()
             && !region_info.start_key().empty()) {
             TLOG_WARN("table_id: {}, region_id: {}, start_key: {} is empty",
-                       table_id, region_id, str_to_hex(region_info.start_key()));
+                      table_id, region_id, str_to_hex(region_info.start_key()));
             return 0;
         }
         RegionDesc region;
@@ -2501,12 +2495,12 @@ namespace EA {
             RegionManager *region_manager = RegionManager::get_instance();
             auto origin_region = region_manager->get_region_info(origin_region_id);
             TLOG_ERROR("table_id:{} two regions has same start key ({}, {}, {}) vs ({}, {}, {})",
-                     table_id, origin_region->region_id(),
-                     str_to_hex(origin_region->start_key()),
-                     str_to_hex(origin_region->end_key()),
-                     region_id,
-                     str_to_hex(region_info.start_key()),
-                     str_to_hex(region_info.end_key()));
+                       table_id, origin_region->region_id(),
+                       str_to_hex(origin_region->start_key()),
+                       str_to_hex(origin_region->end_key()),
+                       region_id,
+                       str_to_hex(region_info.start_key()),
+                       str_to_hex(region_info.end_key()));
             return 0;
         }
         return 0;
@@ -2519,20 +2513,20 @@ namespace EA {
         if (partition_region_map.size() == 0) {
             //首个region
             TLOG_WARN("table_id:{} min_start_key:{}, max_end_key:{}", table_id,
-                       str_to_hex(min_start_key), str_to_hex(max_end_key));
+                      str_to_hex(min_start_key), str_to_hex(max_end_key));
             return true;
         }
         auto iter = partition_region_map.find(min_start_key);
         if (iter == partition_region_map.end()) {
             TLOG_ERROR("table_id:{} can`t find min_start_key:{}",
-                     table_id, str_to_hex(min_start_key));
+                       table_id, str_to_hex(min_start_key));
             return false;
         }
         if (!max_end_key.empty()) {
             auto endkey_iter = partition_region_map.find(max_end_key);
             if (endkey_iter == partition_region_map.end()) {
                 TLOG_ERROR("table_id:{} can`t find max_end_key:{}",
-                         table_id, str_to_hex(max_end_key));
+                           table_id, str_to_hex(max_end_key));
                 return false;
             }
         }
@@ -2559,8 +2553,8 @@ namespace EA {
             if (!partition_check_region_when_update(table_id, start_pid_key.second,
                                                     max_pid_key->second, partition_startkey_regiondesc_map)) {
                 TLOG_ERROR("table_id:{}, min_start_key:{}, max_end_key:{} check fail",
-                         table_id, str_to_hex(start_pid_key.second),
-                         str_to_hex(max_pid_key->second));
+                           table_id, str_to_hex(start_pid_key.second),
+                           str_to_hex(max_pid_key->second));
                 return false;
             }
         }
@@ -2583,7 +2577,7 @@ namespace EA {
                 region.merge_status = MERGE_IDLE;
                 startkey_regiondesc_map[partition][key_id.first] = region;
                 TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
-                           table_id, str_to_hex(key_id.first), key_id.second);
+                          table_id, str_to_hex(key_id.first), key_id.second);
             }
         }
     }
@@ -2601,14 +2595,14 @@ namespace EA {
                 region.merge_status = MERGE_IDLE;
                 startkey_regiondesc_map[key_id.first] = region;
                 TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
-                           table_id, str_to_hex(key_id.first), key_id.second);
+                          table_id, str_to_hex(key_id.first), key_id.second);
             }
             return;
         }
         auto iter = startkey_regiondesc_map.find(min_start_key);
         if (iter == startkey_regiondesc_map.end()) {
             TLOG_ERROR("table_id:{} can`t find start_key:{}",
-                     table_id, str_to_hex(min_start_key));
+                       table_id, str_to_hex(min_start_key));
             return;
         }
         int del_count = 0;
@@ -2619,8 +2613,8 @@ namespace EA {
             }
             auto delete_iter = iter++;
             TLOG_WARN("table_id:{} startkey:{} region_id:{} merge_status:{}, erase",
-                       table_id, str_to_hex(delete_iter->first),
-                       delete_iter->second.region_id, delete_iter->second.merge_status);
+                      table_id, str_to_hex(delete_iter->first),
+                      delete_iter->second.region_id, delete_iter->second.merge_status);
             tmp_status = delete_iter->second.merge_status;
             startkey_regiondesc_map.erase(delete_iter->first);
             del_count++;
@@ -2636,7 +2630,7 @@ namespace EA {
             region.merge_status = tmp_status;
             startkey_regiondesc_map[key_id.first] = region;
             TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
-                       table_id, str_to_hex(key_id.first), key_id.second);
+                      table_id, str_to_hex(key_id.first), key_id.second);
         }
 
     }
@@ -2682,48 +2676,48 @@ namespace EA {
             auto origin_region_info = iter->second;
             if (region_id != origin_region_info->region_id()) {
                 TLOG_ERROR("two diffrent regions:{}, {} has same start_key:{}",
-                         region_id, origin_region_info->region_id(),
-                         str_to_hex(start_key));
+                           region_id, origin_region_info->region_id(),
+                           str_to_hex(start_key));
                 return;
             }
             if (leader_region_info.log_index() < origin_region_info->log_index()) {
                 TLOG_WARN("leader: {} log_index:{} in heart is less than in "
-                           "origin:{}, region_id:{}",
-                           leader_region_info.leader(),
-                           leader_region_info.log_index(),
-                           origin_region_info->log_index(),
-                           region_id);
+                          "origin:{}, region_id:{}",
+                          leader_region_info.leader(),
+                          leader_region_info.log_index(),
+                          origin_region_info->log_index(),
+                          region_id);
                 return;
             }
             if (leader_region_info.version() > origin_region_info->version()) {
                 if (end_key_compare(leader_region_info.end_key(), origin_region_info->end_key()) > 0) {
                     //end_key不可能变大
                     TLOG_ERROR("region_id:{}, version {} to {}, end_key {} to {}",
-                             region_id, origin_region_info->version(),
-                             leader_region_info.version(),
-                             str_to_hex(origin_region_info->end_key()),
-                             str_to_hex(leader_region_info.end_key()));
+                               region_id, origin_region_info->version(),
+                               leader_region_info.version(),
+                               str_to_hex(origin_region_info->end_key()),
+                               str_to_hex(leader_region_info.end_key()));
                     return;
                 }
                 key_region_map.erase(iter);
                 auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
                 key_region_map[start_key] = ptr_region;
                 TLOG_WARN("region_id:{} has changed (version, start_key, end_key)"
-                           "({}, {}, {}) to ({}, {}, {})", region_id,
-                           origin_region_info->version(),
-                           str_to_hex(origin_region_info->start_key()),
-                           str_to_hex(origin_region_info->end_key()),
-                           leader_region_info.version(),
-                           str_to_hex(leader_region_info.start_key()),
-                           str_to_hex(leader_region_info.end_key()));
+                          "({}, {}, {}) to ({}, {}, {})", region_id,
+                          origin_region_info->version(),
+                          str_to_hex(origin_region_info->start_key()),
+                          str_to_hex(origin_region_info->end_key()),
+                          leader_region_info.version(),
+                          str_to_hex(leader_region_info.start_key()),
+                          str_to_hex(leader_region_info.end_key()));
             }
         } else {
             auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
             key_region_map[start_key] = ptr_region;
             TLOG_WARN("table_id:{} add new region_id:{}, key:({}, {}) version:{}",
-                       table_id, region_id, str_to_hex(start_key),
-                       str_to_hex(leader_region_info.end_key()),
-                       leader_region_info.version());
+                      table_id, region_id, str_to_hex(start_key),
+                      str_to_hex(leader_region_info.end_key()),
+                      leader_region_info.version());
         }
     }
 
@@ -2747,11 +2741,11 @@ namespace EA {
             auto origin_region_info = iter->second;
             if (leader_region_info.log_index() < origin_region_info->log_index()) {
                 TLOG_WARN("leader: {} log_index:{} in heart is less than in "
-                           "origin:{}, region_id:{}",
-                           leader_region_info.leader(),
-                           leader_region_info.log_index(),
-                           origin_region_info->log_index(),
-                           region_id);
+                          "origin:{}, region_id:{}",
+                          leader_region_info.leader(),
+                          leader_region_info.log_index(),
+                          origin_region_info->log_index(),
+                          region_id);
                 return;
             }
             if (leader_region_info.version() > origin_region_info->version()) {
@@ -2759,22 +2753,22 @@ namespace EA {
                 auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
                 id_region_map->insert(std::make_pair(region_id, ptr_region));
                 TLOG_WARN("table_id:{}, region_id:{} has changed (version, start_key, end_key)"
-                           "({}, {}, {}) to ({}, {}, {})", table_id, region_id,
-                           origin_region_info->version(),
-                           str_to_hex(origin_region_info->start_key()),
-                           str_to_hex(origin_region_info->end_key()),
-                           leader_region_info.version(),
-                           str_to_hex(leader_region_info.start_key()),
-                           str_to_hex(leader_region_info.end_key()));
+                          "({}, {}, {}) to ({}, {}, {})", table_id, region_id,
+                          origin_region_info->version(),
+                          str_to_hex(origin_region_info->start_key()),
+                          str_to_hex(origin_region_info->end_key()),
+                          leader_region_info.version(),
+                          str_to_hex(leader_region_info.start_key()),
+                          str_to_hex(leader_region_info.end_key()));
             }
         } else {
             auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
             id_region_map->insert(std::make_pair(region_id, ptr_region));
             TLOG_WARN("table_id:{}, region_id:{} (version, start_key, end_key)"
-                       "({}, {}, {})", table_id, region_id,
-                       leader_region_info.version(),
-                       str_to_hex(leader_region_info.start_key()),
-                       str_to_hex(leader_region_info.end_key()));
+                      "({}, {}, {})", table_id, region_id,
+                      leader_region_info.version(),
+                      str_to_hex(leader_region_info.start_key()),
+                      str_to_hex(leader_region_info.end_key()));
         }
     }
 
@@ -2795,8 +2789,8 @@ namespace EA {
              region_iter != partition_region_map.end(); region_iter++) {
             if (region_iter->first > origin_start_key) {
                 TLOG_WARN("table_id:{} region_id:{} start_key:{} bigger than end_key:{}",
-                           table_id, region_iter->second.region_id, str_to_hex(region_iter->first),
-                           str_to_hex(origin_start_key));
+                          table_id, region_iter->second.region_id, str_to_hex(region_iter->first),
+                          str_to_hex(origin_start_key));
                 return -1;
             }
             if (region_iter->first == origin_start_key) {
@@ -2807,11 +2801,11 @@ namespace EA {
             if (iter != id_noneregion_map.end()) {
                 regions.push_back(iter->second);
                 TLOG_WARN("table_id:{}, find region_id:{} in id_noneregion_map"
-                           "start_key:{}", table_id, region_id,
-                           str_to_hex(region_iter->first));
+                          "start_key:{}", table_id, region_id,
+                          str_to_hex(region_iter->first));
             } else {
                 TLOG_WARN("table_id:{}, can`t find region_id:{} in id_noneregion_map",
-                           table_id, region_id);
+                          table_id, region_id);
                 return -1;
             }
         }
@@ -2834,22 +2828,22 @@ namespace EA {
             SmartRegionInfo ptr_region = region_iter->second;
             if (key != ptr_region->start_key()) {
                 TLOG_WARN("table_id:{} can`t find start_key:{}, in key_region_map",
-                           table_id, str_to_hex(key));
+                          table_id, str_to_hex(key));
                 return -1;
             }
             TLOG_WARN("table_id:{}, find region_id:{} in key_region_map"
-                       "start_key:{}, end_key:{}", table_id, ptr_region->region_id(),
-                       str_to_hex(ptr_region->start_key()),
-                       str_to_hex(ptr_region->end_key()));
+                      "start_key:{}, end_key:{}", table_id, ptr_region->region_id(),
+                      str_to_hex(ptr_region->start_key()),
+                      str_to_hex(ptr_region->end_key()));
             regions.push_back(ptr_region);
             if (ptr_region->end_key() == origin_end_key) {
                 return 0;
             }
             if (end_key_compare(ptr_region->end_key(), origin_end_key) > 0) {
                 TLOG_ERROR("table_id:{} region_id:{} end_key:{} bigger than end_key:{}",
-                         table_id, ptr_region->region_id(),
-                         str_to_hex(ptr_region->end_key()),
-                         str_to_hex(origin_end_key));
+                           table_id, ptr_region->region_id(),
+                           str_to_hex(ptr_region->end_key()),
+                           str_to_hex(origin_end_key));
                 return -1;
             }
             key = ptr_region->end_key();
@@ -2867,7 +2861,7 @@ namespace EA {
             SmartRegionInfo ptr_region = region_iter->second;
             if (key != ptr_region->start_key()) {
                 TLOG_WARN("table_id:{} can`t find start_key:{}, in key_region_map",
-                           table_id, str_to_hex(key));
+                          table_id, str_to_hex(key));
                 return -1;
             }
             region_cnt++;
@@ -2909,16 +2903,16 @@ namespace EA {
                 continue;
             }
             TLOG_WARN("table_id:{}, region_id:{} key has changed "
-                       "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
-                       table_id, region_id, master_region->version(),
-                       str_to_hex(master_region->start_key()),
-                       str_to_hex(master_region->end_key()),
-                       ptr_region->version(),
-                       str_to_hex(ptr_region->start_key()),
-                       str_to_hex(ptr_region->end_key()));
+                      "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
+                      table_id, region_id, master_region->version(),
+                      str_to_hex(master_region->start_key()),
+                      str_to_hex(master_region->end_key()),
+                      ptr_region->version(),
+                      str_to_hex(ptr_region->start_key()),
+                      str_to_hex(ptr_region->end_key()));
             if (ptr_region->version() <= master_region->version()) {
                 TLOG_WARN("table_id:{}, region_id:{}, version too small need erase",
-                           table_id, region_id);
+                          table_id, region_id);
                 id_keyregion_map.erase(cur_iter);
                 continue;
             }
@@ -2937,7 +2931,7 @@ namespace EA {
                                     startkey_regiondesc_map, id_noneregion_map, regions, partition_id);
             if (ret < 0) {
                 TLOG_WARN("table_id:{}, region_id:{} get merge region failed",
-                           table_id, region_id);
+                          table_id, region_id);
                 continue;
             }
             regions.push_back(ptr_region);
@@ -2946,7 +2940,7 @@ namespace EA {
                                     key_newregion_map[ptr_region->partition_id()], regions);
             if (ret < 0) {
                 TLOG_WARN("table_id:{}, region_id:{} get split region failed",
-                           table_id, region_id);
+                          table_id, region_id);
                 continue;
             }
 
@@ -2982,13 +2976,13 @@ namespace EA {
                     if (ptr_region->version() <= master_region->version()) {
                         id_keyregion_map.erase(cur_iter);
                         TLOG_WARN("table_id: {}, region_id:{} key has changed "
-                                   "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
-                                   table_info.first, region_id, master_region->version(),
-                                   str_to_hex(master_region->start_key()),
-                                   str_to_hex(master_region->end_key()),
-                                   ptr_region->version(),
-                                   str_to_hex(ptr_region->start_key()),
-                                   str_to_hex(ptr_region->end_key()));
+                                  "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
+                                  table_info.first, region_id, master_region->version(),
+                                  str_to_hex(master_region->start_key()),
+                                  str_to_hex(master_region->end_key()),
+                                  ptr_region->version(),
+                                  str_to_hex(ptr_region->start_key()),
+                                  str_to_hex(ptr_region->end_key()));
                         continue;
                     }
                 }
@@ -3013,7 +3007,7 @@ namespace EA {
                             key_newregion_map[partition_key].clear();
                             id_noneregion_map.clear();
                             TLOG_WARN("table_id: {} partition_key: {} tmp map clear", table_info.first,
-                                       partition_key);
+                                      partition_key);
                         }
                     }
                 }
@@ -3247,7 +3241,7 @@ namespace EA {
             TLOG_WARN("add global|local index error.");
             return;
         }
-        //update schema
+        // update schema
         proto::SchemaInfo mem_schema_pb = _table_info_map[table_id].schema_pb;
         auto index_iter = mem_schema_pb.mutable_indexs()->begin();
         for (; index_iter != mem_schema_pb.mutable_indexs()->end();) {
@@ -3349,7 +3343,7 @@ namespace EA {
         std::string table_value;
         if (!simple_table_info.SerializeToString(&table_value)) {
             TLOG_WARN("request serializeToArray fail when create not level table, request:{}",
-                       simple_table_info.ShortDebugString());
+                      simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return -1;
         }
@@ -3357,7 +3351,7 @@ namespace EA {
         int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values);
         if (ret < 0) {
             TLOG_WARN("add new not level table:{} to rocksdb fail",
-                       simple_table_info.ShortDebugString());
+                      simple_table_info.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return -1;
         }
@@ -3402,10 +3396,10 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
         }
         TLOG_WARN("create index, table_id:{}, table_name:{}, "
-                   " alloc start_region_id:{}, end_region_id :{}",
-                   table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name(),
-                   start_region_id + 1,
-                   RegionManager::get_instance()->get_max_region_id());
+                  " alloc start_region_id:{}, end_region_id :{}",
+                  table_mem.schema_pb.table_id(), table_mem.schema_pb.table_name(),
+                  start_region_id + 1,
+                  RegionManager::get_instance()->get_max_region_id());
         return 0;
     }
 
@@ -3811,7 +3805,7 @@ namespace EA {
 
         if (request.resource_tags().size() < 1 || request.resource_tags(0) == mem_schema_pb.resource_tag()) {
             TLOG_WARN("learner resource tag can`t be the same as origin table resouce {}.",
-                       table_mem.schema_pb.ShortDebugString());
+                      table_mem.schema_pb.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "same resource tag.");
             return;
         }

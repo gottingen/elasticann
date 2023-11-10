@@ -1,6 +1,5 @@
-
-// Copyright 2023 The Turbo Authors.
-//
+// Copyright 2023 The Elastic-AI Authors.
+// part of Elastic AI Search
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,23 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-syntax="proto2";
-package EA.proto;
-//option cc_enable_arenas = true;
 
-enum ReverseNodeType {
-    REVERSE_NODE_NORMAL = 0;
-    REVERSE_NODE_DELETE = 1;
-};
 
-//--common
-message CommonReverseNode
-{
-    optional bytes key = 1;//must
-    required ReverseNodeType flag = 2;//must
-    optional float weight = 3;
-};
-message CommonReverseList
-{
-    repeated CommonReverseNode reverse_nodes = 1;//must
-};
+#ifndef ELASTICANN_OPS_CONSTANTS_H_
+#define ELASTICANN_OPS_CONSTANTS_H_
+
+#include <string>
+
+namespace EA {
+
+    class ServiceConstants {
+    public:
+        static const std::string CONFIG_IDENTIFY;
+        static const std::string MODEL_IDENTIFY;
+        static const std::string PLUGIN_IDENTIFY;
+        static const std::string MAX_IDENTIFY;
+    };
+}  // namespace EA
+
+#endif // ELASTICANN_OPS_CONSTANTS_H_

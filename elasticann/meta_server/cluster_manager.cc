@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,21 +23,6 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 
 namespace EA {
-    DEFINE_int32(migrate_percent, 60, "migrate percent. default:60%");
-    DEFINE_int32(error_judge_percent, 10, "error judge percen. default:10");
-    DEFINE_int32(error_judge_number, 3, "error judge number. default:3");
-    DEFINE_int32(disk_used_percent, 80, "disk used percent. default:80%");
-    DEFINE_bool(need_check_slow, false, "need_check_slow. default:false");
-    DEFINE_int32(min_network_segments_per_resource_tag, 10, "min network segments per resource_tag");
-    DEFINE_int32(network_segment_max_stores_precent, 20, "network segment max stores precent");
-
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(store_rocks_hang_check_timeout_s);
-    DECLARE_bool(store_rocks_hang_check);
-    DECLARE_int32(store_dead_interval_times);
-    DECLARE_int32(store_faulty_interval_times);
-    DECLARE_string(default_logical_room);
-    DECLARE_string(default_physical_room);
 
     bvar::Adder<int> min_fallback_count;
     bvar::Adder<int> min_count;
@@ -62,7 +46,6 @@ namespace EA {
     // replica_num > store_num时： 会失败，应该扩容store
     // 若单机单实例：by_ip 效果等价于 by_ip_port
     // 若单机多实例：则 host_num >= replica_num时， 应选择by_ip，否则应选择by_ip_port
-    DEFINE_bool(peer_balance_by_ip, false, "default by ip:port");
 
     void ClusterManager::process_cluster_info(google::protobuf::RpcController *controller,
                                               const proto::MetaManagerRequest *request,
@@ -146,7 +129,7 @@ namespace EA {
         for (auto &already_room: _logical_physical_map) {
             pb_logical.add_logical_rooms(already_room.first);
         }
-        // 构造 rocksdb的key和value
+        // construct rocksdb key and value
         std::string value;
         if (!pb_logical.SerializeToString(&value)) {
             TLOG_WARN("request serializeToArray fail, request:{}",
@@ -156,11 +139,11 @@ namespace EA {
         }
         auto ret = MetaRocksdb::get_instance()->put_meta_info(construct_logical_key(), value);
         if (ret < 0) {
-            TLOG_ERROR("add physical room:{} to rocksdb fail", request.ShortDebugString());
+            TLOG_ERROR("add logical room:{} to rocksdb fail", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update values in memory
         BAIDU_SCOPED_LOCK(_physical_mutex);
         for (auto add_room: request.logical_rooms().logical_rooms()) {
             _logical_physical_map[add_room] = std::set<std::string>();
@@ -208,7 +191,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存值
+        // update values in memory
         BAIDU_SCOPED_LOCK(_physical_mutex);
         _logical_physical_map = tmp_map;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
@@ -1128,7 +1111,7 @@ namespace EA {
                 //}
                 //暂时不考虑容量问题，该检查先关闭(liuhuicong)
                 //if (instance.used_size * 100 / instance.capacity >=
-                //        FLAGS_migrate_percent) {
+                //        FLAGS_meta_migrate_percent) {
                 //    TLOG_WARN("instance:{} is full", instance_pair.first);
                 //    full_stores.push_back(instance_pair.second);
                 //}

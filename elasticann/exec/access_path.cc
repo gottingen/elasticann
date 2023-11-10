@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +20,6 @@
 
 namespace EA {
     using namespace range;
-    DEFINE_uint64(max_in_records_num, 10000, "max_in_records_num");
-    DEFINE_int64(index_use_for_learner_delay_s, 3600, "1h");
 
     bool AccessPath::need_add_to_learner_paths() {
         int64_t _1h = FLAGS_index_use_for_learner_delay_s * 1000 * 1000LL;

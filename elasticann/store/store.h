@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,14 +24,14 @@
 #include <braft/storage.h>
 #include <bvar/bvar.h>
 #include "elasticann/common/common.h"
-#include "elasticann/proto/meta.interface.pb.h"
-#include "elasticann/proto/store.interface.pb.h"
-#include "elasticann/proto/common.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
+#include "eaproto/db/common.pb.h"
 #include "elasticann/store/region.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/common/table_record.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
     DECLARE_int32(snapshot_load_num);

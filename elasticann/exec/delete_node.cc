@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,10 +18,6 @@
 #include "elasticann/exec/delete_node.h"
 
 namespace EA {
-
-    DEFINE_bool(disable_writebatch_index, false,
-                "disable the indexing of transaction writebatch, if true the uncommitted data cannot be read");
-    DECLARE_int64(txn_kv_max_dml_row_size);
 
     int DeleteNode::init(const proto::PlanNode &node) {
         int ret = 0;

@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +23,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <iomanip>
-#include "elasticann/proto/reverse.pb.h"
+#include "eaproto/db/reverse.pb.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/common/key_encoder.h"
 #include "elasticann/common/lru_cache.h"
@@ -32,7 +31,7 @@
 #include "elasticann/engine/my_rocksdb.h"
 
 namespace EA {
-    DECLARE_bool(reverse_print_log);
+
     typedef std::shared_ptr<google::protobuf::Message> MessageSP;
     typedef std::pair<std::string, std::string> KeyRange;
     extern std::atomic_long g_statistic_insert_key_num;

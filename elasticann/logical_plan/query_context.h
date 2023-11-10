@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +17,7 @@
 #pragma once
 
 #include "elasticann/session/user_info.h"
-#include "elasticann/proto/common.pb.h"
+#include "eaproto/db/common.pb.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/runtime/runtime_state.h"
@@ -27,11 +26,10 @@
 #include "elasticann/common/range.h"
 
 namespace EA {
-    DECLARE_bool(default_2pc);
 
     class ExecNode;
 
-// notice日志信息统计结构
+    // notice日志信息统计结构
     struct QueryStat {
         int64_t query_read_time;
         int64_t query_plan_time;

@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +21,6 @@
 #include "elasticann/common/table_key.h"
 #include "elasticann/runtime/runtime_state.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
-#include "elasticann/exec/exec_node.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/raft/my_raft_log_storage.h"
 #include "elasticann/raft/log_entry_reader.h"
@@ -39,64 +37,10 @@
 #include "turbo/format/format.h"
 #include "turbo/strings/match.h"
 
-namespace braft {
-    DECLARE_int32(raft_election_heartbeat_factor);
-    DECLARE_bool(raft_enable_leader_lease);
-}
 
 namespace EA {
-    DEFINE_bool(use_fulltext_wordweight_segment, true, "load wordweight dict");
-    DEFINE_bool(use_fulltext_wordseg_wordrank_segment, true, "load wordseg wordrank dict");
-    DEFINE_int32(election_timeout_ms, 1000, "raft election timeout(ms)");
-    DEFINE_int32(skew, 5, "split skew, default : 45% - 55%");
-    DEFINE_int32(reverse_level2_len, 5000, "reverse index level2 length, default : 5000");
-    DEFINE_string(raftlog_uri, "myraftlog://my_raft_log?id=", "raft log uri");
-    DEFINE_string(binlog_uri, "mybinlog://my_bin_log?id=", "bin log uri");
-    //不兼容配置，默认用写到rocksdb的信息; raft自带的local://./raft_data/stable/region_
-    DEFINE_string(stable_uri, "myraftmeta://my_raft_meta?id=", "raft stable path");
-    DEFINE_string(snapshot_uri, "local://./raft_data/snapshot", "raft snapshot path");
-    DEFINE_int64(disable_write_wait_timeout_us, 1000 * 1000,
-                 "disable write wait timeout(us) default 1s");
-    DEFINE_int32(snapshot_interval_s, 600, "raft snapshot interval(s)");
-    DEFINE_int32(fetch_log_timeout_s, 60, "raft learner fetch log time out(s)");
-    DEFINE_int32(fetch_log_interval_ms, 10, "raft learner fetch log interval(ms)");
-    DEFINE_int32(snapshot_timed_wait, 120 * 1000 * 1000LL, "snapshot timed wait default 120S");
-    DEFINE_int64(snapshot_diff_lines, 10000, "save_snapshot when num_table_lines diff");
-    DEFINE_int64(snapshot_diff_logs, 2000, "save_snapshot when log entries diff");
-    DEFINE_int64(snapshot_log_exec_time_s, 60, "save_snapshot when log entries apply time");
-    //分裂判断标准，如果3600S没有收到请求，则认为分裂失败
-    DEFINE_int64(split_duration_us, 3600 * 1000 * 1000LL, "split duration time : 3600s");
-    DEFINE_int64(compact_delete_lines, 200000, "compact when _num_delete_lines > compact_delete_lines");
-    DEFINE_int64(throttle_throughput_bytes, 50 * 1024 * 1024LL, "throttle throughput bytes");
-    DEFINE_int64(tail_split_wait_threshold, 600 * 1000 * 1000LL, "tail split wait threshold(10min)");
-    DEFINE_int64(split_send_first_log_entry_threshold, 3600 * 1000 * 1000LL, "split send log entry threshold(1h)");
-    DEFINE_int64(split_send_log_batch_size, 20, "split send log batch size");
-    DEFINE_int64(no_write_log_entry_threshold, 1000, "max left logEntry to be exec before no write");
-    DEFINE_int64(check_peer_notice_delay_s, 1, "check peer delay notice second");
-    DECLARE_int64(transfer_leader_catchup_time_threshold);
-    DEFINE_bool(force_clear_txn_for_fast_recovery, false, "clear all txn info for fast recovery");
-    DEFINE_bool(split_add_peer_asyc, false, "asyc split add peer");
-    DEFINE_int32(no_op_timer_timeout_ms, 100, "no op timer timeout(ms)");
-    DEFINE_int32(follow_read_timeout_s, 10, "follow read timeout(s)");
-    DEFINE_bool(apply_partial_rollback, false, "apply partial rollback");
-    DEFINE_bool(demotion_read_index_without_leader, true, "demotion read index without leader");
-// 并发控制
-    DEFINE_int64(sign_concurrency_timeout_rate, 5,
-                 "sign_concurrency_timeout_rate, default: 5. (0 means without timeout)");
-    DEFINE_int64(min_sign_concurrency_timeout_ms, 1000, "min_sign_concurrency_timeout_ms, default: 1s");
-    DECLARE_int64(exec_1pc_out_fsm_timeout_ms);
-    DECLARE_string(db_path);
-    DECLARE_int64(print_time_us);
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int64(min_split_lines);
-    DECLARE_bool(use_approximate_size);
-    DECLARE_bool(use_approximate_size_to_split);
-    DECLARE_bool(open_service_write_concurrency);
-    DECLARE_bool(open_new_sign_read_concurrency);
-    DECLARE_bool(stop_ttl_data);
-    DECLARE_string(resource_tag);
 
-//const size_t  Region::REGION_MIN_KEY_SIZE = sizeof(int64_t) * 2 + sizeof(uint8_t);
+    //const size_t  Region::REGION_MIN_KEY_SIZE = sizeof(int64_t) * 2 + sizeof(uint8_t);
     const uint8_t Region::PRIMARY_INDEX_FLAG = 0x01;
     const uint8_t Region::SECOND_INDEX_FLAG = 0x02;
     const int BATCH_COUNT = 1024;
@@ -145,7 +89,7 @@ namespace EA {
         _resource.reset(new RegionResource);
         //如果是新建region需要
         if (new_region) {
-            std::string snapshot_path_str(FLAGS_snapshot_uri, FLAGS_snapshot_uri.find("//") + 2);
+            std::string snapshot_path_str(FLAGS_store_snapshot_uri, FLAGS_store_snapshot_uri.find("//") + 2);
             snapshot_path_str += "/region_" + std::to_string(_region_id);
             turbo::filesystem::path snapshot_path(snapshot_path_str);
             // 新建region发现有时候snapshot目录没删掉，可能有gc不完整情况
@@ -207,7 +151,7 @@ namespace EA {
                             _reverse_index_map[index_id] = new ReverseIndex<CommonSchema>(
                                     _region_id,
                                     index_id,
-                                    FLAGS_reverse_level2_len,
+                                    FLAGS_store_reverse_level2_len,
                                     _rocksdb,
                                     charset,
                                     segment_type,
@@ -218,7 +162,7 @@ namespace EA {
                             _reverse_index_map[index_id] = new ReverseIndex<ArrowSchema>(
                                     _region_id,
                                     index_id,
-                                    FLAGS_reverse_level2_len,
+                                    FLAGS_store_reverse_level2_len,
                                     _rocksdb,
                                     charset,
                                     segment_type,
@@ -264,23 +208,23 @@ namespace EA {
             }
             peers.push_back(braft::PeerId(end_point));
         }
-        options.election_timeout_ms = FLAGS_election_timeout_ms;
+        options.election_timeout_ms = FLAGS_store_election_timeout_ms;
         options.fsm = this;
         options.initial_conf = braft::Configuration(peers);
         options.snapshot_interval_s = 0;
         //options.snapshot_interval_s = FLAGS_snapshot_interval_s; // 禁止raft自动触发snapshot
         if (!_is_binlog_region) {
-            options.log_uri = FLAGS_raftlog_uri +
+            options.log_uri = FLAGS_store_log_uri +
                               turbo::Format(_region_id);
         } else {
-            options.log_uri = FLAGS_binlog_uri +
+            options.log_uri = FLAGS_store_binlog_uri +
                               turbo::Format(_region_id);
         }
 
-        options.raft_meta_uri = FLAGS_stable_uri +
+        options.raft_meta_uri = FLAGS_store_stable_uri +
                                 turbo::Format(_region_id);
 
-        options.snapshot_uri = FLAGS_snapshot_uri + "/region_" +
+        options.snapshot_uri = FLAGS_store_snapshot_uri + "/region_" +
                                turbo::Format(_region_id);
         options.snapshot_file_system_adaptor = &_snapshot_adaptor;
 
@@ -290,7 +234,7 @@ namespace EA {
             TLOG_DEBUG("init learner.");
             int64_t check_cycle = 10;
             scoped_refptr<braft::SnapshotThrottle> tst(
-                    new braft::ThroughputSnapshotThrottle(FLAGS_throttle_throughput_bytes, check_cycle));
+                    new braft::ThroughputSnapshotThrottle(FLAGS_store_throttle_throughput_bytes, check_cycle));
 
             int ret = _learner->init(options);
             if (ret != 0) {
@@ -310,7 +254,7 @@ namespace EA {
             }
             //bthread_usleep(5000);
             if (peers.size() == 1) {
-                _node.reset_election_timeout_ms(FLAGS_election_timeout_ms);
+                _node.reset_election_timeout_ms(FLAGS_store_election_timeout_ms);
                 TLOG_WARN("region_id: {} reset_election_timeout_ms", _region_id);
             }
         }
@@ -363,7 +307,7 @@ namespace EA {
             return -1;
         }
         // 100ms
-        if (_no_op_timer.init(this, FLAGS_no_op_timer_timeout_ms) != 0) {
+        if (_no_op_timer.init(this, FLAGS_store_no_op_timer_timeout_ms) != 0) {
             TLOG_ERROR("region_{} fail to init _no_op_timer.", _region_id);
             return -1;
         }
@@ -382,7 +326,7 @@ namespace EA {
                 TLOG_WARN("region_id: {} has been removed", _region_id);
                 return true;
             }
-            if (get_timecost() > FLAGS_split_duration_us) {
+            if (get_timecost() > FLAGS_store_split_duration_us) {
                 if (compare_and_set_illegal()) {
                     TLOG_WARN("split or add_peer fail, set illegal, region_id: {}",
                                _region_id);
@@ -835,7 +779,7 @@ namespace EA {
             }
         }
         // 多语句事务局部回滚
-        if (FLAGS_apply_partial_rollback && txn != nullptr
+        if (FLAGS_store_apply_partial_rollback && txn != nullptr
             && op_type != proto::OP_ROLLBACK && op_type != proto::OP_COMMIT) {
             bool need_rollback = false;
             for (int rollback_seq: txn_info.need_rollback_seq()) {
@@ -1321,7 +1265,6 @@ namespace EA {
         }
     }
 
-    DEFINE_int32(not_leader_alarm_print_interval_s, 60, "not leader alarm print interval(s)");
 
 // 处理not leader 报警
 // 每个region单独聚合打印报警日志，noah聚合所有region可能会误报
@@ -1352,7 +1295,7 @@ namespace EA {
         interval_count++;
 
         // 周期聚合,打印报警日志
-        if (last_print_time.get_time() > FLAGS_not_leader_alarm_print_interval_s * 1000 * 1000L) {
+        if (last_print_time.get_time() > FLAGS_store_not_leader_alarm_print_interval_s * 1000 * 1000L) {
             TLOG_ERROR("region_id: {}, not leader. alarm_type: {}, duration {} us, interval_count: {}, total_count: {}",
                      region_id, static_cast<int>(type), alarm_begin_time.get_time(), interval_count.load(),
                      total_count.load());
@@ -1553,7 +1496,7 @@ namespace EA {
                     response->set_errmsg("append read queue fail");
                     return;
                 }
-                int ret = c->cond.timed_wait(FLAGS_follow_read_timeout_s * 1000 * 1000LL); // 10s超时
+                int ret = c->cond.timed_wait(FLAGS_store_follow_read_timeout_s * 1000 * 1000LL); // 10s超时
                 if (ret != 0) {
                     // 10s超时失败
                     response->set_errcode(is_learner() ? proto::LEARNER_NOT_READY : proto::NOT_LEADER);
@@ -2473,10 +2416,10 @@ namespace EA {
             int global_concurrency_ret = 0;
             int64_t reject_timeout = 0;
             int64_t sign_latency = request.extra_req().sign_latency();
-            if (FLAGS_sign_concurrency_timeout_rate > 0 && sign_latency > 0) {
-                reject_timeout = sign_latency * FLAGS_sign_concurrency_timeout_rate;
-                if (reject_timeout < FLAGS_min_sign_concurrency_timeout_ms * 1000ULL) {
-                    reject_timeout = FLAGS_min_sign_concurrency_timeout_ms * 1000ULL;
+            if (FLAGS_store_sign_concurrency_timeout_rate > 0 && sign_latency > 0) {
+                reject_timeout = sign_latency * FLAGS_store_sign_concurrency_timeout_rate;
+                if (reject_timeout < FLAGS_store_min_sign_concurrency_timeout_ms * 1000ULL) {
+                    reject_timeout = FLAGS_store_min_sign_concurrency_timeout_ms * 1000ULL;
                 }
             }
             TimeCost t;
@@ -2561,7 +2504,7 @@ namespace EA {
                 trace_node.set_total_time(cost.get_time());
                 std::string addr = _address;
                 if (is_learner()) {
-                    addr += "(learner@" + FLAGS_resource_tag + ")";
+                    addr += "(learner@" + FLAGS_store_resource_tag + ")";
                 }
                 trace_node.set_instance(addr);
                 trace_node.set_region_id(_region_id);
@@ -2920,7 +2863,7 @@ namespace EA {
             _multi_thread_cond.decrease_signal();
         });
 
-        if (_num_delete_lines > FLAGS_compact_delete_lines) {
+        if (_num_delete_lines > FLAGS_store_compact_delete_lines) {
             TLOG_WARN("region_id: {}, delete {} rows, do compact in queue",
                        _region_id, _num_delete_lines.load());
             // 删除大量数据后做compact
@@ -4367,7 +4310,7 @@ namespace EA {
     }
 
     void Region::reset_snapshot_status() {
-        if (_snapshot_time_cost.get_time() > FLAGS_snapshot_interval_s * 1000 * 1000) {
+        if (_snapshot_time_cost.get_time() > FLAGS_store_snapshot_interval_s * 1000 * 1000) {
             _snapshot_num_table_lines = _num_table_lines.load();
             _snapshot_index = _applied_index;
             _snapshot_time_cost.reset();
@@ -4390,18 +4333,18 @@ namespace EA {
             TLOG_WARN("region_id: {} split or addpeer", _region_id);
             return;
         }
-        if (_snapshot_time_cost.get_time() < FLAGS_snapshot_interval_s * 1000 * 1000) {
+        if (_snapshot_time_cost.get_time() < FLAGS_store_snapshot_interval_s * 1000 * 1000) {
             return;
         }
         int64_t average_cost = _dml_time_cost.latency();
-        if (_applied_index - _snapshot_index > FLAGS_snapshot_diff_logs) {
+        if (_applied_index - _snapshot_index > FLAGS_store_snapshot_diff_logs) {
             need_snapshot = true;
-        } else if (abs(_snapshot_num_table_lines - _num_table_lines.load()) > FLAGS_snapshot_diff_lines) {
+        } else if (abs(_snapshot_num_table_lines - _num_table_lines.load()) > FLAGS_store_snapshot_diff_lines) {
             need_snapshot = true;
         } else if ((_applied_index - _snapshot_index) * average_cost
-                   > FLAGS_snapshot_log_exec_time_s * 1000 * 1000) {
+                   > FLAGS_store_snapshot_log_exec_time_s * 1000 * 1000) {
             need_snapshot = true;
-        } else if (_snapshot_time_cost.get_time() > 2 * FLAGS_snapshot_interval_s * 1000 * 1000
+        } else if (_snapshot_time_cost.get_time() > 2 * FLAGS_store_snapshot_interval_s * 1000 * 1000
                    && _applied_index > _snapshot_index) {
             need_snapshot = true;
         }
@@ -4434,7 +4377,7 @@ namespace EA {
 
         int64_t snapshot_index = parse_snapshot_index_from_path(reader->get_path(), false);
 
-        if (FLAGS_force_clear_txn_for_fast_recovery) {
+        if (FLAGS_store_force_clear_txn_for_fast_recovery) {
             _meta_writer->clear_txn_log_index(_region_id);
             TLOG_WARN("region_id: {} force clear txn info", _region_id);
             return;
@@ -4666,7 +4609,7 @@ namespace EA {
         copy_region(&_resource->region_info);
 
         //回放没有commit的事务
-        if (!FLAGS_force_clear_txn_for_fast_recovery) {
+        if (!FLAGS_store_force_clear_txn_for_fast_recovery) {
             for (auto log_entry_pair: prepared_log_entrys) {
                 int64_t log_index = log_entry_pair.first;
                 proto::StoreReq store_req;
@@ -5540,7 +5483,7 @@ int Region::clear_data() {
         int64_t average_cost = _dml_time_cost.latency();
         int64_t pre_digest_time = 0;
         int64_t digest_time = _real_writing_cond.count() * average_cost;
-        int64_t disable_write_wait = std::max(FLAGS_disable_write_wait_timeout_us, _split_param.split_slow_down_cost);
+        int64_t disable_write_wait = std::max(FLAGS_store_disable_write_wait_timeout_us, _split_param.split_slow_down_cost);
         while (digest_time > disable_write_wait / 2) {
             if (!is_leader()) {
                 TLOG_WARN("leader stop, region_id: {}, new_region_id:{}, instance:{}",
@@ -5548,7 +5491,7 @@ int Region::clear_data() {
                 split_remove_new_region_peers();
                 return;
             }
-            if (total_wait_time.get_time() > FLAGS_tail_split_wait_threshold) {
+            if (total_wait_time.get_time() > FLAGS_store_tail_split_wait_threshold) {
                 // 10分钟强制分裂
                 disable_write_wait = 3600 * 1000 * 1000LL;
                 break;
@@ -5565,7 +5508,7 @@ int Region::clear_data() {
             pre_digest_time = digest_time;
             average_cost = _dml_time_cost.latency();
             digest_time = _real_writing_cond.count() * average_cost;
-            disable_write_wait = std::max(FLAGS_disable_write_wait_timeout_us, _split_param.split_slow_down_cost);
+            disable_write_wait = std::max(FLAGS_store_disable_write_wait_timeout_us, _split_param.split_slow_down_cost);
         }
         //设置禁写 并且等待正在写入任务提交
         _split_param.no_write_time_cost.reset();
@@ -5704,7 +5647,7 @@ int Region::clear_data() {
                 int64_t count = 0;
                 std::ostringstream os;
                 // 使用FLAGS_db_path，保证ingest能move成功
-                os << FLAGS_db_path << "/" << "region_split_ingest_sst." << _region_id << "."
+                os << FLAGS_store_db_path << "/" << "region_split_ingest_sst." << _region_id << "."
                    << _split_param.new_region_id << "." << index_id;
                 std::string path = os.str();
 
@@ -5833,8 +5776,8 @@ int Region::clear_data() {
                     table_prefix.append_index(_split_param.split_key);
                     int64_t count = 0;
                     std::ostringstream os;
-                    // 使用FLAGS_db_path，保证ingest能move成功
-                    os << FLAGS_db_path << "/" << "region_split_ingest_sst." << _region_id << "."
+                    // 使用FLAGS_store_db_path，保证ingest能move成功
+                    os << FLAGS_store_db_path << "/" << "region_split_ingest_sst." << _region_id << "."
                        << _split_param.new_region_id << "." << field_id;
                     std::string path = os.str();
 
@@ -6031,7 +5974,7 @@ int Region::clear_data() {
                 }
                 batch_request.add_request_lens(data.size());
                 attachment_data.append(data);
-                if (batch_request.request_lens_size() == FLAGS_split_send_log_batch_size) {
+                if (batch_request.request_lens_size() == FLAGS_store_split_send_log_batch_size) {
                     requests.emplace_back(batch_request);
                     attachment_datas.emplace_back(attachment_data);
                     batch_request.clear_request_lens();
@@ -6105,7 +6048,7 @@ int Region::clear_data() {
             return;
         }
         std::string new_region_leader = _split_param.instance;
-        if (FLAGS_split_add_peer_asyc) {
+        if (FLAGS_store_split_add_peer_asyc) {
             Bthread bth;
             bth.run([this]() {
                 _multi_thread_cond.increase();
@@ -6279,7 +6222,7 @@ int Region::clear_data() {
             }
             if (send_time_per_store_req + new_region_dml_latency != 0) {
                 left_log_entry_threshold =
-                        std::max(FLAGS_disable_write_wait_timeout_us, _split_param.split_slow_down_cost) / 2 /
+                        std::max(FLAGS_store_disable_write_wait_timeout_us, _split_param.split_slow_down_cost) / 2 /
                         (send_time_per_store_req + new_region_dml_latency);
             }
             if (left_log_entry_threshold == 0) {
@@ -6288,14 +6231,14 @@ int Region::clear_data() {
             // 计算老region的real writing阈值
             if (average_cost > 0) {
                 real_writing_cnt_threshold =
-                        std::max(FLAGS_disable_write_wait_timeout_us, _split_param.split_slow_down_cost) / 2 /
+                        std::max(FLAGS_store_disable_write_wait_timeout_us, _split_param.split_slow_down_cost) / 2 /
                         average_cost;
             }
             adjust_value = send_first_log_entry_time.get_time() / (600 * 1000 * 1000) + 1;
         } while ((left_log_entry > left_log_entry_threshold * adjust_value
-                  || left_log_entry > FLAGS_no_write_log_entry_threshold * adjust_value
+                  || left_log_entry > FLAGS_store_no_write_log_entry_threshold * adjust_value
                   || _real_writing_cond.count() > real_writing_cnt_threshold * adjust_value)
-                 && send_first_log_entry_time.get_time() < FLAGS_split_send_first_log_entry_threshold);
+                 && send_first_log_entry_time.get_time() < FLAGS_store_split_send_first_log_entry_threshold);
         TLOG_WARN("send log entry before not allow success when split, "
                    "region_id: {}, new_region_id:{}, instance:{}, time_cost:{}, "
                    "start_index:{}, end_index:{}, applied_index:{}, while_count:{}, average_cost: {} "
@@ -6312,7 +6255,7 @@ int Region::clear_data() {
                    _region_id, _split_param.new_region_id, _real_writing_cond.count());
         _split_param.send_first_log_entry_cost = send_first_log_entry_time.get_time();
         int64_t disable_write_wait = get_split_wait_time();
-        if (_split_param.send_first_log_entry_cost >= FLAGS_split_send_first_log_entry_threshold) {
+        if (_split_param.send_first_log_entry_cost >= FLAGS_store_split_send_first_log_entry_threshold) {
             // 超一小时，强制分裂成功
             disable_write_wait = 3600 * 1000 * 1000LL;
         }
@@ -6813,7 +6756,7 @@ int Region::clear_data() {
 
             batch_request.add_request_lens(data.size());
             attachment_data.append(data);
-            if (batch_request.request_lens_size() == FLAGS_split_send_log_batch_size) {
+            if (batch_request.request_lens_size() == FLAGS_store_split_send_log_batch_size) {
                 requests.emplace_back(batch_request);
                 attachment_datas.emplace_back(attachment_data);
                 batch_request.clear_request_lens();
@@ -6911,7 +6854,7 @@ int Region::clear_data() {
         int64_t cur_idx = 0;
         int64_t pk_cnt = _num_table_lines.load();
         int64_t random_skew_lines = 1;
-        int64_t skew_lines = pk_cnt * FLAGS_skew / 100;
+        int64_t skew_lines = pk_cnt * FLAGS_store_skew / 100;
         if (skew_lines > 0) {
             random_skew_lines = butil::fast_rand() % skew_lines;
         }
@@ -7037,7 +6980,7 @@ int Region::clear_data() {
                     _reverse_index_map[index.id] = new ReverseIndex<CommonSchema>(
                             _region_id,
                             index.id,
-                            FLAGS_reverse_level2_len,
+                            FLAGS_store_reverse_level2_len,
                             _rocksdb,
                             charset,
                             segment_type,
@@ -7049,7 +6992,7 @@ int Region::clear_data() {
                     _reverse_index_map[index.id] = new ReverseIndex<ArrowSchema>(
                             _region_id,
                             index.id,
-                            FLAGS_reverse_level2_len,
+                            FLAGS_store_reverse_level2_len,
                             _rocksdb,
                             charset,
                             segment_type,
@@ -7124,9 +7067,9 @@ int Region::clear_data() {
     }
 
     bool Region::can_use_approximate_split() {
-        if (FLAGS_use_approximate_size &&
-            FLAGS_use_approximate_size_to_split &&
-            get_num_table_lines() > FLAGS_min_split_lines &&
+        if (FLAGS_store_use_approximate_size &&
+            FLAGS_store_use_approximate_size_to_split &&
+            get_num_table_lines() > FLAGS_store_min_split_lines &&
             get_last_split_time_cost() > 60 * 60 * 1000 * 1000LL &&
             _approx_info.region_size > 512 * 1024 * 1024LL) {
             if (_approx_info.last_version_region_size > 0 &&
@@ -7153,7 +7096,7 @@ int Region::clear_data() {
         }
     }
 
-// 后续要用compaction filter 来维护，现阶段主要有num_table_lines维护问题
+    // 后续要用compaction filter 来维护，现阶段主要有num_table_lines维护问题
     void Region::ttl_remove_expired_data() {
         if (!_use_ttl && !is_binlog_region()) {
             return;
@@ -7226,7 +7169,7 @@ int Region::clear_data() {
             txn->begin(txn_opt);
             rocksdb::Status s;
             for (iter->Seek(table_prefix.data()); iter->Valid(); iter->Next()) {
-                if (FLAGS_stop_ttl_data || _shutdown) {
+                if (FLAGS_store_stop_ttl_data || _shutdown) {
                     break;
                 }
                 ++count;
@@ -7477,12 +7420,12 @@ int Region::clear_data() {
 
         int64_t dml_latency = get_dml_latency();
         int64_t latency = dml_latency * (status.committed_index - _applied_index);
-        if (latency > FLAGS_check_peer_notice_delay_s * 1000 * 1000LL) {
+        if (latency > FLAGS_store_check_peer_notice_delay_s * 1000 * 1000LL) {
             TLOG_WARN("region {} peer_latency: {}, status: {}, dml_latency: {}, commit_idx: {}, apply_idx: {}",
                        _region_id, latency, state2str(status.state), dml_latency, status.committed_index,
                        _applied_index);
         }
-        if (latency >= FLAGS_follow_read_timeout_s * 1000 * 1000LL) {
+        if (latency >= FLAGS_store_follow_read_timeout_s * 1000 * 1000LL) {
             _ready_for_follower_read = false;
         } else {
             _ready_for_follower_read = true;
@@ -7604,7 +7547,7 @@ int Region::clear_data() {
                 break;
             }
             if (ret != 0) {
-                if (!FLAGS_demotion_read_index_without_leader) {
+                if (!FLAGS_store_demotion_read_index_without_leader) {
                     TLOG_ERROR("region_{}(follower/learner) ask {} readidx fail, req size: {}",
                              _region_id, _leader_addr_for_read_idx.c_str(), size);
                     return -1;

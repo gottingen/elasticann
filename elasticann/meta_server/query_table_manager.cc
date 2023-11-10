@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +20,6 @@
 #include "elasticann/meta_server/ddl_manager.h"
 #include <unordered_set>
 
-DEFINE_int64(show_table_status_cache_time, 3600 * 1000 * 1000LL, "show table status cache time : 3600s");
 namespace EA {
     void QueryTableManager::get_schema_info(const proto::QueryRequest *request,
                                             proto::QueryResponse *response) {

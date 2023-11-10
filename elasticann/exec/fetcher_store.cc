@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,25 +26,6 @@
 
 namespace EA {
 
-    DEFINE_int64(retry_interval_us, 500 * 1000, "retry interval ");
-    DEFINE_int32(single_store_concurrency, 20, "max request for one store");
-    DEFINE_int64(max_select_rows, 10000000, "query will be fail when select too much rows");
-    DEFINE_int64(print_time_us, 10000, "print log when time_cost > print_time_us(us)");
-    DEFINE_int64(binlog_alarm_time_s, 30, "alarm, > binlog_alarm_time_s from prewrite to commit");
-    DEFINE_int64(baikaldb_alive_time_s, 10 * 60, "obervation time length in baikaldb, default:10 min");
-    BRPC_VALIDATE_GFLAG(print_time_us, brpc::NonNegativeInteger);
-    DEFINE_int32(fetcher_request_timeout, 100000,
-                 "store as server request timeout, default:10000ms");
-    DEFINE_int32(fetcher_connect_timeout, 1000,
-                 "store as server connect timeout, default:1000ms");
-    DEFINE_bool(fetcher_follower_read, true, "where allow follower read for fether");
-    DEFINE_bool(fetcher_learner_read, false, "where allow learner read for fether");
-    DEFINE_string(insulate_fetcher_resource_tag, "", "store read insulate resource_tag");
-    DEFINE_string(fetcher_resource_tag, "", "store read resource_tag perfered, only first time valid");
-    DECLARE_int32(transaction_clear_delay_ms);
-    DEFINE_bool(use_dynamic_timeout, false, "whether use dynamic_timeout");
-    DEFINE_bool(use_read_index, false, "whether use follower read");
-    BRPC_VALIDATE_GFLAG(use_dynamic_timeout, brpc::PassValidate);
     bvar::Adder<int64_t> OnRPCDone::async_rpc_region_count{"async_rpc_region_count"};
     bvar::LatencyRecorder OnRPCDone::total_send_request{"total_send_request"};
     bvar::LatencyRecorder OnRPCDone::add_backup_send_request{"add_backup_send_request"};

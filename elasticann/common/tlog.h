@@ -16,21 +16,21 @@
 
 namespace EA {
     inline bool init_tlog() {
-        if (!turbo::filesystem::exists(FLAGS_ea_log_root)) {
-            if (!turbo::filesystem::create_directories(FLAGS_ea_log_root)) {
+        if (!turbo::filesystem::exists(FLAGS_log_root)) {
+            if (!turbo::filesystem::create_directories(FLAGS_log_root)) {
                 return false;
             }
         }
-        turbo::filesystem::path lpath(FLAGS_ea_log_root);
-        lpath /= FLAGS_ea_log_base_name;
+        turbo::filesystem::path lpath(FLAGS_log_root);
+        lpath /= FLAGS_log_base_name;
         turbo::tlog::sink_ptr file_sink = std::make_shared<turbo::tlog::sinks::daily_file_sink_mt>(lpath.string(),
-                                                                                  FLAGS_ea_rotation_hour,
-                                                                                  FLAGS_ea_rotation_minute,
-                                                                                  false, FLAGS_ea_log_save_days);
+                                                                                  FLAGS_log_rotation_hour,
+                                                                                  FLAGS_log_rotation_minute,
+                                                                                  false, FLAGS_log_save_days);
         file_sink->set_level(turbo::tlog::level::trace);
 
 
-        if(!FLAGS_ea_console_log) {
+        if(!FLAGS_enable_console_log) {
             auto logger = std::make_shared<turbo::tlog::logger>("ea-logger", file_sink);
             logger->set_level(turbo::tlog::level::debug);
             turbo::tlog::set_default_logger(logger);

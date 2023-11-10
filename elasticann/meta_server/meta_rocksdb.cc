@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +18,6 @@
 #include "gflags/gflags.h"
 
 namespace EA {
-    DEFINE_string(db_path, "./rocks_db", "rocks db path");
 
     int MetaRocksdb::init() {
         _rocksdb = RocksWrapper::get_instance();
@@ -27,13 +25,13 @@ namespace EA {
             TLOG_ERROR("create rocksdb handler failed");
             return -1;
         }
-        int ret = _rocksdb->init(FLAGS_db_path);
+        int ret = _rocksdb->init(FLAGS_meta_db_path);
         if (ret != 0) {
             TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return -1;
         }
         _handle = _rocksdb->get_meta_info_handle();
-        TLOG_WARN("rocksdb init success, db_path:{}", FLAGS_db_path);
+        TLOG_WARN("rocksdb init success, db_path:{}", FLAGS_meta_db_path);
         return 0;
     }
 

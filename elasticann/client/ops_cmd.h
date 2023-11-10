@@ -1,6 +1,4 @@
-
 // Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef ELASTICANN_CLIENT_OPS_CMD_H_
+#define ELASTICANN_CLIENT_OPS_CMD_H_
 
+#include "turbo/flags/flags.h"
+#include <string>
 
-#include <gflags/gflags.h>
+namespace EA::client {
+    /// Collection of all options of namespace cmd.
+    void setup_ops_cmd(turbo::App &app);
 
-namespace EA {
-    DEFINE_string(default_logical_room, "default", "default_logical_room");
-    DEFINE_string(default_physical_room, "default", "default_physical_room");
-}
+    void run_ops_cmd(turbo::App &app);
+}  // namespace EA::client
+#endif  // ELASTICANN_CLIENT_OPS_CMD_H_

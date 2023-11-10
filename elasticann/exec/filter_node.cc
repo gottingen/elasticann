@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,9 +31,6 @@
 #include "rapidjson/prettywriter.h"
 
 namespace EA {
-
-    DECLARE_bool(open_nonboolean_sql_forbid);
-    DECLARE_bool(open_nonboolean_sql_statistics);
 
     int FilterNode::init(const proto::PlanNode &node) {
         int ret = ExecNode::init(node);

@@ -15,7 +15,7 @@
 #ifndef ELASTICANN_ROUTER_ROUTER_SERVICE_H_
 #define ELASTICANN_ROUTER_ROUTER_SERVICE_H_
 
-#include "elasticann/proto/router.interface.pb.h"
+#include "eaproto/router/router.interface.pb.h"
 
 namespace EA {
 
@@ -33,6 +33,16 @@ namespace EA {
                            const ::EA::proto::QueryRequest* request,
                            ::EA::proto::QueryResponse* response,
                            ::google::protobuf::Closure* done) override;
+
+        void ops_manage(::google::protobuf::RpcController* controller,
+                                const ::EA::proto::OpsServiceRequest* request,
+                                ::EA::proto::OpsServiceResponse* response,
+                                ::google::protobuf::Closure* done) override;
+        void ops_query(::google::protobuf::RpcController* controller,
+                               const ::EA::proto::QueryOpsServiceRequest* request,
+                               ::EA::proto::QueryOpsServiceResponse* response,
+                               ::google::protobuf::Closure* done) override;
+
     };
 }  // namespace EA
 

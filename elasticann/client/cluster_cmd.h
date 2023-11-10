@@ -17,6 +17,9 @@
 
 #include "turbo/flags/flags.h"
 #include <string>
+#include "eaproto/router/router.interface.pb.h"
+#include "turbo/format/table.h"
+#include "turbo/base/status.h"
 
 namespace EA::client {
 
@@ -45,6 +48,34 @@ namespace EA::client {
     void run_physical_list_cmd();
 
     void run_physical_info_cmd();
+
+    [[nodiscard]] turbo::Status
+    make_cluster_create_logical(EA::proto::MetaManagerRequest *req);
+    [[nodiscard]] turbo::Status
+    make_cluster_remove_logical(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status make_cluster_create_physical(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_cluster_remove_physical(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_cluster_move_physical(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_cluster_query_logical_list(EA::proto::QueryRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_cluster_query_logical_info(EA::proto::QueryRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_cluster_query_physical_list(EA::proto::QueryRequest *req);
+    [[nodiscard]] turbo::Status
+    make_cluster_query_physical_info(EA::proto::QueryRequest *req);
+
+    turbo::Table show_meta_query_logical_response(const EA::proto::QueryResponse &res);
+
+    turbo::Table show_meta_query_physical_response(const EA::proto::QueryResponse &res);
 
 }  // namespace EA::client
 

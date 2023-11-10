@@ -21,10 +21,9 @@
 #include <unordered_set>
 #include <brpc/channel.h>
 
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
-    DECLARE_string(meta_server_bns);
 
     int64_t get_tso() {
         proto::TsoRequest request;

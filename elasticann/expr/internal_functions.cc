@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,11 +26,7 @@
 #include "turbo/times/civil_time.h"
 
 namespace EA {
-#ifdef BAIKALDB_REVISION
-    DEFINE_string(db_version, "5.7.16-BaikalDB-v"BAIKALDB_REVISION, "db version");
-#else
-    DEFINE_string(db_version, "5.7.16-BaikalDB", "db version");
-#endif
+
     static const int32_t DATE_FORMAT_LENGTH = 128;
     static const std::vector<std::string> day_names = {
             "Sunday", "Monday", "Tuesday", "Wednesday",

@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +20,7 @@
 #include "elasticann/exec/exec_node.h"
 #include "elasticann/exec/fetcher_store.h"
 #include "elasticann/exec/dml_node.h"
-#include "elasticann/proto/optype.pb.h"
+#include "eaproto/common/optype.pb.h"
 
 namespace EA {
     class DmlManagerNode : public ExecNode {

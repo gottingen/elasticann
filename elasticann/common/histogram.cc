@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +16,6 @@
 #include "elasticann/common/histogram.h"
 
 namespace EA {
-    DEFINE_int32(histogram_split_threshold_percent, 50, "histogram_split_threshold default 0.5");
 
     SampleSorter::SampleSorter(std::vector<std::shared_ptr<RowBatch> > &batch_vector, ExprNode *sort_expr) {
         _slot_order_exprs.push_back(sort_expr);

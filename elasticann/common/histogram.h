@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +17,12 @@
 #pragma once
 
 #include "elasticann/common/common.h"
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/protocol/data_buffer.h"
 #include "elasticann/runtime/sorter.h"
 
 namespace EA {
-    DECLARE_int32(expect_bucket_count);
+
     struct BucketInfo {
         int distinct_cnt = 0;
         int bucket_size = 0;

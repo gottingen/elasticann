@@ -219,7 +219,7 @@ include_directories(${ROCKSDB_INCLUDE_DIR})
 
 #message(STATUS "ssl:" ${OPENSSL_SSL_LIBRARY})
 #message(STATUS "crypto:" ${OPENSSL_CRYPTO_LIBRARY})
-
+find_package(eaproto REQUIRED)
 SET(DEP_INC
         ${CMAKE_CURRENT_BINARY_DIR}/proto
 
@@ -247,6 +247,8 @@ set(CARBIN_DEPS_LINK
         ${TURBO_LIBRARIES}
         ${BRAFT_LIBRARIES}
         ${BRPC_LIBRARIES}
+        ${OPENSSL_CRYPTO_LIBRARY}
+        ${OPENSSL_SSL_LIBRARY}
         ${LEVELDB_LIBRARIES}
         ${ROCKSDB_LIBRARIES}
         ${ARROW_LIBRARIES}
@@ -254,11 +256,9 @@ set(CARBIN_DEPS_LINK
         ${ZLIB_LIBRARIES}
         ${GFLAGS_LIBRARIES}
         ${PROTOBUF_LIBRARIES}
-        ${OPENSSL_CRYPTO_LIBRARY}
         ${RE2_LIBRARIES}
         ${BLUEBIRD_LIBRARIES}
         ${LEVELDB_LIBRARIES}
-        ${OPENSSL_SSL_LIBRARY}
         ${CARBIN_SYSTEM_DYLINK}
         )
 

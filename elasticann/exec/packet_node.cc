@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/exec/packet_node.h"
 #include "elasticann/exec/full_export_node.h"
 #include "elasticann/runtime/runtime_state.h"
@@ -22,8 +21,6 @@
 #include "elasticann/exec/scan_node.h"
 
 namespace EA {
-    DEFINE_int32(expect_bucket_count, 100, "expect_bucket_count");
-    DEFINE_bool(field_charsetnr_set_by_client, false, "set charsetnr by client");
 
     int PacketNode::init(const proto::PlanNode &node) {
         int ret = 0;

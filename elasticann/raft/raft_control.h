@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +20,7 @@
 #include <brpc/channel.h>
 #include <brpc/server.h>
 #include <brpc/controller.h>
-#include "elasticann/proto/raft.pb.h"
+#include "eaproto/db/raft.pb.h"
 #include "elasticann/common/common.h"
 
 namespace EA {

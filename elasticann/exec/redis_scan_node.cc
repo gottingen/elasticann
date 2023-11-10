@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +24,6 @@
 #include "elasticann/runtime/runtime_state.h"
 
 namespace EA {
-    DEFINE_string(redis_addr, "127.0.0.1:6379", "redis addr");
 
     int RedisScanNode::init(const proto::PlanNode &node) {
         int ret = 0;

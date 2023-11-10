@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +19,6 @@
 #include "elasticann/session/network_socket.h"
 
 namespace EA {
-    //DEFINE_int32(region_per_batch, 4, "request region number in a batch");
 
     int FullExportNode::init(const proto::PlanNode &node) {
         int ret = 0;

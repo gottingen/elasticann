@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +17,7 @@
 #include "elasticann/protocol/state_machine.h"
 #include "elasticann/protocol/network_server.h"
 #include "elasticann/logical_plan/query_context.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include <rapidjson/reader.h>
 #include <rapidjson/document.h>
 #include "re2/re2.h"
@@ -29,10 +28,8 @@
 namespace EA {
     DEFINE_int32(max_connections_per_user, 4000, "default user max connections");
     DEFINE_int32(query_quota_per_user, 3000, "default user query quota by 1 second");
-    DEFINE_string(log_plat_name, "test", "plat name for print log, distinguish monitor");
     DEFINE_int64(baikal_max_allowed_packet, 268435456LL, "The largest possible packet : 256M");
     DECLARE_int64(print_time_us);
-    DECLARE_string(meta_server_bns);
     DECLARE_int32(baikal_port);
     DECLARE_bool(open_to_collect_slow_query_infos);
     DECLARE_int32(slow_query_timeout_s);

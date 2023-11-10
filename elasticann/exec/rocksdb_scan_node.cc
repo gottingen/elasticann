@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,10 +27,6 @@
 
 namespace EA {
 
-    DEFINE_bool(reverse_seek_first_level, false, "reverse index seek first level, default(false)");
-    DEFINE_bool(scan_use_multi_get, true, "use MultiGet API, default(true)");
-    DEFINE_int32(in_predicate_check_threshold, 4096, "in predicate threshold to check memory, default(4096)");
-    DECLARE_int64(print_time_us);
 
     int RocksdbScanNode::choose_index(RuntimeState *state) {
         // 做完logical plan还没有索引

@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,17 +14,9 @@
 //
 
 
-#include "elasticann/common/meta_server_interact.h"
-#include <gflags/gflags.h>
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
-    DEFINE_int32(meta_request_timeout, 30000,
-                 "meta as server request timeout, default:30000ms");
-    DEFINE_int32(meta_connect_timeout, 5000,
-                 "meta as server connect timeout, default:5000ms");
-    DEFINE_string(meta_server_bns, "group.opera-qa-baikalMeta-000-yz.FENGCHAO.all", "meta server bns");
-    DEFINE_string(backup_meta_server_bns, "", "backup_meta_server_bns");
-    DEFINE_int64(time_between_meta_connect_error_ms, 0, "time_between_meta_connect_error_ms. default(0ms)");
 
     int MetaServerInteract::init(bool is_backup) {
         if (is_backup) {

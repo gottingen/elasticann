@@ -1,7 +1,5 @@
-
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
-//
+// Copyright 2023 The Elastic-AI Authors.
+// part of Elastic AI Search
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,13 +13,12 @@
 // limitations under the License.
 //
 
-
-#include "elasticann/common/store_interact.h"
-#include <gflags/gflags.h>
+#include "elasticann/ops/constants.h"
 
 namespace EA {
-    DEFINE_int32(store_request_timeout, 60000,
-                 "store as server request timeout, default:60000ms");
-    DEFINE_int32(store_connect_timeout, 5000,
-                 "store as server connect timeout, default:5000ms");
-}
+
+    const std::string ServiceConstants::CONFIG_IDENTIFY(1, 0x01);
+    const std::string ServiceConstants::MODEL_IDENTIFY(1, 0x02);
+    const std::string ServiceConstants::PLUGIN_IDENTIFY(1, 0x03);
+    const std::string ServiceConstants::MAX_IDENTIFY(1, 0xFF);
+}  // namespace EA

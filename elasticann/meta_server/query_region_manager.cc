@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +15,7 @@
 
 
 #include "elasticann/meta_server/query_region_manager.h"
-#include "elasticann/common/store_interact.h"
+#include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/query_table_manager.h"
 #include "turbo/strings/str_split.h"
@@ -25,10 +24,6 @@
 #include <cstdint>
 
 namespace EA {
-
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(store_dead_interval_times);
-    DECLARE_int32(region_faulty_interval_times);
 
     void QueryRegionManager::construct_query_region(const proto::RegionInfo *region_info,
                                                     proto::QueryRegion *query_region_info) {

@@ -24,9 +24,6 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include <gflags/gflags.h>
 
-namespace EA {
-    DECLARE_string(db_path);
-}
 class NamespaceManagerTest {
 public:
     NamespaceManagerTest() {

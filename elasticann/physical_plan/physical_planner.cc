@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +18,6 @@
 #include "elasticann/logical_plan/query_context.h"
 
 namespace EA {
-    DEFINE_int32(cmsketch_depth, 5, "cmsketch_depth");
-    DEFINE_int32(cmsketch_width, 2048, "cmsketch_width");
-    DEFINE_int32(sample_rows, 1000000, "sample rows 100w");
 
     int PhysicalPlanner::analyze(QueryContext *ctx) {
         int ret = 0;

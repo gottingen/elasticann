@@ -11,7 +11,7 @@
 #include <ctime>
 #include "elasticann/common/expr_value.h"
 #include "elasticann/expr/fn_manager.h"
-#include "elasticann/proto/expr.pb.h"
+#include "eaproto/db/expr.pb.h"
 #include "elasticann/sqlparser/parser.h"
 #include "qos.h"
 #include <vector>

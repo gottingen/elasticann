@@ -16,6 +16,9 @@
 #define ELASTICANN_CLIENT_NAMESPACE_CMD_H_
 
 #include "turbo/flags/flags.h"
+#include "eaproto/router/router.interface.pb.h"
+#include "turbo/format/table.h"
+#include "turbo/base/status.h"
 #include <string>
 
 namespace EA::client {
@@ -38,6 +41,19 @@ namespace EA::client {
 
     void run_ns_info_cmd();
 
+    [[nodiscard]] turbo::Status
+    make_namespace_create(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_namespace_remove(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_namespace_modify(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_namespace_query(EA::proto::QueryRequest *req);
+
+    turbo::Table show_meta_query_ns_response(const EA::proto::QueryResponse &res);
 }  // namespace EA::client
 
 #endif  // ELASTICANN_CLIENT_NAMESPACE_CMD_H_

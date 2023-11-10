@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +19,14 @@
 #include <unordered_map>
 #include <bthread/mutex.h>
 #include <bitset>
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/meta_server/meta_server.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "turbo/strings/str_split.h"
 
 namespace EA {
-    DECLARE_string(default_logical_room);
-    DECLARE_string(default_physical_room);
-    DECLARE_bool(need_check_slow);
+
     struct InstanceStateInfo {
         int64_t timestamp; //上次收到该实例心跳的时间戳
         proto::Status state; //实例状态
@@ -119,8 +116,19 @@ namespace EA {
                                   proto::MetaManagerResponse *response,
                                   google::protobuf::Closure *done);
 
+        ///
+        /// \brief add logical room for cluster. called by meta_state_machine
+        ///        logical room is a list of value store in rocksdb.
+        /// \param [in] request logical room list store in request.logical_rooms().logical_rooms()
+        /// \param [out] done if and logical room has been already add to cluster, will return fail.
+
         void add_logical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \brief remove logical room for cluster. called by meta_state_machine
+        ///        logical room is a list of value store in rocksdb.
+        /// \param [in] request logical room list store in request.logical_rooms().logical_rooms()
+        /// \param [out] done if and logical room has not been add to cluster, will return fail.
         void drop_logical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
         void add_physical(const proto::MetaManagerRequest &request, braft::Closure *done);
@@ -159,13 +167,6 @@ namespace EA {
         void process_peer_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
                                               proto::StoreHeartBeatResponse *response);
 
-        void process_pk_prefix_load_balance(std::unordered_map<std::string, int64_t> &pk_prefix_region_counts,
-                                            std::unordered_map<int64_t, IdcInfo> &table_balance_idc,
-                                            std::unordered_map<std::string, int64_t> &idc_instance_count,
-                                            std::unordered_map<int64_t, int64_t> &table_add_peer_counts,
-                                            std::unordered_map<std::string, int64_t> &pk_prefix_add_peer_counts,
-                                            std::unordered_map<std::string, int64_t> &pk_prefix_average_counts);
-
         void get_switch(const proto::QueryRequest *request, proto::QueryResponse *response);
 
         void store_healthy_check_function();
@@ -198,471 +199,107 @@ namespace EA {
                                              const int64_t &table_average_count,
                                              bool need_both_below_average = false);
 
-        void auto_network_segments_division(std::string resource_tag);
 
         int load_snapshot();
 
-        bool logical_and_physical_room_valid(const std::string &logical_room, const std::string &physical_room) {
-            BAIDU_SCOPED_LOCK(_physical_mutex);
-            auto logical_iter = _logical_physical_map.find(logical_room);
-            if (logical_iter == _logical_physical_map.end()) {
-                return false;
-            }
-            if (!physical_room.empty()
-                && logical_iter->second.find(physical_room) == logical_iter->second.end()) {
-                return false;
-            }
-            return true;
-        }
+        bool logical_and_physical_room_valid(const std::string &logical_room, const std::string &physical_room);
 
     public:
-        void get_instances(const std::string &resource_tag,
-                           std::set<std::string> &instances) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_resource_tag_instance_map.count(resource_tag) == 1) {
-                instances = _resource_tag_instance_map[resource_tag];
-            }
-        }
+        void process_pk_prefix_load_balance(std::unordered_map<std::string, int64_t> &pk_prefix_region_counts,
+                                            std::unordered_map<int64_t, IdcInfo> &table_balance_idc,
+                                            std::unordered_map<std::string, int64_t> &idc_instance_count,
+                                            std::unordered_map<int64_t, int64_t> &table_add_peer_counts,
+                                            std::unordered_map<std::string, int64_t> &pk_prefix_add_peer_counts,
+                                            std::unordered_map<std::string, int64_t> &pk_prefix_average_counts);
 
-        int64_t get_instance_count(const std::string &resource_tag, const std::string &logical_room) {
-            int64_t count = 0;
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_resource_tag_instance_map.count(resource_tag) == 0) {
-                return count;
-            }
-            for (auto &address: _resource_tag_instance_map[resource_tag]) {
-                if (_instance_info.count(address) == 0) {
-                    continue;
-                }
-                if (_instance_info[address].resource_tag == resource_tag &&
-                    _instance_info[address].logical_room == logical_room &&
-                    (_instance_info[address].instance_status.state == proto::NORMAL ||
-                     _instance_info[address].instance_status.state == proto::FAULTY)) {
-                    ++count;
-                }
-            }
-            return count;
-        }
+        void get_instances(const std::string &resource_tag, std::set<std::string> &instances);
 
-        // 获取同集群、同逻辑机房、同物理机房的store实例数
-        void get_instance_count_for_all_level(const IdcInfo &idc,
-                                              std::unordered_map<std::string, int64_t> &idc_instance_count) {
-            idc_instance_count.clear();
-            int instances_in_resource_tag = 0;
-            int instances_in_logical_room = 0;
-            int instances_in_physical_room = 0;
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_resource_tag_instance_map.count(idc.resource_tag) == 0) {
-                return;
-            }
-            for (auto &address: _resource_tag_instance_map[idc.resource_tag]) {
-                if (_instance_info.count(address) == 0
-                    || _instance_info[address].resource_tag != idc.resource_tag) {
-                    continue;
-                }
-                if (_instance_info[address].instance_status.state != proto::NORMAL
-                    && _instance_info[address].instance_status.state != proto::FAULTY) {
-                    continue;
-                }
-                instances_in_resource_tag++;
-                if (_instance_info[address].logical_room == idc.logical_room) {
-                    instances_in_logical_room++;
-                    if (_instance_info[address].physical_room == idc.physical_room) {
-                        instances_in_physical_room++;
-                    }
-                }
-            }
-            idc_instance_count[idc.resource_tag_level()] = instances_in_resource_tag;
-            idc_instance_count[idc.logical_room_level()] = instances_in_logical_room;
-            idc_instance_count[idc.to_string()] = instances_in_physical_room;
-            return;
-        }
+        int64_t get_instance_count(const std::string &resource_tag, const std::string &logical_room);
 
         int64_t get_instance_count(const std::string &resource_tag,
-                                   std::map<std::string, int64_t> *room_count = nullptr) {
-            int64_t count = 0;
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_resource_tag_instance_map.count(resource_tag) == 0) {
-                return count;
-            }
-            for (auto &address: _resource_tag_instance_map[resource_tag]) {
-                if (_instance_info.count(address) == 0) {
-                    continue;
-                }
-                if (_instance_info[address].resource_tag == resource_tag &&
-                    (_instance_info[address].instance_status.state == proto::NORMAL ||
-                     _instance_info[address].instance_status.state == proto::FAULTY)) {
-                    ++count;
-                    if (room_count != nullptr) {
-                        (*room_count)[_instance_info[address].logical_room]++;
-                    }
-                }
-            }
-            return count;
-        }
+                                   std::map<std::string, int64_t> *room_count = nullptr);
 
-        bool check_resource_tag_exist(const std::string &resource_tag) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            return _resource_tag_instance_map.count(resource_tag) == 1 &&
-                   !_resource_tag_instance_map[resource_tag].empty();
-        }
+        bool check_resource_tag_exist(const std::string &resource_tag);
 
         template<typename RepeatedType>
         void get_resource_tag_count(const RepeatedType &instances, const std::string &resource_tag,
-                                    std::set<std::string> &current_instances) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            for (auto &instance: instances) {
-                if (_instance_info.find(instance) != _instance_info.end()
-                    && _instance_info[instance].resource_tag == resource_tag) {
-                    current_instances.insert(instance);
-                }
-            }
-            return;
-        }
+                                    std::set<std::string> &current_instances);
 
-        int64_t get_instance_pk_prefix_peer_count(const std::string &instance, const std::string &pk_prefix) {
-            DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
-            if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return 0;
-            }
-            auto instance_iter = schedule_info_ptr->find(instance);
-            if (instance_iter == schedule_info_ptr->end()) {
-                return 0;
-            }
-            const InstanceSchedulingInfo &scheduling_info = instance_iter->second;
-            auto pk_iter = scheduling_info.pk_prefix_region_count.find(pk_prefix);
-            if (pk_iter == scheduling_info.pk_prefix_region_count.end()) {
-                return 0;
-            }
-            return pk_iter->second;
-        }
+        int64_t get_instance_pk_prefix_peer_count(const std::string &instance, const std::string &pk_prefix);
 
         // 获取idc维度下pk_prefix对应的peer总数
-        int64_t get_pk_prefix_peer_count(const std::string &pk_prefix_key, const IdcInfo &idc) {
-            int64_t count = 0;
-            DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
-            if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return 0;
-            }
-            for (const auto &instance_schedule_info: *schedule_info_ptr) {
-                if (!instance_schedule_info.second.idc.match(idc)) {
-                    continue;
-                }
-                const InstanceSchedulingInfo &scheduling_info = instance_schedule_info.second;
-                auto pk_iter = scheduling_info.pk_prefix_region_count.find(pk_prefix_key);
-                if (pk_iter != scheduling_info.pk_prefix_region_count.end()) {
-                    count += pk_iter->second;
-                }
-            }
-            return count;
-        }
+        int64_t get_pk_prefix_peer_count(const std::string &pk_prefix_key, const IdcInfo &idc);
 
         // 获取idc维度下对应的总peer总数
-        int64_t get_peer_count(int64_t table_id, const IdcInfo &idc) {
-            int64_t count = 0;
-            DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
-            if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return 0;
-            }
-            for (const auto &instance_schedule_info: *schedule_info_ptr) {
-                const InstanceSchedulingInfo &scheduling_info = instance_schedule_info.second;
-                if (!idc.match(scheduling_info.idc)) {
-                    continue;
-                }
-                auto region_iter = scheduling_info.regions_count_map.find(table_id);
-                if (region_iter != scheduling_info.regions_count_map.end()) {
-                    count += region_iter->second;
-                }
-            }
-            return count;
-        }
+        int64_t get_peer_count(int64_t table_id, const IdcInfo &idc);
 
-        int64_t get_peer_count(int64_t table_id) {
-            int64_t count = 0;
-            DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
-            if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return 0;
-            }
-            for (const auto &instance_schedule_info: *schedule_info_ptr) {
-                const InstanceSchedulingInfo &scheduling_info = instance_schedule_info.second;
-                auto region_iter = scheduling_info.regions_count_map.find(table_id);
-                if (region_iter != scheduling_info.regions_count_map.end()) {
-                    count += region_iter->second;
-                }
-            }
-            return count;
-        }
+        int64_t get_peer_count(int64_t table_id);
 
-        int64_t get_peer_count(const std::string &instance, int64_t table_id) {
-            DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
-            if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return 0;
-            }
-            auto instance_schedule_info = schedule_info_ptr->find(instance);
-            if (instance_schedule_info == schedule_info_ptr->end()) {
-                return 0;
-            }
-            const InstanceSchedulingInfo &scheduling_info = instance_schedule_info->second;
-            auto count_iter = scheduling_info.regions_count_map.find(table_id);
-            if (count_iter == scheduling_info.regions_count_map.end()) {
-                return 0;
-            }
-            return count_iter->second;
-        }
+        int64_t get_peer_count(const std::string &instance, int64_t table_id);
 
-        void sub_peer_count(const std::string &instance, int64_t table_id) {
-            auto call_func = [instance, table_id](
-                    std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
-                scheduling_info[instance].regions_count_map[table_id]--;
-                return 1;
-            };
-            _scheduling_info.Modify(call_func);
-        }
+        void sub_peer_count(const std::string &instance, int64_t table_id);
 
-        void sub_peer_count_on_pk_prefix(const std::string &instance, int64_t table_id, const std::string &pk_prefix) {
-            auto call_func = [instance, table_id, pk_prefix](
-                    std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
-                scheduling_info[instance].regions_count_map[table_id]--;
-                scheduling_info[instance].pk_prefix_region_count[pk_prefix]--;
-                return 1;
-            };
-            _scheduling_info.Modify(call_func);
-        }
+        void sub_peer_count_on_pk_prefix(const std::string &instance, int64_t table_id, const std::string &pk_prefix);
 
-        void add_peer_count(const std::string &instance, int64_t table_id) {
-            auto call_func = [instance, table_id](
-                    std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
-                scheduling_info[instance].regions_count_map[table_id]++;
-                return 1;
-            };
-            _scheduling_info.Modify(call_func);
-        }
-
-        void add_peer_count_on_pk_prefix(const std::string &instance, int64_t table_id, const std::string &pk_prefix) {
-            auto call_func = [instance, table_id, pk_prefix](
-                    std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
-                scheduling_info[instance].regions_count_map[table_id]++;
-                scheduling_info[instance].pk_prefix_region_count[pk_prefix]++;
-                return 1;
-            };
-            _scheduling_info.Modify(call_func);
-        }
 
         //切主时主动调用，恢复状态为正常
-        void reset_instance_status() {
-            auto call_func = [](std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
-                for (auto &instance_info: scheduling_info) {
-                    instance_info.second.pk_prefix_region_count = std::unordered_map<std::string, int64_t>{};
-                    instance_info.second.regions_count_map = std::unordered_map<int64_t, int64_t>{};
-                    instance_info.second.regions_map = std::unordered_map<int64_t, std::vector<int64_t>>{};
-                }
-                return 1;
-            };
-            _scheduling_info.Modify(call_func);
+        void reset_instance_status();
 
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            for (auto &instance_pair: _instance_info) {
-                instance_pair.second.instance_status.state = proto::NORMAL;
-                instance_pair.second.instance_status.timestamp = butil::gettimeofday_us();
-                instance_pair.second.instance_status.state_duration.reset();
-            }
-        }
+        proto::Status get_instance_status(std::string instance);
 
-        proto::Status get_instance_status(std::string instance) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_instance_info.find(instance) == _instance_info.end()) {
-                return proto::NORMAL;
-            }
-            return _instance_info[instance].instance_status.state;
-        }
+        Instance get_instance(const std::string &instance);
 
-        Instance get_instance(std::string instance) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_instance_info.find(instance) == _instance_info.end()) {
-                return Instance();
-            }
-            return _instance_info[instance];
-        }
+        void get_instance_by_resource_tags(std::map<std::string, std::vector<Instance>> &instances);
 
-        void get_instance_by_resource_tags(std::map<std::string, std::vector<Instance>> &instances) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            for (auto &iter: _instance_info) {
-                instances[iter.second.resource_tag].emplace_back(iter.second);
-            }
-        }
-
-        bool get_resource_tag(const std::string &instance, std::string &resource_tag) {
-            DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
-            if (_scheduling_info.Read(&info_iter) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return false;
-            }
-            auto iter = info_iter->find(instance);
-            if (iter != info_iter->end()) {
-                resource_tag = iter->second.idc.resource_tag;
-                return true;
-            }
-            return false;
-        }
+        bool get_resource_tag(const std::string &instance, std::string &resource_tag);
 
         // 获取一个region所有peer的机房信息, instance->idcInfo
         int get_instances_idc_info(const ::google::protobuf::RepeatedPtrField<::std::string> &peers,
-                                   std::unordered_map<std::string, IdcInfo> &peer_dist_info) {
-            int ret = 0;
-            DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
-            if (_scheduling_info.Read(&info_iter) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return -2;
-            }
-            for (const auto &peer: peers) {
-                auto iter = info_iter->find(peer);
-                if (iter == info_iter->end()) {
-                    peer_dist_info[peer] = IdcInfo();
-                    ret = -1;
-                } else {
-                    peer_dist_info[peer] = iter->second.idc;
-                }
-            }
-            return ret;
-        }
+                                   std::unordered_map<std::string, IdcInfo> &peer_dist_info);
 
-        bool instance_exist(std::string instance) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_instance_info.find(instance) == _instance_info.end()) {
-                return false;
-            }
-            return true;
-        }
+        bool instance_exist(std::string instance);
+
+        void set_meta_state_machine(MetaStateMachine *meta_state_machine);
+
+        int get_instance_idc(const std::string &instance, IdcInfo &idc);
+
+
+    private:
+        void auto_network_segments_division(std::string resource_tag);
+
+        // 获取同集群、同逻辑机房、同物理机房的store实例数
+        void get_instance_count_for_all_level(const IdcInfo &idc,
+                                              std::unordered_map<std::string, int64_t> &idc_instance_count);
+
+        void add_peer_count(const std::string &instance, int64_t table_id);
+
+        void add_peer_count_on_pk_prefix(const std::string &instance, int64_t table_id, const std::string &pk_prefix);
 
         void set_instance_regions(const std::string &instance,
                                   const std::unordered_map<int64_t, std::vector<int64_t>> &instance_regions,
                                   const std::unordered_map<int64_t, int64_t> &instance_regions_count,
-                                  const std::unordered_map<std::string, int64_t> &pk_prefix_region_counts) {
-            auto call_func = [&instance_regions, &instance_regions_count, &pk_prefix_region_counts](
-                    std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info,
-                    const std::string &instance) -> int {
-                scheduling_info[instance].regions_map = instance_regions;
-                scheduling_info[instance].regions_count_map = instance_regions_count;
-                scheduling_info[instance].pk_prefix_region_count = pk_prefix_region_counts;
-                return 1;
-            };
-            _scheduling_info.Modify(call_func, instance);
-        }
-
+                                  const std::unordered_map<std::string, int64_t> &pk_prefix_region_counts);
         // return -1: add instance -2: update instance
         int update_instance_info(const proto::InstanceInfo &instance_info);
+        int set_migrate_for_instance(const std::string &instance);
+        int set_status_for_instance(const std::string &instance, const proto::Status &status);
 
-        int set_migrate_for_instance(const std::string &instance) {
-            return set_status_for_instance(instance, proto::MIGRATE);
-        }
+        static std::string get_ip_bit_set(const std::string &address, int prefix);
 
-        int set_status_for_instance(const std::string &instance, const proto::Status &status) {
-            BAIDU_SCOPED_LOCK(_instance_mutex);
-            if (_instance_info.find(instance) == _instance_info.end()) {
-                return -1;
-            }
-            if (_instance_info[instance].instance_status.state != status) {
-                _instance_info[instance].instance_status.state = status;
-                _instance_info[instance].instance_status.state_duration.reset();
-            }
-            return 0;
-        }
+        static std::string get_ip(const std::string &instance);
 
-        void set_meta_state_machine(MetaStateMachine *meta_state_machine) {
-            _meta_state_machine = meta_state_machine;
-        }
+        ClusterManager();
 
-        int get_instance_idc(const std::string &instance, IdcInfo &idc) {
-            DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
-            if (_scheduling_info.Read(&info_iter) != 0) {
-                TLOG_WARN("read double_buffer_table error.");
-                return -1;
-            }
-            auto iter = info_iter->find(instance);
-            if (iter == info_iter->end()) {
-                return -1;
-            }
-            idc = iter->second.idc;
-            return 0;
-        }
+        bool is_legal_for_select_instance(const IdcInfo &idc, const std::string &candicate_instance,
+                                          const std::set<std::string> &exclude_stores);
 
-        static std::string get_ip(const std::string &instance) {
-            std::string ip = "";
-            std::string::size_type position = instance.find_first_of(":");
-            if (position != instance.npos) {
-                return instance.substr(0, position);
-            }
-            TLOG_ERROR("find instance: {} ip error", instance);
-            return "";
-        }
+        std::string construct_logical_key();
 
-        static std::string get_ip_bit_set(const std::string &address, int prefix) {
-            std::string ip, ip_set;
-            std::string::size_type position = address.find_first_of(':');
-            if (position == std::string::npos) {
-                return "";
-            }
-            ip = address.substr(0, position);
-            std::vector<std::string> split_num = turbo::StrSplit(ip, '.',turbo::SkipEmpty());
-            for (auto &num_str: split_num) {
-                int64_t num = strtoll(num_str.c_str(), nullptr, 10);
-                std::bitset<8> num_bitset = num;
-                ip_set += num_bitset.to_string();
-            }
-            return ip_set.substr(0, prefix);
-        }
+        std::string construct_physical_key(const std::string &logical_key);
 
-    private:
-        ClusterManager() {
-            bthread_mutex_init(&_physical_mutex, nullptr);
-            bthread_mutex_init(&_instance_mutex, nullptr);
-            bthread_mutex_init(&_instance_param_mutex, nullptr);
-            {
-                BAIDU_SCOPED_LOCK(_physical_mutex);
-                _physical_info[FLAGS_default_physical_room] =
-                        FLAGS_default_logical_room;
-                _logical_physical_map[FLAGS_default_logical_room] =
-                        std::set<std::string>{FLAGS_default_physical_room};
-            }
-            {
-                BAIDU_SCOPED_LOCK(_instance_mutex);
-                _physical_instance_map[FLAGS_default_logical_room] = std::set<std::string>();
-            }
-        }
+        std::string construct_instance_key(const std::string &instance);
 
-        bool is_legal_for_select_instance(
-                const IdcInfo &idc,
-                const std::string &candicate_instance,
-                const std::set<std::string> &exclude_stores);
-
-        std::string construct_logical_key() {
-            return MetaServer::CLUSTER_IDENTIFY
-                   + MetaServer::LOGICAL_CLUSTER_IDENTIFY
-                   + MetaServer::LOGICAL_KEY;
-        }
-
-        std::string construct_physical_key(const std::string &logical_key) {
-            return MetaServer::CLUSTER_IDENTIFY
-                   + MetaServer::PHYSICAL_CLUSTER_IDENTIFY
-                   + logical_key;
-        }
-
-        std::string construct_instance_key(const std::string &instance) {
-            return MetaServer::CLUSTER_IDENTIFY
-                   + MetaServer::INSTANCE_CLUSTER_IDENTIFY
-                   + instance;
-        }
-
-        std::string construct_instance_param_key(const std::string &resource_tag_or_address) {
-            return MetaServer::CLUSTER_IDENTIFY
-                   + MetaServer::INSTANCE_PARAM_CLUSTER_IDENTIFY
-                   + resource_tag_or_address;
-        }
+        std::string construct_instance_param_key(const std::string &resource_tag_or_address);
 
         int load_instance_snapshot(const std::string &instance_prefix,
                                    const std::string &key,
@@ -680,20 +317,7 @@ namespace EA {
                                   const std::string &key,
                                   const std::string &value);
 
-        int get_meta_param(const std::string &resource_tag, const std::string &key, int64_t *value) {
-            BAIDU_SCOPED_LOCK(_instance_param_mutex);
-            auto iter = _instance_param_map.find(resource_tag);
-            if (iter == _instance_param_map.end()) {
-                return -1;
-            }
-            for (auto &param: iter->second.params()) {
-                if (param.is_meta_param() && param.key() == key) {
-                    *value = strtoll(param.value().c_str(), nullptr, 10);
-                    return 0;
-                }
-            }
-            return -1;
-        }
+        int get_meta_param(const std::string &resource_tag, const std::string &key, int64_t *value);
 
     private:
         bthread_mutex_t _physical_mutex;
@@ -735,5 +359,476 @@ namespace EA {
         std::unordered_map<std::string, size_t> _resource_tag_rolling_position;
     }; //class ClusterManager
 
+
+    ///
+    /// inlines
+    ///
+
+    inline bool
+    ClusterManager::logical_and_physical_room_valid(const std::string &logical_room, const std::string &physical_room) {
+        BAIDU_SCOPED_LOCK(_physical_mutex);
+        auto logical_iter = _logical_physical_map.find(logical_room);
+        if (logical_iter == _logical_physical_map.end()) {
+            return false;
+        }
+        if (!physical_room.empty()
+            && logical_iter->second.find(physical_room) == logical_iter->second.end()) {
+            return false;
+        }
+        return true;
+    }
+
+    inline void ClusterManager::get_instances(const std::string &resource_tag,
+                                              std::set<std::string> &instances) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_resource_tag_instance_map.count(resource_tag) == 1) {
+            instances = _resource_tag_instance_map[resource_tag];
+        }
+    }
+
+    inline int64_t
+    ClusterManager::get_instance_count(const std::string &resource_tag, const std::string &logical_room) {
+        int64_t count = 0;
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_resource_tag_instance_map.count(resource_tag) == 0) {
+            return count;
+        }
+        for (auto &address: _resource_tag_instance_map[resource_tag]) {
+            if (_instance_info.count(address) == 0) {
+                continue;
+            }
+            if (_instance_info[address].resource_tag == resource_tag &&
+                _instance_info[address].logical_room == logical_room &&
+                (_instance_info[address].instance_status.state == proto::NORMAL ||
+                 _instance_info[address].instance_status.state == proto::FAULTY)) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    inline void ClusterManager::get_instance_count_for_all_level(const IdcInfo &idc,
+                                                                 std::unordered_map<std::string, int64_t> &idc_instance_count) {
+        idc_instance_count.clear();
+        int instances_in_resource_tag = 0;
+        int instances_in_logical_room = 0;
+        int instances_in_physical_room = 0;
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_resource_tag_instance_map.count(idc.resource_tag) == 0) {
+            return;
+        }
+        for (auto &address: _resource_tag_instance_map[idc.resource_tag]) {
+            if (_instance_info.count(address) == 0
+                || _instance_info[address].resource_tag != idc.resource_tag) {
+                continue;
+            }
+            if (_instance_info[address].instance_status.state != proto::NORMAL
+                && _instance_info[address].instance_status.state != proto::FAULTY) {
+                continue;
+            }
+            instances_in_resource_tag++;
+            if (_instance_info[address].logical_room == idc.logical_room) {
+                instances_in_logical_room++;
+                if (_instance_info[address].physical_room == idc.physical_room) {
+                    instances_in_physical_room++;
+                }
+            }
+        }
+        idc_instance_count[idc.resource_tag_level()] = instances_in_resource_tag;
+        idc_instance_count[idc.logical_room_level()] = instances_in_logical_room;
+        idc_instance_count[idc.to_string()] = instances_in_physical_room;
+        return;
+    }
+
+    inline int64_t ClusterManager::get_instance_count(const std::string &resource_tag,
+                                                      std::map<std::string, int64_t> *room_count) {
+        int64_t count = 0;
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_resource_tag_instance_map.count(resource_tag) == 0) {
+            return count;
+        }
+        for (auto &address: _resource_tag_instance_map[resource_tag]) {
+            if (_instance_info.count(address) == 0) {
+                continue;
+            }
+            if (_instance_info[address].resource_tag == resource_tag &&
+                (_instance_info[address].instance_status.state == proto::NORMAL ||
+                 _instance_info[address].instance_status.state == proto::FAULTY)) {
+                ++count;
+                if (room_count != nullptr) {
+                    (*room_count)[_instance_info[address].logical_room]++;
+                }
+            }
+        }
+        return count;
+    }
+
+    inline bool ClusterManager::check_resource_tag_exist(const std::string &resource_tag) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        return _resource_tag_instance_map.count(resource_tag) == 1 &&
+               !_resource_tag_instance_map[resource_tag].empty();
+    }
+
+    template<typename RepeatedType>
+    inline void ClusterManager::get_resource_tag_count(const RepeatedType &instances, const std::string &resource_tag,
+                                                       std::set<std::string> &current_instances) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        for (auto &instance: instances) {
+            if (_instance_info.find(instance) != _instance_info.end()
+                && _instance_info[instance].resource_tag == resource_tag) {
+                current_instances.insert(instance);
+            }
+        }
+        return;
+    }
+
+    inline int64_t
+    ClusterManager::get_instance_pk_prefix_peer_count(const std::string &instance, const std::string &pk_prefix) {
+        DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
+        if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return 0;
+        }
+        auto instance_iter = schedule_info_ptr->find(instance);
+        if (instance_iter == schedule_info_ptr->end()) {
+            return 0;
+        }
+        const InstanceSchedulingInfo &scheduling_info = instance_iter->second;
+        auto pk_iter = scheduling_info.pk_prefix_region_count.find(pk_prefix);
+        if (pk_iter == scheduling_info.pk_prefix_region_count.end()) {
+            return 0;
+        }
+        return pk_iter->second;
+    }
+
+    inline int64_t ClusterManager::get_pk_prefix_peer_count(const std::string &pk_prefix_key, const IdcInfo &idc) {
+        int64_t count = 0;
+        DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
+        if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return 0;
+        }
+        for (const auto &instance_schedule_info: *schedule_info_ptr) {
+            if (!instance_schedule_info.second.idc.match(idc)) {
+                continue;
+            }
+            const InstanceSchedulingInfo &scheduling_info = instance_schedule_info.second;
+            auto pk_iter = scheduling_info.pk_prefix_region_count.find(pk_prefix_key);
+            if (pk_iter != scheduling_info.pk_prefix_region_count.end()) {
+                count += pk_iter->second;
+            }
+        }
+        return count;
+    }
+
+    inline int64_t ClusterManager::get_peer_count(int64_t table_id, const IdcInfo &idc) {
+        int64_t count = 0;
+        DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
+        if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return 0;
+        }
+        for (const auto &instance_schedule_info: *schedule_info_ptr) {
+            const InstanceSchedulingInfo &scheduling_info = instance_schedule_info.second;
+            if (!idc.match(scheduling_info.idc)) {
+                continue;
+            }
+            auto region_iter = scheduling_info.regions_count_map.find(table_id);
+            if (region_iter != scheduling_info.regions_count_map.end()) {
+                count += region_iter->second;
+            }
+        }
+        return count;
+    }
+
+    inline int64_t ClusterManager::get_peer_count(int64_t table_id) {
+        int64_t count = 0;
+        DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
+        if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return 0;
+        }
+        for (const auto &instance_schedule_info: *schedule_info_ptr) {
+            const InstanceSchedulingInfo &scheduling_info = instance_schedule_info.second;
+            auto region_iter = scheduling_info.regions_count_map.find(table_id);
+            if (region_iter != scheduling_info.regions_count_map.end()) {
+                count += region_iter->second;
+            }
+        }
+        return count;
+    }
+
+    inline int64_t ClusterManager::get_peer_count(const std::string &instance, int64_t table_id) {
+        DoubleBufferedSchedulingInfo::ScopedPtr schedule_info_ptr;
+        if (_scheduling_info.Read(&schedule_info_ptr) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return 0;
+        }
+        auto instance_schedule_info = schedule_info_ptr->find(instance);
+        if (instance_schedule_info == schedule_info_ptr->end()) {
+            return 0;
+        }
+        const InstanceSchedulingInfo &scheduling_info = instance_schedule_info->second;
+        auto count_iter = scheduling_info.regions_count_map.find(table_id);
+        if (count_iter == scheduling_info.regions_count_map.end()) {
+            return 0;
+        }
+        return count_iter->second;
+    }
+
+    inline void ClusterManager::sub_peer_count(const std::string &instance, int64_t table_id) {
+        auto call_func = [instance, table_id](
+                std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
+            scheduling_info[instance].regions_count_map[table_id]--;
+            return 1;
+        };
+        _scheduling_info.Modify(call_func);
+    }
+
+    inline void ClusterManager::sub_peer_count_on_pk_prefix(const std::string &instance, int64_t table_id,
+                                                            const std::string &pk_prefix) {
+        auto call_func = [instance, table_id, pk_prefix](
+                std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
+            scheduling_info[instance].regions_count_map[table_id]--;
+            scheduling_info[instance].pk_prefix_region_count[pk_prefix]--;
+            return 1;
+        };
+        _scheduling_info.Modify(call_func);
+    }
+
+    inline void ClusterManager::add_peer_count(const std::string &instance, int64_t table_id) {
+        auto call_func = [instance, table_id](
+                std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
+            scheduling_info[instance].regions_count_map[table_id]++;
+            return 1;
+        };
+        _scheduling_info.Modify(call_func);
+    }
+
+    inline void ClusterManager::add_peer_count_on_pk_prefix(const std::string &instance, int64_t table_id,
+                                                            const std::string &pk_prefix) {
+        auto call_func = [instance, table_id, pk_prefix](
+                std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
+            scheduling_info[instance].regions_count_map[table_id]++;
+            scheduling_info[instance].pk_prefix_region_count[pk_prefix]++;
+            return 1;
+        };
+        _scheduling_info.Modify(call_func);
+    }
+
+    inline void ClusterManager::reset_instance_status() {
+        auto call_func = [](std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info) -> int {
+            for (auto &instance_info: scheduling_info) {
+                instance_info.second.pk_prefix_region_count = std::unordered_map<std::string, int64_t>{};
+                instance_info.second.regions_count_map = std::unordered_map<int64_t, int64_t>{};
+                instance_info.second.regions_map = std::unordered_map<int64_t, std::vector<int64_t>>{};
+            }
+            return 1;
+        };
+        _scheduling_info.Modify(call_func);
+
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        for (auto &instance_pair: _instance_info) {
+            instance_pair.second.instance_status.state = proto::NORMAL;
+            instance_pair.second.instance_status.timestamp = butil::gettimeofday_us();
+            instance_pair.second.instance_status.state_duration.reset();
+        }
+    }
+
+    inline proto::Status ClusterManager::get_instance_status(std::string instance) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_instance_info.find(instance) == _instance_info.end()) {
+            return proto::NORMAL;
+        }
+        return _instance_info[instance].instance_status.state;
+    }
+
+    inline Instance ClusterManager::get_instance(const std::string &instance) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_instance_info.find(instance) == _instance_info.end()) {
+            return Instance();
+        }
+        return _instance_info[instance];
+    }
+
+    inline void ClusterManager::get_instance_by_resource_tags(std::map<std::string, std::vector<Instance>> &instances) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        for (auto &iter: _instance_info) {
+            instances[iter.second.resource_tag].emplace_back(iter.second);
+        }
+    }
+
+    inline bool ClusterManager::get_resource_tag(const std::string &instance, std::string &resource_tag) {
+        DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
+        if (_scheduling_info.Read(&info_iter) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return false;
+        }
+        auto iter = info_iter->find(instance);
+        if (iter != info_iter->end()) {
+            resource_tag = iter->second.idc.resource_tag;
+            return true;
+        }
+        return false;
+    }
+
+    inline int ClusterManager::get_instances_idc_info(const ::google::protobuf::RepeatedPtrField<::std::string> &peers,
+                                                      std::unordered_map<std::string, IdcInfo> &peer_dist_info) {
+        int ret = 0;
+        DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
+        if (_scheduling_info.Read(&info_iter) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return -2;
+        }
+        for (const auto &peer: peers) {
+            auto iter = info_iter->find(peer);
+            if (iter == info_iter->end()) {
+                peer_dist_info[peer] = IdcInfo();
+                ret = -1;
+            } else {
+                peer_dist_info[peer] = iter->second.idc;
+            }
+        }
+        return ret;
+    }
+
+    inline bool ClusterManager::instance_exist(std::string instance) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_instance_info.find(instance) == _instance_info.end()) {
+            return false;
+        }
+        return true;
+    }
+
+    inline void ClusterManager::set_instance_regions(const std::string &instance,
+                                                     const std::unordered_map<int64_t, std::vector<int64_t>> &instance_regions,
+                                                     const std::unordered_map<int64_t, int64_t> &instance_regions_count,
+                                                     const std::unordered_map<std::string, int64_t> &pk_prefix_region_counts) {
+        auto call_func = [&instance_regions, &instance_regions_count, &pk_prefix_region_counts](
+                std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info,
+                const std::string &instance) -> int {
+            scheduling_info[instance].regions_map = instance_regions;
+            scheduling_info[instance].regions_count_map = instance_regions_count;
+            scheduling_info[instance].pk_prefix_region_count = pk_prefix_region_counts;
+            return 1;
+        };
+        _scheduling_info.Modify(call_func, instance);
+    }
+
+    inline int ClusterManager::set_migrate_for_instance(const std::string &instance) {
+        return set_status_for_instance(instance, proto::MIGRATE);
+    }
+
+    inline int ClusterManager::set_status_for_instance(const std::string &instance, const proto::Status &status) {
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        if (_instance_info.find(instance) == _instance_info.end()) {
+            return -1;
+        }
+        if (_instance_info[instance].instance_status.state != status) {
+            _instance_info[instance].instance_status.state = status;
+            _instance_info[instance].instance_status.state_duration.reset();
+        }
+        return 0;
+    }
+
+    inline void ClusterManager::set_meta_state_machine(MetaStateMachine *meta_state_machine) {
+        _meta_state_machine = meta_state_machine;
+    }
+
+    inline int ClusterManager::get_instance_idc(const std::string &instance, IdcInfo &idc) {
+        DoubleBufferedSchedulingInfo::ScopedPtr info_iter;
+        if (_scheduling_info.Read(&info_iter) != 0) {
+            TLOG_WARN("read double_buffer_table error.");
+            return -1;
+        }
+        auto iter = info_iter->find(instance);
+        if (iter == info_iter->end()) {
+            return -1;
+        }
+        idc = iter->second.idc;
+        return 0;
+    }
+
+    inline std::string ClusterManager::get_ip(const std::string &instance) {
+        std::string ip = "";
+        std::string::size_type position = instance.find_first_of(":");
+        if (position != instance.npos) {
+            return instance.substr(0, position);
+        }
+        TLOG_ERROR("find instance: {} ip error", instance);
+        return "";
+    }
+
+    inline std::string ClusterManager::get_ip_bit_set(const std::string &address, int prefix) {
+        std::string ip, ip_set;
+        std::string::size_type position = address.find_first_of(':');
+        if (position == std::string::npos) {
+            return "";
+        }
+        ip = address.substr(0, position);
+        std::vector<std::string> split_num = turbo::StrSplit(ip, '.', turbo::SkipEmpty());
+        for (auto &num_str: split_num) {
+            int64_t num = strtoll(num_str.c_str(), nullptr, 10);
+            std::bitset<8> num_bitset = num;
+            ip_set += num_bitset.to_string();
+        }
+        return ip_set.substr(0, prefix);
+    }
+
+    inline ClusterManager::ClusterManager() {
+        bthread_mutex_init(&_physical_mutex, nullptr);
+        bthread_mutex_init(&_instance_mutex, nullptr);
+        bthread_mutex_init(&_instance_param_mutex, nullptr);
+        {
+            BAIDU_SCOPED_LOCK(_physical_mutex);
+            _physical_info[FLAGS_default_physical_room] =
+                    FLAGS_default_logical_room;
+            _logical_physical_map[FLAGS_default_logical_room] =
+                    std::set<std::string>{FLAGS_default_physical_room};
+        }
+        {
+            BAIDU_SCOPED_LOCK(_instance_mutex);
+            _physical_instance_map[FLAGS_default_logical_room] = std::set<std::string>();
+        }
+    }
+
+    inline std::string ClusterManager::construct_logical_key() {
+        return MetaServer::CLUSTER_IDENTIFY
+               + MetaServer::LOGICAL_CLUSTER_IDENTIFY
+               + MetaServer::LOGICAL_KEY;
+    }
+
+    inline std::string ClusterManager::construct_physical_key(const std::string &logical_key) {
+        return MetaServer::CLUSTER_IDENTIFY
+               + MetaServer::PHYSICAL_CLUSTER_IDENTIFY
+               + logical_key;
+    }
+
+    inline std::string ClusterManager::construct_instance_key(const std::string &instance) {
+        return MetaServer::CLUSTER_IDENTIFY
+               + MetaServer::INSTANCE_CLUSTER_IDENTIFY
+               + instance;
+    }
+
+    inline std::string ClusterManager::construct_instance_param_key(const std::string &resource_tag_or_address) {
+        return MetaServer::CLUSTER_IDENTIFY
+               + MetaServer::INSTANCE_PARAM_CLUSTER_IDENTIFY
+               + resource_tag_or_address;
+    }
+
+    inline int ClusterManager::get_meta_param(const std::string &resource_tag, const std::string &key, int64_t *value) {
+        BAIDU_SCOPED_LOCK(_instance_param_mutex);
+        auto iter = _instance_param_map.find(resource_tag);
+        if (iter == _instance_param_map.end()) {
+            return -1;
+        }
+        for (auto &param: iter->second.params()) {
+            if (param.is_meta_param() && param.key() == key) {
+                *value = strtoll(param.value().c_str(), nullptr, 10);
+                return 0;
+            }
+        }
+        return -1;
+    }
 }//namespace
 

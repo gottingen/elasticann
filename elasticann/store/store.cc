@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,56 +38,6 @@
 #include "turbo/strings/str_split.h"
 
 namespace EA {
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(balance_periodicity);
-    DECLARE_string(stable_uri);
-    DECLARE_string(snapshot_uri);
-    DEFINE_int64(reverse_merge_interval_us, 2 * 1000 * 1000, "reverse_merge_interval(2 s)");
-    DEFINE_int64(ttl_remove_interval_s, 24 * 3600, "ttl_remove_interval_s(24h)");
-    DEFINE_string(ttl_remove_interval_period, "", "ttl_remove_interval_period hour(0-23)");
-    DEFINE_int64(delay_remove_region_interval_s, 600, "delay_remove_region_interval");
-//DEFINE_int32(update_status_interval_us, 2 * 1000 * 1000,  "update_status_interval(2 s)");
-    DEFINE_int32(store_port, 8110, "Server port");
-    DEFINE_string(db_path, "./rocks_db", "rocksdb path");
-    DEFINE_string(resource_tag, "", "resource tag");
-    DEFINE_int32(update_used_size_interval_us, 10 * 1000 * 1000, "update used size interval (10 s)");
-    DEFINE_int32(init_region_concurrency, 10, "init region concurrency when start");
-    DEFINE_int32(split_threshold, 150, "split_threshold, default: 150% * region_size / 100");
-    DEFINE_int64(min_split_lines, 200000, "min_split_lines, protected when wrong param put in table");
-    DEFINE_int64(flush_region_interval_us, 10 * 60 * 1000 * 1000LL,
-                 "flush region interval, default(10 min)");
-    DEFINE_int64(transaction_clear_interval_ms, 5000LL,
-                 "transaction clear interval, default(5s)");
-    DEFINE_int64(binlog_timeout_check_ms, 10 * 1000LL,
-                 "binlog timeout check interval, default(10s)");
-    DEFINE_int64(binlog_fake_ms, 1 * 1000LL,
-                 "fake binlog interval, default(1s)");
-    DEFINE_int64(oldest_binlog_ts_interval_s, 3600LL,
-                 "oldest_binlog_ts_interval_s, default(1h)");
-    DECLARE_int64(flush_memtable_interval_us);
-    DEFINE_int32(max_split_concurrency, 2, "max split region concurrency, default:2");
-    DEFINE_int64(none_region_merge_interval_us, 5 * 60 * 1000 * 1000LL,
-                 "none region merge interval, default(5 min)");
-    DEFINE_int64(region_delay_remove_timeout_s, 3600 * 24LL,
-                 "region_delay_remove_time_s, default(1d)");
-    DEFINE_bool(use_approximate_size, true,
-                "use_approximate_size");
-    DEFINE_bool(use_approximate_size_to_split, false,
-                "if approximate_size > 512M, then split");
-    DEFINE_int64(gen_tso_interval_us, 500 * 1000LL, "gen_tso_interval_us, default(500ms)");
-    DEFINE_int64(gen_tso_count, 100, "gen_tso_count, default(500)");
-    DEFINE_int64(rocks_cf_flush_remove_range_times, 10, "rocks_cf_flush_remove_range_times, default(10)");
-    DEFINE_int64(rocks_force_flush_max_wals, 100, "rocks_force_flush_max_wals, default(100)");
-    DEFINE_string(network_segment, "", "network segment of store set by user");
-    DEFINE_string(container_id, "", "container_id for zoombie instance");
-    DEFINE_int32(rocksdb_perf_level, rocksdb::kDisable, "rocksdb_perf_level");
-    DEFINE_bool(stop_ttl_data, false, "stop ttl data");
-    DEFINE_int64(check_peer_delay_min, 1, "check peer delay min");
-    DECLARE_bool(store_rocks_hang_check);
-    DECLARE_int32(store_rocks_hang_check_timeout_s);
-    DECLARE_int32(store_rocks_hang_cnt_limit);
-
-    BRPC_VALIDATE_GFLAG(rocksdb_perf_level, brpc::NonNegativeInteger);
 
     Store::~Store() {
         bthread_mutex_destroy(&_param_mutex);
@@ -113,15 +62,15 @@ namespace EA {
             TLOG_ERROR("get physical room fail");
             return -1;
         }
-        turbo::Trim(&FLAGS_resource_tag);
-        _resource_tag = FLAGS_resource_tag;
+        turbo::Trim(&FLAGS_store_resource_tag);
+        _resource_tag = FLAGS_store_resource_tag;
         // init rocksdb handler
         _rocksdb = RocksWrapper::get_instance();
         if (!_rocksdb) {
             TLOG_ERROR("create rocksdb handler failed");
             return -1;
         }
-        int32_t res = _rocksdb->init(FLAGS_db_path);
+        int32_t res = _rocksdb->init(FLAGS_store_db_path);
         if (res != 0) {
             TLOG_ERROR("rocksdb init failed: code:{}", res);
             return -1;
@@ -252,7 +201,7 @@ namespace EA {
         //开始上报心跳线程
         _heart_beat_bth.run([this]() { heart_beat_thread(); });
         TimeCost step_time_cost;
-        ConcurrencyBthread init_bth(FLAGS_init_region_concurrency);
+        ConcurrencyBthread init_bth(FLAGS_store_init_region_concurrency);
         //从本地的rocksdb中恢复该机器上有哪些实例
         for (auto &region_id: init_region_ids) {
             auto init_call = [this, region_id]() {
@@ -543,15 +492,15 @@ namespace EA {
                       google::protobuf::Closure *done) {
         bthread_usleep(20);
         static thread_local TimeCost last_perf;
-        if (FLAGS_rocksdb_perf_level > rocksdb::kDisable && last_perf.get_time() > 1000 * 1000) {
+        if (FLAGS_store_rocksdb_perf_level > rocksdb::kDisable && last_perf.get_time() > 1000 * 1000) {
             TLOG_WARN("perf_context:{}", rocksdb::get_perf_context()->ToString(true).c_str());
             TLOG_WARN("iostats_context:{}", rocksdb::get_iostats_context()->ToString(true).c_str());
-            rocksdb::SetPerfLevel((rocksdb::PerfLevel) FLAGS_rocksdb_perf_level);
+            rocksdb::SetPerfLevel((rocksdb::PerfLevel) FLAGS_store_rocksdb_perf_level);
             rocksdb::get_perf_context()->Reset();
             rocksdb::get_iostats_context()->Reset();
             last_perf.reset();
         }
-        if (FLAGS_rocksdb_perf_level == rocksdb::kDisable) {
+        if (FLAGS_store_rocksdb_perf_level == rocksdb::kDisable) {
             rocksdb::SetPerfLevel(rocksdb::kDisable);
         }
         brpc::ClosureGuard done_guard(done);
@@ -871,7 +820,7 @@ namespace EA {
                         auto info = extra_res->add_infos();
                         info->set_table_id(region->get_table_id());
                         info->set_region_id(region->get_region_id());
-                        info->set_resource_tag(FLAGS_resource_tag);
+                        info->set_resource_tag(FLAGS_store_resource_tag);
                         info->set_version(region->get_version());
                         info->set_apply_index(region->get_log_index());
                         info->set_status("LEARNER");
@@ -881,7 +830,7 @@ namespace EA {
                 for (auto region_id: request->region_ids()) {
                     auto info = extra_res->add_infos();
                     info->set_region_id(region_id);
-                    info->set_resource_tag(FLAGS_resource_tag);
+                    info->set_resource_tag(FLAGS_store_resource_tag);
                     SmartRegion region = get_region(region_id);
                     if (region == nullptr) {
                         info->set_table_id(-1);
@@ -1016,7 +965,7 @@ namespace EA {
                 }
             });
             reverse_merge_time_cost << cost.get_time();
-            bthread_usleep_fast_shutdown(FLAGS_reverse_merge_interval_us, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_reverse_merge_interval_us, _shutdown);
         }
     }
 
@@ -1030,7 +979,7 @@ namespace EA {
                 }
             });
             unsafe_reverse_merge_time_cost << cost.get_time();
-            bthread_usleep_fast_shutdown(FLAGS_reverse_merge_interval_us, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_reverse_merge_interval_us, _shutdown);
         }
     }
 
@@ -1046,7 +995,7 @@ namespace EA {
                 region->update_ttl_info();
             });
             // 控制ttl在ttl_remove_interval_period指定时间范围,典型是晚上流量低峰
-            std::vector<std::string> periods = string_split(FLAGS_ttl_remove_interval_period, '-');
+            std::vector<std::string> periods = string_split(FLAGS_store_ttl_remove_interval_period, '-');
             if (periods.size() == 2) {
                 try {
                     int start_hour = std::stoi(periods[0]);
@@ -1058,13 +1007,13 @@ namespace EA {
                         }
                     }
                 } catch (...) {
-                    TLOG_WARN("FLAGS_ttl_remove_interval_period {}", FLAGS_ttl_remove_interval_period.c_str());
+                    TLOG_WARN("FLAGS_ttl_remove_interval_period {}", FLAGS_store_ttl_remove_interval_period.c_str());
                 }
             }
 
-            if (time.get_time() > FLAGS_ttl_remove_interval_s * 1000 * 1000LL) {
+            if (time.get_time() > FLAGS_store_ttl_remove_interval_s * 1000 * 1000LL) {
                 traverse_copy_region_map([](const SmartRegion &region) {
-                    if (!FLAGS_stop_ttl_data) {
+                    if (!FLAGS_store_stop_ttl_data) {
                         region->ttl_remove_expired_data();
                     }
                 });
@@ -1075,15 +1024,15 @@ namespace EA {
 
     void Store::delay_remove_data_thread() {
         while (!_shutdown) {
-            bthread_usleep_fast_shutdown(FLAGS_delay_remove_region_interval_s * 1000 * 1000, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_delay_remove_region_interval_s * 1000 * 1000, _shutdown);
             if (_shutdown) {
                 return;
             }
             traverse_copy_region_map([this](const SmartRegion &region) {
                 //加个随机数，删除均匀些
-                int64_t random_remove_data_timeout = (FLAGS_region_delay_remove_timeout_s +
+                int64_t random_remove_data_timeout = (FLAGS_store_region_delay_remove_timeout_s +
                                                       (int64_t) (butil::fast_rand() %
-                                                                 FLAGS_region_delay_remove_timeout_s)) * 1000 * 1000LL;
+                                                                 FLAGS_store_region_delay_remove_timeout_s)) * 1000 * 1000LL;
                 if (region->removed() &&
                     region->removed_time_cost() > random_remove_data_timeout) {
                     TLOG_WARN(
@@ -1135,12 +1084,12 @@ namespace EA {
             rocksdb_num_wals.set_value(vec.size());
 
             // wal 个数超过阈值100强制flush所有cf
-            bool force_flush = vec.size() > FLAGS_rocks_force_flush_max_wals ? true : false;
+            bool force_flush = vec.size() > FLAGS_store_rocks_force_flush_max_wals ? true : false;
 
             int64_t raft_count = RocksWrapper::raft_cf_remove_range_count.load();
             int64_t data_count = RocksWrapper::data_cf_remove_range_count.load();
             int64_t mata_count = RocksWrapper::mata_cf_remove_range_count.load();
-            if (force_flush || raft_count > FLAGS_rocks_cf_flush_remove_range_times) {
+            if (force_flush || raft_count > FLAGS_store_rocks_cf_flush_remove_range_times) {
                 RocksWrapper::raft_cf_remove_range_count = 0;
                 rocksdb::FlushOptions flush_options;
                 auto status = _rocksdb->flush(flush_options, _rocksdb->get_raft_log_handle());
@@ -1148,7 +1097,7 @@ namespace EA {
                     TLOG_WARN("flush log_cf to rocksdb fail, err_msg:{}", status.ToString().c_str());
                 }
             }
-            if (force_flush || data_count > FLAGS_rocks_cf_flush_remove_range_times) {
+            if (force_flush || data_count > FLAGS_store_rocks_cf_flush_remove_range_times) {
                 RocksWrapper::data_cf_remove_range_count = 0;
                 rocksdb::FlushOptions flush_options;
                 auto status = _rocksdb->flush(flush_options, _rocksdb->get_data_handle());
@@ -1157,7 +1106,7 @@ namespace EA {
                 }
             }
             //last_file_number发生变化，data cf有新的flush数据需要flush meta，gc wal
-            if (force_flush || mata_count > FLAGS_rocks_cf_flush_remove_range_times ||
+            if (force_flush || mata_count > FLAGS_store_rocks_cf_flush_remove_range_times ||
                 last_file_number != _rocksdb->flush_file_number()) {
                 last_file_number = _rocksdb->flush_file_number();
                 RocksWrapper::mata_cf_remove_range_count = 0;
@@ -1199,7 +1148,7 @@ namespace EA {
                 // clear prepared and expired transactions
                 region->clear_transactions();
             });
-            bthread_usleep_fast_shutdown(FLAGS_transaction_clear_interval_ms * 1000, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_transaction_clear_interval_ms * 1000, _shutdown);
 
         }
     }
@@ -1211,7 +1160,7 @@ namespace EA {
                     region->binlog_timeout_check();
                 }
             });
-            bthread_usleep_fast_shutdown(FLAGS_binlog_timeout_check_ms * 1000, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_binlog_timeout_check_ms * 1000, _shutdown);
         }
     }
 
@@ -1230,12 +1179,12 @@ namespace EA {
             });
 
             cond.wait(-40);
-            if (time.get_time() > FLAGS_oldest_binlog_ts_interval_s * 1000 * 1000LL) {
+            if (time.get_time() > FLAGS_store_oldest_binlog_ts_interval_s * 1000 * 1000LL) {
                 // 更新oldest ts
                 RocksWrapper::get_instance()->update_oldest_ts_in_binlog_cf();
                 time.reset();
             }
-            bthread_usleep_fast_shutdown(FLAGS_binlog_fake_ms * 1000, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_binlog_fake_ms * 1000, _shutdown);
         }
     }
 
@@ -1246,14 +1195,14 @@ namespace EA {
         }));
 
         if (tso_physical != 0 && tso_logical != 0 && tso_count > 0 &&
-            gen_tso_time.get_time() < FLAGS_gen_tso_interval_us) {
-            return (tso_physical << tso::logical_bits) + tso_logical + FLAGS_gen_tso_count - (tso_count--);
+            gen_tso_time.get_time() < FLAGS_store_gen_tso_interval_us) {
+            return (tso_physical << tso::logical_bits) + tso_logical + FLAGS_store_gen_tso_count - (tso_count--);
         }
 
         proto::TsoRequest request;
         proto::TsoResponse response;
         request.set_op_type(proto::OP_GEN_TSO);
-        request.set_count(FLAGS_gen_tso_count);
+        request.set_count(FLAGS_store_gen_tso_count);
 
         //发送请求，收到响应
         if (_tso_server_interact.send_request("tso_service", request, response) == 0) {
@@ -1273,10 +1222,10 @@ namespace EA {
         }
 
         gen_tso_time.reset();
-        tso_count = FLAGS_gen_tso_count;
+        tso_count = FLAGS_store_gen_tso_count;
         tso_physical = response.start_timestamp().physical();
         tso_logical = response.start_timestamp().logical();
-        return (tso_physical << tso::logical_bits) + tso_logical + FLAGS_gen_tso_count - (tso_count--);
+        return (tso_physical << tso::logical_bits) + tso_logical + FLAGS_store_gen_tso_count - (tso_count--);
     }
 
     int64_t Store::get_last_commit_ts() {
@@ -1460,7 +1409,7 @@ namespace EA {
                 }
             }
             TLOG_WARN("finish check_region_peer_delay, cost: {}", t.get_time());
-            bthread_usleep_fast_shutdown(FLAGS_check_peer_delay_min * 60 * 1000 * 1000ULL, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_check_peer_delay_min * 60 * 1000 * 1000ULL, _shutdown);
         }
     }
 
@@ -1511,21 +1460,21 @@ namespace EA {
                     TLOG_DEBUG("table info not exist, region_id: {}", region_ids[i]);
                     continue;
                 }
-                region_capacity = std::max(FLAGS_min_split_lines, region_capacity);
+                region_capacity = std::max(FLAGS_store_min_split_lines, region_capacity);
                 //TLOG_WARN("region_id: {}, split_capacity: {}", region_ids[i], region_capacity);
                 std::string split_key;
                 int64_t split_key_term = 0;
                 //如果是尾部分
                 if (ptr_region->is_leader()
                     && ptr_region->get_status() == proto::IDLE
-                    && _split_num.load() < FLAGS_max_split_concurrency) {
+                    && _split_num.load() < FLAGS_store_max_split_concurrency) {
                     if (ptr_region->is_tail()
                         && ptr_region->get_num_table_lines() >= region_capacity) {
                         process_split_request(ptr_region->get_global_index_id(), region_ids[i], true, split_key,
                                               split_key_term);
                         continue;
                     } else if (!ptr_region->is_tail()
-                               && ptr_region->get_num_table_lines() >= FLAGS_split_threshold * region_capacity / 100) {
+                               && ptr_region->get_num_table_lines() >= FLAGS_store_split_threshold * region_capacity / 100) {
                         if (0 != ptr_region->get_split_key(split_key, split_key_term)) {
                             TLOG_WARN("get_split_key failed: region={}", region_ids[i]);
                             continue;
@@ -1586,7 +1535,7 @@ namespace EA {
                         continue;
                     }
                     if (ptr_region->get_log_index() == ptr_region->get_log_index_lastcycle()
-                        && ptr_region->get_lastcycle_timecost() > FLAGS_none_region_merge_interval_us) {
+                        && ptr_region->get_lastcycle_timecost() > FLAGS_store_none_region_merge_interval_us) {
                         TLOG_WARN("region:{} is none, log_index:{}, process merge",
                                    region_ids[i], ptr_region->get_log_index());
                         int64_t seek_table_lines = 0;
@@ -1601,7 +1550,7 @@ namespace EA {
                 }
             }
             TLOG_TRACE("upate used size count:{}", ++count);
-            bthread_usleep_fast_shutdown(FLAGS_update_used_size_interval_us, _shutdown);
+            bthread_usleep_fast_shutdown(FLAGS_store_update_used_size_interval_us, _shutdown);
         }
     }
 
@@ -1692,7 +1641,7 @@ namespace EA {
             }
 
             region_sizes[i] = region->get_approx_size();
-            if (!FLAGS_use_approximate_size) {
+            if (!FLAGS_store_use_approximate_size) {
                 region_sizes[i] = 100000000;
             }
             if (region_sizes[i] == UINT64_MAX) {
@@ -1799,8 +1748,8 @@ namespace EA {
         instance_info->set_raft_total_qps(raft_total_cost.qps(60));
         instance_info->set_select_latency(select_time_cost.latency(60));
         instance_info->set_select_qps(select_time_cost.qps(60));
-        instance_info->set_network_segment(FLAGS_network_segment);
-        instance_info->set_container_id(FLAGS_container_id);
+        instance_info->set_network_segment(FLAGS_store_network_segment);
+        instance_info->set_container_id(FLAGS_store_container_id);
         int64_t rocks_hang_check_cost = 0;
         if (FLAGS_store_rocks_hang_check && count > 2) {
             if (last_rocks_hang_check_ok.get_time() > 30 * 1000 * 1000LL) {
@@ -1822,7 +1771,7 @@ namespace EA {
         instance_info->set_rocks_hang_check_cost(rocks_hang_check_cost);
         // 读取硬盘参数
         struct statfs sfs;
-        statfs(FLAGS_db_path.c_str(), &sfs);
+        statfs(FLAGS_store_db_path.c_str(), &sfs);
         int64_t disk_capacity = sfs.f_blocks * sfs.f_bsize;
         int64_t left_size = sfs.f_bavail * sfs.f_bsize;
         _disk_total.set_value(disk_capacity);

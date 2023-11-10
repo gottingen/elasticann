@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,21 +20,6 @@
 #include "elasticann/common/concurrency.h"
 
 namespace EA {
-    DECLARE_int64(sql_token_bucket_timeout_min);
-    DECLARE_int64(min_global_extended_percent);
-    DECLARE_int64(qps_statistics_minutes_ago);
-    DECLARE_int64(max_tokens_per_second);
-    DECLARE_int64(use_token_bucket);
-    DECLARE_int64(token_bucket_burst_window_ms);
-    DECLARE_int64(token_bucket_adjust_interval_s);
-    DECLARE_int64(get_token_weight);
-    DECLARE_int64(qos_reject_interval_s);
-    DECLARE_int64(qos_reject_ratio);
-    DECLARE_int64(qos_reject_timeout_s);
-    DECLARE_int64(qos_reject_max_scan_ratio);
-    DECLARE_int64(qos_reject_growth_multiple);
-    DECLARE_int64(qos_need_reject);
-    DECLARE_int64(sign_concurrency);
 
     enum QosType {
         QOS_SELECT = 0,

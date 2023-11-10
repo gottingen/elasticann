@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,8 +52,8 @@ namespace EA {
                 ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             }
             TLOG_DEBUG("on apply, term:{}, index:{}, request op_type:{}",
-                     iter.term(), iter.index(),
-                     proto::OpType_Name(request.op_type()).c_str());
+                       iter.term(), iter.index(),
+                       proto::OpType_Name(request.op_type()).c_str());
             switch (request.op_type()) {
                 case proto::OP_ADD_ID_FOR_AUTO_INCREMENT: {
                     add_table_id(request, done);
@@ -145,7 +144,7 @@ namespace EA {
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
         TLOG_DEBUG("gen_id for auto_increment success, request:{}",
-                 request.ShortDebugString());
+                   request.ShortDebugString());
     }
 
     void AutoIncrStateMachine::update(const proto::MetaManagerRequest &request,
@@ -170,7 +169,7 @@ namespace EA {
             return;
         }
         uint64_t old_start_id = _auto_increment_map[table_id];
-        //请求要求回退
+        // backwards
         if (increment_info.has_start_id()
             && old_start_id > increment_info.start_id() + 1
             && (!increment_info.has_force() || increment_info.force() == false)) {

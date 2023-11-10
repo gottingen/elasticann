@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,14 +34,6 @@
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/engine/qos.h"
 #include "elasticann/common/memory_profile.h"
-
-namespace EA {
-    DECLARE_int32(store_port);
-    DECLARE_bool(use_fulltext_wordweight_segment);
-    DECLARE_bool(use_fulltext_wordseg_wordrank_segment);
-    DEFINE_string(wordrank_conf, "./config/drpc_client.xml", "wordrank conf path");
-} // namespace EA
-DEFINE_bool(stop_server_before_core, true, "stop_server_before_core");
 
 brpc::Server server;
 
@@ -90,7 +81,7 @@ int main(int argc, char **argv) {
         return -1;
     }
     // 信号处理函数非可重入，可能会死锁
-    if (FLAGS_stop_server_before_core) {
+    if (EA::FLAGS_store_stop_server_before_core) {
         struct sigaction act;
         int sig = SIGSEGV;
         sigemptyset(&act.sa_mask);
@@ -101,8 +92,8 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
-//    TLOG_WARN("log file load success; GetMemoryReleaseRate:{}",
-//            MallocExtension::instance()->GetMemoryReleaseRate());
+    //    TLOG_WARN("log file load success; GetMemoryReleaseRate:{}",
+    //            MallocExtension::instance()->GetMemoryReleaseRate());
     EA::register_myraft_extension();
     int ret = 0;
     EA::Tokenizer::get_instance()->init();
@@ -196,7 +187,7 @@ int main(int argc, char **argv) {
     EA::Bthread bth;
     bth.run([]() {
         bthread_usleep(2 * 60 * 1000 * 1000);
-        TLOG_ERROR("store forse exit");
+        TLOG_ERROR("store force exit");
         exit(-1);
     });
     // 需要后关端口

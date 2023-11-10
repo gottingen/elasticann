@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,13 +26,6 @@
 #include "elasticann/raft/raft_control.h"
 
 namespace EA {
-    DECLARE_string(snapshot_uri);
-    DECLARE_string(stable_uri);
-    DECLARE_int64(transfer_leader_catchup_time_threshold);
-    DECLARE_int64(store_heart_beat_interval_us);
-    DEFINE_int32(compact_interval, 1, "compact_interval xx (s)");
-    DEFINE_bool(allow_compact_range, true, "allow_compact_range");
-    DEFINE_bool(allow_blocking_flush, true, "allow_blocking_flush");
 
     int RegionControl::remove_data(int64_t drop_region_id) {
         rocksdb::WriteOptions options;
@@ -98,10 +90,10 @@ namespace EA {
         in_compact_regions[region_id] = true;
         Store::get_instance()->compact_queue().run([region_id]() {
             if (in_compact_regions.count(region_id) == 1) {
-                if (!Store::get_instance()->is_shutdown() && FLAGS_allow_compact_range) {
+                if (!Store::get_instance()->is_shutdown() && FLAGS_store_allow_compact_range) {
                     RegionControl::compact_data(region_id);
                     in_compact_regions.erase(region_id);
-                    bthread_usleep(FLAGS_compact_interval * 1000 * 1000LL);
+                    bthread_usleep(FLAGS_store_compact_interval * 1000 * 1000LL);
                 }
             }
         });
@@ -155,11 +147,11 @@ namespace EA {
         return 0;
     }
 
-//todo 测一下如果目录为空，删除返回值时啥
+        //todo 测一下如果目录为空，删除返回值时啥
     int RegionControl::remove_snapshot_path(int64_t drop_region_id) {
-        std::string snapshot_path_str(FLAGS_snapshot_uri, FLAGS_snapshot_uri.find("//") + 2);
+        std::string snapshot_path_str(FLAGS_store_snapshot_uri, FLAGS_store_snapshot_uri.find("//") + 2);
         snapshot_path_str += "/region_" + std::to_string(drop_region_id);
-        std::string stable_path_str(FLAGS_stable_uri, FLAGS_stable_uri.find("//") + 2);
+        std::string stable_path_str(FLAGS_store_stable_uri, FLAGS_store_stable_uri.find("//") + 2);
         stable_path_str += "/region_" + std::to_string(drop_region_id);
         try {
             turbo::filesystem::path snapshot_path(snapshot_path_str);
@@ -191,13 +183,13 @@ namespace EA {
         // TODO 修改恢复流程，可以减少一次文件copy
         ifo.move_files = move_files;
         ifo.write_global_seqno = false;
-        ifo.allow_blocking_flush = FLAGS_allow_blocking_flush;
+        ifo.allow_blocking_flush = FLAGS_store_allow_blocking_flush;
         auto data_cf = rocksdb->get_data_handle();
         auto res = rocksdb->ingest_external_file(data_cf, {data_sst_file}, ifo);
         if (!res.ok()) {
             TLOG_WARN("ingest file {} fail, Error {}, region_id: {}",
                        data_sst_file.c_str(), res.ToString().c_str(), region_id);
-            if (!FLAGS_allow_blocking_flush) {
+            if (!FLAGS_store_allow_blocking_flush) {
                 rocksdb::FlushOptions flush_options;
                 res = rocksdb->flush(flush_options, data_cf);
                 if (!res.ok()) {

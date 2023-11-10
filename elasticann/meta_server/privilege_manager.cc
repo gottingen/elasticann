@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,7 +89,7 @@ namespace EA {
             return;
         }
         user_privilege.set_version(1);
-        // 构造key 和 value
+        // construct key and value
         std::string value;
         if (!user_privilege.SerializeToString(&value)) {
             TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
@@ -104,7 +103,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
-        //更新内存
+        // update memory values
         BAIDU_SCOPED_LOCK(_user_mutex);
         _user_privilege[username] = user_privilege;
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
@@ -118,6 +117,8 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "username not exist");
             return;
         }
+
+        // update rocksdb
         auto ret = MetaRocksdb::get_instance()->delete_meta_info(
                 std::vector<std::string>{construct_privilege_key(username)});
         if (ret < 0) {
@@ -125,6 +126,7 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
             return;
         }
+        // update memory
         BAIDU_SCOPED_LOCK(_user_mutex);
         _user_privilege.erase(username);
         IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");

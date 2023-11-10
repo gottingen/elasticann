@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "elasticann/session/binlog_context.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 
 namespace EA {
 

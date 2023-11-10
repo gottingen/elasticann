@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,9 +35,6 @@
 #include "elasticann/engine/sst_file_writer.h"
 
 namespace EA {
-    DECLARE_int64(store_heart_beat_interval_us);
-    DECLARE_int32(healthy_check_interval_times);
-    DECLARE_int32(balance_periodicity);
 
     void MetaStateMachine::store_heartbeat(google::protobuf::RpcController *controller,
                                            const proto::StoreHeartBeatRequest *request,

@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,9 +33,9 @@
 #include "elasticann/common/mut_table_key.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/engine/split_compaction_filter.h"
-#include "elasticann/proto/common.pb.h"
-#include "elasticann/proto/meta.interface.pb.h"
-#include "elasticann/proto/store.interface.pb.h"
+#include "eaproto/db/common.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/db/store.interface.pb.h"
 #include "elasticann/reverse/reverse_index.h"
 #include "elasticann/engine/transaction_pool.h"
 #include "elasticann/runtime/runtime_state.h"
@@ -79,9 +78,6 @@ using google::protobuf::Message;
 using google::protobuf::RepeatedPtrField;
 
 namespace EA {
-    DECLARE_int64(disable_write_wait_timeout_us);
-    DECLARE_int32(prepare_slow_down_wait);
-    DECLARE_int64(binlog_warn_timeout_minute);
 
     static const int32_t RECV_QUEUE_SIZE = 128;
     struct StatisticsInfo {
@@ -307,7 +303,7 @@ namespace EA {
             auto it = _ip_ts_map.find(ip);
             if (it != _ip_ts_map.end()) {
                 if (it->second.ts == begin_ts) {
-                    if (it->second.time.get_time() > FLAGS_binlog_warn_timeout_minute * 60 * 1000 * 1000LL) {
+                    if (it->second.time.get_time() > FLAGS_store_binlog_warn_timeout_minute * 60 * 1000 * 1000LL) {
                         // 长时间一直访问一个ts需要报警
                         TLOG_WARN("region_id: {}, remote_side: {}, ts: {}, read begin ts for a long time", region_id,
                                    ip.c_str(), begin_ts);
@@ -321,7 +317,7 @@ namespace EA {
             }
 
             // gc
-            int64_t gc_interval = 5 * FLAGS_binlog_warn_timeout_minute * 60 * 1000 * 1000LL;
+            int64_t gc_interval = 5 * FLAGS_store_binlog_warn_timeout_minute * 60 * 1000 * 1000LL;
             static TimeCost map_gc_time;
             if (map_gc_time.get_time() > gc_interval) {
                 auto it = _ip_ts_map.begin();
@@ -1002,8 +998,8 @@ namespace EA {
         }
 
         int64_t get_split_wait_time() {
-            int64_t wait_time = FLAGS_disable_write_wait_timeout_us;
-            if (FLAGS_disable_write_wait_timeout_us < _split_param.split_slow_down_cost * 10) {
+            int64_t wait_time = FLAGS_store_disable_write_wait_timeout_us;
+            if (FLAGS_store_disable_write_wait_timeout_us < _split_param.split_slow_down_cost * 10) {
                 wait_time = _split_param.split_slow_down_cost * 10;
             }
             if (wait_time > 30 * 1000 * 1000LL) {

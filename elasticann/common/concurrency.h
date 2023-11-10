@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,13 +19,6 @@
 #include "elasticann/common/common.h"
 
 namespace EA {
-    DECLARE_int32(snapshot_load_num);
-    DECLARE_int32(raft_write_concurrency);
-    DECLARE_int32(service_write_concurrency);
-    DECLARE_int32(new_sign_read_concurrency);
-    DECLARE_int32(baikal_heartbeat_concurrency);
-    DECLARE_int32(upload_sst_streaming_concurrency);
-    DECLARE_int32(global_select_concurrency);
 
     struct Concurrency {
         static Concurrency *get_instance() {

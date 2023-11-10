@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +21,6 @@
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {
-    DEFINE_bool(open_nonboolean_sql_forbid, false, "open nonboolean sqls forbid default:false");
 
     int ScalarFnCall::init(const proto::ExprNode &node) {
         int ret = 0;

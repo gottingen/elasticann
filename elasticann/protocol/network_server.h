@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +21,10 @@
 #include "elasticann/protocol/state_machine.h"
 #include "elasticann/protocol/epoll_info.h"
 #include "elasticann/protocol/machine_driver.h"
-#include "elasticann/proto/meta.interface.pb.h"
+#include "eaproto/db/meta.interface.pb.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/common/common.h"
-#include "elasticann/common/meta_server_interact.h"
+#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/common/baikal_heartbeat.h"
 
 namespace EA {
@@ -58,7 +57,6 @@ namespace EA {
 }
 
 namespace EA {
-    DECLARE_int32(limit_slow_sql_size);
 
     class NetworkServer {
     public:

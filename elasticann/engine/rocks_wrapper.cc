@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,71 +30,21 @@
 
 namespace EA {
 
-    DEFINE_int32(rocks_transaction_lock_timeout_ms, 20000,
-                 "rocksdb transaction_lock_timeout, real lock_time is 'time + rand_less(time)' (ms)");
-    DEFINE_int32(rocks_default_lock_timeout_ms, 30000, "rocksdb default_lock_timeout(ms)");
-
-    DEFINE_bool(rocks_use_partitioned_index_filters, false, "rocksdb use Partitioned Index Filters");
-    DEFINE_bool(rocks_skip_stats_update_on_db_open, false, "rocks_skip_stats_update_on_db_open");
-    DEFINE_int32(rocks_block_size, 64 * 1024, "rocksdb block_cache size, default: 64KB");
-    DEFINE_int64(rocks_block_cache_size_mb, 8 * 1024, "rocksdb block_cache_size_mb, default: 8G");
-    DEFINE_uint64(rocks_hard_pending_compaction_g, 256, "rocksdb hard_pending_compaction_bytes_limit , default: 256G");
-    DEFINE_uint64(rocks_soft_pending_compaction_g, 64, "rocksdb soft_pending_compaction_bytes_limit , default: 64G");
-    DEFINE_uint64(rocks_compaction_readahead_size, 0, "rocksdb compaction_readahead_size, default: 0");
-    DEFINE_int32(rocks_data_compaction_pri, 3, "rocksdb data_cf compaction_pri, default: 3(kMinOverlappingRatio)");
-    DEFINE_double(rocks_level_multiplier, 10, "data_cf rocksdb max_bytes_for_level_multiplier, default: 10");
-    DEFINE_double(rocks_high_pri_pool_ratio, 0.5, "rocksdb cache high_pri_pool_ratio, default: 0.5");
-    DEFINE_int32(rocks_max_open_files, 1024, "rocksdb max_open_files, default: 1024");
-    DEFINE_int32(rocks_max_subcompactions, 4, "rocks_max_subcompactions");
-    DEFINE_int32(rocks_max_background_compactions, 20, "max_background_compactions");
-    DEFINE_bool(rocks_optimize_filters_for_hits, false, "rocks_optimize_filters_for_hits");
-    DEFINE_int32(slowdown_write_sst_cnt, 10, "level0_slowdown_writes_trigger");
-    DEFINE_int32(stop_write_sst_cnt, 40, "level0_stop_writes_trigger");
-    DEFINE_bool(rocks_use_ribbon_filter, false,
-                "use Ribbon filter:https://github.com/facebook/rocksdb/wiki/RocksDB-Bloom-Filter");
-    DEFINE_bool(rocks_use_hyper_clock_cache, false,
-                "use HyperClockCache:https://github.com/facebook/rocksdb/pull/10963");
-    DEFINE_bool(rocks_use_sst_partitioner_fixed_prefix, false,
-                "use SstPartitionerFixedPrefix:https://github.com/facebook/rocksdb/pull/6957");
-    DEFINE_bool(rocks_kSkipAnyCorruptedRecords, false,
-                "We ignore any corruption in the WAL and try to salvage as much data as possible");
-    DEFINE_bool(rocks_data_dynamic_level_bytes, true,
-                "rocksdb level_compaction_dynamic_level_bytes for data column_family, default true");
-    DEFINE_int64(flush_memtable_interval_us, 10 * 60 * 1000 * 1000LL,
-                 "flush memtable interval, default(10 min)");
-    DEFINE_int32(max_background_jobs, 24, "max_background_jobs");
-    DEFINE_int32(max_write_buffer_number, 6, "max_write_buffer_number");
-    DEFINE_int32(write_buffer_size, 128 * 1024 * 1024, "write_buffer_size");
-    DEFINE_int32(min_write_buffer_number_to_merge, 2, "min_write_buffer_number_to_merge");
-    DEFINE_int32(rocks_binlog_max_files_size_gb, 100, "binlog max size default 100G");
-    DEFINE_int32(rocks_binlog_ttl_days, 7, "binlog ttl default 7 days");
-
-    DEFINE_int32(level0_file_num_compaction_trigger, 5, "Number of files to trigger level-0 compaction");
-    DEFINE_int32(max_bytes_for_level_base, 1024 * 1024 * 1024, "total size of level 1.");
-    DEFINE_bool(enable_bottommost_compression, false, "enable zstd for bottommost_compression");
-    DEFINE_int32(target_file_size_base, 128 * 1024 * 1024, "target_file_size_base");
-    DEFINE_int32(addpeer_rate_limit_level, 1, "addpeer_rate_limit_level; "
-                                              "0:no limit, 1:limit when stalling, 2:limit when compaction pending. default(1)");
-    DEFINE_bool(delete_files_in_range, true, "delete_files_in_range");
-    DEFINE_bool(l0_compaction_use_lz4, false, "L0 sst compaction use lz4 or not");
-    DEFINE_bool(real_delete_old_binlog_cf, true, "default true");
-    DEFINE_bool(rocksdb_fifo_allow_compaction, false, "default false");
-    DEFINE_bool(use_direct_io_for_flush_and_compaction, false, "default false");
-    DEFINE_bool(use_direct_reads, false, "default false");
-    DEFINE_int32(level0_max_sst_num, 500, "max level0 num for fast importer");
-
     const std::string RocksWrapper::RAFT_LOG_CF = "raft_log";
     const std::string RocksWrapper::BIN_LOG_CF = "bin_log_new";
     const std::string RocksWrapper::DATA_CF = "data";
     const std::string RocksWrapper::METAINFO_CF = "meta_info";
+    const std::string RocksWrapper::SERVICE_CF = "service";
     std::atomic<int64_t> RocksWrapper::raft_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::data_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::mata_cf_remove_range_count = {0};
+    std::atomic<int64_t> RocksWrapper::service_cf_remove_range_count = {0};
 
     RocksWrapper::RocksWrapper() : _is_init(false), _txn_db(nullptr),
                                    _raft_cf_remove_range_count("raft_cf_remove_range_count"),
                                    _data_cf_remove_range_count("data_cf_remove_range_count"),
-                                   _mata_cf_remove_range_count("mata_cf_remove_range_count") {
+                                   _mata_cf_remove_range_count("mata_cf_remove_range_count"),
+                                   _service_cf_remove_range_count("service_cf_remove_range_count"){
     }
 
     int32_t RocksWrapper::init(const std::string &path) {
@@ -266,6 +215,14 @@ namespace EA {
         _meta_info_option.level_compaction_dynamic_level_bytes = FLAGS_rocks_data_dynamic_level_bytes;
         _meta_info_option.max_write_buffer_number_to_maintain = _meta_info_option.max_write_buffer_number;
 
+        //prefix: 0x01-0xFF,分别用来存储不同的meta信息
+        _service_option.prefix_extractor.reset(
+                rocksdb::NewFixedPrefixTransform(1));
+        _service_option.OptimizeLevelStyleCompaction();
+        _service_option.compaction_pri = rocksdb::kOldestSmallestSeqFirst;
+        _service_option.level_compaction_dynamic_level_bytes = FLAGS_rocks_data_dynamic_level_bytes;
+        _service_option.max_write_buffer_number_to_maintain = _service_option.max_write_buffer_number;
+
         _db_path = path;
         // List Column Family
         std::vector<std::string> column_family_names;
@@ -286,6 +243,8 @@ namespace EA {
                     column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(DATA_CF, _data_cf_option));
                 } else if (column_family_name == METAINFO_CF) {
                     column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(METAINFO_CF, _meta_info_option));
+                } else if (column_family_name == SERVICE_CF) {
+                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(SERVICE_CF, _service_option));
                 } else {
                     column_family_desc.push_back(
                             rocksdb::ColumnFamilyDescriptor(column_family_name,
@@ -387,6 +346,18 @@ namespace EA {
                 return -1;
             }
         }
+        if (0 == _column_families.count(SERVICE_CF)) {
+            rocksdb::ColumnFamilyHandle *metainfo_handle;
+            s = _txn_db->CreateColumnFamily(_service_option, SERVICE_CF, &metainfo_handle);
+            if (s.ok()) {
+                TLOG_INFO("create column family success, column family: {}", SERVICE_CF);
+                _column_families[SERVICE_CF] = metainfo_handle;
+            } else {
+                TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
+                           SERVICE_CF, s.ToString());
+                return -1;
+            }
+        }
         if (0 == _column_families.count(BIN_LOG_CF)) {
             //create bin_log column_familiy
             rocksdb::ColumnFamilyHandle *bin_log_handle;
@@ -432,6 +403,7 @@ namespace EA {
         auto raft_cf = get_raft_log_handle();
         auto data_cf = get_data_handle();
         auto mata_cf = get_meta_info_handle();
+        auto service_cf = get_service_handle();
         if (raft_cf != nullptr && column_family->GetID() == raft_cf->GetID()) {
             _raft_cf_remove_range_count << 1;
             raft_cf_remove_range_count++;
@@ -441,7 +413,11 @@ namespace EA {
         } else if (mata_cf != nullptr && column_family->GetID() == mata_cf->GetID()) {
             _mata_cf_remove_range_count << 1;
             mata_cf_remove_range_count++;
+        } else if (service_cf != nullptr && column_family->GetID() == service_cf->GetID()) {
+            _service_cf_remove_range_count << 1;
+            service_cf_remove_range_count++;
         }
+
         if (delete_files_in_range && FLAGS_delete_files_in_range) {
             auto s = rocksdb::DeleteFilesInRange(_txn_db, column_family, &begin, &end, false);
             if (!s.ok()) {
@@ -611,6 +587,18 @@ namespace EA {
             return nullptr;
         }
         return _column_families[METAINFO_CF];
+    }
+
+    rocksdb::ColumnFamilyHandle *RocksWrapper::get_service_handle() {
+        if (!_is_init) {
+            TLOG_ERROR("rocksdb has not been inited");
+            return nullptr;
+        }
+        if (0 == _column_families.count(SERVICE_CF)) {
+            TLOG_ERROR("rocksdb has no service column family");
+            return nullptr;
+        }
+        return _column_families[SERVICE_CF];
     }
 
     void RocksWrapper::begin_split_adjust_option() {

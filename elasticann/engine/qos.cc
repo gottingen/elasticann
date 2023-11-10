@@ -1,5 +1,4 @@
-// Copyright 2023 The Turbo Authors.
-// Copyright (c) 2018-present Baidu, Inc. All Rights Reserved.
+// Copyright 2023 The Elastic AI Search Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,24 +16,8 @@
 #include "elasticann/engine/qos.h"
 
 namespace EA {
-    DEFINE_int64(qps_statistics_minutes_ago, 60, "qps_statistics_minutes_ago, default: 1h"); // 默认以前一小时的统计信息作为参考
-    DEFINE_int64(max_tokens_per_second, 100000, "max_tokens_per_second, default: 10w");
-    DEFINE_int64(use_token_bucket, 0, "use_token_bucket, 0:close; 1:open, default: 0");
-    DEFINE_int64(get_token_weight, 5, "get_token_weight, default: 5");
-    DEFINE_int64(min_global_extended_percent, 40, "min_global_extended_percent, default: 40%");
-    DEFINE_int64(token_bucket_adjust_interval_s, 60, "token_bucket_adjust_interval_s, default: 60s");
-    DEFINE_int64(token_bucket_burst_window_ms, 10, "token_bucket_burst_window_ms, default: 10ms");
-    DEFINE_int64(dml_use_token_bucket, 0, "dml_use_token_bucket, default: 0");
-    DEFINE_int64(sql_token_bucket_timeout_min, 5, "sql_token_bucket_timeout_min, default: 5min");
-    DEFINE_int64(qos_reject_interval_s, 30, "qos_reject_interval_s, default: 30s");
-    DEFINE_int64(qos_reject_ratio, 90, "qos_reject_ratio, default: 90%");
-    DEFINE_int64(qos_reject_timeout_s, 30 * 60, "qos_reject_timeout_s, default: 30min");
-    DEFINE_int64(qos_reject_max_scan_ratio, 50, "qos_reject_max_scan_ratio, default: 50%");
-    DEFINE_int64(qos_reject_growth_multiple, 100, "qos_reject_growth_multiple, default: 100倍");
-    DEFINE_int64(qos_need_reject, 0, "qos_need_reject, default: 0");
-    DEFINE_int64(sign_concurrency, 8, "sign_concurrency, default: 8");
 
-// need_statistics: 超过最小超额令牌时，不计入统计信息
+    // need_statistics: 超过最小超额令牌时，不计入统计信息
     int64_t TokenBucket::consume(int64_t expect_tokens, int64_t *expire_time, bool *need_statistics) {
         const int64_t now = butil::gettimeofday_us();
         const int64_t divisor = now / (FLAGS_token_bucket_burst_window_ms * 1000);
