@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/ops/config_manager.h"
+#include "elasticann/ops/config/config_manager.h"
 #include "elasticann/ops/constants.h"
 #include "elasticann/ops/service_rocksdb.h"
-#include "elasticann/ops/service_state_machine.h"
+#include "elasticann/ops/config/config_state_machine.h"
 
 namespace EA {
 
     void ConfigManager::create_config(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
-        auto &create_request = request.config();
+        auto &create_request = request.request_config();
         auto &name = create_request.name();
         turbo::ModuleVersion version(create_request.version().major(), create_request.version().minor(),
                                      create_request.version().patch());
@@ -34,35 +34,35 @@ namespace EA {
         if (it->second.find(version) != it->second.end()) {
             /// already exists
             TLOG_INFO("config :{} version: {} exist", name, version.to_string());
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already exist");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already exist");
             return;
         }
         if(!it->second.empty() && it->second.rbegin()->first >= version) {
             /// Version numbers must increase monotonically
             TLOG_INFO("config :{} version: {} must be larger than current:{}", name, version.to_string(), it->second.rbegin()->first.to_string());
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "Version numbers must increase monotonically");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "Version numbers must increase monotonically");
             return;
         }
         std::string rocks_key = make_config_key(name, version);
         std::string rocks_value;
         if (!create_request.SerializeToString(&rocks_value)) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
 
         int ret = ServiceRocksdb::get_instance()->put_meta_info(rocks_key, rocks_value);
         if (ret < 0) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
             return;
         }
         it->second[version] = create_request;
         TLOG_INFO("config :{} version: {} create", name, version.to_string());
-        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+        CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
 
     void ConfigManager::remove_config(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
-        auto &remove_request = request.config();
+        auto &remove_request = request.request_config();
         auto &name = remove_request.name();
         bool remove_signal = remove_request.has_version();
         BAIDU_SCOPED_LOCK(_config_mutex);
@@ -72,7 +72,7 @@ namespace EA {
         }
         auto it = _configs.find(name);
         if (it == _configs.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
             return;
         }
         turbo::ModuleVersion version(remove_request.version().major(), remove_request.version().minor(),
@@ -81,28 +81,28 @@ namespace EA {
         if (it->second.find(version) == it->second.end()) {
             /// not exists
             TLOG_INFO("config :{} version: {} not exist", name, version.to_string());
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
         }
 
         std::string rocks_key = make_config_key(name, version);
         int ret = ServiceRocksdb::get_instance()->delete_meta_info(std::vector{rocks_key});
         if (ret < 0) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
             return;
         }
         it->second.erase(version);
         if(it->second.empty()) {
             _configs.erase(name);
         }
-        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+        CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
     void ConfigManager::remove_config_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done) {
-        auto &remove_request = request.config();
+        auto &remove_request = request.request_config();
         auto &name = remove_request.name();
         auto it = _configs.find(name);
         if (it == _configs.end()) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
             return;
         }
         std::vector<std::string> del_keys;
@@ -114,11 +114,11 @@ namespace EA {
 
         int ret = ServiceRocksdb::get_instance()->delete_meta_info(del_keys);
         if (ret < 0) {
-            SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
             return;
         }
         _configs.erase(name);
-        SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
+        CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, proto::SUCCESS, "success");
     }
 
     int ConfigManager::load_snapshot() {

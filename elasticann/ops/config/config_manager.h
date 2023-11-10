@@ -14,8 +14,8 @@
 //
 
 
-#ifndef ELASTICANN_OPS_CONFIG_MANAGER_H_
-#define ELASTICANN_OPS_CONFIG_MANAGER_H_
+#ifndef ELASTICANN_OPS_CONFIG_CONFIG_MANAGER_H_
+#define ELASTICANN_OPS_CONFIG_CONFIG_MANAGER_H_
 
 #include "turbo/container/flat_hash_map.h"
 #include "eaproto/ops/ops.interface.pb.h"
@@ -69,4 +69,4 @@ namespace EA {
         bthread_mutex_destroy(&_config_mutex);
     }
 }  // namespace EA
-#endif  // ELASTICANN_OPS_CONFIG_MANAGER_H_
+#endif  // ELASTICANN_OPS_CONFIG_CONFIG_MANAGER_H_

@@ -104,7 +104,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("plugin_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -126,7 +126,7 @@ namespace EA::client {
                 ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
                 return;
             }
-            rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+            rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
                 return;
@@ -180,10 +180,10 @@ namespace EA::client {
                 return;
             }
             turbo::Println("offset:{} count: {}", upload_size, frs.value());
-            upload_request.mutable_plugin()->set_offset(upload_size);
-            upload_request.mutable_plugin()->set_count(frs.value());
-            upload_request.mutable_plugin()->set_content(buf);
-            auto r = RouterInteract::get_instance()->send_request("ops_manage", upload_request, upload_response);
+            upload_request.mutable_request_plugin()->set_offset(upload_size);
+            upload_request.mutable_request_plugin()->set_count(frs.value());
+            upload_request.mutable_request_plugin()->set_content(buf);
+            auto r = RouterInteract::get_instance()->send_request("plugin_manage", upload_request, upload_response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(r, upload_request.op_type())));
                 return;
@@ -210,7 +210,7 @@ namespace EA::client {
                 ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
                 return;
             }
-            rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+            rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
                 return;
@@ -268,7 +268,7 @@ namespace EA::client {
             }
             download_request.mutable_query_plugin()->set_offset(download_size);
             download_request.mutable_query_plugin()->set_count(current_block_size);
-            auto r = RouterInteract::get_instance()->send_request("ops_query", download_request, download_response);
+            auto r = RouterInteract::get_instance()->send_request("plugin_query", download_request, download_response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(r, download_request.op_type())));
                 return;
@@ -308,7 +308,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("plugin_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -329,7 +329,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("plugin_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -350,7 +350,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -380,7 +380,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -406,7 +406,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -424,7 +424,7 @@ namespace EA::client {
     [[nodiscard]] turbo::Status
     make_plugin_create(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_CREATE_PLUGIN);
-        auto rc = req->mutable_plugin()->mutable_plugin();
+        auto rc = req->mutable_request_plugin()->mutable_plugin();
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->plugin_name);
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
@@ -459,7 +459,7 @@ namespace EA::client {
     [[nodiscard]] turbo::Status
     make_plugin_upload(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_UPLOAD_PLUGIN);
-        auto rc = req->mutable_plugin()->mutable_plugin();
+        auto rc = req->mutable_request_plugin()->mutable_plugin();
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->plugin_name);
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
@@ -499,7 +499,7 @@ namespace EA::client {
         } else {
             req->set_op_type(EA::proto::OP_REMOVE_PLUGIN);
         }
-        auto rc = req->mutable_plugin()->mutable_plugin();
+        auto rc = req->mutable_request_plugin()->mutable_plugin();
         rc->set_name(opt->plugin_name);
         if (!opt->plugin_version.empty()) {
             auto v = rc->mutable_version();
@@ -511,7 +511,7 @@ namespace EA::client {
     [[nodiscard]] turbo::Status
     make_plugin_restore(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_RESTORE_TOMBSTONE_PLUGIN);
-        auto rc = req->mutable_plugin()->mutable_plugin();
+        auto rc = req->mutable_request_plugin()->mutable_plugin();
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->plugin_name);
         if (!opt->plugin_version.empty()) {

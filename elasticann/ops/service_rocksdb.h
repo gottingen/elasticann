@@ -28,7 +28,7 @@ namespace EA {
             return &_instance;
         }
 
-        int init();
+        int init(const std::string & path);
 
         int put_meta_info(const std::string &key, const std::string &value);
 

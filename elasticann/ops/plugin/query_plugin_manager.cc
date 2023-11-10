@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/ops/query_plugin_manager.h"
-#include "elasticann/ops/plugin_manager.h"
+#include "elasticann/ops/plugin/query_plugin_manager.h"
+#include "elasticann/ops/plugin/plugin_manager.h"
 #include "elasticann/ops/file_util.h"
 #include "elasticann/common/common.h"
 
@@ -30,7 +30,7 @@ namespace EA {
         }
     }
 
-    const std::string QueryPluginManager::kReadLinkDir = FLAGS_service_plugin_data_root + "/read_link";
+    const std::string QueryPluginManager::kReadLinkDir = FLAGS_plugin_plugin_data_root + "/read_link";
 
     void QueryPluginManager::init() {
         std::error_code ec;
@@ -92,8 +92,8 @@ namespace EA {
 
         CacheFilePtr cache_file;
         auto libname = PluginManager::make_plugin_filename(name, version, entity.platform());
-        std::string source_path = turbo::Format("{}/{}", FLAGS_service_plugin_data_root, libname);
-        std::string link_path = turbo::Format("{}/read_link/{}", FLAGS_service_plugin_data_root, libname);
+        std::string source_path = turbo::Format("{}/{}", FLAGS_plugin_plugin_data_root, libname);
+        std::string link_path = turbo::Format("{}/read_link/{}", FLAGS_plugin_plugin_data_root, libname);
 
         if (_cache.find(key, &cache_file) != 0) {
             {

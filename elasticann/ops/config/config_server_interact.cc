@@ -14,40 +14,40 @@
 //
 
 
-#include "elasticann/ops/ops_server_interact.h"
+#include "elasticann/ops/config/config_server_interact.h"
 #include <gflags/gflags.h>
 
 namespace EA {
 
-    int OpsServerInteract::init(bool is_backup) {
+    int ConfigServerInteract::init(bool is_backup) {
         if (is_backup) {
-            if (!FLAGS_backup_service_server_bns.empty()) {
-                return init_internal(FLAGS_backup_service_server_bns);
+            if (!FLAGS_config_backup_server_bns.empty()) {
+                return init_internal(FLAGS_config_backup_server_bns);
             }
         } else {
-            return init_internal(FLAGS_service_server_bns);
+            return init_internal(FLAGS_config_server_bns);
         }
         return 0;
     }
 
-    int OpsServerInteract::init_internal(const std::string &file_bns) {
+    int ConfigServerInteract::init_internal(const std::string &file_bns) {
         _master_leader_address.ip = butil::IP_ANY;
         _master_leader_address.port = 0;
-        _connect_timeout = FLAGS_service_connect_timeout;
-        _request_timeout = FLAGS_service_request_timeout;
+        _connect_timeout = FLAGS_config_connect_timeout;
+        _request_timeout = FLAGS_config_request_timeout;
         //初始化channel，但是该channel是file_server的 bns pool，大部分时间用不到
         brpc::ChannelOptions channel_opt;
-        channel_opt.timeout_ms = FLAGS_service_request_timeout;
-        channel_opt.connect_timeout_ms = FLAGS_service_connect_timeout;
-        std::string file_server_addr = file_bns;
+        channel_opt.timeout_ms = FLAGS_config_request_timeout;
+        channel_opt.connect_timeout_ms = FLAGS_config_connect_timeout;
+        std::string config_server_addr = file_bns;
         //bns
         if (file_bns.find(":") == std::string::npos) {
-            file_server_addr = std::string("bns://") + file_bns;
+            config_server_addr = std::string("bns://") + file_bns;
         } else {
-            file_server_addr = std::string("list://") + file_bns;
+            config_server_addr = std::string("list://") + file_bns;
         }
-        if (_bns_channel.Init(file_server_addr.c_str(), "rr", &channel_opt) != 0) {
-            TLOG_ERROR("file server bns pool init fail. bns_name:{}", file_server_addr);
+        if (_bns_channel.Init(config_server_addr.c_str(), "rr", &channel_opt) != 0) {
+            TLOG_ERROR("file server bns pool init fail. bns_name:{}", config_server_addr);
             return -1;
         }
         _is_inited = true;

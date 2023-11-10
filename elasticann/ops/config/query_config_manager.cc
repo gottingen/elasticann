@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/ops/query_config_manager.h"
-#include "elasticann/ops/config_manager.h"
+#include "elasticann/ops/config/query_config_manager.h"
+#include "elasticann/ops/config/config_manager.h"
 
 namespace EA {
 

@@ -76,7 +76,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("config_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -100,7 +100,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("config_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -124,7 +124,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("config_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -148,7 +148,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("config_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -191,7 +191,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("ops_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("config_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -204,7 +204,7 @@ namespace EA::client {
     [[nodiscard]] turbo::Status
     make_config_create(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_CREATE_CONFIG);
-        auto rc = req->mutable_config();
+        auto rc = req->mutable_request_config();
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->config_name);
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
@@ -268,7 +268,7 @@ namespace EA::client {
     [[nodiscard]] turbo::Status
     make_config_remove(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
-        auto rc = req->mutable_config();
+        auto rc = req->mutable_request_config();
         auto opt = OptionContext::get_instance();
         rc->set_name(opt->config_name);
         if (!opt->config_version.empty()) {

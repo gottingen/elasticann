@@ -20,7 +20,7 @@
 #include <brpc/channel.h>
 #include <brpc/server.h>
 #include <brpc/controller.h>
-#include "eaproto/db/raft.pb.h"
+#include "eaproto/raft/raft.pb.h"
 #include "elasticann/common/common.h"
 
 namespace EA {

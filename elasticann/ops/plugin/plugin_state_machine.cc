@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/ops/service_state_machine.h"
-#include "elasticann/ops/ops_server_interact.h"
-#include "elasticann/ops/config_manager.h"
-#include "elasticann/ops/plugin_manager.h"
+#include "elasticann/ops/plugin/plugin_state_machine.h"
+#include "elasticann/ops/plugin/plugin_server_interact.h"
+#include "elasticann/ops/plugin/plugin_manager.h"
 #include "elasticann/ops/constants.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/engine/sst_file_writer.h"
@@ -24,7 +23,7 @@
 
 namespace EA {
 
-    void ServiceClosure::Run() {
+    void PluginServiceClosure::Run() {
         if (!status().ok()) {
             if (response) {
                 response->set_errcode(proto::NOT_LEADER);
@@ -40,16 +39,16 @@ namespace EA {
         delete this;
     }
 
-    int ServiceStateMachine::init(const std::vector<braft::PeerId> &peers) {
+    int PluginStateMachine::init(const std::vector<braft::PeerId> &peers) {
         braft::NodeOptions options;
-        options.election_timeout_ms = FLAGS_service_election_timeout_ms;
+        options.election_timeout_ms = FLAGS_plugin_election_timeout_ms;
         options.fsm = this;
         options.initial_conf = braft::Configuration(peers);
-        options.snapshot_interval_s = FLAGS_service_snapshot_interval_s;
-        options.log_uri = FLAGS_service_log_uri + "0";
+        options.snapshot_interval_s = FLAGS_plugin_snapshot_interval_s;
+        options.log_uri = FLAGS_plugin_log_uri + "0";
         //options.stable_uri = FLAGS_service_stable_uri + "/meta_server";
-        options.raft_meta_uri = FLAGS_service_stable_uri;// + _file_path;
-        options.snapshot_uri = FLAGS_service_snapshot_uri;// + _file_path;
+        options.raft_meta_uri = FLAGS_plugin_stable_uri;// + _file_path;
+        options.snapshot_uri = FLAGS_plugin_snapshot_uri;// + _file_path;
         int ret = _node.init(options);
         if (ret < 0) {
             TLOG_ERROR("raft node init fail");
@@ -59,7 +58,7 @@ namespace EA {
         return 0;
     }
 
-    void ServiceStateMachine::process(google::protobuf::RpcController *controller,
+    void PluginStateMachine::process(google::protobuf::RpcController *controller,
                                    const proto::OpsServiceRequest *request,
                                    proto::OpsServiceResponse *response,
                                    google::protobuf::Closure *done) {
@@ -81,7 +80,7 @@ namespace EA {
             cntl->SetFailed(brpc::EREQUEST, "Fail to serialize request");
             return;
         }
-        ServiceClosure *closure = new ServiceClosure;
+        PluginServiceClosure *closure = new PluginServiceClosure;
         closure->request = request->ShortDebugString();
         closure->cntl = cntl;
         closure->response = response;
@@ -93,9 +92,9 @@ namespace EA {
         _node.apply(task);
     }
 
-    void ServiceStateMachine::start_check_bns() {
+    void PluginStateMachine::start_check_bns() {
         //bns ，自动探测是否迁移
-        if (FLAGS_service_server_bns.find(":") == std::string::npos) {
+        if (FLAGS_plugin_server_bns.find(":") == std::string::npos) {
             if (!_check_start) {
                 auto fun = [this]() {
                     start_check_migrate();
@@ -106,7 +105,7 @@ namespace EA {
         }
     }
 
-    void ServiceStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {
+    void PluginStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {
         TLOG_WARN("start on snapshot save");
         //create a snapshot
         rocksdb::ReadOptions read_options;
@@ -122,12 +121,12 @@ namespace EA {
         bth.run(save_snapshot_function);
     }
 
-    void ServiceStateMachine::save_snapshot(braft::Closure *done, rocksdb::Iterator *iter, braft::SnapshotWriter *writer) {
+    void PluginStateMachine::save_snapshot(braft::Closure *done, rocksdb::Iterator *iter, braft::SnapshotWriter *writer) {
         brpc::ClosureGuard done_guard(done);
         std::unique_ptr<rocksdb::Iterator> iter_lock(iter);
 
         std::string snapshot_path = writer->get_path();
-        std::string sst_file_path = snapshot_path + FLAGS_service_snapshot_sst;
+        std::string sst_file_path = snapshot_path + FLAGS_plugin_snapshot_sst;
 
         rocksdb::Options option = RocksWrapper::get_instance()->get_options(
                 RocksWrapper::get_instance()->get_service_handle());
@@ -159,7 +158,7 @@ namespace EA {
             done->status().set_error(EINVAL, "Fail to finish SstFileWriter");
             return;
         }
-        if (writer->add_file(FLAGS_service_snapshot_sst) != 0) {
+        if (writer->add_file(FLAGS_plugin_snapshot_sst) != 0) {
             done->status().set_error(EINVAL, "Fail to add file");
             TLOG_WARN("Error while adding file to writer");
             return;
@@ -187,7 +186,7 @@ namespace EA {
         }
     }
 
-    int ServiceStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
+    int PluginStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
         TLOG_WARN("start on snapshot load");
         // clean local data
         std::string remove_start_key(ServiceConstants::CONFIG_IDENTIFY);
@@ -218,11 +217,11 @@ namespace EA {
         reader->list_files(&files);
         for (auto &file: files) {
             TLOG_WARN("snapshot load file:{}", file);
-            if (file == FLAGS_service_snapshot_sst) {
+            if (file == FLAGS_plugin_snapshot_sst) {
                 std::string snapshot_path = reader->get_path();
                 _applied_index = parse_snapshot_index_from_path(snapshot_path, false);
                 TLOG_WARN("_applied_index:{} path:{}", _applied_index, snapshot_path);
-                snapshot_path.append(FLAGS_service_snapshot_sst);
+                snapshot_path.append(FLAGS_plugin_snapshot_sst);
 
                 // restore from file
                 rocksdb::IngestExternalFileOptions ifo;
@@ -238,11 +237,6 @@ namespace EA {
                 }
                 // restore memory store
                 int ret = 0;
-                ret = ConfigManager::get_instance()->load_snapshot();
-                if (ret != 0) {
-                    TLOG_ERROR("ClusterManager load snapshot fail");
-                    return -1;
-                }
                 ret =PluginManager::get_instance()->load_snapshot();
                 if (ret != 0) {
                     TLOG_ERROR("PluginManager load snapshot fail");
@@ -260,13 +254,13 @@ namespace EA {
         set_have_data(true);
         return 0;
     }
-    void ServiceStateMachine::on_leader_start(int64_t term) {
+    void PluginStateMachine::on_leader_start(int64_t term) {
         TLOG_INFO("leader start at term: {}", term);
         start_check_bns();
         _is_leader.store(true);
     }
 
-    void ServiceStateMachine::on_leader_stop(const butil::Status &status) {
+    void PluginStateMachine::on_leader_stop(const butil::Status &status) {
         TLOG_INFO("leader stop, error_code:%d, error_des:{}",
                   status.error_code(), status.error_cstr());
         _is_leader.store(false);
@@ -278,12 +272,12 @@ namespace EA {
         TLOG_INFO("leader stop");
     }
 
-    void ServiceStateMachine::on_error(const ::braft::Error &e) {
+    void PluginStateMachine::on_error(const ::braft::Error &e) {
         TLOG_ERROR("service state machine error, error_type:{}, error_code:{}, error_des:{}",
                    static_cast<int>(e.type()), e.status().error_code(), e.status().error_cstr());
     }
 
-    void ServiceStateMachine::on_configuration_committed(const ::braft::Configuration &conf) {
+    void PluginStateMachine::on_configuration_committed(const ::braft::Configuration &conf) {
         std::string new_peer;
         for (auto iter = conf.begin(); iter != conf.end(); ++iter) {
             new_peer += iter->to_string() + ",";
@@ -291,10 +285,10 @@ namespace EA {
         TLOG_INFO("new conf committed, new peer: {}", new_peer.c_str());
     }
 
-    void ServiceStateMachine::start_check_migrate() {
+    void PluginStateMachine::start_check_migrate() {
         TLOG_INFO("start check migrate");
         static int64_t count = 0;
-        int64_t sleep_time_count = FLAGS_service_check_migrate_interval_us / (1000 * 1000LL); //以S为单位
+        int64_t sleep_time_count = FLAGS_plugin_check_migrate_interval_us / (1000 * 1000LL); //以S为单位
         while (_node.is_leader()) {
             int time = 0;
             while (time < sleep_time_count) {
@@ -310,16 +304,16 @@ namespace EA {
         }
     }
 
-    void ServiceStateMachine::check_migrate() {
+    void PluginStateMachine::check_migrate() {
         //判断service server是否需要做迁移
         std::vector<std::string> instances;
         std::string remove_peer;
         std::string add_peer;
         int ret = 0;
-        if (get_instance_from_bns(&ret, FLAGS_service_server_bns, instances, false) != 0 ||
-            (int32_t) instances.size() != FLAGS_service_replica_number) {
+        if (get_instance_from_bns(&ret, FLAGS_plugin_server_bns, instances, false) != 0 ||
+            (int32_t) instances.size() != FLAGS_plugin_replica_number) {
             TLOG_WARN("get instance from bns fail, bns:%s, ret:{}, instance.size:{}",
-                      FLAGS_service_server_bns.c_str(), ret, instances.size());
+                      FLAGS_plugin_server_bns.c_str(), ret, instances.size());
             return;
         }
         std::set<std::string> instance_set;
@@ -362,41 +356,33 @@ namespace EA {
         }
     }
 
-    void ServiceStateMachine::on_apply(braft::Iterator &iter) {
+    void PluginStateMachine::on_apply(braft::Iterator &iter) {
         for (; iter.valid(); iter.next()) {
             braft::Closure *done = iter.done();
             brpc::ClosureGuard done_guard(done);
             if (done) {
-                ((ServiceClosure *) done)->raft_time_cost = ((ServiceClosure *) done)->time_cost.get_time();
+                ((PluginServiceClosure *) done)->raft_time_cost = ((PluginServiceClosure *) done)->time_cost.get_time();
             }
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
             proto::OpsServiceRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
                 TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
-                    if (((ServiceClosure *) done)->response) {
-                        ((ServiceClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
-                        ((ServiceClosure *) done)->response->set_errmsg("parse from protobuf fail");
+                    if (((PluginServiceClosure *) done)->response) {
+                        ((PluginServiceClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
+                        ((PluginServiceClosure *) done)->response->set_errmsg("parse from protobuf fail");
                     }
                     braft::run_closure_in_bthread(done_guard.release());
                 }
                 continue;
             }
-            if (done && ((ServiceClosure *) done)->response) {
-                ((ServiceClosure *) done)->response->set_op_type(request.op_type());
+            if (done && ((PluginServiceClosure *) done)->response) {
+                ((PluginServiceClosure *) done)->response->set_op_type(request.op_type());
             }
             TLOG_INFO("on apply, term:{}, index:{}, request op_type:{}",
                       iter.term(), iter.index(),
                       proto::OpType_Name(request.op_type()));
             switch (request.op_type()) {
-                case proto::OP_CREATE_CONFIG: {
-                    ConfigManager::get_instance()->create_config(request, done);
-                    break;
-                }
-                case proto::OP_REMOVE_CONFIG: {
-                    ConfigManager::get_instance()->remove_config(request, done);
-                    break;
-                }
                 case proto::OP_CREATE_PLUGIN: {
                     PluginManager::get_instance()->create_plugin(request, done);
                     break;
@@ -419,7 +405,7 @@ namespace EA {
                 }
                 default: {
                     TLOG_ERROR("unsupport request type, type:{}", request.op_type());
-                    SERVICE_SET_DONE_AND_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
+                    PLUGIN_SERVICE_SET_DONE_AND_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
                 }
             }
             _applied_index = iter.index();
@@ -429,9 +415,9 @@ namespace EA {
         }
     }
 
-    int ServiceStateMachine::send_set_peer_request(bool remove_peer, const std::string &change_peer) {
-        OpsServerInteract file_server_interact;
-        if (file_server_interact.init() != 0) {
+    int PluginStateMachine::send_set_peer_request(bool remove_peer, const std::string &change_peer) {
+        PluginServerInteract plugin_server_interact;
+        if (plugin_server_interact.init() != 0) {
             TLOG_ERROR("service server interact init fail when set peer");
             return -1;
         }
@@ -453,7 +439,7 @@ namespace EA {
             request.add_new_peers(change_peer);
         }
         proto::RaftControlResponse response;
-        int ret = file_server_interact.send_request("raft_control", request, response);
+        int ret = plugin_server_interact.send_request("raft_control", request, response);
         if (ret != 0) {
             TLOG_WARN("set peer when service server migrate fail, request:{}, response:{}",
                       request.ShortDebugString(), response.ShortDebugString());

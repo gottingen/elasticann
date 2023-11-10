@@ -15,23 +15,29 @@
 
 
 #include "elasticann/ops/service_rocksdb.h"
+#include "turbo/files/filesystem.h"
 #include "gflags/gflags.h"
 
 namespace EA {
 
-    int ServiceRocksdb::init() {
+    int ServiceRocksdb::init(const std::string & path) {
+        auto dir = turbo::filesystem::path(path).parent_path();
+        std::error_code ec;
+        if(!turbo::filesystem::exists(dir, ec)) {
+            turbo::filesystem::create_directories(dir);
+        }
         _rocksdb = RocksWrapper::get_instance();
         if (!_rocksdb) {
             TLOG_ERROR("create rocksdb handler failed");
             return -1;
         }
-        int ret = _rocksdb->init(FLAGS_service_db_path);
+        int ret = _rocksdb->init(path);
         if (ret != 0) {
             TLOG_ERROR("rocksdb init failed: code:{}", ret);
             return -1;
         }
         _handle = _rocksdb->get_service_handle();
-        TLOG_WARN("rocksdb init success, db_path:{}", FLAGS_service_db_path);
+        TLOG_WARN("rocksdb init success, db_path:{}", path);
         return 0;
     }
 

@@ -29,19 +29,27 @@ namespace EA {
                                   ::EA::proto::MetaManagerResponse* response,
                                   ::google::protobuf::Closure* done) override;
 
-        void query(::google::protobuf::RpcController* controller,
+        void meta_query(::google::protobuf::RpcController* controller,
                            const ::EA::proto::QueryRequest* request,
                            ::EA::proto::QueryResponse* response,
                            ::google::protobuf::Closure* done) override;
 
-        void ops_manage(::google::protobuf::RpcController* controller,
+        void config_manage(::google::protobuf::RpcController* controller,
                                 const ::EA::proto::OpsServiceRequest* request,
                                 ::EA::proto::OpsServiceResponse* response,
                                 ::google::protobuf::Closure* done) override;
-        void ops_query(::google::protobuf::RpcController* controller,
+        void config_query(::google::protobuf::RpcController* controller,
                                const ::EA::proto::QueryOpsServiceRequest* request,
                                ::EA::proto::QueryOpsServiceResponse* response,
                                ::google::protobuf::Closure* done) override;
+        void plugin_manage(::google::protobuf::RpcController* controller,
+                        const ::EA::proto::OpsServiceRequest* request,
+                        ::EA::proto::OpsServiceResponse* response,
+                        ::google::protobuf::Closure* done) override;
+        void plugin_query(::google::protobuf::RpcController* controller,
+                       const ::EA::proto::QueryOpsServiceRequest* request,
+                       ::EA::proto::QueryOpsServiceResponse* response,
+                       ::google::protobuf::Closure* done) override;
 
     };
 }  // namespace EA

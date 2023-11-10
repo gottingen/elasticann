@@ -26,16 +26,16 @@
 
 namespace EA {
 
-    class OpsServerInteract {
+    class ConfigServerInteract {
     public:
         static const int RETRY_TIMES = 5;
 
-        static OpsServerInteract *get_instance() {
-            static OpsServerInteract _instance;
+        static ConfigServerInteract *get_instance() {
+            static ConfigServerInteract _instance;
             return &_instance;
         }
 
-        OpsServerInteract()  = default;
+        ConfigServerInteract()  = default;
 
         bool is_inited() {
             return _is_inited;
@@ -49,7 +49,7 @@ namespace EA {
         int send_request(const std::string &service_name,
                          const Request &request,
                          Response &response) {
-            const ::google::protobuf::ServiceDescriptor *service_desc = proto::OpsService::descriptor();
+            const ::google::protobuf::ServiceDescriptor *service_desc = proto::ConfigService::descriptor();
             const ::google::protobuf::MethodDescriptor *method =
                     service_desc->FindMethodByName(service_name);
             if (method == nullptr) {
@@ -59,8 +59,8 @@ namespace EA {
             int retry_time = 0;
             uint64_t log_id = butil::fast_rand();
             do {
-                if (retry_time > 0 && FLAGS_time_between_service_connect_error_ms > 0) {
-                    bthread_usleep(1000 * FLAGS_time_between_service_connect_error_ms);
+                if (retry_time > 0 && FLAGS_config_time_between_connect_error_ms > 0) {
+                    bthread_usleep(1000 * FLAGS_config_time_between_connect_error_ms);
                 }
                 brpc::Controller cntl;
                 cntl.set_log_id(log_id);
@@ -75,7 +75,7 @@ namespace EA {
                     channel_opt.connect_timeout_ms = _connect_timeout;
                     brpc::Channel short_channel;
                     if (short_channel.Init(leader_address, &channel_opt) != 0) {
-                        TLOG_WARN("connect with ops server fail. channel Init fail, leader_addr:{}",
+                        TLOG_WARN("connect with config server fail. channel Init fail, leader_addr:{}",
                                   butil::endpoint2str(leader_address).c_str());
                         _set_leader_address(butil::EndPoint());
                         ++retry_time;
@@ -86,13 +86,13 @@ namespace EA {
                     _bns_channel.CallMethod(method, &cntl, &request, &response, nullptr);
                     if (!cntl.Failed() && response.errcode() == proto::SUCCESS) {
                         _set_leader_address(cntl.remote_side());
-                        TLOG_INFO("connect with ops server success by bns name, leader:{}",
+                        TLOG_INFO("connect with config server success by bns name, leader:{}",
                                   butil::endpoint2str(cntl.remote_side()).c_str());
                         return 0;
                     }
                 }
 
-                TLOG_TRACE("ops_req[{}], ops_resp[{}]", request.ShortDebugString(), response.ShortDebugString());
+                TLOG_TRACE("config_req[{}], config_resp[{}]", request.ShortDebugString(), response.ShortDebugString());
                 if (cntl.Failed()) {
                     TLOG_WARN("connect with server fail. send request fail, error:{}, log_id:{}",
                               cntl.ErrorText(), cntl.log_id());
@@ -107,7 +107,7 @@ namespace EA {
                     continue;
                 }
                 if (response.errcode() == proto::NOT_LEADER) {
-                    TLOG_WARN("connect with ops server:{} fail. not leader, redirect to :{}, log_id:{}",
+                    TLOG_WARN("connect with config server:{} fail. not leader, redirect to :{}, log_id:{}",
                               butil::endpoint2str(cntl.remote_side()).c_str(),
                               response.leader(), cntl.log_id());
                     butil::EndPoint leader_addr;
@@ -117,7 +117,7 @@ namespace EA {
                     continue;
                 }
                 if (response.errcode() != proto::SUCCESS) {
-                    TLOG_WARN("send ops server fail, log_id:{}, response:{}", cntl.log_id(),
+                    TLOG_WARN("send config server fail, log_id:{}, response:{}", cntl.log_id(),
                               response.ShortDebugString());
                     return -1;
                 } else {

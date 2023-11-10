@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#ifndef ELASTICANN_OPS_EA_SERVICE_H_
-#define ELASTICANN_OPS_EA_SERVICE_H_
+#ifndef ELASTICANN_OPS_CONFIG_CONFIG_SERVER_H_
+#define ELASTICANN_OPS_CONFIG_CONFIG_SERVER_H_
 
 #include "eaproto/ops/ops.interface.pb.h"
 #include "brpc/closure_guard.h"
@@ -22,21 +22,21 @@
 
 namespace EA {
 
-    class ServiceStateMachine;
+    class ConfigStateMachine;
 
-    class OpsServer : public EA::proto::OpsService {
+    class ConfigServer : public EA::proto::ConfigService {
     public:
-        static OpsServer* get_instance() {
-            static OpsServer ins;
+        static ConfigServer* get_instance() {
+            static ConfigServer ins;
             return &ins;
         }
 
-        void ops_manage(::google::protobuf::RpcController *controller,
+        void config_manage(::google::protobuf::RpcController *controller,
                      const ::EA::proto::OpsServiceRequest *request,
                      ::EA::proto::OpsServiceResponse *response,
                      ::google::protobuf::Closure *done) override;
 
-        void ops_query(::google::protobuf::RpcController *controller,
+        void config_query(::google::protobuf::RpcController *controller,
                         const ::EA::proto::QueryOpsServiceRequest *request,
                         ::EA::proto::QueryOpsServiceResponse *response,
                         ::google::protobuf::Closure *done) override;
@@ -50,9 +50,9 @@ namespace EA {
         void close();
 
     private:
-        ServiceStateMachine *_machine;
+        ConfigStateMachine *_machine;
     };
 
 }  // namespace EA
 
-#endif  // ELASTICANN_OPS_EA_SERVICE_H_
+#endif  // ELASTICANN_OPS_CONFIG_CONFIG_SERVER_H_

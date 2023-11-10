@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#ifndef ELASTICANN_OPS_QUERY_CONFIG_MANAGER_H_
-#define ELASTICANN_OPS_QUERY_CONFIG_MANAGER_H_
+#ifndef ELASTICANN_OPS_QUERY_CONFIG_CONFIG_MANAGER_H_
+#define ELASTICANN_OPS_QUERY_CONFIG_CONFIG_MANAGER_H_
 
 #include "eaproto/ops/ops.interface.pb.h"
 
@@ -39,4 +39,4 @@ namespace EA {
     };
 }  // namespace EA
 
-#endif  // ELASTICANN_OPS_QUERY_CONFIG_MANAGER_H_
+#endif  // ELASTICANN_OPS_QUERY_CONFIG_CONFIG_MANAGER_H_

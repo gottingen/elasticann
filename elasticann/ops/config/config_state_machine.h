@@ -23,13 +23,13 @@
 #include "eaproto/ops/ops.interface.pb.h"
 
 namespace EA {
-    class ServiceStateMachine;
+    class ConfigStateMachine;
 
-    struct ServiceClosure : public braft::Closure {
+    struct ConfigServiceClosure : public braft::Closure {
         void Run() override;
 
         brpc::Controller *cntl;
-        ServiceStateMachine *state_machine;
+        ConfigStateMachine *state_machine;
         google::protobuf::Closure *done;
         proto::OpsServiceResponse *response;
         std::string request;
@@ -38,17 +38,16 @@ namespace EA {
         TimeCost time_cost;
     };
 
-    class ServiceStateMachine : public braft::StateMachine {
+    class ConfigStateMachine : public braft::StateMachine {
     public:
 
-        ServiceStateMachine(const std::string &identify,
-                         const std::string &file_path,
+        ConfigStateMachine(const std::string &identify,
                          const braft::PeerId &peerId) :
                 _node(identify, peerId),
                 _is_leader(false),
                 _check_migrate(&BTHREAD_ATTR_SMALL) {}
 
-        ~ServiceStateMachine() override = default;
+        ~ConfigStateMachine() override = default;
 
         int init(const std::vector<braft::PeerId> &peers);
 
@@ -138,11 +137,11 @@ namespace EA {
 
 }  // namespace EA
 
-#define SERVICE_SET_DONE_AND_RESPONSE(done, errcode, err_message) \
+#define CONFIG_SERVICE_SET_DONE_AND_RESPONSE(done, errcode, err_message) \
     do {\
-        if (done && ((ServiceClosure*)done)->response) {\
-            ((ServiceClosure*)done)->response->set_errcode(errcode);\
-            ((ServiceClosure*)done)->response->set_errmsg(err_message);\
+        if (done && ((ConfigServiceClosure*)done)->response) {\
+            ((ConfigServiceClosure*)done)->response->set_errcode(errcode);\
+            ((ConfigServiceClosure*)done)->response->set_errmsg(err_message);\
         }\
     }while (0);
 

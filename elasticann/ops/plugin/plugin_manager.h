@@ -14,8 +14,8 @@
 //
 
 
-#ifndef ELASTICANN_OPS_PLUGIN_MANAGER_H_
-#define ELASTICANN_OPS_PLUGIN_MANAGER_H_
+#ifndef ELASTICANN_OPS_PLUGIN_PLUGIN_MANAGER_H_
+#define ELASTICANN_OPS_PLUGIN_PLUGIN_MANAGER_H_
 
 #include "turbo/container/flat_hash_map.h"
 #include "eaproto/ops/ops.interface.pb.h"
@@ -87,8 +87,8 @@ namespace EA {
         bthread_mutex_init(&_plugin_mutex, nullptr);
         bthread_mutex_init(&_tombstone_plugin_mutex, nullptr);
         std::error_code ec;
-        if(!turbo::filesystem::exists(FLAGS_service_plugin_data_root, ec)) {
-            turbo::filesystem::create_directories(FLAGS_service_plugin_data_root, ec);
+        if(!turbo::filesystem::exists(FLAGS_plugin_plugin_data_root, ec)) {
+            turbo::filesystem::create_directories(FLAGS_plugin_plugin_data_root, ec);
         }
     }
 
@@ -98,4 +98,4 @@ namespace EA {
     }
 }  // namespace EA
 
-#endif  // ELASTICANN_OPS_PLUGIN_MANAGER_H_
+#endif  // ELASTICANN_OPS_PLUGIN_PLUGIN_MANAGER_H_

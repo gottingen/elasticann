@@ -345,23 +345,42 @@ namespace EA {
     DECLARE_int64(store_min_sign_concurrency_timeout_ms);
     DECLARE_int32(store_not_leader_alarm_print_interval_s);
 
-    /// for file service
-    DECLARE_int64(time_between_service_connect_error_ms);
-    DECLARE_string(service_server_bns);
-    DECLARE_string(backup_service_server_bns);
-    DECLARE_int32(service_request_timeout);
-    DECLARE_int32(service_connect_timeout);
-    DECLARE_int32(service_snapshot_interval_s);
-    DECLARE_int32(service_election_timeout_ms);
-    DECLARE_string(service_log_uri);
-    DECLARE_string(service_stable_uri);
-    DECLARE_string(service_snapshot_uri);
-    DECLARE_int64(service_check_migrate_interval_us);
-    DECLARE_string(service_plugin_data_root);
-    DECLARE_string(service_db_path);
-    DECLARE_string(service_snapshot_sst);
-    DECLARE_string(service_listen);
-    DECLARE_int32(service_replica_number);
+    /// for eaconfig
+    DECLARE_int64(config_time_between_connect_error_ms);
+    DECLARE_string(config_server_bns);
+    DECLARE_string(config_backup_server_bns);
+    DECLARE_int32(config_request_timeout);
+    DECLARE_int32(config_connect_timeout);
+    DECLARE_int32(config_snapshot_interval_s);
+    DECLARE_int32(config_election_timeout_ms);
+    DECLARE_string(config_log_uri);
+    DECLARE_string(config_stable_uri);
+    DECLARE_string(config_snapshot_uri);
+    DECLARE_int64(config_check_migrate_interval_us);
+    DECLARE_string(config_plugin_data_root);
+    DECLARE_string(config_db_path);
+    DECLARE_string(config_snapshot_sst);
+    DECLARE_string(config_listen);
+    DECLARE_int32(config_replica_number);
+
+    /// for eaplugin
+    DECLARE_int64(plugin_time_between_connect_error_ms);
+    DECLARE_string(plugin_server_bns);
+    DECLARE_string(plugin_backup_server_bns);
+    DECLARE_int32(plugin_request_timeout);
+    DECLARE_int32(plugin_connect_timeout);
+    DECLARE_int32(plugin_snapshot_interval_s);
+    DECLARE_int32(plugin_election_timeout_ms);
+    DECLARE_string(plugin_log_uri);
+    DECLARE_string(plugin_stable_uri);
+    DECLARE_string(plugin_snapshot_uri);
+    DECLARE_int64(plugin_check_migrate_interval_us);
+    DECLARE_string(plugin_plugin_data_root);
+    DECLARE_string(plugin_db_path);
+    DECLARE_string(plugin_snapshot_sst);
+    DECLARE_string(plugin_listen);
+    DECLARE_int32(plugin_replica_number);
+
 
     /// for router
     DECLARE_string(router_listen);
