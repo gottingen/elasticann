@@ -39,15 +39,15 @@ namespace EA {
         brpc::ChannelOptions channel_opt;
         channel_opt.timeout_ms = FLAGS_plugin_request_timeout;
         channel_opt.connect_timeout_ms = FLAGS_plugin_connect_timeout;
-        std::string file_server_addr = file_bns;
+        std::string plugin_server_addr = file_bns;
         //bns
         if (file_bns.find(":") == std::string::npos) {
-            file_server_addr = std::string("bns://") + file_bns;
+            plugin_server_addr = std::string("bns://") + file_bns;
         } else {
-            file_server_addr = std::string("list://") + file_bns;
+            plugin_server_addr = std::string("list://") + file_bns;
         }
-        if (_bns_channel.Init(file_server_addr.c_str(), "rr", &channel_opt) != 0) {
-            TLOG_ERROR("file server bns pool init fail. bns_name:{}", file_server_addr);
+        if (_bns_channel.Init(plugin_server_addr.c_str(), "rr", &channel_opt) != 0) {
+            TLOG_ERROR("plugin server bns pool init fail. bns_name:{}", plugin_server_addr);
             return -1;
         }
         _is_inited = true;

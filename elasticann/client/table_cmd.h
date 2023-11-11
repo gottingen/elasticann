@@ -18,12 +18,30 @@
 
 #include "turbo/flags/flags.h"
 #include <string>
+#include "eaproto/router/router.interface.pb.h"
+#include "turbo/base/status.h"
 
 namespace EA::client {
+
+    struct TableOptionContext {
+        static TableOptionContext *get_instance() {
+            static TableOptionContext ins;
+            return &ins;
+        }
+        // for namespace
+        std::string namespace_name;
+        std::string db_name;
+        std::string table_name;
+        std::vector<std::string> table_fields;
+        std::vector<std::string> table_indexes;
+    };
 
     void setup_table_cmd(turbo::App &app);
 
     void run_table_cmd(turbo::App *app);
     void run_table_create();
+
+    turbo::Status
+    make_table_create(EA::proto::MetaManagerRequest *req);
 }  // namespace EA::client
 #endif  // ELASTICANN_CLIENT_TABLE_CMD_H_

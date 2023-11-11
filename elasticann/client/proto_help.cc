@@ -121,6 +121,16 @@ namespace EA::client {
                 return "remove tombstone plugin";
             case EA::proto::OP_UPLOAD_PLUGIN:
                 return "upload plugin";
+            case EA::proto::OP_CREATE_DICT:
+                return "create dict";
+            case EA::proto::OP_REMOVE_DICT:
+                return "remove dict";
+            case EA::proto::OP_RESTORE_TOMBSTONE_DICT:
+                return "restore dict";
+            case EA::proto::OP_REMOVE_TOMBSTONE_DICT:
+                return "remove tombstone dict";
+            case EA::proto::OP_UPLOAD_DICT:
+                return "upload dict";
             default:
                 return "unknown operation";
         }
@@ -145,7 +155,7 @@ namespace EA::client {
             case EA::proto::QUERY_PLUGIN_INFO:
                 return "plugin info";
             case EA::proto::QUERY_LIST_PLUGIN:
-                return "plugin info";
+                return "plugin list";
             case EA::proto::QUERY_LIST_PLUGIN_VERSION:
                 return "list plugin version";
             case EA::proto::QUERY_TOMBSTONE_PLUGIN_INFO:
@@ -156,6 +166,20 @@ namespace EA::client {
                 return "tombstone list plugin version";
             case EA::proto::QUERY_DOWNLOAD_PLUGIN:
                 return "download plugin";
+            case EA::proto::QUERY_INFO_DICT:
+                return "dict info";
+            case EA::proto::QUERY_LIST_DICT:
+                return "dict list";
+            case EA::proto::QUERY_LIST_DICT_VERSION:
+                return "list dict version";
+            case EA::proto::QUERY_TOMBSTONE_DICT_INFO:
+                return "tombstone dict info";
+            case EA::proto::QUERY_TOMBSTONE_LIST_DICT:
+                return "tombstone list dict";
+            case EA::proto::QUERY_TOMBSTONE_LIST_DICT_VERSION:
+                return "tombstone list dict version";
+            case EA::proto::QUERY_DOWNLOAD_DICT:
+                return "download dict";
             default:
                 return "unknown operation";
         }

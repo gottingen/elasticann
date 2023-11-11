@@ -27,7 +27,7 @@ namespace EA::client {
     /// You could return the shared pointer if you wanted to access the values in main.
     void setup_namespace_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = OptionContext::get_instance();
+        auto opt = NameSpaceOptionContext::get_instance();
         auto *ns = app.add_subcommand("namespace", "namespace operations");
         ns->callback([ns]() { run_namespace_cmd(ns); });
         // Add options to sub, binding them to opt.
@@ -69,7 +69,7 @@ namespace EA::client {
 
     void run_ns_create_cmd() {
         turbo::Println(turbo::color::green, "start to create namespace: {}",
-                       OptionContext::get_instance()->namespace_name);
+                       NameSpaceOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         auto rs = make_namespace_create(&request);
@@ -90,7 +90,7 @@ namespace EA::client {
 
     void run_ns_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}",
-                       OptionContext::get_instance()->namespace_name);
+                       NameSpaceOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -111,7 +111,7 @@ namespace EA::client {
 
     void run_ns_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}",
-                       OptionContext::get_instance()->namespace_name);
+                       NameSpaceOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -208,12 +208,12 @@ namespace EA::client {
     turbo::Status
     make_namespace_create(EA::proto::MetaManagerRequest *req) {
         EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(NameSpaceOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        ns_req->set_quota(OptionContext::get_instance()->namespace_quota);
+        ns_req->set_namespace_name(NameSpaceOptionContext::get_instance()->namespace_name);
+        ns_req->set_quota(NameSpaceOptionContext::get_instance()->namespace_quota);
         req->set_op_type(EA::proto::OP_CREATE_NAMESPACE);
         return turbo::OkStatus();
     }
@@ -221,11 +221,11 @@ namespace EA::client {
     turbo::Status
     make_namespace_remove(EA::proto::MetaManagerRequest *req) {
         EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(NameSpaceOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
+        ns_req->set_namespace_name(NameSpaceOptionContext::get_instance()->namespace_name);
         req->set_op_type(EA::proto::OP_DROP_NAMESPACE);
         return turbo::OkStatus();
     }
@@ -233,21 +233,21 @@ namespace EA::client {
     turbo::Status
     make_namespace_modify(EA::proto::MetaManagerRequest *req) {
         EA::proto::NameSpaceInfo *ns_req = req->mutable_namespace_info();
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(NameSpaceOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        ns_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        ns_req->set_quota(OptionContext::get_instance()->namespace_quota);
+        ns_req->set_namespace_name(NameSpaceOptionContext::get_instance()->namespace_name);
+        ns_req->set_quota(NameSpaceOptionContext::get_instance()->namespace_quota);
         req->set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
         return turbo::OkStatus();
     }
 
     turbo::Status make_namespace_query(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_NAMESPACE);
-        if (!OptionContext::get_instance()->namespace_name.empty()) {
-            req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-            auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        if (!NameSpaceOptionContext::get_instance()->namespace_name.empty()) {
+            req->set_namespace_name(NameSpaceOptionContext::get_instance()->namespace_name);
+            auto rs = CheckValidNameType(NameSpaceOptionContext::get_instance()->namespace_name);
             if (!rs.ok()) {
                 return rs;
             }

@@ -26,7 +26,7 @@
 namespace EA::client {
     void setup_config_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = OptionContext::get_instance();
+        auto opt = ConfigOptionContext::get_instance();
         auto *ns = app.add_subcommand("config", "config operations");
         ns->callback([ns]() { run_config_cmd(ns); });
 
@@ -87,7 +87,7 @@ namespace EA::client {
     }
 
     void run_config_list_cmd() {
-        if (!OptionContext::get_instance()->config_name.empty()) {
+        if (!ConfigOptionContext::get_instance()->config_name.empty()) {
             run_config_version_list_cmd();
             return;
         }
@@ -160,8 +160,8 @@ namespace EA::client {
             return;
         }
         turbo::Status save_status;
-        if(!OptionContext::get_instance()->config_file.empty()) {
-            save_status = save_config_to_file(OptionContext::get_instance()->config_file, response);
+        if(!ConfigOptionContext::get_instance()->config_file.empty()) {
+            save_status = save_config_to_file(ConfigOptionContext::get_instance()->config_file, response);
         }
         table = show_query_ops_config_get_response(response,save_status);
         ss.add_table(std::move(table));
@@ -169,7 +169,7 @@ namespace EA::client {
 
     turbo::Status save_config_to_file(const std::string & path, const EA::proto::QueryOpsServiceResponse &res) {
         turbo::SequentialWriteFile file;
-        auto s = file.open(OptionContext::get_instance()->config_file);
+        auto s = file.open(ConfigOptionContext::get_instance()->config_file);
         if(!s.ok()) {
             return s;
         }
@@ -205,7 +205,7 @@ namespace EA::client {
     make_config_create(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_CREATE_CONFIG);
         auto rc = req->mutable_request_config();
-        auto opt = OptionContext::get_instance();
+        auto opt = ConfigOptionContext::get_instance();
         rc->set_name(opt->config_name);
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
         auto r = string_to_config_type(opt->config_type);
@@ -247,7 +247,7 @@ namespace EA::client {
     [[nodiscard]] turbo::Status
     make_config_list_version(EA::proto::QueryOpsServiceRequest *req) {
         req->set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
-        auto opt = OptionContext::get_instance();
+        auto opt = ConfigOptionContext::get_instance();
         req->mutable_query_config()->set_name(opt->config_name);
         return turbo::OkStatus();
     }
@@ -256,7 +256,7 @@ namespace EA::client {
     make_config_get(EA::proto::QueryOpsServiceRequest *req) {
         req->set_op_type(EA::proto::QUERY_GET_CONFIG);
         auto rc = req->mutable_query_config();
-        auto opt = OptionContext::get_instance();
+        auto opt = ConfigOptionContext::get_instance();
         rc->set_name(opt->config_name);
         if (!opt->config_version.empty()) {
             auto v = rc->mutable_version();
@@ -269,7 +269,7 @@ namespace EA::client {
     make_config_remove(EA::proto::OpsServiceRequest *req) {
         req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
         auto rc = req->mutable_request_config();
-        auto opt = OptionContext::get_instance();
+        auto opt = ConfigOptionContext::get_instance();
         rc->set_name(opt->config_name);
         if (!opt->config_version.empty()) {
             auto v = rc->mutable_version();
@@ -335,8 +335,8 @@ namespace EA::client {
         result_table.add_row(turbo::Table::Row_t{"time", turbo::FormatTime(cs)});
         last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);
-        if(!OptionContext::get_instance()->config_file.empty()) {
-            result_table.add_row(turbo::Table::Row_t{"file", OptionContext::get_instance()->config_file});
+        if(!ConfigOptionContext::get_instance()->config_file.empty()) {
+            result_table.add_row(turbo::Table::Row_t{"file", ConfigOptionContext::get_instance()->config_file});
             last = result_table.size() - 1;
             result_table[last].format().font_color(turbo::Color::green);
             result_table.add_row(turbo::Table::Row_t{"status", save_status.ok() ? "ok" : save_status.message()});

@@ -357,7 +357,6 @@ namespace EA {
     DECLARE_string(config_stable_uri);
     DECLARE_string(config_snapshot_uri);
     DECLARE_int64(config_check_migrate_interval_us);
-    DECLARE_string(config_plugin_data_root);
     DECLARE_string(config_db_path);
     DECLARE_string(config_snapshot_sst);
     DECLARE_string(config_listen);
@@ -375,11 +374,29 @@ namespace EA {
     DECLARE_string(plugin_stable_uri);
     DECLARE_string(plugin_snapshot_uri);
     DECLARE_int64(plugin_check_migrate_interval_us);
-    DECLARE_string(plugin_plugin_data_root);
+    DECLARE_string(plugin_data_root);
     DECLARE_string(plugin_db_path);
     DECLARE_string(plugin_snapshot_sst);
     DECLARE_string(plugin_listen);
     DECLARE_int32(plugin_replica_number);
+
+    /// for eadict
+    DECLARE_int64(dict_time_between_connect_error_ms);
+    DECLARE_string(dict_server_bns);
+    DECLARE_string(dict_backup_server_bns);
+    DECLARE_int32(dict_request_timeout);
+    DECLARE_int32(dict_connect_timeout);
+    DECLARE_int32(dict_snapshot_interval_s);
+    DECLARE_int32(dict_election_timeout_ms);
+    DECLARE_string(dict_log_uri);
+    DECLARE_string(dict_stable_uri);
+    DECLARE_string(dict_snapshot_uri);
+    DECLARE_int64(dict_check_migrate_interval_us);
+    DECLARE_string(dict_data_root);
+    DECLARE_string(dict_db_path);
+    DECLARE_string(dict_snapshot_sst);
+    DECLARE_string(dict_listen);
+    DECLARE_int32(dict_replica_number);
 
 
     /// for router

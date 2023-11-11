@@ -45,7 +45,7 @@ namespace EA {
 
         BAIDU_SCOPED_LOCK(_plugin_mutex);
         if (_plugins.find(name) == _plugins.end()) {
-            _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+            _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
         }
         auto it = _plugins.find(name);
         // do not rewrite.
@@ -65,7 +65,7 @@ namespace EA {
         }
         std::string rocks_key = make_plugin_key(name, version);
         std::string rocks_value;
-        EA::proto::PluginEntiry entity;
+        EA::proto::PluginEntity entity;
         auto st = transfer_info_to_entity(&create_request, &entity);
         if (!st.ok()) {
             PLUGIN_SERVICE_SET_DONE_AND_RESPONSE(done, proto::PARSE_TO_PB_FAIL, std::string(st.message()));
@@ -228,7 +228,7 @@ namespace EA {
             /// move to tombstone
             BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
             if (_tombstone_plugins.find(name) == _tombstone_plugins.end()) {
-                _tombstone_plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+                _tombstone_plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
             }
             _tombstone_plugins[name][version] = pit->second;
         }
@@ -251,7 +251,7 @@ namespace EA {
         bool remove_signal = remove_request.has_version();
         BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
         if (!remove_signal) {
-            remove_plugin_all(request, done);
+            remove_tombstone_plugin_all(request, done);
             return;
         }
         auto it = _tombstone_plugins.find(name);
@@ -327,7 +327,7 @@ namespace EA {
             /// move to tombstone
             BAIDU_SCOPED_LOCK(_tombstone_plugin_mutex);
             if (_tombstone_plugins.find(name) == _tombstone_plugins.end()) {
-                _tombstone_plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+                _tombstone_plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
             }
             auto tomb_it = _tombstone_plugins.find(name);
             for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
@@ -421,7 +421,7 @@ namespace EA {
             /// move to normal
             BAIDU_SCOPED_LOCK(_plugin_mutex);
             if (_plugins.find(name) == _plugins.end()) {
-                _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+                _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
             }
             _plugins[name][version] = pit->second;
         }
@@ -468,7 +468,7 @@ namespace EA {
             /// move to tombstone
             BAIDU_SCOPED_LOCK(_plugin_mutex);
             if (_plugins.find(name) == _plugins.end()) {
-                _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+                _plugins[name] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
             }
             auto normal_it = _plugins.find(name);
             for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
@@ -504,7 +504,7 @@ namespace EA {
 
     int PluginManager::load_snapshot_file(const std::string &file_path) {
         auto fname = turbo::filesystem::path(file_path).filename();
-        auto local_path = turbo::filesystem::path(FLAGS_plugin_plugin_data_root) / fname;
+        auto local_path = turbo::filesystem::path(FLAGS_plugin_data_root) / fname;
         std::error_code ec;
         if (!turbo::filesystem::exists(local_path, ec)) {
             if (ec) {
@@ -540,14 +540,14 @@ namespace EA {
     }
 
     int PluginManager::load_plugin_snapshot(const std::string &value) {
-        proto::PluginEntiry plugin_pb;
+        proto::PluginEntity plugin_pb;
         if (!plugin_pb.ParseFromString(value)) {
             TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
             return -1;
         }
         if (plugin_pb.tombstone()) {
             if (_tombstone_plugins.find(plugin_pb.name()) == _tombstone_plugins.end()) {
-                _tombstone_plugins[plugin_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+                _tombstone_plugins[plugin_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
             }
             auto it = _tombstone_plugins.find(plugin_pb.name());
             turbo::ModuleVersion version(plugin_pb.version().major(), plugin_pb.version().minor(),
@@ -555,7 +555,7 @@ namespace EA {
             it->second[version] = plugin_pb;
         } else {
             if (_plugins.find(plugin_pb.name()) == _plugins.end()) {
-                _plugins[plugin_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>();
+                _plugins[plugin_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::PluginEntity>();
             }
             auto it = _plugins.find(plugin_pb.name());
             turbo::ModuleVersion version(plugin_pb.version().major(), plugin_pb.version().minor(),
@@ -577,7 +577,7 @@ namespace EA {
                     auto filename = make_plugin_filename(pit->second.name(), pit->first, pit->second.platform());
                     std::string file_path = turbo::Format("{}/{}", prefix, filename);
                     std::string target = base_dir + file_path;
-                    std::string source = turbo::Format("{}/{}", FLAGS_plugin_plugin_data_root, filename);
+                    std::string source = turbo::Format("{}/{}", FLAGS_plugin_data_root, filename);
 
                     if (!turbo::filesystem::exists(source, ec)) {
                         continue;
@@ -598,7 +598,7 @@ namespace EA {
                     auto filename = make_plugin_filename(pit->second.name(), pit->first, pit->second.platform());
                     std::string file_path = turbo::Format("{}/{}", prefix, filename);
                     std::string target = base_dir + file_path;
-                    std::string source = turbo::Format("{}/{}", FLAGS_plugin_plugin_data_root, filename);
+                    std::string source = turbo::Format("{}/{}", FLAGS_plugin_data_root, filename);
 
                     if (!turbo::filesystem::exists(source, ec)) {
                         continue;
@@ -620,7 +620,7 @@ namespace EA {
     }
 
     turbo::Status
-    PluginManager::transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntiry *entity) {
+    PluginManager::transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntity *entity) {
         entity->set_upload_size(0);
         entity->set_finish(false);
         entity->set_tombstone(false);
@@ -643,7 +643,7 @@ namespace EA {
         return turbo::OkStatus();
     }
 
-    void PluginManager::transfer_entity_to_info(const EA::proto::PluginEntiry *entity, EA::proto::PluginInfo *info) {
+    void PluginManager::transfer_entity_to_info(const EA::proto::PluginEntity *entity, EA::proto::PluginInfo *info) {
         info->set_upload_size(entity->upload_size());
         info->set_finish(entity->finish());
         info->set_tombstone(entity->tombstone());
@@ -671,11 +671,11 @@ namespace EA {
     std::string PluginManager::make_plugin_store_path(const std::string &name, const turbo::ModuleVersion &version,
                                                       EA::proto::Platform platform) {
         if (platform == EA::proto::PF_lINUX) {
-            return turbo::Format("{}/lib{}.so.{}", FLAGS_plugin_plugin_data_root, name, version.to_string());
+            return turbo::Format("{}/lib{}.so.{}", FLAGS_plugin_data_root, name, version.to_string());
         } else if (platform == EA::proto::PF_OSX) {
-            return turbo::Format("{}/lib{}.{}.dylib", FLAGS_plugin_plugin_data_root, name, version.to_string());
+            return turbo::Format("{}/lib{}.{}.dylib", FLAGS_plugin_data_root, name, version.to_string());
         } else {
-            return turbo::Format("{}/lib{}.{}.dll", FLAGS_plugin_plugin_data_root, name, version.to_string());
+            return turbo::Format("{}/lib{}.{}.dll", FLAGS_plugin_data_root, name, version.to_string());
         }
     }
 

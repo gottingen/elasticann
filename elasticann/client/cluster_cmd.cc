@@ -28,7 +28,7 @@ namespace EA::client {
     /// You could return the shared pointer if you wanted to access the values in main.
     void setup_cluster_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = OptionContext::get_instance();
+        auto opt = ClusterOptionContext::get_instance();
         auto *ns = app.add_subcommand("cluster", "cluster operations");
         ns->callback([ns]() { run_cluster_cmd(ns); });
         // Add options to sub, binding them to opt.
@@ -83,7 +83,6 @@ namespace EA::client {
     }
 
     void run_logical_create_cmd() {
-        turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -103,7 +102,6 @@ namespace EA::client {
     }
 
     void run_logical_remove_cmd() {
-        turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -123,7 +121,6 @@ namespace EA::client {
     }
 
     void run_physical_create_cmd() {
-        turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -142,7 +139,6 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
     void run_physical_remove_cmd() {
-        turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -161,7 +157,6 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
     void run_physical_move_cmd() {
-        turbo::Println(turbo::color::green, "start to create physical idc: {}", OptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -321,7 +316,7 @@ namespace EA::client {
     turbo::Status make_cluster_create_logical(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_ADD_LOGICAL);
         EA::proto::LogicalRoom *loc_req = req->mutable_logical_rooms();
-        auto &rs = OptionContext::get_instance()->logical_idc;
+        auto &rs = ClusterOptionContext::get_instance()->logical_idc;
         loc_req->mutable_logical_rooms()->Reserve(rs.size());
         for (size_t i = 0; i < rs.size(); i++) {
             loc_req->add_logical_rooms()->assign(rs[i]);
@@ -332,7 +327,7 @@ namespace EA::client {
     turbo::Status make_cluster_remove_logical(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_DROP_LOGICAL);
         EA::proto::LogicalRoom *loc_req = req->mutable_logical_rooms();
-        auto &rs = OptionContext::get_instance()->logical_idc;
+        auto &rs = ClusterOptionContext::get_instance()->logical_idc;
         loc_req->mutable_logical_rooms()->Reserve(rs.size());
         for (size_t i = 0; i < rs.size(); i++) {
             loc_req->add_logical_rooms()->assign(rs[i]);
@@ -343,13 +338,13 @@ namespace EA::client {
     turbo::Status make_cluster_create_physical(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_ADD_PHYSICAL);
         EA::proto::PhysicalRoom *phy_req = req->mutable_physical_rooms();
-        auto &rs = OptionContext::get_instance()->logical_idc;
+        auto &rs = ClusterOptionContext::get_instance()->logical_idc;
         if (rs.size() != 1) {
             return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", rs.size());
         }
         phy_req->set_logical_room(rs[0]);
 
-        auto &ps = OptionContext::get_instance()->physical_idc;
+        auto &ps = ClusterOptionContext::get_instance()->physical_idc;
         for (size_t i = 0; i < rs.size(); i++) {
             phy_req->add_physical_rooms()->assign(ps[i]);
         }
@@ -359,13 +354,13 @@ namespace EA::client {
     turbo::Status make_cluster_remove_physical(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_DROP_PHYSICAL);
         EA::proto::PhysicalRoom *phy_req = req->mutable_physical_rooms();
-        auto &rs = OptionContext::get_instance()->logical_idc;
+        auto &rs = ClusterOptionContext::get_instance()->logical_idc;
         if (rs.size() != 1) {
             return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}", rs.size());
         }
         phy_req->set_logical_room(rs[0]);
 
-        auto &ps = OptionContext::get_instance()->physical_idc;
+        auto &ps = ClusterOptionContext::get_instance()->physical_idc;
         for (size_t i = 0; i < rs.size(); i++) {
             phy_req->add_physical_rooms()->assign(ps[i]);
         }
@@ -375,13 +370,13 @@ namespace EA::client {
     turbo::Status make_cluster_move_physical(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_MOVE_PHYSICAL);
         auto *phy_req = req->mutable_move_physical_request();
-        auto &rs = OptionContext::get_instance()->logical_idc;
+        auto &rs = ClusterOptionContext::get_instance()->logical_idc;
         if (rs.size() != 2) {
             return turbo::InvalidArgumentError("create physical idc need 2 logical but you have given: {}", rs.size());
         }
         phy_req->set_old_logical_room(rs[0]);
         phy_req->set_new_logical_room(rs[1]);
-        auto &ps = OptionContext::get_instance()->physical_idc;
+        auto &ps = ClusterOptionContext::get_instance()->physical_idc;
         if (ps.size() != 1) {
             return turbo::InvalidArgumentError("move physical idc need 1 physical but you have given: {}", rs.size());
         }
@@ -396,7 +391,7 @@ namespace EA::client {
 
     turbo::Status make_cluster_query_logical_info(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_LOGICAL);
-        auto &locs = OptionContext::get_instance()->logical_idc;
+        auto &locs = ClusterOptionContext::get_instance()->logical_idc;
         if (locs.size() != 1) {
             return turbo::InvalidArgumentError("list logical idc need 1 logical but you have given: {}", locs.size());
         }
@@ -415,7 +410,7 @@ namespace EA::client {
 
     turbo::Status make_cluster_query_physical_info(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_PHYSICAL);
-        auto &phys = OptionContext::get_instance()->physical_idc;
+        auto &phys = ClusterOptionContext::get_instance()->physical_idc;
         if (phys.size() != 1) {
             return turbo::InvalidArgumentError("create physical idc need 1 logical but you have given: {}",
                                                phys.size());

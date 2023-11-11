@@ -34,30 +34,4 @@ namespace EA::client {
         return ret;
     }
 
-    turbo::Status
-    ProtoBuilder::make_table_create(EA::proto::MetaManagerRequest *req) {
-        req->set_op_type(EA::proto::OP_CREATE_TABLE);
-        auto *treq = req->mutable_table_info();
-        // namespace
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
-        if (!rs.ok()) {
-            return rs;
-        }
-
-        // db name
-        treq->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
-        if (!rs.ok()) {
-            return rs;
-        }
-        treq->set_database(OptionContext::get_instance()->db_name);
-
-        // table name
-        rs = CheckValidNameType(OptionContext::get_instance()->table_name);
-        if (!rs.ok()) {
-            return rs;
-        }
-        treq->set_table_name(OptionContext::get_instance()->table_name);
-        return turbo::OkStatus();
-    }
 }  // namespace EA::client

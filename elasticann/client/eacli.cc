@@ -20,13 +20,20 @@
 
 int main(int argc, char **argv) {
     turbo::App app{"elastic ann search client"};
+    auto opt = EA::client::OptionContext::get_instance();
+    app.add_flag("-V, --verbose", opt->verbose, "verbose detail message default(false)")->default_val(false);
+    app.add_option("-s,--server", opt->server, "server address default(\"127.0.0.0:8888\")")->default_val("127.0.0.0:8888");
+    app.add_option("-l,--lb", opt->load_balancer, "load balance default(\"rr\")")->default_val("rr");
+    app.add_option("-m,--timeout", opt->timeout_ms, "timeout ms default(2000)")->default_val(int32_t(2000));
+    app.add_option("-c,--connect", opt->connect_timeout_ms, "connect timeout ms default(100)")->default_val(int32_t(100));
+    app.add_option("-r,--retry", opt->max_retry, "max try time default(3)")->default_val(int32_t(3));
+    app.add_option("-i,--interval", opt->time_between_meta_connect_error_ms, "time between meta connect error ms default(1000)")->default_val(int32_t(1000));
     app.callback([&app] {
         if (app.get_subcommands().empty()) {
             turbo::Println("{}", app.help());
         }
     });
-    app.add_flag("-v, --verbose", EA::client::OptionContext::get_instance()->verbose,
-                 "verbose detail message")->default_val(false);
+
     // Call the setup functions for the subcommands.
     // They are kept alive by a shared pointer in the
     // lambda function

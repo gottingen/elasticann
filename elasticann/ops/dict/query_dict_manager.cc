@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/ops/plugin/query_plugin_manager.h"
-#include "elasticann/ops/plugin/plugin_manager.h"
+#include "elasticann/ops/dict/query_dict_manager.h"
+#include "elasticann/ops/dict/dict_manager.h"
 #include "elasticann/ops/file_util.h"
 #include "elasticann/common/common.h"
 
 namespace EA {
 
-    CachePlugin::~CachePlugin() {
+    CacheFile::~CacheFile() {
         {
-            BAIDU_SCOPED_LOCK(QueryPluginManager::get_instance()->_dict_mutex);
+            BAIDU_SCOPED_LOCK(QueryFileManager::get_instance()->_dict_cache_mutex);
             if (fd > 0) {
                 ::close(fd);
                 fd = -1;
@@ -30,9 +30,9 @@ namespace EA {
         }
     }
 
-    const std::string QueryPluginManager::kReadLinkDir = FLAGS_plugin_data_root + "/read_link";
+    const std::string QueryFileManager::kReadLinkDir = FLAGS_dict_data_root + "/read_link";
 
-    void QueryPluginManager::init() {
+    void QueryFileManager::init() {
         std::error_code ec;
         if (turbo::filesystem::exists(kReadLinkDir, ec)) {
             turbo::filesystem::remove_all(kReadLinkDir, ec);
@@ -40,69 +40,69 @@ namespace EA {
         turbo::filesystem::create_directories(kReadLinkDir, ec);
     }
     void
-    QueryPluginManager::download_plugin(const ::EA::proto::QueryOpsServiceRequest *request,
+    QueryFileManager::download_dict(const ::EA::proto::QueryOpsServiceRequest *request,
                                         ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        auto &download_request = request->query_plugin();
+        auto &download_request = request->query_dict();
         if (!download_request.has_version()) {
-            response->set_errmsg("plugin not set version");
+            response->set_errmsg("file not set version");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
         turbo::ModuleVersion version = turbo::ModuleVersion(download_request.version().major(),
                                                             download_request.version().minor(),
                                                             download_request.version().patch());
-        EA::proto::PluginEntity entity;
+        EA::proto::DictEntity entity;
         auto &name = download_request.name();
         {
-            BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_plugin_mutex);
-            auto &plugins = PluginManager::get_instance()->_plugins;
-            auto it = plugins.find(name);
-            if (it == plugins.end() || it->second.empty()) {
-                response->set_errmsg("plugin not exist");
+            BAIDU_SCOPED_LOCK(DictManager::get_instance()->_dict_mutex);
+            auto &dicts = DictManager::get_instance()->_dicts;
+            auto it = dicts.find(name);
+            if (it == dicts.end() || it->second.empty()) {
+                response->set_errmsg("dict not exist");
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 return;
             }
             auto pit = it->second.find(version);
             if (pit == it->second.end()) {
-                response->set_errmsg("plugin not exist");
+                response->set_errmsg("dict not exist");
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 return;
             }
             entity = pit->second;
             if (!entity.finish()) {
-                response->set_errmsg("plugin not upload finish");
+                response->set_errmsg("dict not upload finish");
                 response->set_errcode(proto::INPUT_PARAM_ERROR);
                 return;
             }
         }
 
         if (!download_request.has_offset()) {
-            response->set_errmsg("plugin not set offset");
+            response->set_errmsg("dict not set offset");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
 
         if (!download_request.has_count()) {
-            response->set_errmsg("plugin not set count");
+            response->set_errmsg("dict not set count");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
-        std::string key = PluginManager::make_plugin_key(name, version);
+        std::string key = DictManager::make_dict_key(name, version);
 
-        CachePluginPtr cache_file;
-        auto libname = PluginManager::make_plugin_filename(name, version, entity.platform());
-        std::string source_path = turbo::Format("{}/{}", FLAGS_plugin_data_root, libname);
-        std::string link_path = turbo::Format("{}/read_link/{}", FLAGS_plugin_data_root, libname);
+        CacheFilePtr cache_file;
+        auto libname = DictManager::make_dict_filename(name, version, entity.ext());
+        std::string source_path = turbo::Format("{}/{}", FLAGS_dict_data_root, libname);
+        std::string link_path = turbo::Format("{}/read_link/{}", FLAGS_dict_data_root, libname);
 
         if (_cache.find(key, &cache_file) != 0) {
             {
-                BAIDU_SCOPED_LOCK(_dict_mutex);
+                BAIDU_SCOPED_LOCK(_dict_cache_mutex);
                 std::error_code ec;
                 if(!turbo::filesystem::exists(link_path, ec)) {
                     turbo::filesystem::create_hard_link(source_path, link_path, ec);
                     if(ec) {
-                        response->set_errmsg("create plugin read link file error");
+                        response->set_errmsg("create dict read link file error");
                         response->set_errcode(proto::INTERNAL_ERROR);
                         return;
                     }
@@ -110,11 +110,11 @@ namespace EA {
             }
             int fd = ::open(link_path.c_str(), O_RDONLY, 0644);
             if (fd < 0) {
-                response->set_errmsg("read plugin file error");
+                response->set_errmsg("read dict file error");
                 response->set_errcode(proto::INTERNAL_ERROR);
                 return;
             }
-            cache_file = std::make_shared<CachePlugin>();
+            cache_file = std::make_shared<CacheFile>();
             cache_file->fd = fd;
             cache_file->file_path = link_path;
             _cache.add(key, cache_file);
@@ -129,29 +129,29 @@ namespace EA {
         ssize_t n = full_pread(cache_file->fd, buf, len, offset);
 
         if (n < 0 || n != (ssize_t) len) {
-            TLOG_ERROR("Fail to pread plugin:{} for req:{}", source_path, request->DebugString());
+            TLOG_ERROR("Fail to pread file:{} for req:{}", source_path, request->DebugString());
             response->set_errcode(proto::INTERNAL_ERROR);
-            response->set_errmsg("plugin:" + name + " read failed");
+            response->set_errmsg("dict:" + name + " read failed");
             delete[] buf;
             return;
         }
-        response->mutable_plugin_response()->set_content(buf, len);
+        response->mutable_dict_response()->set_content(buf, len);
         delete[] buf;
-        PluginManager::transfer_entity_to_info(&entity, response->mutable_plugin_response()->mutable_plugin());
+        DictManager::transfer_entity_to_info(&entity, response->mutable_dict_response()->mutable_dict());
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryPluginManager::plugin_info(const ::EA::proto::QueryOpsServiceRequest *request,
+    void QueryFileManager::dict_info(const ::EA::proto::QueryOpsServiceRequest *request,
                                          ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_plugin_mutex);
-        auto &plugins = PluginManager::get_instance()->_plugins;
-        auto &get_request = request->query_plugin();
+        BAIDU_SCOPED_LOCK(DictManager::get_instance()->_dict_mutex);
+        auto &dicts = DictManager::get_instance()->_dicts;
+        auto &get_request = request->query_dict();
         auto &name = get_request.name();
-        auto it = plugins.find(name);
-        if (it == plugins.end() || it->second.empty()) {
-            response->set_errmsg("plugin not exist");
+        auto it = dicts.find(name);
+        if (it == dicts.end() || it->second.empty()) {
+            response->set_errmsg("dict not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
@@ -161,7 +161,7 @@ namespace EA {
             // use newest
             // version = it->second.rend()->first;
             auto cit = it->second.rbegin();
-            PluginManager::transfer_entity_to_info(&cit->second, response->mutable_plugin_response()->mutable_plugin());
+            DictManager::transfer_entity_to_info(&cit->second, response->mutable_dict_response()->mutable_dict());
             response->set_errmsg("success");
             response->set_errcode(proto::SUCCESS);
             return;
@@ -173,26 +173,26 @@ namespace EA {
         auto cit = it->second.find(version);
         if (cit == it->second.end()) {
             /// not exists
-            response->set_errmsg("plugin not exist");
+            response->set_errmsg("dict not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
 
-        PluginManager::transfer_entity_to_info(&cit->second, response->mutable_plugin_response()->mutable_plugin());
+        DictManager::transfer_entity_to_info(&cit->second, response->mutable_dict_response()->mutable_dict());
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryPluginManager::tombstone_plugin_info(const ::EA::proto::QueryOpsServiceRequest *request,
+    void QueryFileManager::tombstone_dict_info(const ::EA::proto::QueryOpsServiceRequest *request,
                                                    ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_tombstone_plugin_mutex);
-        auto &tombstone_plugins = PluginManager::get_instance()->_tombstone_plugins;
-        auto &get_request = request->query_plugin();
+        BAIDU_SCOPED_LOCK(DictManager::get_instance()->_tombstone_dict_mutex);
+        auto &tombstone_dicts = DictManager::get_instance()->_tombstone_dicts;
+        auto &get_request = request->query_dict();
         auto &name = get_request.name();
-        auto it = tombstone_plugins.find(name);
-        if (it == tombstone_plugins.end() || it->second.empty()) {
-            response->set_errmsg("plugin not exist");
+        auto it = tombstone_dicts.find(name);
+        if (it == tombstone_dicts.end() || it->second.empty()) {
+            response->set_errmsg("dict not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
@@ -202,7 +202,7 @@ namespace EA {
             // use newest
             // version = it->second.rend()->first;
             auto cit = it->second.rbegin();
-            PluginManager::transfer_entity_to_info(&cit->second, response->mutable_plugin_response()->mutable_plugin());
+            DictManager::transfer_entity_to_info(&cit->second, response->mutable_dict_response()->mutable_dict());
             response->set_errmsg("success");
             response->set_errcode(proto::SUCCESS);
             return;
@@ -214,80 +214,80 @@ namespace EA {
         auto cit = it->second.find(version);
         if (cit == it->second.end()) {
             /// not exists
-            response->set_errmsg("plugin not exist");
+            response->set_errmsg("dict not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
 
-        PluginManager::transfer_entity_to_info(&cit->second, response->mutable_plugin_response()->mutable_plugin());
+        DictManager::transfer_entity_to_info(&cit->second, response->mutable_dict_response()->mutable_dict());
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
 
-    void QueryPluginManager::list_plugin(const ::EA::proto::QueryOpsServiceRequest *request,
+    void QueryFileManager::list_dict(const ::EA::proto::QueryOpsServiceRequest *request,
                                          ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_plugin_mutex);
-        auto plugins = PluginManager::get_instance()->_plugins;
-        response->mutable_plugin_response()->mutable_plugin_list()->Reserve(plugins.size());
-        for (auto it = plugins.begin(); it != plugins.end(); ++it) {
-            response->mutable_plugin_response()->add_plugin_list(it->first);
+        BAIDU_SCOPED_LOCK(DictManager::get_instance()->_dict_mutex);
+        auto dicts = DictManager::get_instance()->_dicts;
+        response->mutable_dict_response()->mutable_dict_list()->Reserve(dicts.size());
+        for (auto it = dicts.begin(); it != dicts.end(); ++it) {
+            response->mutable_dict_response()->add_dict_list(it->first);
         }
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryPluginManager::tombstone_list_plugin(const ::EA::proto::QueryOpsServiceRequest *request,
+    void QueryFileManager::tombstone_list_dict(const ::EA::proto::QueryOpsServiceRequest *request,
                                                    ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_tombstone_plugin_mutex);
-        auto &tombstone_plugins = PluginManager::get_instance()->_tombstone_plugins;
-        response->mutable_plugin_response()->mutable_plugin_list()->Reserve(tombstone_plugins.size());
-        for (auto it = tombstone_plugins.begin(); it != tombstone_plugins.end(); ++it) {
-            response->mutable_plugin_response()->add_plugin_list(it->first);
+        BAIDU_SCOPED_LOCK(DictManager::get_instance()->_tombstone_dict_mutex);
+        auto &tombstone_dicts = DictManager::get_instance()->_tombstone_dicts;
+        response->mutable_dict_response()->mutable_dict_list()->Reserve(tombstone_dicts.size());
+        for (auto it = tombstone_dicts.begin(); it != tombstone_dicts.end(); ++it) {
+            response->mutable_dict_response()->add_dict_list(it->first);
         }
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryPluginManager::list_plugin_version(const ::EA::proto::QueryOpsServiceRequest *request,
+    void QueryFileManager::list_dict_version(const ::EA::proto::QueryOpsServiceRequest *request,
                                                  ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        auto &get_request = request->query_plugin();
-        BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_plugin_mutex);
-        auto &plugins = PluginManager::get_instance()->_plugins;
+        auto &get_request = request->query_dict();
+        BAIDU_SCOPED_LOCK(DictManager::get_instance()->_dict_mutex);
+        auto &dicts = DictManager::get_instance()->_dicts;
         auto &name = get_request.name();
-        auto it = plugins.find(name);
-        if (it == plugins.end()) {
-            response->set_errmsg("plugin not exist");
+        auto it = dicts.find(name);
+        if (it == dicts.end()) {
+            response->set_errmsg("dict not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
-        response->mutable_plugin_response()->mutable_versions()->Reserve(it->second.size());
+        response->mutable_dict_response()->mutable_versions()->Reserve(it->second.size());
         for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
-            *(response->mutable_plugin_response()->add_versions()) = vit->second.version();
+            *(response->mutable_dict_response()->add_versions()) = vit->second.version();
         }
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryPluginManager::tombstone_list_plugin_version(const ::EA::proto::QueryOpsServiceRequest *request,
+    void QueryFileManager::tombstone_list_dict_version(const ::EA::proto::QueryOpsServiceRequest *request,
                                                            ::EA::proto::QueryOpsServiceResponse *response) {
         response->set_op_type(request->op_type());
-        auto &get_request = request->query_plugin();
-        BAIDU_SCOPED_LOCK(PluginManager::get_instance()->_tombstone_plugin_mutex);
-        auto &tombstone_plugins = PluginManager::get_instance()->_tombstone_plugins;
+        auto &get_request = request->query_dict();
+        BAIDU_SCOPED_LOCK(DictManager::get_instance()->_tombstone_dict_mutex);
+        auto &tombstone_dicts = DictManager::get_instance()->_tombstone_dicts;
         auto &name = get_request.name();
-        auto it = tombstone_plugins.find(name);
-        if (it == tombstone_plugins.end()) {
-            response->set_errmsg("plugin not exist");
+        auto it = tombstone_dicts.find(name);
+        if (it == tombstone_dicts.end()) {
+            response->set_errmsg("dict not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
-        response->mutable_plugin_response()->mutable_versions()->Reserve(it->second.size());
+        response->mutable_dict_response()->mutable_versions()->Reserve(it->second.size());
         for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
-            *(response->mutable_plugin_response()->add_versions()) = vit->second.version();
+            *(response->mutable_dict_response()->add_versions()) = vit->second.version();
         }
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);

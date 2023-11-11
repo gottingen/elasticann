@@ -387,7 +387,7 @@ namespace EA {
     DEFINE_int32(store_not_leader_alarm_print_interval_s, 60, "not leader alarm print interval(s)");
 
     /// for config
-    DEFINE_int64(config_time_between_connect_error_ms, 0, "time_between_meta_connect_error_ms. default(0ms)");
+    DEFINE_int64(config_time_between_connect_error_ms, 0, "config_time_between_connect_error_ms. default(0ms)");
     DEFINE_string(config_server_bns, "127.0.0.1:8020", "config server bns");
     DEFINE_string(config_backup_server_bns, "", "config_backup_server_bns");
     DEFINE_int32(config_request_timeout, 30000, "config as server request timeout, default:30000ms");
@@ -404,7 +404,7 @@ namespace EA {
     DEFINE_int32(config_replica_number, 1, "config service replica num");
 
     /// for plugin
-    DEFINE_int64(plugin_time_between_connect_error_ms, 0, "time_between_meta_connect_error_ms. default(0ms)");
+    DEFINE_int64(plugin_time_between_connect_error_ms, 0, "plugin_time_between_connect_error_ms. default(0ms)");
     DEFINE_string(plugin_server_bns, "127.0.0.1:8030", "plugin server bns");
     DEFINE_string(plugin_backup_server_bns, "", "plugin_backup_server_bns");
     DEFINE_int32(plugin_request_timeout, 30000, "service as server request timeout, default:30000ms");
@@ -415,11 +415,30 @@ namespace EA {
     DEFINE_string(plugin_stable_uri, "local://./raft_data/plugin/stable", "raft stable path");
     DEFINE_string(plugin_snapshot_uri, "local://./raft_data/plugin/snapshot", "raft snapshot path");
     DEFINE_int64(plugin_check_migrate_interval_us, 60 * 1000 * 1000LL, "check plugin server migrate interval (60s)");
-    DEFINE_string(plugin_plugin_data_root,"./plugin_data/plugin","plugin data dir");
+    DEFINE_string(plugin_data_root,"./data/plugin","plugin data dir");
     DEFINE_string(plugin_db_path, "./rocks_db/plugin", "rocks db path");
     DEFINE_string(plugin_snapshot_sst, "/plugin_meta.sst","rocks sst file for service");
     DEFINE_string(plugin_listen,"127.0.0.1:8030", "plugin listen addr");
     DEFINE_int32(plugin_replica_number, 1, "plugin service replica num");
+
+    /// for dict
+    DEFINE_int64(dict_time_between_connect_error_ms, 0, "dict_time_between_connect_error_ms. default(0ms)");
+    DEFINE_string(dict_server_bns, "127.0.0.1:8040", "dict server bns");
+    DEFINE_string(dict_backup_server_bns, "", "dict_backup_server_bns");
+    DEFINE_int32(dict_request_timeout, 30000, "dict as server request timeout, default:30000ms");
+    DEFINE_int32(dict_connect_timeout, 5000, "dict as server connect timeout, default:5000ms");
+    DEFINE_int32(dict_snapshot_interval_s, 600, "raft snapshot interval(s)");
+    DEFINE_int32(dict_election_timeout_ms, 1000, "raft election timeout(ms)");
+    DEFINE_string(dict_log_uri, "myraftlog://dict_raft_log?id=", "raft log uri");
+    DEFINE_string(dict_stable_uri, "local://./raft_data/dict/stable", "raft stable path");
+    DEFINE_string(dict_snapshot_uri, "local://./raft_data/dict/snapshot", "raft snapshot path");
+    DEFINE_int64(dict_check_migrate_interval_us, 60 * 1000 * 1000LL, "check dict server migrate interval (60s)");
+    DEFINE_string(dict_data_root,"./data/dict","dict data dir");
+    DEFINE_string(dict_db_path, "./rocks_db/dict", "rocks db path");
+    DEFINE_string(dict_snapshot_sst, "/dict_meta.sst","rocks sst dict for service");
+    DEFINE_string(dict_listen,"127.0.0.1:8040", "dict listen addr");
+    DEFINE_int32(dict_replica_number, 1, "dict service replica num");
+
     /// for router
     DEFINE_string(router_listen, "0.0.0.0:8888", "router default ip port");
 

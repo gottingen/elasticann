@@ -29,42 +29,14 @@ namespace EA::client {
         }
         // for global
         std::string server;
-        std::string load_balancer{"rr"};
-        int32_t  timeout_ms{2000};
-        int32_t  connect_timeout_ms{100};
-        int32_t  max_retry{3};
+        std::string load_balancer;
+        int32_t  timeout_ms;
+        int32_t  connect_timeout_ms;
+        int32_t  max_retry;
         int32_t time_between_meta_connect_error_ms{1000};
         bool verbose{false};
-        // for schema namespace
-        std::string namespace_name;
-        int64_t namespace_quota{0};
-        // for schema database
-        std::string db_name;
-        int64_t db_quota{0};
-
-        std::vector<std::string> logical_idc;
-        std::vector<std::string> physical_idc;
-
-        // for tables
-        std::string table_name;
-        std::vector<std::string> table_fields;
-        std::vector<std::string> table_indexes;
-
-        // for config
-        std::string config_name;
-        std::string config_data;
-        std::string config_file;
-        std::string config_version;
-        std::string config_type;
-
-        // for plugin
-        std::string plugin_name;
-        std::string plugin_file;
-        std::string plugin_version;
-        std::string plugin_type;
-        int64_t     plugin_block_size{4096};
-        bool query_tombstone{false};
     };
+
 }  // namespace EA::client
 
 #endif  // ELASTICANN_CLIENT_OPTION_CONTEXT_H_

@@ -28,7 +28,7 @@ namespace EA::client {
     /// You could return the shared pointer if you wanted to access the values in main.
     void setup_database_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = OptionContext::get_instance();
+        auto opt = DatabaseOptionContext::get_instance();
         auto *ns = app.add_subcommand("database", "database operations");
         ns->callback([ns]() { run_database_cmd(ns); });
         // Add options to sub, binding them to opt.
@@ -72,7 +72,7 @@ namespace EA::client {
     }
 
     void run_db_create_cmd() {
-        turbo::Println(turbo::color::green, "start to create namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to create namespace: {}", DatabaseOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -91,7 +91,7 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
     void run_db_remove_cmd() {
-        turbo::Println(turbo::color::green, "start to remove namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to remove namespace: {}", DatabaseOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -110,7 +110,7 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
     void run_db_modify_cmd() {
-        turbo::Println(turbo::color::green, "start to modify namespace: {}", OptionContext::get_instance()->namespace_name);
+        turbo::Println(turbo::color::green, "start to modify namespace: {}", DatabaseOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
@@ -207,50 +207,50 @@ namespace EA::client {
     turbo::Status make_database_create(EA::proto::MetaManagerRequest *req) {
         EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
         req->set_op_type(EA::proto::OP_CREATE_DATABASE);
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(DatabaseOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        rs = CheckValidNameType(DatabaseOptionContext::get_instance()->db_name);
         if (!rs.ok()) {
             return rs;
         }
-        db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        db_req->set_database(OptionContext::get_instance()->db_name);
-        db_req->set_quota(OptionContext::get_instance()->db_quota);
+        db_req->set_namespace_name(DatabaseOptionContext::get_instance()->namespace_name);
+        db_req->set_database(DatabaseOptionContext::get_instance()->db_name);
+        db_req->set_quota(DatabaseOptionContext::get_instance()->db_quota);
         return turbo::OkStatus();
     }
 
     turbo::Status make_database_remove(EA::proto::MetaManagerRequest *req) {
         EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
         req->set_op_type(EA::proto::OP_DROP_DATABASE);
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(DatabaseOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        rs = CheckValidNameType(DatabaseOptionContext::get_instance()->db_name);
         if (!rs.ok()) {
             return rs;
         }
-        db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        db_req->set_database(OptionContext::get_instance()->db_name);
+        db_req->set_namespace_name(DatabaseOptionContext::get_instance()->namespace_name);
+        db_req->set_database(DatabaseOptionContext::get_instance()->db_name);
         return turbo::OkStatus();
     }
 
     turbo::Status make_database_modify(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_MODIFY_DATABASE);
         EA::proto::DataBaseInfo *db_req = req->mutable_database_info();
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(DatabaseOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        rs = CheckValidNameType(DatabaseOptionContext::get_instance()->db_name);
         if (!rs.ok()) {
             return rs;
         }
-        db_req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        db_req->set_database(OptionContext::get_instance()->db_name);
-        db_req->set_quota(OptionContext::get_instance()->db_quota);
+        db_req->set_namespace_name(DatabaseOptionContext::get_instance()->namespace_name);
+        db_req->set_database(DatabaseOptionContext::get_instance()->db_name);
+        db_req->set_quota(DatabaseOptionContext::get_instance()->db_quota);
         return turbo::OkStatus();
     }
 
@@ -261,16 +261,16 @@ namespace EA::client {
 
     turbo::Status make_database_info(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_DATABASE);
-        auto rs = CheckValidNameType(OptionContext::get_instance()->namespace_name);
+        auto rs = CheckValidNameType(DatabaseOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(OptionContext::get_instance()->db_name);
+        rs = CheckValidNameType(DatabaseOptionContext::get_instance()->db_name);
         if (!rs.ok()) {
             return rs;
         }
-        req->set_namespace_name(OptionContext::get_instance()->namespace_name);
-        req->set_database(OptionContext::get_instance()->db_name);
+        req->set_namespace_name(DatabaseOptionContext::get_instance()->namespace_name);
+        req->set_database(DatabaseOptionContext::get_instance()->db_name);
         return turbo::OkStatus();
     }
 

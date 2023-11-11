@@ -163,6 +163,24 @@ carbin_cc_binary(
         PUBLIC
 )
 
+carbin_cc_binary(
+        NAMESPACE elasticann
+        NAME eadict
+        SOURCES
+        ${META_SERVER}
+        ${RAFT_META}
+        server/eadict.cc
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-Wno-strict-aliasing"
+        DEPS
+        ${CARBIN_DEPS_LINK}
+        elasticann::common
+        elasticann::file_server
+        eaproto::eaproto_STATIC
+        PUBLIC
+)
+
 file(GLOB STORE_SERVER raft_store/*.cc)
 carbin_cc_binary(
         NAMESPACE elasticann

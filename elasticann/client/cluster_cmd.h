@@ -23,6 +23,17 @@
 
 namespace EA::client {
 
+    struct ClusterOptionContext {
+        static ClusterOptionContext *get_instance() {
+            static ClusterOptionContext ins;
+            return &ins;
+        }
+
+        // for namespace
+        std::vector<std::string> logical_idc;
+        std::vector<std::string> physical_idc;
+    };
+
     // We could manually make a few variables and use shared pointers for each; this
     // is just done this way to be nicely organized
 
@@ -51,6 +62,7 @@ namespace EA::client {
 
     [[nodiscard]] turbo::Status
     make_cluster_create_logical(EA::proto::MetaManagerRequest *req);
+
     [[nodiscard]] turbo::Status
     make_cluster_remove_logical(EA::proto::MetaManagerRequest *req);
 
@@ -70,6 +82,7 @@ namespace EA::client {
 
     [[nodiscard]] turbo::Status
     make_cluster_query_physical_list(EA::proto::QueryRequest *req);
+
     [[nodiscard]] turbo::Status
     make_cluster_query_physical_info(EA::proto::QueryRequest *req);
 

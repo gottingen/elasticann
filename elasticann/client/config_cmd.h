@@ -25,6 +25,19 @@
 
 namespace EA::client {
 
+    struct ConfigOptionContext {
+        static ConfigOptionContext *get_instance() {
+            static ConfigOptionContext ins;
+            return &ins;
+        }
+        // for config
+        std::string config_name;
+        std::string config_data;
+        std::string config_file;
+        std::string config_version;
+        std::string config_type;
+    };
+
     void setup_config_cmd(turbo::App &app);
 
     void run_config_cmd(turbo::App *app);

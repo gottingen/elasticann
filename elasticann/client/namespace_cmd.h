@@ -26,6 +26,16 @@ namespace EA::client {
     // We could manually make a few variables and use shared pointers for each; this
     // is just done this way to be nicely organized
 
+    struct NameSpaceOptionContext {
+        static NameSpaceOptionContext *get_instance() {
+            static NameSpaceOptionContext ins;
+            return &ins;
+        }
+        // for namespace
+        std::string namespace_name;
+        int64_t     namespace_quota;
+    };
+
     // Function declarations.
     void setup_namespace_cmd(turbo::App &app);
 

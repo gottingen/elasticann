@@ -20,5 +20,6 @@ namespace EA {
     const std::string ServiceConstants::CONFIG_IDENTIFY(1, 0x01);
     const std::string ServiceConstants::MODEL_IDENTIFY(1, 0x02);
     const std::string ServiceConstants::PLUGIN_IDENTIFY(1, 0x03);
+    const std::string ServiceConstants::FILE_IDENTIFY(1, 0x03);
     const std::string ServiceConstants::MAX_IDENTIFY(1, 0xFF);
 }  // namespace EA

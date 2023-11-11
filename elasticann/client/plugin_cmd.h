@@ -25,6 +25,21 @@
 
 namespace EA::client {
 
+    struct PluginOptionContext {
+        static PluginOptionContext *get_instance() {
+            static PluginOptionContext ins;
+            return &ins;
+        }
+        // for plugin
+        std::string plugin_name;
+        std::string plugin_file;
+        std::string plugin_version;
+        std::string plugin_type;
+        int64_t     plugin_block_size{4096};
+        bool        plugin_query_tombstone{false};
+    };
+
+
     void setup_plugin_cmd(turbo::App &app);
 
     void run_plugin_cmd(turbo::App *app);

@@ -70,13 +70,13 @@ namespace EA {
         void remove_tombstone_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
         void restore_plugin_all(const ::EA::proto::OpsServiceRequest &request, braft::Closure *done);
 
-        static turbo::Status transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntiry*entity);
-        static void transfer_entity_to_info(const EA::proto::PluginEntiry *info, EA::proto::PluginInfo*entity);
+        static turbo::Status transfer_info_to_entity(const EA::proto::PluginInfo *info, EA::proto::PluginEntity*entity);
+        static void transfer_entity_to_info(const EA::proto::PluginEntity *info, EA::proto::PluginInfo*entity);
     private:
         bthread_mutex_t _plugin_mutex;
         bthread_mutex_t _tombstone_plugin_mutex;
-        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>> _plugins;
-        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::PluginEntiry>> _tombstone_plugins;
+        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::PluginEntity>> _plugins;
+        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::PluginEntity>> _tombstone_plugins;
     };
 
     ///
@@ -87,8 +87,8 @@ namespace EA {
         bthread_mutex_init(&_plugin_mutex, nullptr);
         bthread_mutex_init(&_tombstone_plugin_mutex, nullptr);
         std::error_code ec;
-        if(!turbo::filesystem::exists(FLAGS_plugin_plugin_data_root, ec)) {
-            turbo::filesystem::create_directories(FLAGS_plugin_plugin_data_root, ec);
+        if(!turbo::filesystem::exists(FLAGS_plugin_data_root, ec)) {
+            turbo::filesystem::create_directories(FLAGS_plugin_data_root, ec);
         }
     }
 

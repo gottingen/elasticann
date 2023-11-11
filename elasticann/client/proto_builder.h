@@ -27,9 +27,6 @@ namespace EA::client {
 
     class ProtoBuilder {
     public:
-
-        turbo::Status
-        make_table_create(EA::proto::MetaManagerRequest *req);
     private:
         static turbo::ResultStatus<EA::proto::FieldInfo> string_to_table_field(const std::string &str);
     };

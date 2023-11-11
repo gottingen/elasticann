@@ -26,6 +26,7 @@ namespace EA {
         static const std::string CONFIG_IDENTIFY;
         static const std::string MODEL_IDENTIFY;
         static const std::string PLUGIN_IDENTIFY;
+        static const std::string FILE_IDENTIFY;
         static const std::string MAX_IDENTIFY;
     };
 }  // namespace EA

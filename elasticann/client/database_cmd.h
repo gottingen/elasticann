@@ -23,6 +23,18 @@
 
 namespace EA::client {
 
+    struct DatabaseOptionContext {
+        static DatabaseOptionContext *get_instance() {
+            static DatabaseOptionContext ins;
+            return &ins;
+        }
+        // for namespace
+        std::string namespace_name;
+        int64_t     namespace_quota;
+        std::string db_name;
+        int64_t     db_quota;
+    };
+
     // We could manually make a few variables and use shared pointers for each; this
     // is just done this way to be nicely organized
 

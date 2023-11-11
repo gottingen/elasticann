@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "elasticann/client/plugin_cmd.h"
+#include "elasticann/client/dict_cmd.h"
 #include "elasticann/client/option_context.h"
 #include "eaproto/router/router.interface.pb.h"
 #include "turbo/format/print.h"
@@ -28,83 +28,83 @@
 
 namespace EA::client {
 
-    void setup_plugin_cmd(turbo::App &app) {
+    void setup_dict_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = PluginOptionContext::get_instance();
-        auto *ns = app.add_subcommand("plugin", "plugin operations");
-        ns->callback([ns]() { run_plugin_cmd(ns); });
+        auto opt = DictOptionContext::get_instance();
+        auto *ns = app.add_subcommand("dict", "dict operations");
+        ns->callback([ns]() { run_dict_cmd(ns); });
 
-        auto cc = ns->add_subcommand("create", " create plugin");
-        cc->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
-        cc->add_option("-v, --version", opt->plugin_version, "plugin version [1.2.3]")->required();
-        cc->add_option("-p, --platform", opt->plugin_type, "platform type [linux|osx|windows]")->default_val("linux");
-        cc->add_option("-f, --file", opt->plugin_file, "local plugin file")->required();
-        cc->callback([]() { run_plugin_create_cmd(); });
+        auto cc = ns->add_subcommand("create", " create dict");
+        cc->add_option("-n,--name", opt->dict_name, "dict name")->required();
+        cc->add_option("-v, --version", opt->dict_version, "dict version [1.2.3]")->required();
+        cc->add_option("-e, --extension", opt->dict_ext, "platform type [linux|osx|windows]")->default_val("");
+        cc->add_option("-f, --file", opt->dict_file, "local dict file")->required();
+        cc->callback([]() { run_dict_create_cmd(); });
 
         // upload
-        auto cp = ns->add_subcommand("upload", " upload plugin");
-        cp->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
-        cp->add_option("-v, --version", opt->plugin_version, "plugin version [1.2.3]")->required();
-        cp->add_option("-p, --platform", opt->plugin_type, "platform type [linux|osx|windows]")->default_val("linux");
-        cp->add_option("-f, --file", opt->plugin_file, "local plugin file")->required();
-        cp->add_option("-b, --block", opt->plugin_block_size, "block size once")->default_val(int64_t{4096});
-        cp->callback([]() { run_plugin_upload_cmd(); });
+        auto cp = ns->add_subcommand("upload", " upload dict");
+        cp->add_option("-n,--name", opt->dict_name, "dict name")->required();
+        cp->add_option("-v, --version", opt->dict_version, "dict version [1.2.3]")->required();
+        cp->add_option("-e, --extension", opt->dict_ext, "platform type [linux|osx|windows]")->default_val("");
+        cp->add_option("-f, --file", opt->dict_file, "local dict file")->required();
+        cp->add_option("-b, --block", opt->dict_block_size, "block size once")->default_val(int64_t{4096});
+        cp->callback([]() { run_dict_upload_cmd(); });
 
         /// list/ list version
-        auto cl = ns->add_subcommand("list", " list plugin");
-        cl->add_option("-n,--name", opt->plugin_name, "plugin name");
-        cl->add_flag("-t,--tombstone", opt->plugin_query_tombstone, "plugin name")->default_val(false);
-        cl->callback([]() { run_plugin_list_cmd(); });
+        auto cl = ns->add_subcommand("list", " list dict");
+        cl->add_option("-n,--name", opt->dict_name, "dict name");
+        cl->add_flag("-t,--tombstone", opt->dict_query_tombstone, "dict name")->default_val(false);
+        cl->callback([]() { run_dict_list_cmd(); });
 
         /// info
-        auto cg = ns->add_subcommand("info", " get plugin info");
-        cg->add_flag("-t,--tombstone", opt->plugin_query_tombstone, "plugin name")->default_val(false);
-        cg->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
-        cg->add_option("-v, --version", opt->plugin_version, "plugin version");
-        cg->callback([]() { run_plugin_info_cmd(); });
+        auto cg = ns->add_subcommand("info", " get dict info");
+        cg->add_flag("-t,--tombstone", opt->dict_query_tombstone, "dict name")->default_val(false);
+        cg->add_option("-n,--name", opt->dict_name, "dict name")->required();
+        cg->add_option("-v, --version", opt->dict_version, "dict version");
+        cg->callback([]() { run_dict_info_cmd(); });
 
         /// download
-        auto cd = ns->add_subcommand("download", " download plugin info");
-        cd->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
-        cd->add_option("-v, --version", opt->plugin_version, "plugin version");
-        cd->add_option("-f, --file", opt->plugin_file, "local plugin file");
-        cd->add_option("-b, --block", opt->plugin_block_size, "block size once")->default_val(int64_t{4096});
-        cd->callback([]() { run_plugin_download_cmd(); });
+        auto cd = ns->add_subcommand("download", " download dict info");
+        cd->add_option("-n,--name", opt->dict_name, "dict name")->required();
+        cd->add_option("-v, --version", opt->dict_version, "dict version");
+        cd->add_option("-f, --file", opt->dict_file, "local dict file");
+        cd->add_option("-b, --block", opt->dict_block_size, "block size once")->default_val(int64_t{4096});
+        cd->callback([]() { run_dict_download_cmd(); });
 
         /// remove
-        auto cr = ns->add_subcommand("remove", " remove plugin");
-        cr->add_flag("-t,--tombstone", opt->plugin_query_tombstone, "plugin name")->default_val(false);
-        cr->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
-        cr->add_option("-v, --version", opt->plugin_version, "plugin version [1.2.3]");
-        cr->callback([]() { run_plugin_remove_cmd(); });
+        auto cr = ns->add_subcommand("remove", " remove dict");
+        cr->add_flag("-t,--tombstone", opt->dict_query_tombstone, "dict name")->default_val(false);
+        cr->add_option("-n,--name", opt->dict_name, "dict name")->required();
+        cr->add_option("-v, --version", opt->dict_version, "dict version [1.2.3]");
+        cr->callback([]() { run_dict_remove_cmd(); });
         /// restore
-        auto ct = ns->add_subcommand("restore", " restore plugin");
-        ct->add_option("-n,--name", opt->plugin_name, "plugin name")->required();
-        ct->add_option("-v, --version", opt->plugin_version, "plugin version [1.2.3]");
-        ct->callback([]() { run_plugin_restore_cmd(); });
+        auto ct = ns->add_subcommand("restore", " restore dict");
+        ct->add_option("-n,--name", opt->dict_name, "dict name")->required();
+        ct->add_option("-v, --version", opt->dict_version, "dict version [1.2.3]");
+        ct->callback([]() { run_dict_restore_cmd(); });
     }
 
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_plugin_cmd(turbo::App *app) {
+    void run_dict_cmd(turbo::App *app) {
         // Do stuff...
         if (app->get_subcommands().empty()) {
             turbo::Println("{}", app->help());
         }
     }
 
-    void run_plugin_create_cmd() {
+    void run_dict_create_cmd() {
         EA::proto::OpsServiceRequest request;
         EA::proto::OpsServiceResponse response;
 
         ScopeShower ss;
-        auto rs = make_plugin_create(&request);
+        auto rs = make_dict_create(&request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("plugin_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("dict_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -115,18 +115,18 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
 
-    void run_plugin_upload_cmd() {
+    void run_dict_upload_cmd() {
         EA::proto::QueryOpsServiceRequest request;
         EA::proto::QueryOpsServiceResponse response;
         {
 
             ScopeShower ss;
-            auto rs = make_plugin_info(&request);
+            auto rs = make_dict_info(&request);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
                 return;
             }
-            rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
+            rs = RouterInteract::get_instance()->send_request("dict_query", request, response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
                 return;
@@ -140,28 +140,28 @@ namespace EA::client {
             }
 
             // already upload
-            if (response.plugin_response().plugin().finish()) {
-                table = show_query_ops_plugin_info_response(response);
+            if (response.dict_response().dict().finish()) {
+                table = show_query_ops_dict_info_response(response);
                 ss.add_table(std::move(table));
                 return;
             }
         }
-        auto upload_size = response.plugin_response().plugin().upload_size();
-        auto total_size = response.plugin_response().plugin().size();
+        auto upload_size = response.dict_response().dict().upload_size();
+        auto total_size = response.dict_response().dict().size();
 
         EA::proto::OpsServiceRequest upload_request;
         EA::proto::OpsServiceResponse upload_response;
         ScopeShower ss;
-        auto rs = make_plugin_upload(&upload_request);
+        auto rs = make_dict_upload(&upload_request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, upload_request)));
             return;
         }
-        auto block = PluginOptionContext::get_instance()->plugin_block_size;
+        auto block = DictOptionContext::get_instance()->dict_block_size;
         std::string buf;
         buf.reserve(block);
         turbo::SequentialReadFile file;
-        rs = file.open(PluginOptionContext::get_instance()->plugin_file);
+        rs = file.open(DictOptionContext::get_instance()->dict_file);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, upload_request)));
             return;
@@ -180,10 +180,10 @@ namespace EA::client {
                 return;
             }
             turbo::Println("offset:{} count: {}", upload_size, frs.value());
-            upload_request.mutable_request_plugin()->set_offset(upload_size);
-            upload_request.mutable_request_plugin()->set_count(frs.value());
-            upload_request.mutable_request_plugin()->set_content(buf);
-            auto r = RouterInteract::get_instance()->send_request("plugin_manage", upload_request, upload_response);
+            upload_request.mutable_request_dict()->set_offset(upload_size);
+            upload_request.mutable_request_dict()->set_count(frs.value());
+            upload_request.mutable_request_dict()->set_content(buf);
+            auto r = RouterInteract::get_instance()->send_request("dict_manage", upload_request, upload_response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(r, upload_request.op_type())));
                 return;
@@ -198,19 +198,19 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
 
-    void run_plugin_download_cmd() {
-        auto opt = PluginOptionContext::get_instance();
+    void run_dict_download_cmd() {
+        auto opt = DictOptionContext::get_instance();
         EA::proto::QueryOpsServiceRequest request;
         EA::proto::QueryOpsServiceResponse response;
         {
 
             ScopeShower ss;
-            auto rs = make_plugin_info(&request);
+            auto rs = make_dict_info(&request);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
                 return;
             }
-            rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
+            rs = RouterInteract::get_instance()->send_request("dict_query", request, response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
                 return;
@@ -224,32 +224,32 @@ namespace EA::client {
             }
 
             // already upload
-            if (!response.plugin_response().plugin().finish()) {
-                table = show_query_ops_plugin_info_response(response);
+            if (!response.dict_response().dict().finish()) {
+                table = show_query_ops_dict_info_response(response);
                 ss.add_table(std::move(table));
                 return;
             }
         }
 
-        auto &plugin_info = response.plugin_response().plugin();
-        opt->plugin_version = version_to_string(plugin_info.version());
-        auto total_size = plugin_info.size();
+        auto &dict_info = response.dict_response().dict();
+        opt->dict_version = version_to_string(dict_info.version());
+        auto total_size = dict_info.size();
         auto download_size = 0;
-        auto cksm = plugin_info.cksm();
+        auto cksm = dict_info.cksm();
 
         EA::proto::QueryOpsServiceRequest download_request;
         EA::proto::QueryOpsServiceResponse download_response;
         ScopeShower ss;
-        auto rs = make_plugin_download(&download_request);
+        auto rs = make_dict_download(&download_request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, download_request)));
             return;
         }
-        auto block = opt->plugin_block_size;
+        auto block = opt->dict_block_size;
         turbo::SequentialWriteFile file;
-        std::string file_path = opt->plugin_file;
+        std::string file_path = opt->dict_file;
         if(file_path.empty()) {
-            file_path = make_plugin_filename(plugin_info.name(), plugin_info.version(), plugin_info.platform());
+            file_path = make_dict_filename(dict_info.name(), dict_info.version(), dict_info.ext());
         }
         rs = file.open(file_path, true);
         if (!rs.ok()) {
@@ -266,19 +266,19 @@ namespace EA::client {
             } else {
                 current_block_size = left;
             }
-            download_request.mutable_query_plugin()->set_offset(download_size);
-            download_request.mutable_query_plugin()->set_count(current_block_size);
-            auto r = RouterInteract::get_instance()->send_request("plugin_query", download_request, download_response);
+            download_request.mutable_query_dict()->set_offset(download_size);
+            download_request.mutable_query_dict()->set_count(current_block_size);
+            auto r = RouterInteract::get_instance()->send_request("dict_query", download_request, download_response);
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(r, download_request.op_type())));
                 return;
             }
-            auto frs = file.write(download_response.plugin_response().content().data(), download_response.plugin_response().content().size());
+            auto frs = file.write(download_response.dict_response().content().data(), download_response.dict_response().content().size());
             if (!rs.ok()) {
                 ss.add_table(std::move(ShowHelper::pre_send_error(frs, download_request)));
                 return;
             }
-            download_size += download_response.plugin_response().content().size();
+            download_size += download_response.dict_response().content().size();
             turbo::Println("offset:{} count: {}", download_size, current_block_size);
         }
         file.close();
@@ -288,7 +288,7 @@ namespace EA::client {
             return;
         }
         if(cksm != download_cksm.value()) {
-            turbo::Println("cksm download plugin :{} fail, get:{} expect:{} ", file_path, download_cksm.value(), cksm);
+            turbo::Println("cksm download dict :{} fail, get:{} expect:{} ", file_path, download_cksm.value(), cksm);
             return;
         }
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, download_response.errcode(),
@@ -298,17 +298,17 @@ namespace EA::client {
     }
 
 
-    void run_plugin_remove_cmd() {
+    void run_dict_remove_cmd() {
         EA::proto::OpsServiceRequest request;
         EA::proto::OpsServiceResponse response;
 
         ScopeShower ss;
-        auto rs = make_plugin_remove(&request);
+        auto rs = make_dict_remove(&request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("plugin_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("dict_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -319,17 +319,17 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
 
-    void run_plugin_restore_cmd() {
+    void run_dict_restore_cmd() {
         EA::proto::OpsServiceRequest request;
         EA::proto::OpsServiceResponse response;
 
         ScopeShower ss;
-        auto rs = make_plugin_restore(&request);
+        auto rs = make_dict_restore(&request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("plugin_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("dict_manage", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -340,17 +340,17 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
 
-    void run_plugin_info_cmd() {
+    void run_dict_info_cmd() {
         EA::proto::QueryOpsServiceRequest request;
         EA::proto::QueryOpsServiceResponse response;
 
         ScopeShower ss;
-        auto rs = make_plugin_info(&request);
+        auto rs = make_dict_info(&request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("dict_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -362,25 +362,25 @@ namespace EA::client {
         if (response.errcode() != EA::proto::SUCCESS) {
             return;
         }
-        table = show_query_ops_plugin_info_response(response);
+        table = show_query_ops_dict_info_response(response);
         ss.add_table(std::move(table));
     }
 
-    void run_plugin_list_cmd() {
-        if (!PluginOptionContext::get_instance()->plugin_name.empty()) {
-            run_plugin_version_list_cmd();
+    void run_dict_list_cmd() {
+        if (!DictOptionContext::get_instance()->dict_name.empty()) {
+            run_dict_version_list_cmd();
             return;
         }
         EA::proto::QueryOpsServiceRequest request;
         EA::proto::QueryOpsServiceResponse response;
 
         ScopeShower ss;
-        auto rs = make_plugin_list(&request);
+        auto rs = make_dict_list(&request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("dict_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -390,23 +390,23 @@ namespace EA::client {
                                                response.errmsg());
         ss.add_table(std::move(table));
         if (response.errcode() == EA::proto::SUCCESS) {
-            table = show_query_ops_plugin_list_response(response);
+            table = show_query_ops_dict_list_response(response);
             ss.add_table(std::move(table));
         }
     }
 
 
-    void run_plugin_version_list_cmd() {
+    void run_dict_version_list_cmd() {
         EA::proto::QueryOpsServiceRequest request;
         EA::proto::QueryOpsServiceResponse response;
 
         ScopeShower ss;
-        auto rs = make_list_plugin_version(&request);
+        auto rs = make_list_dict_version(&request);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("plugin_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("dict_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -416,39 +416,35 @@ namespace EA::client {
                                                response.errmsg());
         ss.add_table(std::move(table));
         if (response.errcode() == EA::proto::SUCCESS) {
-            table = show_query_ops_plugin_list_version_response(response);
+            table = show_query_ops_dict_list_version_response(response);
             ss.add_table(std::move(table));
         }
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_create(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_CREATE_PLUGIN);
-        auto rc = req->mutable_request_plugin()->mutable_plugin();
-        auto opt = PluginOptionContext::get_instance();
-        rc->set_name(opt->plugin_name);
+    make_dict_create(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_CREATE_DICT);
+        auto rc = req->mutable_request_dict()->mutable_dict();
+        auto opt = DictOptionContext::get_instance();
+        rc->set_name(opt->dict_name);
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
-        auto r = string_to_platform(opt->plugin_type);
-        if (!r.ok()) {
-            return r.status();
-        }
-        rc->set_platform(r.value());
+        rc->set_ext(opt->dict_ext);
         auto v = rc->mutable_version();
-        auto st = string_to_version(opt->plugin_version, v);
+        auto st = string_to_version(opt->dict_version, v);
         if (!st.ok()) {
             return st;
         }
         std::error_code ec;
-        if (!turbo::filesystem::exists(opt->plugin_file)) {
-            return turbo::NotFoundError("plugin file not found");
+        if (!turbo::filesystem::exists(opt->dict_file)) {
+            return turbo::NotFoundError("dict file not found");
         }
-        auto file_size = turbo::filesystem::file_size(opt->plugin_file);
+        auto file_size = turbo::filesystem::file_size(opt->dict_file);
         if (file_size <= 0) {
             return turbo::NotFoundError("file size < 0");
         }
         rc->set_size(file_size);
         int64_t nsize;
-        auto cksm = turbo::FileUtility::md5_sum_file(opt->plugin_file, &nsize);
+        auto cksm = turbo::FileUtility::md5_sum_file(opt->dict_file, &nsize);
         if (!cksm.ok()) {
             return cksm.status();
         }
@@ -457,33 +453,29 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_upload(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_UPLOAD_PLUGIN);
-        auto rc = req->mutable_request_plugin()->mutable_plugin();
-        auto opt = PluginOptionContext::get_instance();
-        rc->set_name(opt->plugin_name);
+    make_dict_upload(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_UPLOAD_DICT);
+        auto rc = req->mutable_request_dict()->mutable_dict();
+        auto opt = DictOptionContext::get_instance();
+        rc->set_name(opt->dict_name);
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
-        auto r = string_to_platform(opt->plugin_type);
-        if (!r.ok()) {
-            return r.status();
-        }
-        rc->set_platform(r.value());
+        rc->set_ext(opt->dict_ext);
         auto v = rc->mutable_version();
-        auto st = string_to_version(opt->plugin_version, v);
+        auto st = string_to_version(opt->dict_version, v);
         if (!st.ok()) {
             return st;
         }
         std::error_code ec;
-        if (!turbo::filesystem::exists(opt->plugin_file, ec)) {
-            return turbo::NotFoundError("plugin file not found");
+        if (!turbo::filesystem::exists(opt->dict_file, ec)) {
+            return turbo::NotFoundError("dict file not found");
         }
-        auto file_size = turbo::filesystem::file_size(opt->plugin_file);
+        auto file_size = turbo::filesystem::file_size(opt->dict_file);
         if (file_size <= 0) {
             return turbo::NotFoundError("file size < 0");
         }
         rc->set_size(file_size);
         int64_t nsize;
-        auto cksm = turbo::FileUtility::md5_sum_file(opt->plugin_file, &nsize);
+        auto cksm = turbo::FileUtility::md5_sum_file(opt->dict_file, &nsize);
         if (!cksm.ok()) {
             return cksm.status();
         }
@@ -492,78 +484,78 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_remove(EA::proto::OpsServiceRequest *req) {
-        auto opt = PluginOptionContext::get_instance();
-        if (opt->plugin_query_tombstone) {
-            req->set_op_type(EA::proto::OP_REMOVE_TOMBSTONE_PLUGIN);
+    make_dict_remove(EA::proto::OpsServiceRequest *req) {
+        auto opt = DictOptionContext::get_instance();
+        if (opt->dict_query_tombstone) {
+            req->set_op_type(EA::proto::OP_REMOVE_TOMBSTONE_DICT);
         } else {
-            req->set_op_type(EA::proto::OP_REMOVE_PLUGIN);
+            req->set_op_type(EA::proto::OP_REMOVE_DICT);
         }
-        auto rc = req->mutable_request_plugin()->mutable_plugin();
-        rc->set_name(opt->plugin_name);
-        if (!opt->plugin_version.empty()) {
+        auto rc = req->mutable_request_dict()->mutable_dict();
+        rc->set_name(opt->dict_name);
+        if (!opt->dict_version.empty()) {
             auto v = rc->mutable_version();
-            return string_to_version(opt->plugin_version, v);
+            return string_to_version(opt->dict_version, v);
         }
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_restore(EA::proto::OpsServiceRequest *req) {
-        req->set_op_type(EA::proto::OP_RESTORE_TOMBSTONE_PLUGIN);
-        auto rc = req->mutable_request_plugin()->mutable_plugin();
-        auto opt = PluginOptionContext::get_instance();
-        rc->set_name(opt->plugin_name);
-        if (!opt->plugin_version.empty()) {
+    make_dict_restore(EA::proto::OpsServiceRequest *req) {
+        req->set_op_type(EA::proto::OP_RESTORE_TOMBSTONE_DICT);
+        auto rc = req->mutable_request_dict()->mutable_dict();
+        auto opt = DictOptionContext::get_instance();
+        rc->set_name(opt->dict_name);
+        if (!opt->dict_version.empty()) {
             auto v = rc->mutable_version();
-            return string_to_version(opt->plugin_version, v);
+            return string_to_version(opt->dict_version, v);
         }
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_list(EA::proto::QueryOpsServiceRequest *req) {
-        auto opt = PluginOptionContext::get_instance();
-        if (opt->plugin_query_tombstone) {
-            req->set_op_type(EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN);
+    make_dict_list(EA::proto::QueryOpsServiceRequest *req) {
+        auto opt = DictOptionContext::get_instance();
+        if (opt->dict_query_tombstone) {
+            req->set_op_type(EA::proto::QUERY_TOMBSTONE_LIST_DICT);
         } else {
-            req->set_op_type(EA::proto::QUERY_LIST_PLUGIN);
+            req->set_op_type(EA::proto::QUERY_LIST_DICT);
         }
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_list_plugin_version(EA::proto::QueryOpsServiceRequest *req) {
-        auto opt = PluginOptionContext::get_instance();
-        if (opt->plugin_query_tombstone) {
-            req->set_op_type(EA::proto::QUERY_TOMBSTONE_LIST_PLUGIN_VERSION);
+    make_list_dict_version(EA::proto::QueryOpsServiceRequest *req) {
+        auto opt = DictOptionContext::get_instance();
+        if (opt->dict_query_tombstone) {
+            req->set_op_type(EA::proto::QUERY_TOMBSTONE_LIST_DICT_VERSION);
         } else {
-            req->set_op_type(EA::proto::QUERY_LIST_PLUGIN_VERSION);
+            req->set_op_type(EA::proto::QUERY_LIST_DICT_VERSION);
         }
-        req->mutable_query_plugin()->set_name(opt->plugin_name);
+        req->mutable_query_dict()->set_name(opt->dict_name);
         return turbo::OkStatus();
     }
 
 
-    turbo::Table show_query_ops_plugin_list_response(const EA::proto::QueryOpsServiceResponse &res) {
+    turbo::Table show_query_ops_dict_list_response(const EA::proto::QueryOpsServiceResponse &res) {
         turbo::Table result;
-        auto &plugin_list = res.plugin_response().plugin_list();
-        result.add_row(turbo::Table::Row_t{"tombstone", turbo::Format(PluginOptionContext::get_instance()->plugin_query_tombstone)});
+        auto &dict_list = res.dict_response().dict_list();
+        result.add_row(turbo::Table::Row_t{"tombstone", turbo::Format(DictOptionContext::get_instance()->dict_query_tombstone)});
         auto last = result.size() - 1;
-        if (!PluginOptionContext::get_instance()->plugin_query_tombstone) {
+        if (!DictOptionContext::get_instance()->dict_query_tombstone) {
             result[last].format().font_color(turbo::Color::green);
         } else {
             result[last].format().font_color(turbo::Color::red);
         }
 
-        result.add_row(turbo::Table::Row_t{"plugin size", turbo::Format(plugin_list.size())});
+        result.add_row(turbo::Table::Row_t{"dict size", turbo::Format(dict_list.size())});
         last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
-        result.add_row(turbo::Table::Row_t{"number", "plugin"});
+        result.add_row(turbo::Table::Row_t{"number", "dict"});
         last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
         int i = 0;
-        for (auto &ns: plugin_list) {
+        for (auto &ns: dict_list) {
             result.add_row(turbo::Table::Row_t{turbo::Format(i++), ns});
             last = result.size() - 1;
             result[last].format().font_color(turbo::Color::yellow);
@@ -572,30 +564,30 @@ namespace EA::client {
         return result;
     }
 
-    turbo::Table show_query_ops_plugin_list_version_response(const EA::proto::QueryOpsServiceResponse &res) {
+    turbo::Table show_query_ops_dict_list_version_response(const EA::proto::QueryOpsServiceResponse &res) {
         turbo::Table result;
-        auto &plugin_versions = res.plugin_response().versions();
+        auto &dict_versions = res.dict_response().versions();
 
-        result.add_row(turbo::Table::Row_t{"tombstone", turbo::Format(PluginOptionContext::get_instance()->plugin_query_tombstone)});
+        result.add_row(turbo::Table::Row_t{"tombstone", turbo::Format(DictOptionContext::get_instance()->dict_query_tombstone)});
         auto last = result.size() - 1;
-        if (!PluginOptionContext::get_instance()->plugin_query_tombstone) {
+        if (!DictOptionContext::get_instance()->dict_query_tombstone) {
             result[last].format().font_color(turbo::Color::green);
         } else {
             result[last].format().font_color(turbo::Color::red);
         }
 
-        result.add_row(turbo::Table::Row_t{"plugin", PluginOptionContext::get_instance()->plugin_name});
+        result.add_row(turbo::Table::Row_t{"dict", DictOptionContext::get_instance()->dict_name});
         last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
 
-        result.add_row(turbo::Table::Row_t{"version size", turbo::Format(plugin_versions.size())});
+        result.add_row(turbo::Table::Row_t{"version size", turbo::Format(dict_versions.size())});
         last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
         result.add_row(turbo::Table::Row_t{"number", "version"});
         last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
         int i = 0;
-        for (auto &ns: plugin_versions) {
+        for (auto &ns: dict_versions) {
             result.add_row(
                     turbo::Table::Row_t{turbo::Format(i++),
                                         turbo::Format("{}.{}.{}", ns.major(), ns.minor(), ns.patch())});
@@ -607,35 +599,35 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_info(EA::proto::QueryOpsServiceRequest *req) {
-        auto opt = PluginOptionContext::get_instance();
-        if (!opt->plugin_query_tombstone) {
-            req->set_op_type(EA::proto::QUERY_PLUGIN_INFO);
+    make_dict_info(EA::proto::QueryOpsServiceRequest *req) {
+        auto opt = DictOptionContext::get_instance();
+        if (!opt->dict_query_tombstone) {
+            req->set_op_type(EA::proto::QUERY_INFO_DICT);
         } else {
-            req->set_op_type(EA::proto::QUERY_TOMBSTONE_PLUGIN_INFO);
+            req->set_op_type(EA::proto::QUERY_TOMBSTONE_DICT_INFO);
         }
-        auto rc = req->mutable_query_plugin();
-        rc->set_name(opt->plugin_name);
-        if (!opt->plugin_version.empty()) {
+        auto rc = req->mutable_query_dict();
+        rc->set_name(opt->dict_name);
+        if (!opt->dict_version.empty()) {
             auto v = rc->mutable_version();
-            return string_to_version(opt->plugin_version, v);
+            return string_to_version(opt->dict_version, v);
         }
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_plugin_download(EA::proto::QueryOpsServiceRequest *req) {
-        auto opt = PluginOptionContext::get_instance();
-        req->set_op_type(EA::proto::QUERY_DOWNLOAD_PLUGIN);
-        auto rc = req->mutable_query_plugin();
-        rc->set_name(opt->plugin_name);
+    make_dict_download(EA::proto::QueryOpsServiceRequest *req) {
+        auto opt = DictOptionContext::get_instance();
+        req->set_op_type(EA::proto::QUERY_DOWNLOAD_DICT);
+        auto rc = req->mutable_query_dict();
+        rc->set_name(opt->dict_name);
         auto v = rc->mutable_version();
-        return string_to_version(opt->plugin_version, v);
+        return string_to_version(opt->dict_version, v);
     }
 
-    turbo::Table show_query_ops_plugin_info_response(const EA::proto::QueryOpsServiceResponse &res) {
+    turbo::Table show_query_ops_dict_info_response(const EA::proto::QueryOpsServiceResponse &res) {
         turbo::Table result_table;
-        auto result = res.plugin_response().plugin();
+        auto result = res.dict_response().dict();
         // name
         result_table.add_row(turbo::Table::Row_t{"name ", result.name()});
         auto last = result_table.size() - 1;
@@ -663,7 +655,7 @@ namespace EA::client {
             result_table[last].format().font_color(turbo::Color::green);
         }
         // platform
-        result_table.add_row(turbo::Table::Row_t{"platform", platform_to_string(result.platform())});
+        result_table.add_row(turbo::Table::Row_t{"ext", result.ext()});
         last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);
 
@@ -690,6 +682,15 @@ namespace EA::client {
         result_table[last].format().font_color(turbo::Color::green);
 
         return result_table;
+    }
+
+    std::string make_dict_filename(const std::string &name, const EA::proto::Version &version,const std::string &ext) {
+        if (ext.empty()) {
+            return turbo::Format("{}.{}.{}.{}", name, version.major(), version.minor(), version.patch());
+        } else {
+            return turbo::Format("{}.{}.{}.{}.{}", name, ext, version.major(), version.minor(), version.patch());
+        }
+
     }
 
 }  // namespace EA::client
