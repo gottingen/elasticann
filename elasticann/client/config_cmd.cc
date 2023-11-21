@@ -36,10 +36,10 @@ namespace EA::client {
         inputs->add_option("-d,--data", opt->config_data, "config content");
         inputs->add_option("-f, --file", opt->config_file, "local config file");
         inputs->require_option(1);
-        cc->add_option("-v, --version", opt->config_version, "config version [1.2.3]")->required();
+        cc->add_option("-v, --version", opt->config_version, "config version [1.2.3]");
         cc->add_option("-t, --type", opt->config_type, "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
-
         cc->callback([]() { run_config_create_cmd(); });
+
         auto cl = ns->add_subcommand("list", " list config");
         cl->add_option("-n,--name", opt->config_name, "config name");
         cl->callback([]() { run_config_list_cmd(); });
@@ -67,8 +67,8 @@ namespace EA::client {
     }
 
     void run_config_create_cmd() {
-        EA::proto::OpsServiceRequest request;
-        EA::proto::OpsServiceResponse response;
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
 
         ScopeShower ss;
         auto rs = make_config_create(&request);
@@ -76,7 +76,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("config_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -91,8 +91,8 @@ namespace EA::client {
             run_config_version_list_cmd();
             return;
         }
-        EA::proto::QueryOpsServiceRequest request;
-        EA::proto::QueryOpsServiceResponse response;
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
 
         ScopeShower ss;
         auto rs = make_config_list(&request);
@@ -100,12 +100,12 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("config_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                          response.errmsg());
         ss.add_table(std::move(table));
         if(response.errcode() == EA::proto::SUCCESS) {
@@ -115,8 +115,8 @@ namespace EA::client {
     }
 
     void run_config_version_list_cmd() {
-        EA::proto::QueryOpsServiceRequest request;
-        EA::proto::QueryOpsServiceResponse response;
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
 
         ScopeShower ss;
         auto rs = make_config_list_version(&request);
@@ -124,12 +124,12 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("config_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                          response.errmsg());
         ss.add_table(std::move(table));
         if(response.errcode() == EA::proto::SUCCESS) {
@@ -139,8 +139,8 @@ namespace EA::client {
     }
 
     void run_config_get_cmd() {
-        EA::proto::QueryOpsServiceRequest request;
-        EA::proto::QueryOpsServiceResponse response;
+        EA::proto::QueryRequest request;
+        EA::proto::QueryResponse response;
 
         ScopeShower ss;
         auto rs = make_config_get(&request);
@@ -148,12 +148,12 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("config_query", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                          response.errmsg());
         ss.add_table(std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
@@ -167,13 +167,13 @@ namespace EA::client {
         ss.add_table(std::move(table));
     }
 
-    turbo::Status save_config_to_file(const std::string & path, const EA::proto::QueryOpsServiceResponse &res) {
+    turbo::Status save_config_to_file(const std::string & path, const EA::proto::QueryResponse &res) {
         turbo::SequentialWriteFile file;
         auto s = file.open(ConfigOptionContext::get_instance()->config_file);
         if(!s.ok()) {
             return s;
         }
-        s= file.write(res.config_response().config().content());
+        s= file.write(res.config_infos(0).content());
         if(!s.ok()) {
             return s;
         }
@@ -182,8 +182,8 @@ namespace EA::client {
     }
 
     void run_config_remove_cmd() {
-        EA::proto::OpsServiceRequest request;
-        EA::proto::OpsServiceResponse response;
+        EA::proto::MetaManagerRequest request;
+        EA::proto::MetaManagerResponse response;
 
         ScopeShower ss;
         auto rs = make_config_remove(&request);
@@ -191,7 +191,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("config_manage", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -202,22 +202,26 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    make_config_create(EA::proto::OpsServiceRequest *req) {
+    make_config_create(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_CREATE_CONFIG);
-        auto rc = req->mutable_request_config();
+        auto rc = req->mutable_config_info();
         auto opt = ConfigOptionContext::get_instance();
         rc->set_name(opt->config_name);
+
         rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
         auto r = string_to_config_type(opt->config_type);
         if (!r.ok()) {
             return r.status();
         }
         rc->set_type(r.value());
-        auto v = rc->mutable_version();
-        auto st = string_to_version(opt->config_version, v);
-        if (!st.ok()) {
-            return st;
+        if(!opt->config_version.empty()) {
+            auto v = rc->mutable_version();
+            auto st = string_to_version(opt->config_version, v);
+            if (!st.ok()) {
+                return st;
+            }
         }
+
         if (!opt->config_data.empty()) {
             rc->set_content(opt->config_data);
             return turbo::OkStatus();
@@ -239,36 +243,35 @@ namespace EA::client {
     }
 
     [[nodiscard]] turbo::Status
-    make_config_list(EA::proto::QueryOpsServiceRequest *req) {
+    make_config_list(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_LIST_CONFIG);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_config_list_version(EA::proto::QueryOpsServiceRequest *req) {
+    make_config_list_version(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
         auto opt = ConfigOptionContext::get_instance();
-        req->mutable_query_config()->set_name(opt->config_name);
+        req->set_config_name(opt->config_name);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_config_get(EA::proto::QueryOpsServiceRequest *req) {
+    make_config_get(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_GET_CONFIG);
-        auto rc = req->mutable_query_config();
         auto opt = ConfigOptionContext::get_instance();
-        rc->set_name(opt->config_name);
+        req->set_config_name(opt->config_name);
         if (!opt->config_version.empty()) {
-            auto v = rc->mutable_version();
+            auto v = req->mutable_config_version();
             return string_to_version(opt->config_version, v);
         }
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_config_remove(EA::proto::OpsServiceRequest *req) {
+    make_config_remove(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
-        auto rc = req->mutable_request_config();
+        auto rc = req->mutable_config_info();
         auto opt = ConfigOptionContext::get_instance();
         rc->set_name(opt->config_name);
         if (!opt->config_version.empty()) {
@@ -278,9 +281,9 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryOpsServiceResponse &res) {
+    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryResponse &res) {
         turbo::Table result;
-        auto &config_list = res.config_response().config_list();
+        auto &config_list = res.config_infos();
         result.add_row(turbo::Table::Row_t{"config size", turbo::Format(config_list.size())});
         auto last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
@@ -289,7 +292,7 @@ namespace EA::client {
         result[last].format().font_color(turbo::Color::green);
         int i = 0;
         for (auto &ns: config_list) {
-            result.add_row(turbo::Table::Row_t{turbo::Format(i++), ns});
+            result.add_row(turbo::Table::Row_t{turbo::Format(i++), ns.name()});
             last = result.size() - 1;
             result[last].format().font_color(turbo::Color::yellow);
 
@@ -297,9 +300,9 @@ namespace EA::client {
         return result;
     }
 
-    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryOpsServiceResponse &res) {
+    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res) {
         turbo::Table result;
-        auto &config_versions = res.config_response().versions();
+        auto &config_versions = res.config_infos();
         result.add_row(turbo::Table::Row_t{"version size", turbo::Format(config_versions.size())});
         auto last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
@@ -309,7 +312,7 @@ namespace EA::client {
         int i = 0;
         for (auto &ns: config_versions) {
             result.add_row(
-                    turbo::Table::Row_t{turbo::Format(i++), turbo::Format("{}.{}.{}", ns.major(), ns.minor(), ns.patch())});
+                    turbo::Table::Row_t{turbo::Format(i++), turbo::Format("{}.{}.{}", ns.version().major(), ns.version().minor(), ns.version().patch())});
             last = result.size() - 1;
             result[last].format().font_color(turbo::Color::yellow);
 
@@ -317,21 +320,21 @@ namespace EA::client {
         return result;
     }
 
-    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryOpsServiceResponse &res, const turbo::Status &save_status) {
+    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status) {
         turbo::Table result_table;
-
-        result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", res.config_response().config().version().major(),
-                                                            res.config_response().config().version().minor(),
-                                                            res.config_response().config().version().patch())});
+        auto config = res.config_infos(0);
+        result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", config.version().major(),
+                                                                          config.version().minor(),
+                                                                          config.version().patch())});
         auto last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);
-        result_table.add_row(turbo::Table::Row_t{"type", config_type_to_string(res.config_response().config().type())});
+        result_table.add_row(turbo::Table::Row_t{"type", config_type_to_string(config.type())});
         last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);
-        result_table.add_row(turbo::Table::Row_t{"size", turbo::Format(res.config_response().config().content().size())});
+        result_table.add_row(turbo::Table::Row_t{"size", turbo::Format(config.content().size())});
         last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);
-        turbo::Time cs = turbo::FromTimeT(res.config_response().config().time());
+        turbo::Time cs = turbo::FromTimeT(config.time());
         result_table.add_row(turbo::Table::Row_t{"time", turbo::FormatTime(cs)});
         last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);

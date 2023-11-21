@@ -21,6 +21,8 @@
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/privilege_manager.h"
 #include "elasticann/meta_server/schema_manager.h"
+#include "elasticann/meta_server/config_manager.h"
+#include "elasticann/meta_server/query_config_manager.h"
 #include "elasticann/meta_server/query_cluster_manager.h"
 #include "elasticann/meta_server/query_privilege_manager.h"
 #include "elasticann/meta_server/query_namespace_manager.h"
@@ -54,6 +56,9 @@ namespace EA {
     const std::string MetaServer::DDLWORK_IDENTIFY(1, 0x06);
     const std::string MetaServer::STATISTICS_IDENTIFY(1, 0x07);
     const std::string MetaServer::INDEX_DDLWORK_REGION_IDENTIFY(1, 0x08);
+
+    const std::string MetaServer::CONFIG_IDENTIFY(1, 0x04);
+
     const std::string MetaServer::MAX_IDENTIFY(1, 0xFF);
 
     MetaServer::~MetaServer() {}
@@ -107,6 +112,7 @@ namespace EA {
         TLOG_WARN("_tso_state_machine init success");
 
         SchemaManager::get_instance()->set_meta_state_machine(_meta_state_machine);
+        ConfigManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         PrivilegeManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         ClusterManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         MetaServerInteract::get_instance()->init();
@@ -230,6 +236,14 @@ namespace EA {
             || request->op_type() == proto::OP_MODIFY_PARTITION
             || request->op_type() == proto::OP_UPDATE_CHARSET) {
             SchemaManager::get_instance()->process_schema_info(controller,
+                                                               request,
+                                                               response,
+                                                               done_guard.release());
+            return;
+        }
+        if(request->op_type() == proto::OP_CREATE_CONFIG
+            ||request->op_type() == proto::OP_REMOVE_CONFIG) {
+            ConfigManager::get_instance()->process_schema_info(controller,
                                                                request,
                                                                response,
                                                                done_guard.release());
@@ -427,6 +441,18 @@ namespace EA {
             }
             case proto::QUERY_ZONE: {
                 QueryZoneManager::get_instance()->get_zone_info(request, response);
+                break;
+            }
+            case proto::QUERY_GET_CONFIG: {
+                QueryConfigManager::get_instance()->get_config(request, response);
+                break;
+            }
+            case proto::QUERY_LIST_CONFIG: {
+                QueryConfigManager::get_instance()->list_config(request, response);
+                break;
+            }
+            case proto::QUERY_LIST_CONFIG_VERSION: {
+                QueryConfigManager::get_instance()->list_config_version(request, response);
                 break;
             }
             case proto::QUERY_SCHEMA: {

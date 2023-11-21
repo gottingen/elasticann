@@ -20,8 +20,8 @@
 
 namespace EA::client {
     /// Collection of all options of namespace cmd.
-    void setup_schema_cmd(turbo::App &app);
+    void setup_meta_cmd(turbo::App &app);
 
-    void run_schema_cmd(turbo::App &app);
+    void run_meta_cmd(turbo::App &app);
 }  // namespace EA::client
 #endif  // ELASTICANN_CLIENT_SCHEMA_CMD_H_

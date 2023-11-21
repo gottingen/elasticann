@@ -53,28 +53,28 @@ namespace EA::client {
     void run_config_remove_cmd();
 
     [[nodiscard]] turbo::Status
-    make_config_create(EA::proto::OpsServiceRequest *req);
+    make_config_create(EA::proto::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_config_list(EA::proto::QueryOpsServiceRequest *req);
+    make_config_list(EA::proto::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_config_list_version(EA::proto::QueryOpsServiceRequest *req);
+    make_config_list_version(EA::proto::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_config_get(EA::proto::QueryOpsServiceRequest *req);
+    make_config_get(EA::proto::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_config_remove(EA::proto::OpsServiceRequest *req);
+    make_config_remove(EA::proto::MetaManagerRequest *req);
 
 
-    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryOpsServiceResponse &res);
+    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryResponse &res);
 
-    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryOpsServiceResponse &res);
+    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res);
 
-    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryOpsServiceResponse &res, const turbo::Status &save_status);
+    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status);
 
-    turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryOpsServiceResponse &res);
+    turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res);
 
 }  // namespace EA::client
 

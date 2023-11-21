@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/client/schema_cmd.h"
+#include "elasticann/client/meta_cmd.h"
 #include "elasticann/client/namespace_cmd.h"
 #include "elasticann/client/database_cmd.h"
 #include "elasticann/client/zone_cmd.h"
 #include "elasticann/client/cluster_cmd.h"
 #include "elasticann/client/table_cmd.h"
+#include "elasticann/client/config_cmd.h"
 #include "elasticann/client/option_context.h"
 #include "turbo/format/print.h"
 
@@ -26,7 +27,7 @@ namespace EA::client {
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
     /// You could return the shared pointer if you wanted to access the values in main.
-    void setup_schema_cmd(turbo::App &app) {
+    void setup_meta_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
         auto *sub = app.add_subcommand("meta", "meta operations");
 
@@ -36,8 +37,9 @@ namespace EA::client {
         EA::client::setup_cluster_cmd(*sub);
         EA::client::setup_table_cmd(*sub);
         EA::client::setup_zone_cmd(*sub);
+        EA::client::setup_config_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
-        sub->callback([sub]() { run_schema_cmd(*sub); });
+        sub->callback([sub]() { run_meta_cmd(*sub); });
         //sub->require_subcommand();
 
     }
@@ -45,7 +47,7 @@ namespace EA::client {
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_schema_cmd(turbo::App &app) {
+    void run_meta_cmd(turbo::App &app) {
         if(app.get_subcommands().empty()) {
             turbo::Println("{}", app.help());
         }

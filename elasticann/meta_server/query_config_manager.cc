@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/ops/config/query_config_manager.h"
-#include "elasticann/ops/config/config_manager.h"
+#include "elasticann/meta_server/query_config_manager.h"
+#include "elasticann/meta_server/config_manager.h"
 
 namespace EA {
 
-    void QueryConfigManager::get_config(const ::EA::proto::QueryOpsServiceRequest *request,
-                                        ::EA::proto::QueryOpsServiceResponse *response) {
-        response->set_op_type(request->op_type());
+    void QueryConfigManager::get_config(const ::EA::proto::QueryRequest *request,
+                                        ::EA::proto::QueryResponse *response) {
+        if (!request->has_config_name()) {
+            response->set_errmsg("config name not set");
+            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            return;
+        }
         BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
         auto configs = ConfigManager::get_instance()->_configs;
-        auto &get_request = request->query_config();
-        auto &name = get_request.name();
+        auto &name = request->config_name();
         auto it = configs.find(name);
         if (it == configs.end() || it->second.empty()) {
             response->set_errmsg("config not exist");
@@ -32,18 +35,17 @@ namespace EA {
         }
         turbo::ModuleVersion version;
 
-        if (!get_request.has_version()) {
+        if (!request->has_config_version()) {
             // use newest
             // version = it->second.rend()->first;
             auto cit = it->second.rbegin();
-            *(response->mutable_config_response()->mutable_config()) = cit->second;
+            *(response->add_config_infos()) = cit->second;
             response->set_errmsg("success");
             response->set_errcode(proto::SUCCESS);
             return;
         }
-
-        version = turbo::ModuleVersion(get_request.version().major(), get_request.version().minor(),
-                                       get_request.version().patch());
+        auto &request_version = request->config_version();
+        version = turbo::ModuleVersion(request_version.major(), request_version.minor(), request_version.patch());
 
         auto cit = it->second.find(version);
         if (cit == it->second.end()) {
@@ -53,40 +55,44 @@ namespace EA {
             return;
         }
 
-        *(response->mutable_config_response()->mutable_config()) = cit->second;
+        *(response->add_config_infos()) = cit->second;
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryConfigManager::list_config(const ::EA::proto::QueryOpsServiceRequest *request,
-                                         ::EA::proto::QueryOpsServiceResponse *response) {
-        response->set_op_type(request->op_type());
+    void QueryConfigManager::list_config(const ::EA::proto::QueryRequest *request,
+                                         ::EA::proto::QueryResponse *response) {
         BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
         auto configs = ConfigManager::get_instance()->_configs;
-        response->mutable_config_response()->mutable_config_list()->Reserve(configs.size());
+        response->mutable_config_infos()->Reserve(configs.size());
+        proto::ConfigInfo config;
         for (auto it = configs.begin(); it != configs.end(); ++it) {
-            response->mutable_config_response()->add_config_list(it->first);
+            config.set_name(it->first);
+            *(response->add_config_infos()) = config;
         }
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);
     }
 
-    void QueryConfigManager::list_config_version(const ::EA::proto::QueryOpsServiceRequest *request,
-                                                 ::EA::proto::QueryOpsServiceResponse *response) {
-        response->set_op_type(request->op_type());
-        auto &get_request = request->query_config();
+    void QueryConfigManager::list_config_version(const ::EA::proto::QueryRequest *request,
+                                                 ::EA::proto::QueryResponse *response) {
+        if (!request->has_config_name()) {
+            response->set_errmsg("config name not set");
+            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            return;
+        }
+        auto &name = request->config_name();
         BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
         auto configs = ConfigManager::get_instance()->_configs;
-        auto &name = get_request.name();
         auto it = configs.find(name);
         if (it == configs.end()) {
             response->set_errmsg("config not exist");
             response->set_errcode(proto::INPUT_PARAM_ERROR);
             return;
         }
-        response->mutable_config_response()->mutable_versions()->Reserve(it->second.size());
+        response->mutable_config_infos()->Reserve(it->second.size());
         for (auto vit = it->second.begin(); vit != it->second.end(); ++vit) {
-            *(response->mutable_config_response()->add_versions()) = vit->second.version();
+            *(response->add_config_infos()) = vit->second;
         }
         response->set_errmsg("success");
         response->set_errcode(proto::SUCCESS);

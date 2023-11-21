@@ -13,10 +13,10 @@
 // limitations under the License.
 //
 
-#ifndef ELASTICANN_OPS_QUERY_CONFIG_CONFIG_MANAGER_H_
-#define ELASTICANN_OPS_QUERY_CONFIG_CONFIG_MANAGER_H_
+#ifndef ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
+#define ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
 
-#include "eaproto/ops/ops.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 
 namespace EA {
 
@@ -28,15 +28,15 @@ namespace EA {
         }
 
         void
-        get_config(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+        get_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
 
         void
-        list_config(const ::EA::proto::QueryOpsServiceRequest *request, ::EA::proto::QueryOpsServiceResponse *response);
+        list_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
 
         void
-        list_config_version(const ::EA::proto::QueryOpsServiceRequest *request,
-                            ::EA::proto::QueryOpsServiceResponse *response);
+        list_config_version(const ::EA::proto::QueryRequest *request,
+                            ::EA::proto::QueryResponse *response);
     };
 }  // namespace EA
 
-#endif  // ELASTICANN_OPS_QUERY_CONFIG_CONFIG_MANAGER_H_
+#endif  // ELASTICANN_META_QUERY_CONFIG_MANAGER_H_

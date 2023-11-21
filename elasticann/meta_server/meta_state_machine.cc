@@ -21,6 +21,7 @@
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/privilege_manager.h"
 #include "elasticann/meta_server/schema_manager.h"
+#include "elasticann/meta_server/config_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
@@ -346,6 +347,14 @@ namespace EA {
                     ZoneManager::get_instance()->modify_zone(request, done);
                     break;
                 }
+                case proto::OP_CREATE_CONFIG: {
+                    ConfigManager::get_instance()->create_config(request, done);
+                    break;
+                }
+                case proto::OP_REMOVE_CONFIG: {
+                    ConfigManager::get_instance()->remove_config(request, done);
+                    break;
+                }
                 case proto::OP_CREATE_TABLE: {
                     TableManager::get_instance()->create_table(request, iter.index(), done);
                     break;
@@ -632,6 +641,12 @@ namespace EA {
                 ret = SchemaManager::get_instance()->load_snapshot();
                 if (ret != 0) {
                     TLOG_ERROR("SchemaManager load snapshot fail");
+                    return -1;
+                }
+
+                ret = ConfigManager::get_instance()->load_snapshot();
+                if (ret != 0) {
+                    TLOG_ERROR("ConfigManager load snapshot fail");
                     return -1;
                 }
             }

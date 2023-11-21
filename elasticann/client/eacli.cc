@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/client/schema_cmd.h"
+#include "elasticann/client/meta_cmd.h"
 #include "elasticann/client/ops_cmd.h"
 #include "turbo/flags/flags.h"
 #include "turbo/format/print.h"
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     // Call the setup functions for the subcommands.
     // They are kept alive by a shared pointer in the
     // lambda function
-    EA::client::setup_schema_cmd(app);
+    EA::client::setup_meta_cmd(app);
     EA::client::setup_ops_cmd(app);
     // More setup if needed, i.e., other subcommands etc.
 

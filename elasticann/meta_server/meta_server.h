@@ -49,6 +49,9 @@ namespace EA {
         static const std::string DDLWORK_IDENTIFY;
         static const std::string STATISTICS_IDENTIFY;
         static const std::string INDEX_DDLWORK_REGION_IDENTIFY;
+
+        static const std::string CONFIG_IDENTIFY;
+
         static const std::string MAX_IDENTIFY;
 
         virtual ~MetaServer();
