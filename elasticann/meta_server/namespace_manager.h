@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <set>
 #include <mutex>
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/meta_server/meta_server.h"
 #include "elasticann/meta_server/schema_manager.h"
 

@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <memory>
 #include "elasticann/common/common.h"
-#include "eaproto/db/common.pb.h"
+#include "eaproto/meta/common.pb.h"
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/descriptor.pb.h>

@@ -21,7 +21,7 @@
 #include "elasticann/common/expr_value.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/common/message_helper.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/dynamic_message.h>
 

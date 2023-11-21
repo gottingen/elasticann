@@ -23,8 +23,8 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "eaproto/db/meta.interface.pb.h"
-#include "eaproto/db/plan.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
+#include "eaproto/exec/plan.pb.h"
 #include "elasticann/common/common.h"
 
 namespace EA {

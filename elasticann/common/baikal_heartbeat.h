@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/rpc/meta_server_interact.h"
 

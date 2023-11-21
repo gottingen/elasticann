@@ -25,9 +25,9 @@
 #include <ctime>
 #include "elasticann/common/expr_value.h"
 #include "elasticann/expr/fn_manager.h"
-#include "eaproto/db/expr.pb.h"
+#include "eaproto/meta/expr.pb.h"
 #include "elasticann/sqlparser/parser.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/cmsketch.h"
 #include "elasticann/common/histogram.h"
 #include "elasticann/common/tuple_record.h"

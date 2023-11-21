@@ -24,9 +24,9 @@
 #include <braft/storage.h>
 #include <bvar/bvar.h>
 #include "elasticann/common/common.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/db/store.interface.pb.h"
-#include "eaproto/db/common.pb.h"
+#include "eaproto/meta/common.pb.h"
 #include "elasticann/store/region.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/engine/rocks_wrapper.h"

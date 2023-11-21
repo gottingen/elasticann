@@ -17,7 +17,7 @@
 #pragma once
 
 #include "elasticann/session/user_info.h"
-#include "eaproto/db/common.pb.h"
+#include "eaproto/meta/common.pb.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/runtime/runtime_state.h"

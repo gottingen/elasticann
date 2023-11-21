@@ -21,7 +21,7 @@
 #include <type_traits>
 #include <iomanip>
 #include <sstream>
-#include "eaproto/db/common.pb.h"
+#include "eaproto/meta/common.pb.h"
 #include "elasticann/common/common.h"
 #include "elasticann/common/tdigest.h"
 #include "elasticann/common/datetime.h"

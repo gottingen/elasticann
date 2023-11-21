@@ -24,7 +24,7 @@
 #include "elasticann/engine/table_iterator.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/common/mut_table_key.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/db/store.interface.pb.h"
 #include "elasticann/runtime/trace_state.h"
 #include "elasticann/engine/my_rocksdb.h"

@@ -18,7 +18,7 @@
 
 #include <rocksdb/db.h>
 #include "elasticann/meta_server/base_state_machine.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 
 namespace EA {
     class MetaStateMachine : public BaseStateMachine {

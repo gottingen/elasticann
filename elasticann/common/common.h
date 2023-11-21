@@ -40,8 +40,8 @@
 #include "brpc/reloadable_flags.h"
 #include <bthread/execution_queue.h>
 #include <gflags/gflags.h>
-#include "eaproto/db/common.pb.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/common.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/tlog.h"
 
 

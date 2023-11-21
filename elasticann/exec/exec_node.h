@@ -20,8 +20,8 @@
 #include "elasticann/common/table_record.h"
 #include "elasticann/expr/expr_node.h"
 #include "elasticann/runtime/row_batch.h"
-#include "eaproto/db/plan.pb.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/exec/plan.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/mem_row/mem_row_descriptor.h"
 #include "elasticann/runtime/runtime_state.h"
 

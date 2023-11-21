@@ -19,7 +19,7 @@
 #include <braft/raft.h>
 #include "elasticann/common/common.h"
 #include "elasticann/raft/raft_control.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/db/store.interface.pb.h"
 
 namespace EA {

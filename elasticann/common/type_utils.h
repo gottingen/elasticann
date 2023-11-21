@@ -18,7 +18,7 @@
 
 #include <stdint.h>
 #include <string>
-#include "eaproto/db/common.pb.h"
+#include "eaproto/meta/common.pb.h"
 #include "elasticann/sqlparser/parser.h"
 
 namespace EA {

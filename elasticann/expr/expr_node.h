@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include "elasticann/common/expr_value.h"
 #include "elasticann/mem_row/mem_row.h"
-#include "eaproto/db/expr.pb.h"
+#include "eaproto/meta/expr.pb.h"
 
 namespace EA {
     const int NOT_BOOL_ERRCODE = -100;

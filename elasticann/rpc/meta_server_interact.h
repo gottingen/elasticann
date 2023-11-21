@@ -21,7 +21,7 @@
 #include <brpc/server.h>
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/common.h"
 
 namespace EA {

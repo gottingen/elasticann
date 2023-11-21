@@ -17,7 +17,7 @@
 #pragma once
 
 #include "elasticann/common/common.h"
-#include "eaproto/db/meta.interface.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/protocol/data_buffer.h"
 #include "elasticann/runtime/sorter.h"
 

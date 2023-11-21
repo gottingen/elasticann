@@ -29,7 +29,7 @@
 #include <json2pb/pb_to_json.h>
 #include <brpc/channel.h>
 #include <brpc/selective_channel.h>
-#include <eaproto/db/meta.interface.pb.h>
+#include <eaproto/meta/meta.interface.pb.h>
 #include "rapidjson/rapidjson.h"
 #include "re2/re2.h"
 #include <braft/raft.h>

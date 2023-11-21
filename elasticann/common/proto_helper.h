@@ -6,8 +6,8 @@
 #define ELASTICANN_COMMON_PROTO_HELPER_H_
 
 #include "turbo/format/format.h"
-#include "eaproto/db/meta.interface.pb.h"
-#include "eaproto/db/plan.pb.h"
+#include "eaproto/meta/meta.interface.pb.h"
+#include "eaproto/exec/plan.pb.h"
 #include "rocksdb/db.h"
 #include "rocksdb/utilities/memory_util.h"
 #include "rapidjson/rapidjson.h"

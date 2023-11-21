@@ -16,7 +16,7 @@
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/raft/my_raft_log_storage.h"
 #include "elasticann/raft/raft_log_compaction_filter.h"
-#include <eaproto/db/meta.interface.pb.h>
+#include <eaproto/meta/meta.interface.pb.h>
 
 int main(int argc, char** argv) {
     const std::string rocks_path = "rocks_raft_log";
