@@ -34,14 +34,6 @@ namespace EA {
                            ::EA::proto::QueryResponse* response,
                            ::google::protobuf::Closure* done) override;
 
-        void config_manage(::google::protobuf::RpcController* controller,
-                                const ::EA::proto::OpsServiceRequest* request,
-                                ::EA::proto::OpsServiceResponse* response,
-                                ::google::protobuf::Closure* done) override;
-        void config_query(::google::protobuf::RpcController* controller,
-                               const ::EA::proto::QueryOpsServiceRequest* request,
-                               ::EA::proto::QueryOpsServiceResponse* response,
-                               ::google::protobuf::Closure* done) override;
         void plugin_manage(::google::protobuf::RpcController* controller,
                         const ::EA::proto::OpsServiceRequest* request,
                         ::EA::proto::OpsServiceResponse* response,

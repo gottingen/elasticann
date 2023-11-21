@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 #include "elasticann/client/ops_cmd.h"
-#include "elasticann/client/config_cmd.h"
+//#include "elasticann/client/config_cmd.h"
 #include "elasticann/client/plugin_cmd.h"
 #include "elasticann/client/dict_cmd.h"
 #include "elasticann/client/option_context.h"
@@ -27,7 +27,7 @@ namespace EA::client {
     void setup_ops_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
         auto *sub = app.add_subcommand("ops", "ops operations");
-        EA::client::setup_config_cmd(*sub);
+        //EA::client::setup_config_cmd(*sub);
         EA::client::setup_plugin_cmd(*sub);
         EA::client::setup_dict_cmd(*sub);
         // Add options to sub, binding them to opt.

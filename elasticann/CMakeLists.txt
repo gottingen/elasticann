@@ -129,24 +129,6 @@ carbin_cc_binary(
 
 carbin_cc_binary(
         NAMESPACE elasticann
-        NAME eaconfig
-        SOURCES
-        ${META_SERVER}
-        ${RAFT_META}
-        server/eaconfig.cc
-        COPTS
-        ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
-        DEPS
-        ${CARBIN_DEPS_LINK}
-        elasticann::common
-        elasticann::file_server
-        eaproto::eaproto_STATIC
-        PUBLIC
-)
-
-carbin_cc_binary(
-        NAMESPACE elasticann
         NAME eaplugin
         SOURCES
         ${META_SERVER}

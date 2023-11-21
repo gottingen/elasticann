@@ -18,7 +18,6 @@
 #include <brpc/server.h>
 #include "elasticann/common/tlog.h"
 #include "elasticann/rpc/meta_server_interact.h"
-#include "elasticann/ops/config/config_server_interact.h"
 #include "elasticann/ops/plugin/plugin_server_interact.h"
 #include "elasticann/ops/dict/dict_server_interact.h"
 
@@ -37,7 +36,6 @@ int main(int argc, char**argv) {
     TLOG_INFO("log file load success");
     // init meta interact
     EA::MetaServerInteract::get_instance()->init();
-    EA::ConfigServerInteract::get_instance()->init();
     EA::PluginServerInteract::get_instance()->init();
     EA::DictServerInteract::get_instance()->init();
 
