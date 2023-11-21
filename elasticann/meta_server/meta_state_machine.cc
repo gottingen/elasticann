@@ -25,6 +25,7 @@
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
+#include "elasticann/meta_server/servlet_manager.h"
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/meta_util.h"
@@ -345,6 +346,18 @@ namespace EA {
                 }
                 case proto::OP_MODIFY_ZONE: {
                     ZoneManager::get_instance()->modify_zone(request, done);
+                    break;
+                }
+                case proto::OP_CREATE_SERVLET: {
+                    ServletManager::get_instance()->create_servlet(request, done);
+                    break;
+                }
+                case proto::OP_DROP_SERVLET: {
+                    ServletManager::get_instance()->drop_servlet(request, done);
+                    break;
+                }
+                case proto::OP_MODIFY_SERVLET: {
+                    ServletManager::get_instance()->modify_servlet(request, done);
                     break;
                 }
                 case proto::OP_CREATE_CONFIG: {

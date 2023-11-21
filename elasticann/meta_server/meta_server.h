@@ -44,6 +44,7 @@ namespace EA {
         static const std::string NAMESPACE_SCHEMA_IDENTIFY;
         static const std::string DATABASE_SCHEMA_IDENTIFY;
         static const std::string ZONE_SCHEMA_IDENTIFY;
+        static const std::string SERVLET_SCHEMA_IDENTIFY;
         static const std::string TABLE_SCHEMA_IDENTIFY;
         static const std::string REGION_SCHEMA_IDENTIFY;
         static const std::string DDLWORK_IDENTIFY;

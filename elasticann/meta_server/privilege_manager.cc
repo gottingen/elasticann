@@ -154,6 +154,12 @@ namespace EA {
         for (auto &privilege_table: user_privilege.privilege_table()) {
             insert_table_privilege(privilege_table, tmp_mem_privilege);
         }
+        for (auto &privilege_zone: user_privilege.privilege_zone()) {
+            insert_zone_privilege(privilege_zone, tmp_mem_privilege);
+        }
+        for (auto &privilege_servlet: user_privilege.privilege_servlet()) {
+            insert_servlet_privilege(privilege_servlet, tmp_mem_privilege);
+        }
         for (auto &bns: user_privilege.bns()) {
             insert_bns(bns, tmp_mem_privilege);
         }
@@ -217,6 +223,14 @@ namespace EA {
         for (auto &privilege_table: user_privilege.privilege_table()) {
             delete_table_privilege(privilege_table, tmp_mem_privilege);
         }
+
+        for (auto &privilege_zone: user_privilege.privilege_zone()) {
+            delete_zone_privilege(privilege_zone, tmp_mem_privilege);
+        }
+        for (auto &privilege_servlet: user_privilege.privilege_servlet()) {
+            delete_servlet_privilege(privilege_servlet, tmp_mem_privilege);
+        }
+
         for (auto &bns: user_privilege.bns()) {
             delete_bns(bns, tmp_mem_privilege);
         }
@@ -335,6 +349,56 @@ namespace EA {
         }
     }
 
+    void PrivilegeManager::insert_zone_privilege(const proto::PrivilegeZone &privilege_zone,
+                               proto::UserPrivilege &mem_privilege) {
+        bool whether_exist = false;
+        for (auto &mem_zone: *mem_privilege.mutable_privilege_zone()) {
+            if (mem_zone.zone_id() == privilege_zone.zone_id()) {
+                whether_exist = true;
+
+                if (privilege_zone.force()) {
+                    mem_zone.set_zone_rw(privilege_zone.zone_rw());
+                } else {
+                    if (privilege_zone.zone_rw() > mem_zone.zone_rw()) {
+                        mem_zone.set_zone_rw(privilege_zone.zone_rw());
+                    }
+                }
+                break;
+            }
+        }
+        if (!whether_exist) {
+            proto::PrivilegeZone *ptr_zone = mem_privilege.add_privilege_zone();
+            *ptr_zone = privilege_zone;
+        }
+    }
+
+    void PrivilegeManager::insert_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
+                                  proto::UserPrivilege &mem_privilege) {
+        bool whether_exist = false;
+        int64_t zone_id = privilege_servlet.zone_id();
+        int64_t servlet_id = privilege_servlet.servlet_id();
+        for (auto &mem_privilege_servlet: *mem_privilege.mutable_privilege_servlet()) {
+            if (mem_privilege_servlet.zone_id() == zone_id
+                && mem_privilege_servlet.servlet_id() == servlet_id) {
+                whether_exist = true;
+
+                if (privilege_servlet.force()) {
+                    mem_privilege_servlet.set_servlet_rw(privilege_servlet.servlet_rw());
+                } else {
+                    if (privilege_servlet.servlet_rw() > mem_privilege_servlet.servlet_rw()) {
+                        mem_privilege_servlet.set_servlet_rw(privilege_servlet.servlet_rw());
+                    }
+                }
+
+                break;
+            }
+        }
+        if (!whether_exist) {
+            proto::PrivilegeServlet *ptr_table = mem_privilege.add_privilege_servlet();
+            *ptr_table = privilege_servlet;
+        }
+    }
+
     void PrivilegeManager::insert_bns(const std::string &bns,
                                       proto::UserPrivilege &mem_privilege) {
         bool whether_exist = false;
@@ -402,6 +466,46 @@ namespace EA {
         }
     }
 
+    void PrivilegeManager::delete_zone_privilege(const proto::PrivilegeZone &privilege_zone,
+                               proto::UserPrivilege &mem_privilege) {
+        proto::UserPrivilege copy_mem_privilege = mem_privilege;
+        mem_privilege.clear_privilege_zone();
+        for (auto &copy_zone: copy_mem_privilege.privilege_zone()) {
+            if (copy_zone.zone_id() == privilege_zone.zone_id()) {
+                //收回写权限
+                if (privilege_zone.has_zone_rw() &&
+                        privilege_zone.zone_rw() < copy_zone.zone_rw()) {
+                    auto add_zone = mem_privilege.add_privilege_zone();
+                    *add_zone = privilege_zone;
+                }
+            } else {
+                auto add_zone = mem_privilege.add_privilege_zone();
+                *add_zone = copy_zone;
+
+            }
+        }
+    }
+
+    void PrivilegeManager::delete_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
+                                  proto::UserPrivilege &mem_privilege) {
+        int64_t zone_id = privilege_servlet.zone_id();
+        int64_t servlet_id = privilege_servlet.servlet_id();
+        proto::UserPrivilege copy_mem_privilege = mem_privilege;
+        mem_privilege.clear_privilege_servlet();
+        for (auto &copy_servlet: copy_mem_privilege.privilege_servlet()) {
+            if (zone_id == copy_servlet.zone_id() && servlet_id == copy_servlet.servlet_id()) {
+                //写权限收回
+                if (privilege_servlet.has_servlet_rw() &&
+                        privilege_servlet.servlet_rw() < copy_servlet.servlet_rw()) {
+                    auto add_servlet = mem_privilege.add_privilege_servlet();
+                    *add_servlet = privilege_servlet;
+                }
+            } else {
+                auto add_servlet = mem_privilege.add_privilege_servlet();
+                *add_servlet = copy_servlet;
+            }
+        }
+    }
     void PrivilegeManager::delete_bns(const std::string &bns,
                                       proto::UserPrivilege &mem_privilege) {
         proto::UserPrivilege copy_mem_privilege = mem_privilege;

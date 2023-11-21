@@ -113,9 +113,9 @@ namespace EA {
             return;
         }
         int64_t zone_id = _zone_id_map[zone_name];
-        if (!_table_ids[zone_id].empty()) {
-            TLOG_WARN("request zone:{} has tables", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "zone has table");
+        if (!_servlet_ids[zone_id].empty()) {
+            TLOG_WARN("request zone:{} has servlet", zone_name);
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "zone has servlet");
             return;
         }
         // persist to rocksdb

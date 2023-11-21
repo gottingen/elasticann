@@ -19,6 +19,7 @@
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
+#include "elasticann/meta_server/servlet_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/ddl_manager.h"
@@ -30,6 +31,7 @@ namespace EA {
     const std::string SchemaManager::MAX_NAMESPACE_ID_KEY = "max_namespace_id";
     const std::string SchemaManager::MAX_DATABASE_ID_KEY = "max_database_id";
     const std::string SchemaManager::MAX_ZONE_ID_KEY = "max_zone_id";
+    const std::string SchemaManager::MAX_SERVLET_ID_KEY = "max_zone_id";
     const std::string SchemaManager::MAX_TABLE_ID_KEY = "max_table_id";
     const std::string SchemaManager::MAX_REGION_ID_KEY = "max_region_id";
 
@@ -108,6 +110,23 @@ namespace EA {
                 if (!request->has_zone_info()) {
                     ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
                                        "no database_info", request->op_type(), log_id);
+                    return;
+                }
+                // if (request->op_type() == proto::OP_MODIFY_DATABASE
+                //         && !request->database_info().has_quota()) {
+                //     ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
+                //             "no databasepace quota", request->op_type(), log_id);
+                //     return;
+                // }
+                _meta_state_machine->process(controller, request, response, done_guard.release());
+                return;
+            }
+            case proto::OP_CREATE_SERVLET:
+            case proto::OP_MODIFY_SERVLET:
+            case proto::OP_DROP_SERVLET: {
+                if (!request->has_servlet_info()) {
+                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
+                                       "no servlet info", request->op_type(), log_id);
                     return;
                 }
                 // if (request->op_type() == proto::OP_MODIFY_DATABASE
@@ -522,6 +541,17 @@ namespace EA {
             }
             pri_base.set_database_id(database_id);
         }
+        for (auto &pri_zone: *user_privilege.mutable_privilege_zone()) {
+            std::string base_name = namespace_name + "\001" + pri_zone.zone();
+            int64_t zone_id = ZoneManager::get_instance()->get_zone_id(base_name);
+            if (zone_id == 0) {
+                TLOG_ERROR("database:{} not exist, namespace:{}, request：{}",
+                           base_name, namespace_name,
+                           user_privilege.ShortDebugString());
+                return -1;
+            }
+            pri_zone.set_zone_id(zone_id);
+        }
         for (auto &pri_table: *user_privilege.mutable_privilege_table()) {
             std::string base_name = namespace_name + "\001" + pri_table.database();
             std::string table_name = base_name + "\001" + pri_table.table_name();
@@ -541,6 +571,26 @@ namespace EA {
             }
             pri_table.set_database_id(database_id);
             pri_table.set_table_id(table_id);
+        }
+        for (auto &pri_servlet: *user_privilege.mutable_privilege_servlet()) {
+            std::string base_name = namespace_name + "\001" + pri_servlet.zone();
+            std::string table_name = base_name + "\001" + pri_servlet.servlet_name();
+            int64_t zone_id = ZoneManager::get_instance()->get_zone_id(base_name);
+            if (zone_id == 0) {
+                TLOG_ERROR("zone:{} not exist, namespace:{}, request：{}",
+                           base_name, namespace_name,
+                           user_privilege.ShortDebugString());
+                return -1;
+            }
+            int64_t servlet_id = ServletManager::get_instance()->get_servlet_id(table_name);
+            if (servlet_id == 0) {
+                TLOG_ERROR("table_name:{} not exist, database:{} namespace:{}, request：{}",
+                           table_name, base_name,
+                           namespace_name, user_privilege.ShortDebugString());
+                return -1;
+            }
+            pri_servlet.set_zone_id(zone_id);
+            pri_servlet.set_servlet_id(servlet_id);
         }
         return 0;
     }
@@ -570,6 +620,9 @@ namespace EA {
         std::string zone_prefix = MetaServer::SCHEMA_IDENTIFY;
         zone_prefix += MetaServer::ZONE_SCHEMA_IDENTIFY;
 
+        std::string servlet_prefix = MetaServer::SCHEMA_IDENTIFY;
+        servlet_prefix += MetaServer::SERVLET_SCHEMA_IDENTIFY;
+
         std::string table_prefix = MetaServer::SCHEMA_IDENTIFY;
         table_prefix += MetaServer::TABLE_SCHEMA_IDENTIFY;
 
@@ -595,6 +648,8 @@ namespace EA {
                 ret = DatabaseManager::get_instance()->load_database_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(zone_prefix)) {
                 ret = ZoneManager::get_instance()->load_zone_snapshot(iter->value().ToString());
+            } else if (iter->key().starts_with(servlet_prefix)) {
+                ret = ServletManager::get_instance()->load_servlet_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(namespace_prefix)) {
                 ret = NamespaceManager::get_instance()->load_namespace_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(max_id_prefix)) {
@@ -1052,6 +1107,11 @@ namespace EA {
         }
         if (max_key == SchemaManager::MAX_ZONE_ID_KEY) {
             ZoneManager::get_instance()->set_max_zone_id(*max_id);
+            TLOG_WARN("max_zone_id:{}", *max_id);
+            return 0;
+        }
+        if (max_key == SchemaManager::MAX_SERVLET_ID_KEY) {
+            ServletManager::get_instance()->set_max_servlet_id(*max_id);
             TLOG_WARN("max_zone_id:{}", *max_id);
             return 0;
         }

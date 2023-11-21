@@ -88,19 +88,19 @@ namespace EA {
         int64_t get_max_zone_id();
 
         ///
-        /// \brief add the table to zone
+        /// \brief add the servlet to zone
         ///        fail on zone not exists. this condition
         ///        has been check in TableManager. do not check again.
         /// \param zone_id
-        /// \param table_id
-        void add_table_id(int64_t zone_id, int64_t table_id);
+        /// \param servlet_id
+        void add_servlet_id(int64_t zone_id, int64_t servlet_id);
 
         ///
-        /// \brief remove the table from zone
+        /// \brief remove the servlet from zone
         ///        call any
         /// \param zone_id
-        /// \param table_id
-        void delete_table_id(int64_t zone_id, int64_t table_id);
+        /// \param servlet_id
+        void delete_servlet_id(int64_t zone_id, int64_t servlet_id);
 
         ///
         /// \brief get dabase id by db name
@@ -116,11 +116,11 @@ namespace EA {
         int get_zone_info(const int64_t &zone_id, proto::ZoneInfo &zone_info);
 
         ///
-        /// \brief get tables in zone.
+        /// \brief get servlets in zone.
         /// \param zone_id
-        /// \param table_ids
+        /// \param servlet_ids
         /// \return
-        int get_table_ids(const int64_t &zone_id, std::set<int64_t> &table_ids);
+        int get_servlet_ids(const int64_t &zone_id, std::set<int64_t> &servlet_ids);
     private:
         ZoneManager();
         void erase_zone_info(const std::string &zone_name);
@@ -138,7 +138,7 @@ namespace EA {
         //! databae name --> databasse id，name: namespace\001zone
         std::unordered_map<std::string, int64_t> _zone_id_map;
         std::unordered_map<int64_t, proto::ZoneInfo> _zone_info_map;
-        std::unordered_map<int64_t, std::set<int64_t>> _table_ids;
+        std::unordered_map<int64_t, std::set<int64_t>> _servlet_ids;
     };
 
     ///
@@ -169,18 +169,18 @@ namespace EA {
         int64_t zone_id = _zone_id_map[zone_name];
         _zone_id_map.erase(zone_name);
         _zone_info_map.erase(zone_id);
-        _table_ids.erase(zone_id);
+        _servlet_ids.erase(zone_id);
     }
 
-    inline void ZoneManager::add_table_id(int64_t zone_id, int64_t table_id) {
+    inline void ZoneManager::add_servlet_id(int64_t zone_id, int64_t servlet_id) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
-        _table_ids[zone_id].insert(table_id);
+        _servlet_ids[zone_id].insert(servlet_id);
     }
 
-    inline void ZoneManager::delete_table_id(int64_t zone_id, int64_t table_id) {
+    inline void ZoneManager::delete_servlet_id(int64_t zone_id, int64_t servlet_id) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
-        if (_table_ids.find(zone_id) != _table_ids.end()) {
-            _table_ids[zone_id].erase(table_id);
+        if (_servlet_ids.find(zone_id) != _servlet_ids.end()) {
+            _servlet_ids[zone_id].erase(servlet_id);
         }
     }
 
@@ -200,19 +200,19 @@ namespace EA {
         return 0;
     }
 
-    inline int ZoneManager::get_table_ids(const int64_t &zone_id, std::set<int64_t> &table_ids) {
+    inline int ZoneManager::get_servlet_ids(const int64_t &zone_id, std::set<int64_t> &servlet_ids) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
-        if (_table_ids.find(zone_id) == _table_ids.end()) {
+        if (_servlet_ids.find(zone_id) == _servlet_ids.end()) {
             return -1;
         }
-        table_ids = _table_ids[zone_id];
+        servlet_ids = _servlet_ids[zone_id];
         return 0;
     }
 
     inline void ZoneManager::clear() {
         _zone_id_map.clear();
         _zone_info_map.clear();
-        _table_ids.clear();
+        _servlet_ids.clear();
     }
 
     inline ZoneManager::ZoneManager() : _max_zone_id(0) {

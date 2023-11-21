@@ -95,6 +95,12 @@ namespace EA {
         void insert_table_privilege(const proto::PrivilegeTable &privilege_table,
                                     proto::UserPrivilege &mem_privilege);
 
+        void insert_zone_privilege(const proto::PrivilegeZone &privilege_zone,
+                                       proto::UserPrivilege &mem_privilege);
+
+        void insert_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
+                                   proto::UserPrivilege &mem_privilege);
+
         void insert_bns(const std::string &bns, proto::UserPrivilege &mem_privilege);
 
         void insert_ip(const std::string &ip, proto::UserPrivilege &mem_privilege);
@@ -103,6 +109,12 @@ namespace EA {
                                        proto::UserPrivilege &mem_privilege);
 
         void delete_table_privilege(const proto::PrivilegeTable &privilege_table,
+                                    proto::UserPrivilege &mem_privilege);
+
+        void delete_zone_privilege(const proto::PrivilegeZone &privilege_zone,
+                                       proto::UserPrivilege &mem_privilege);
+
+        void delete_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
                                     proto::UserPrivilege &mem_privilege);
 
         void delete_bns(const std::string &bns, proto::UserPrivilege &mem_privilege);

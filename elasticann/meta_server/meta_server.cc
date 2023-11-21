@@ -28,6 +28,7 @@
 #include "elasticann/meta_server/query_namespace_manager.h"
 #include "elasticann/meta_server/query_database_manager.h"
 #include "elasticann/meta_server/query_zone_manager.h"
+#include "elasticann/meta_server/query_servlet_manager.h"
 #include "elasticann/meta_server/query_table_manager.h"
 #include "elasticann/meta_server/query_region_manager.h"
 #include "elasticann/meta_server/meta_util.h"
@@ -52,6 +53,7 @@ namespace EA {
     const std::string MetaServer::TABLE_SCHEMA_IDENTIFY(1, 0x04);
     const std::string MetaServer::REGION_SCHEMA_IDENTIFY(1, 0x05);
     const std::string MetaServer::ZONE_SCHEMA_IDENTIFY(1, 0x09);
+    const std::string MetaServer::SERVLET_SCHEMA_IDENTIFY(1, 0x0A);
 
     const std::string MetaServer::DDLWORK_IDENTIFY(1, 0x06);
     const std::string MetaServer::STATISTICS_IDENTIFY(1, 0x07);
@@ -196,9 +198,12 @@ namespace EA {
             || request->op_type() == proto::OP_CREATE_DATABASE
             || request->op_type() == proto::OP_DROP_DATABASE
             || request->op_type() == proto::OP_MODIFY_DATABASE
-           || request->op_type() == proto::OP_CREATE_ZONE
-           || request->op_type() == proto::OP_DROP_ZONE
-           || request->op_type() == proto::OP_MODIFY_ZONE
+            || request->op_type() == proto::OP_CREATE_ZONE
+            || request->op_type() == proto::OP_DROP_ZONE
+            || request->op_type() == proto::OP_MODIFY_ZONE
+            || request->op_type() == proto::OP_CREATE_SERVLET
+            || request->op_type() == proto::OP_DROP_SERVLET
+            || request->op_type() == proto::OP_MODIFY_SERVLET
             || request->op_type() == proto::OP_CREATE_TABLE
             || request->op_type() == proto::OP_DROP_TABLE
             || request->op_type() == proto::OP_DROP_TABLE_TOMBSTONE
@@ -441,6 +446,10 @@ namespace EA {
             }
             case proto::QUERY_ZONE: {
                 QueryZoneManager::get_instance()->get_zone_info(request, response);
+                break;
+            }
+            case proto::QUERY_SERVLET: {
+                QueryServletManager::get_instance()->get_servlet_info(request, response);
                 break;
             }
             case proto::QUERY_GET_CONFIG: {
