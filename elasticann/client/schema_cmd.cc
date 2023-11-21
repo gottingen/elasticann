@@ -31,7 +31,6 @@ namespace EA::client {
         auto *sub = app.add_subcommand("schema", "schema operations");
 
         // Add options to sub, binding them to opt.
-        sub->add_option("-s,--server", opt->server, "server address")->default_val("127.0.0.0:8050");
         EA::client::setup_namespace_cmd(*sub);
         EA::client::setup_database_cmd(*sub);
         EA::client::setup_cluster_cmd(*sub);

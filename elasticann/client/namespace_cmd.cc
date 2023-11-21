@@ -140,7 +140,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
@@ -166,7 +166,7 @@ namespace EA::client {
             ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
             return;
         }
-        rs = RouterInteract::get_instance()->send_request("query", request, response);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         if (!rs.ok()) {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
