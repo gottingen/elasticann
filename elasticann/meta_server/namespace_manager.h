@@ -85,6 +85,18 @@ namespace EA {
         void delete_database_id(int64_t namespace_id, int64_t database_id);
 
         ///
+        /// \brief add a database under a namespace
+        /// \param namespace_id
+        /// \param database_id
+        void add_zone_id(int64_t namespace_id, int64_t database_id);
+
+        ///
+        /// \brief remove a database under a namespace
+        /// \param namespace_id
+        /// \param database_id
+        void delete_zone_id(int64_t namespace_id, int64_t database_id);
+
+        ///
         /// \brief get namespace id by namespace name, and the name
         /// \param namespace_name
         /// \return
@@ -138,6 +150,7 @@ namespace EA {
         // namespace层级，id与info的映射关系
         std::unordered_map<int64_t, proto::NameSpaceInfo> _namespace_info_map;
         std::unordered_map<int64_t, std::set<int64_t>> _database_ids; //only in memory, not in rocksdb
+        std::unordered_map<int64_t, std::set<int64_t>> _zone_ids; //only in memory, not in rocksdb
     };
 
     ///
@@ -166,6 +179,7 @@ namespace EA {
         _namespace_id_map.erase(namespace_name);
         _namespace_info_map.erase(namespace_id);
         _database_ids.erase(namespace_id);
+        _zone_ids.erase(namespace_id);
     }
 
     inline void NamespaceManager::add_database_id(int64_t namespace_id, int64_t database_id) {
@@ -177,6 +191,18 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_namespace_mutex);
         if (_database_ids.find(namespace_id) != _database_ids.end()) {
             _database_ids[namespace_id].erase(database_id);
+        }
+    }
+
+    inline void NamespaceManager::add_zone_id(int64_t namespace_id, int64_t zone_id) {
+        BAIDU_SCOPED_LOCK(_namespace_mutex);
+        _zone_ids[namespace_id].insert(zone_id);
+    }
+
+    inline void NamespaceManager::delete_zone_id(int64_t namespace_id, int64_t zone_id) {
+        BAIDU_SCOPED_LOCK(_namespace_mutex);
+        if (_zone_ids.find(namespace_id) != _zone_ids.end()) {
+            _zone_ids[namespace_id].erase(zone_id);
         }
     }
 
@@ -209,6 +235,7 @@ namespace EA {
         _namespace_id_map.clear();
         _namespace_info_map.clear();
         _database_ids.clear();
+        _zone_ids.clear();
     }
     inline NamespaceManager::NamespaceManager() : _max_namespace_id(0) {
         bthread_mutex_init(&_namespace_mutex, nullptr);

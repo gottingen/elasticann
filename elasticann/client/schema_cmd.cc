@@ -15,6 +15,7 @@
 #include "elasticann/client/schema_cmd.h"
 #include "elasticann/client/namespace_cmd.h"
 #include "elasticann/client/database_cmd.h"
+#include "elasticann/client/zone_cmd.h"
 #include "elasticann/client/cluster_cmd.h"
 #include "elasticann/client/table_cmd.h"
 #include "elasticann/client/option_context.h"
@@ -27,14 +28,14 @@ namespace EA::client {
     /// You could return the shared pointer if you wanted to access the values in main.
     void setup_schema_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = OptionContext::get_instance();
-        auto *sub = app.add_subcommand("schema", "schema operations");
+        auto *sub = app.add_subcommand("meta", "meta operations");
 
         // Add options to sub, binding them to opt.
         EA::client::setup_namespace_cmd(*sub);
         EA::client::setup_database_cmd(*sub);
         EA::client::setup_cluster_cmd(*sub);
         EA::client::setup_table_cmd(*sub);
+        EA::client::setup_zone_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_schema_cmd(*sub); });
         //sub->require_subcommand();

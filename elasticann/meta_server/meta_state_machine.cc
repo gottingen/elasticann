@@ -23,6 +23,7 @@
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/database_manager.h"
+#include "elasticann/meta_server/zone_manager.h"
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/meta_util.h"
@@ -331,6 +332,18 @@ namespace EA {
                 }
                 case proto::OP_MODIFY_DATABASE: {
                     DatabaseManager::get_instance()->modify_database(request, done);
+                    break;
+                }
+                case proto::OP_CREATE_ZONE: {
+                    ZoneManager::get_instance()->create_zone(request, done);
+                    break;
+                }
+                case proto::OP_DROP_ZONE: {
+                    ZoneManager::get_instance()->drop_zone(request, done);
+                    break;
+                }
+                case proto::OP_MODIFY_ZONE: {
+                    ZoneManager::get_instance()->modify_zone(request, done);
                     break;
                 }
                 case proto::OP_CREATE_TABLE: {

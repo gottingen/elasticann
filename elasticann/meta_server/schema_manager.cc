@@ -18,6 +18,7 @@
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/meta_server/database_manager.h"
+#include "elasticann/meta_server/zone_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/ddl_manager.h"
@@ -28,6 +29,7 @@ namespace EA {
 
     const std::string SchemaManager::MAX_NAMESPACE_ID_KEY = "max_namespace_id";
     const std::string SchemaManager::MAX_DATABASE_ID_KEY = "max_database_id";
+    const std::string SchemaManager::MAX_ZONE_ID_KEY = "max_zone_id";
     const std::string SchemaManager::MAX_TABLE_ID_KEY = "max_table_id";
     const std::string SchemaManager::MAX_REGION_ID_KEY = "max_region_id";
 
@@ -87,6 +89,23 @@ namespace EA {
             case proto::OP_MODIFY_DATABASE:
             case proto::OP_DROP_DATABASE: {
                 if (!request->has_database_info()) {
+                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
+                                       "no database_info", request->op_type(), log_id);
+                    return;
+                }
+                // if (request->op_type() == proto::OP_MODIFY_DATABASE
+                //         && !request->database_info().has_quota()) {
+                //     ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
+                //             "no databasepace quota", request->op_type(), log_id);
+                //     return;
+                // }
+                _meta_state_machine->process(controller, request, response, done_guard.release());
+                return;
+            }
+            case proto::OP_CREATE_ZONE:
+            case proto::OP_MODIFY_ZONE:
+            case proto::OP_DROP_ZONE: {
+                if (!request->has_zone_info()) {
                     ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
                                        "no database_info", request->op_type(), log_id);
                     return;
@@ -548,6 +567,9 @@ namespace EA {
         std::string database_prefix = MetaServer::SCHEMA_IDENTIFY;
         database_prefix += MetaServer::DATABASE_SCHEMA_IDENTIFY;
 
+        std::string zone_prefix = MetaServer::SCHEMA_IDENTIFY;
+        zone_prefix += MetaServer::ZONE_SCHEMA_IDENTIFY;
+
         std::string table_prefix = MetaServer::SCHEMA_IDENTIFY;
         table_prefix += MetaServer::TABLE_SCHEMA_IDENTIFY;
 
@@ -571,6 +593,8 @@ namespace EA {
                 ret = TableManager::get_instance()->load_table_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(database_prefix)) {
                 ret = DatabaseManager::get_instance()->load_database_snapshot(iter->value().ToString());
+            } else if (iter->key().starts_with(zone_prefix)) {
+                ret = ZoneManager::get_instance()->load_zone_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(namespace_prefix)) {
                 ret = NamespaceManager::get_instance()->load_namespace_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(max_id_prefix)) {
@@ -1024,6 +1048,11 @@ namespace EA {
         if (max_key == SchemaManager::MAX_DATABASE_ID_KEY) {
             DatabaseManager::get_instance()->set_max_database_id(*max_id);
             TLOG_WARN("max_database_id:{}", *max_id);
+            return 0;
+        }
+        if (max_key == SchemaManager::MAX_ZONE_ID_KEY) {
+            ZoneManager::get_instance()->set_max_zone_id(*max_id);
+            TLOG_WARN("max_zone_id:{}", *max_id);
             return 0;
         }
         if (max_key == SchemaManager::MAX_TABLE_ID_KEY) {

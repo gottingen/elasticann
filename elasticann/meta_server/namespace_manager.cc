@@ -80,6 +80,11 @@ namespace EA {
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace has table");
             return;
         }
+        if (!_zone_ids[namespace_id].empty()) {
+            TLOG_WARN("request namespace:{} has zone", namespace_name);
+            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace has servlet");
+            return;
+        }
 
         //持久化删除数据
         std::string namespace_key = construct_namespace_key(namespace_id);

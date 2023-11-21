@@ -27,6 +27,7 @@ namespace EA {
     public:
         static const std::string MAX_NAMESPACE_ID_KEY;
         static const std::string MAX_DATABASE_ID_KEY;
+        static const std::string MAX_ZONE_ID_KEY;
         static const std::string MAX_TABLE_ID_KEY;
         static const std::string MAX_REGION_ID_KEY;
 
