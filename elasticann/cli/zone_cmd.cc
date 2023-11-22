@@ -21,7 +21,7 @@
 #include "turbo/format/print.h"
 #include "elasticann/cli/validator.h"
 
-namespace EA::client {
+namespace EA::cli {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
@@ -234,4 +234,4 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-}  // namespace EA::client
+}  // namespace EA::cli

@@ -23,7 +23,7 @@
 #include <string>
 
 
-namespace EA::client {
+namespace EA::cli {
 
     struct ConfigOptionContext {
         static ConfigOptionContext *get_instance() {
@@ -76,6 +76,6 @@ namespace EA::client {
 
     turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res);
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif // ELASTICANN_CLI_CONFIG_CMD_H_

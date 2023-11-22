@@ -20,7 +20,7 @@
 
 int main(int argc, char **argv) {
     turbo::App app{"elastic ann search client"};
-    auto opt = EA::client::OptionContext::get_instance();
+    auto opt = EA::cli::OptionContext::get_instance();
     app.add_flag("-V, --verbose", opt->verbose, "verbose detail message default(false)")->default_val(false);
     app.add_option("-s,--server", opt->server, "server address default(\"127.0.0.0:8888\")")->default_val("127.0.0.0:8888");
     app.add_option("-l,--lb", opt->load_balancer, "load balance default(\"rr\")")->default_val("rr");
@@ -37,8 +37,8 @@ int main(int argc, char **argv) {
     // Call the setup functions for the subcommands.
     // They are kept alive by a shared pointer in the
     // lambda function
-    EA::client::setup_meta_cmd(app);
-    EA::client::setup_ops_cmd(app);
+    EA::cli::setup_meta_cmd(app);
+    EA::cli::setup_ops_cmd(app);
     // More setup if needed, i.e., other subcommands etc.
 
     TURBO_FLAGS_PARSE(app, argc, argv);

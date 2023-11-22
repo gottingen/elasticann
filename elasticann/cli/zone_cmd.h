@@ -21,7 +21,7 @@
 #include "turbo/base/status.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
 
     struct ZoneOptionContext {
         static ZoneOptionContext *get_instance() {
@@ -69,6 +69,6 @@ namespace EA::client {
 
     turbo::Table show_meta_query_zone_response(const EA::proto::QueryResponse &res);
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_ZONE_CMD_H_

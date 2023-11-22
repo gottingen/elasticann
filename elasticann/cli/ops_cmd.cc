@@ -19,7 +19,7 @@
 #include "elasticann/cli/option_context.h"
 #include "turbo/format/print.h"
 
-namespace EA::client {
+namespace EA::cli {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
@@ -28,8 +28,8 @@ namespace EA::client {
         // Create the option and subcommand objects.
         auto *sub = app.add_subcommand("ops", "ops operations");
         //EA::client::setup_config_cmd(*sub);
-        EA::client::setup_plugin_cmd(*sub);
-        EA::client::setup_dict_cmd(*sub);
+        setup_plugin_cmd(*sub);
+        setup_dict_cmd(*sub);
         // Add options to sub, binding them to opt.
 
         // Set the run function as callback to be called when this subcommand is issued.
@@ -46,4 +46,4 @@ namespace EA::client {
             turbo::Println("{}", app.help());
         }
     }
-}  // namespace EA::client
+}  // namespace EA::cli

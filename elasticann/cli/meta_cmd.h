@@ -18,10 +18,10 @@
 #include "turbo/flags/flags.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
     /// Collection of all options of namespace cmd.
     void setup_meta_cmd(turbo::App &app);
 
     void run_meta_cmd(turbo::App &app);
-}  // namespace EA::client
+}  // namespace EA::cli
 #endif  // ELASTICANN_CLI_SCHEMA_CMD_H_

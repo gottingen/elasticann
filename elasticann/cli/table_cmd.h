@@ -21,7 +21,7 @@
 #include "eaproto/router/router.interface.pb.h"
 #include "turbo/base/status.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     struct TableOptionContext {
         static TableOptionContext *get_instance() {
@@ -43,5 +43,5 @@ namespace EA::client {
 
     turbo::Status
     make_table_create(EA::proto::MetaManagerRequest *req);
-}  // namespace EA::client
+}  // namespace EA::cli
 #endif  // ELASTICANN_CLI_TABLE_CMD_H_

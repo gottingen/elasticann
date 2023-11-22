@@ -26,7 +26,7 @@
 #include "elasticann/ops/file_util.h"
 #include "turbo/files/utility.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     void setup_plugin_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
@@ -692,4 +692,4 @@ namespace EA::client {
         return result_table;
     }
 
-}  // namespace EA::client
+}  // namespace EA::cli

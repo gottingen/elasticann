@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/flags/router.h"
+#include "elasticann/flags/servlet.h"
 #include "gflags/gflags.h"
 
 namespace EA {
-    /// for router
-    DEFINE_string(router_listen, "0.0.0.0:8888", "router default ip port");
-}
+
+    DEFINE_string(servlet_listen, "0.0.0.0:8898", "router default ip port");
+    DEFINE_string(servlet_namespace, "default", "servlet namespace");
+    DEFINE_string(servlet_zone, "default", "servlet namespace");
+    DEFINE_string(servlet_name, "default", "servlet namespace");
+    DEFINE_string(servlet_physical, "default", "servlet namespace");
+    DEFINE_string(servlet_resource_tag, "default", "servlet namespace");
+    DEFINE_string(servlet_env, "default", "servlet namespace");
+}  // namespace EA

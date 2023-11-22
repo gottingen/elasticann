@@ -26,7 +26,7 @@
 #include "elasticann/ops/file_util.h"
 #include "turbo/files/utility.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     void setup_dict_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
@@ -693,4 +693,4 @@ namespace EA::client {
 
     }
 
-}  // namespace EA::client
+}  // namespace EA::cli

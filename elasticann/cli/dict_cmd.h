@@ -23,7 +23,7 @@
 #include "turbo/format/table.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
 
     struct DictOptionContext {
         static DictOptionContext *get_instance() {
@@ -90,6 +90,6 @@ namespace EA::client {
     turbo::Table show_query_ops_dict_list_response(const EA::proto::QueryOpsServiceResponse &res);
     turbo::Table show_query_ops_dict_list_version_response(const EA::proto::QueryOpsServiceResponse &res);
     turbo::Table show_query_ops_dict_info_response(const EA::proto::QueryOpsServiceResponse &res);
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_DICT_CMD_H_

@@ -1,5 +1,5 @@
-// Copyright 2023 The Turbo Authors.
-//
+// Copyright 2023 The Elastic-AI Authors.
+// part of Elastic AI Search
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef ELASTICANN_CLI_OPS_CMD_H_
-#define ELASTICANN_CLI_OPS_CMD_H_
 
-#include "turbo/flags/flags.h"
-#include <string>
+#ifndef ELASTICANN_FLAGS_SERVLET_H_
+#define ELASTICANN_FLAGS_SERVLET_H_
 
-namespace EA::cli {
-    /// Collection of all options of namespace cmd.
-    void setup_ops_cmd(turbo::App &app);
+#include "gflags/gflags_declare.h"
 
-    void run_ops_cmd(turbo::App &app);
-}  // namespace EA::cli
-#endif  // ELASTICANN_CLI_OPS_CMD_H_
+namespace EA {
+
+    DECLARE_string(servlet_listen);
+    DECLARE_string(servlet_namespace);
+    DECLARE_string(servlet_zone);
+    DECLARE_string(servlet_name);
+    DECLARE_string(servlet_physical);
+    DECLARE_string(servlet_resource_tag);
+    DECLARE_string(servlet_env);
+}  // namespace EA
+
+#endif  // ELASTICANN_FLAGS_SERVLET_H_

@@ -21,7 +21,7 @@
 #include "turbo/base/status.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
 
     struct DatabaseOptionContext {
         static DatabaseOptionContext *get_instance() {
@@ -70,6 +70,6 @@ namespace EA::client {
 
     turbo::Table show_meta_query_db_response(const EA::proto::QueryResponse &res);
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_DATABASE_CMD_H_

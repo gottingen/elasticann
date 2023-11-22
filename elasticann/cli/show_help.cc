@@ -19,7 +19,7 @@
 #include "turbo/times/civil_time.h"
 #include "turbo/times/time.h"
 
-namespace EA::client {
+namespace EA::cli {
     using Row_t = turbo::Table::Row_t;
 
     ShowHelper::~ShowHelper() {
@@ -230,4 +230,4 @@ namespace EA::client {
         result_table.add_row({stage,msg});
     }
 
-}  // namespace EA::client
+}  // namespace EA::cli

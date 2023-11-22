@@ -23,7 +23,7 @@
 #include "turbo/files/sequential_read_file.h"
 #include "turbo/times/clock.h"
 
-namespace EA::client {
+namespace EA::cli {
     void setup_config_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
         auto opt = ConfigOptionContext::get_instance();
@@ -321,4 +321,4 @@ namespace EA::client {
     }
 
 
-}  // namespace EA::client
+}  // namespace EA::cli

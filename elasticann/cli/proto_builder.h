@@ -23,13 +23,13 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace EA::client {
+namespace EA::cli {
 
     class ProtoBuilder {
     public:
     private:
         static turbo::ResultStatus<EA::proto::FieldInfo> string_to_table_field(const std::string &str);
     };
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_PROTO_BUILDER_H_

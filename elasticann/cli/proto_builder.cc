@@ -19,7 +19,7 @@
 #include "elasticann/cli/proto_help.h"
 #include "turbo/strings/utility.h"
 
-namespace EA::client {
+namespace EA::cli {
 
 
 
@@ -34,4 +34,4 @@ namespace EA::client {
         return ret;
     }
 
-}  // namespace EA::client
+}  // namespace EA::cli

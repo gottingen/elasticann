@@ -13,7 +13,7 @@
 #include "elasticann/cli/show_help.h"
 #include "elasticann/cli/validator.h"
 
-namespace EA::client {
+namespace EA::cli {
     void setup_table_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
         auto opt = TableOptionContext::get_instance();

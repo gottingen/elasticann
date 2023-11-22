@@ -23,7 +23,7 @@
 #include "turbo/format/table.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
 
     struct PluginOptionContext {
         static PluginOptionContext *get_instance() {
@@ -87,6 +87,6 @@ namespace EA::client {
     turbo::Table show_query_ops_plugin_list_response(const EA::proto::QueryOpsServiceResponse &res);
     turbo::Table show_query_ops_plugin_list_version_response(const EA::proto::QueryOpsServiceResponse &res);
     turbo::Table show_query_ops_plugin_info_response(const EA::proto::QueryOpsServiceResponse &res);
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_PLUGIN_CMD_H_

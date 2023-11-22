@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace EA::client {
+namespace EA::cli {
 
     struct OptionContext {
         static OptionContext *get_instance() {
@@ -37,6 +37,6 @@ namespace EA::client {
         bool verbose{false};
     };
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_OPTION_CONTEXT_H_

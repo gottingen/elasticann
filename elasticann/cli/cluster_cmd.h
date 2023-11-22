@@ -21,7 +21,7 @@
 #include "turbo/format/table.h"
 #include "turbo/base/status.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     struct ClusterOptionContext {
         static ClusterOptionContext *get_instance() {
@@ -90,6 +90,6 @@ namespace EA::client {
 
     turbo::Table show_meta_query_physical_response(const EA::proto::QueryResponse &res);
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_CLUSTER_CMD_H_

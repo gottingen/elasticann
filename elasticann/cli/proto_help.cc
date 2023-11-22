@@ -16,7 +16,7 @@
 #include "turbo/strings/utility.h"
 #include "turbo/meta/reflect.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     std::string config_type_to_string(EA::proto::ConfigType type) {
         switch (type) {
@@ -226,4 +226,4 @@ namespace EA::client {
 
     }
 
-}  // namespace EA::client
+}  // namespace EA::cli

@@ -21,7 +21,7 @@
 #include "turbo/base/status.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
 
     struct UserOptionContext {
         static UserOptionContext *get_instance() {
@@ -92,6 +92,6 @@ namespace EA::client {
     turbo::Table show_meta_query_user_response(const EA::proto::QueryResponse &res);
     turbo::Table show_meta_query_user_flat_response(const EA::proto::QueryResponse &res);
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_USER_CMD_H_

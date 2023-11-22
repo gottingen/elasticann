@@ -21,7 +21,7 @@
 #include "turbo/format/table.h"
 #include "elasticann/cli/proto_help.h"
 
-namespace EA::client {
+namespace EA::cli {
     class ShowHelper {
     public:
         ~ShowHelper();
@@ -82,7 +82,7 @@ namespace EA::client {
         std::vector<turbo::Table> tables;
         turbo::Table              result_table;
     };
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #define PREPARE_ERROR_RETURN(show, rs, request) \
     do {                                            \

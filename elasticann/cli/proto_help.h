@@ -20,7 +20,7 @@
 #include "eaproto/router/router.interface.pb.h"
 #include "turbo/base/result_status.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     std::string config_type_to_string(EA::proto::ConfigType type);
 
@@ -41,6 +41,6 @@ namespace EA::client {
     std::string make_plugin_filename(const std::string &name, const EA::proto::Version &version,
                                      EA::proto::Platform platform);
 
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_PROTO_HELP_H_

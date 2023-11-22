@@ -21,7 +21,7 @@
 #include "turbo/base/status.h"
 #include <string>
 
-namespace EA::client {
+namespace EA::cli {
 
     // We could manually make a few variables and use shared pointers for each; this
     // is just done this way to be nicely organized
@@ -64,6 +64,6 @@ namespace EA::client {
     make_namespace_query(EA::proto::QueryRequest *req);
 
     turbo::Table show_meta_query_ns_response(const EA::proto::QueryResponse &res);
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_NAMESPACE_CMD_H_

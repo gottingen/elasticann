@@ -24,7 +24,7 @@
 #include "elasticann/cli/option_context.h"
 #include "turbo/format/print.h"
 
-namespace EA::client {
+namespace EA::cli {
     /// Set up a subcommand and capture a shared_ptr to a struct that holds all its options.
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
@@ -34,14 +34,14 @@ namespace EA::client {
         auto *sub = app.add_subcommand("meta", "meta operations");
 
         // Add options to sub, binding them to opt.
-        EA::client::setup_namespace_cmd(*sub);
-        EA::client::setup_database_cmd(*sub);
-        EA::client::setup_cluster_cmd(*sub);
-        EA::client::setup_table_cmd(*sub);
-        EA::client::setup_zone_cmd(*sub);
-        EA::client::setup_config_cmd(*sub);
-        EA::client::setup_servlet_cmd(*sub);
-        EA::client::setup_user_cmd(*sub);
+        setup_namespace_cmd(*sub);
+        setup_database_cmd(*sub);
+        setup_cluster_cmd(*sub);
+        setup_table_cmd(*sub);
+        setup_zone_cmd(*sub);
+        setup_config_cmd(*sub);
+        setup_servlet_cmd(*sub);
+        setup_user_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_meta_cmd(*sub); });
         //sub->require_subcommand();
@@ -52,8 +52,8 @@ namespace EA::client {
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
     void run_meta_cmd(turbo::App &app) {
-        if(app.get_subcommands().empty()) {
+        if (app.get_subcommands().empty()) {
             turbo::Println("{}", app.help());
         }
     }
-}  // namespace EA::client
+}  // namespace EA::cli

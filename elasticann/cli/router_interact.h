@@ -26,7 +26,7 @@
 #include "elasticann/cli/option_context.h"
 #include "eaproto/router/router.interface.pb.h"
 
-namespace EA::client {
+namespace EA::cli {
 
     class RouterInteract {
     public:
@@ -90,6 +90,6 @@ namespace EA::client {
         }
 
     };
-}  // namespace EA::client
+}  // namespace EA::cli
 
 #endif  // ELASTICANN_CLI_ROUTER_INTERACT_H_
