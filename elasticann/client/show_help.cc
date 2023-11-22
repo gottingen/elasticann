@@ -211,5 +211,23 @@ namespace EA::client {
 
     }
 
+    ScopeShower::~ScopeShower() {
+        /*for (auto &it : tables) {
+            std::cout<<it<<std::endl;
+        }*/
+        std::cout<<result_table<<std::endl;
+    }
+
+    void ScopeShower::add_table(turbo::Table &&table) {
+        tables.push_back(std::move(table));
+    }
+    void ScopeShower::add_table(const std::string &stage, turbo::Table &&table) {
+        result_table.add_row({stage,
+                              std::move(table)});
+    }
+
+    void ScopeShower::add_table(const std::string &stage, const std::string &msg) {
+        result_table.add_row({stage,msg});
+    }
 
 }  // namespace EA::client

@@ -71,24 +71,13 @@ namespace EA::client {
     }
 
     struct ScopeShower {
-        ~ScopeShower() {
-            /*for (auto &it : tables) {
-                std::cout<<it<<std::endl;
-            }*/
-            std::cout<<result_table<<std::endl;
-        }
+        ~ScopeShower();
 
-        void add_table(turbo::Table &&table) {
-            tables.push_back(std::move(table));
-        }
-        void add_table(const std::string &stage, turbo::Table &&table) {
-            result_table.add_row({stage,
-                                  std::move(table)});
-        }
+        void add_table(turbo::Table &&table);
 
-        void add_table(const std::string &stage, const std::string &msg) {
-            result_table.add_row({stage,msg});
-        }
+        void add_table(const std::string &stage, turbo::Table &&table);
+
+        void add_table(const std::string &stage, const std::string &msg);
 
         std::vector<turbo::Table> tables;
         turbo::Table              result_table;

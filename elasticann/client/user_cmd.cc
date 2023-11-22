@@ -201,7 +201,7 @@ namespace EA::client {
     }
 
     void run_user_flat_cmd() {
-        turbo::Println(turbo::color::green, "start to get zone list");
+        turbo::Println(turbo::color::green, "start to get user list flatten");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
         ScopeShower ss;
@@ -221,7 +221,7 @@ namespace EA::client {
     }
 
     void run_user_info_cmd() {
-        turbo::Println(turbo::color::green, "start to get zone list");
+        turbo::Println(turbo::color::green, "start to get user info");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
         ScopeShower ss;
