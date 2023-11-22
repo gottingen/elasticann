@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/client/zone_cmd.h"
+#include "elasticann/client/user_cmd.h"
 #include "elasticann/client/option_context.h"
 #include "elasticann/common/tlog.h"
 #include "elasticann/client/router_interact.h"
@@ -26,57 +26,60 @@ namespace EA::client {
     /// The variables of the struct are bound to the CLI options.
     /// We use a shared ptr so that the addresses of the variables remain for binding,
     /// You could return the shared pointer if you wanted to access the values in main.
-    void setup_zone_cmd(turbo::App &app) {
+    void setup_user_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
-        auto opt = ZoneOptionContext::get_instance();
-        auto *ns = app.add_subcommand("zone", "zone operations");
-        ns->callback([ns]() { run_zone_cmd(ns); });
+        auto opt = UserOptionContext::get_instance();
+        auto *ns = app.add_subcommand("user", "user privilege operations");
+        ns->callback([ns]() { run_user_cmd(ns); });
         // Add options to sub, binding them to opt.
         //ns->require_subcommand();
         // add sub cmd
-        auto cdb = ns->add_subcommand("create", " create zone");
+        auto cdb = ns->add_subcommand("create", " create user");
         cdb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
-        cdb->add_option("-z,--zone", opt->zone_name, "zone name")->required();
-        cdb->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
-        cdb->callback([]() { run_zone_create_cmd(); });
+        cdb->add_option("-u,--user", opt->user_name, "user name")->required();
+        cdb->add_option("-p,--passwd", opt->user_passwd, "user name")->required();
+        cdb->callback([]() { run_user_create_cmd(); });
 
         auto rdb = ns->add_subcommand("remove", " remove zone");
         rdb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
-        rdb->add_option("-z,--zone", opt->zone_name, "zone name")->required();
-        rdb->callback([]() { run_zone_remove_cmd(); });
+        rdb->add_option("-u,--user", opt->user_name, "zone name")->required();
+        rdb->add_option("-p,--passwd", opt->user_passwd, "user name")->required();
+        rdb->callback([]() { run_user_remove_cmd(); });
 
+        /*
         auto mdb = ns->add_subcommand("modify", " modify zone");
         mdb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
-        mdb->add_option("-z,--zone", opt->zone_name, "zone name")->required();
-        mdb->add_option("-q, --quota", opt->namespace_quota, "new namespace quota");
-        mdb->callback([]() { run_zone_modify_cmd(); });
-
+        mdb->add_option("-u,--user", opt->user_name, "user name")->required();
+        mdb->add_option("-p,--passwd", opt->user_passwd, "user name")->required();
+        mdb->callback([]() { run_user_modify_cmd(); });
+        */
         auto lns = ns->add_subcommand("list", " list namespaces");
-        lns->callback([]() { run_zone_list_cmd(); });
+        lns->callback([]() { run_user_list_cmd(); });
 
-        auto idb = ns->add_subcommand("info", " get zone info");
+        auto idb = ns->add_subcommand("info", " get user info");
         idb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
-        idb->add_option("-z,--zone", opt->zone_name, "zone name")->required();
-        idb->callback([]() { run_zone_info_cmd(); });
+        idb->add_option("-u,--user", opt->user_name, "user name")->required();
+        idb->add_option("-p,--passwd", opt->user_passwd, "user name")->required();
+        idb->callback([]() { run_user_info_cmd(); });
 
     }
 
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_zone_cmd(turbo::App* app) {
+    void run_user_cmd(turbo::App* app) {
         // Do stuff...
         if(app->get_subcommands().empty()) {
             turbo::Println("{}", app->help());
         }
     }
 
-    void run_zone_create_cmd() {
-        turbo::Println(turbo::color::green, "start to create namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
+    void run_user_create_cmd() {
+        turbo::Println(turbo::color::green, "start to create user: {}", UserOptionContext::get_instance()->user_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
-        auto rs= make_zone_create(&request);
+        auto rs= make_user_create(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -84,12 +87,12 @@ namespace EA::client {
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
-    void run_zone_remove_cmd() {
-        turbo::Println(turbo::color::green, "start to remove namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
+    void run_user_remove_cmd() {
+        turbo::Println(turbo::color::green, "start to remove namespace: {}", UserOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
-        auto rs = make_zone_remove(&request);
+        auto rs = make_user_remove(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -97,12 +100,12 @@ namespace EA::client {
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
-    void run_zone_modify_cmd() {
-        turbo::Println(turbo::color::green, "start to modify namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
+    void run_user_modify_cmd() {
+        turbo::Println(turbo::color::green, "start to modify namespace: {}", UserOptionContext::get_instance()->namespace_name);
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
-        auto rs = make_zone_modify(&request);
+        auto rs = make_user_modify(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -111,12 +114,12 @@ namespace EA::client {
         ss.add_table("result", std::move(table));
     }
 
-    void run_zone_list_cmd() {
+    void run_user_list_cmd() {
         turbo::Println(turbo::color::green, "start to get zone list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
         ScopeShower ss;
-        auto rs = make_zone_list(&request);
+        auto rs = make_user_list(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -126,16 +129,16 @@ namespace EA::client {
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
-        table = show_meta_query_zone_response(response);
+        table = show_meta_query_user_response(response);
         ss.add_table("summary", std::move(table));
     }
 
-    void run_zone_info_cmd() {
+    void run_user_info_cmd() {
         turbo::Println(turbo::color::green, "start to get zone list");
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
         ScopeShower ss;
-        auto rs = make_zone_info(&request);
+        auto rs = make_user_info(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -145,92 +148,91 @@ namespace EA::client {
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
-        table = show_meta_query_zone_response(response);
+        table = show_meta_query_user_response(response);
         ss.add_table("summary", std::move(table));
     }
 
-    turbo::Table show_meta_query_zone_response(const EA::proto::QueryResponse &res) {
-        auto &zones = res.zone_infos();
+    turbo::Table show_meta_query_user_response(const EA::proto::QueryResponse &res) {
+
+        auto &users = res.user_privilege();
         turbo::Table summary;
-        summary.add_row({"namespace", "zone", "id", "version", "quota", "replica number", "resource tag",
-                                "region split lines"});
-        for (auto &zone: zones) {
+        summary.add_row({"namespace","user", "version"});
+        for (auto &user: users) {
             summary.add_row(
-                    turbo::Table::Row_t{zone.namespace_name(), zone.zone(), turbo::Format(zone.zone_id()),
-                          turbo::Format(zone.version()),
-                          turbo::Format(zone.quota()), turbo::Format(zone.replica_num()), zone.resource_tag(),
-                          turbo::Format(zone.region_split_lines())});
+                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version())});
             auto last = summary.size() - 1;
             summary[last].format().font_color(turbo::Color::green);
         }
         return summary;
     }
 
-    turbo::Status make_zone_create(EA::proto::MetaManagerRequest *req) {
-        EA::proto::ZoneInfo *zone_req = req->mutable_zone_info();
-        req->set_op_type(EA::proto::OP_CREATE_ZONE);
-        auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
+    turbo::Status make_user_create(EA::proto::MetaManagerRequest *req) {
+        EA::proto::UserPrivilege *user_req = req->mutable_user_privilege();
+        req->set_op_type(EA::proto::OP_CREATE_USER);
+        auto rs = CheckValidNameType(UserOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(ZoneOptionContext::get_instance()->zone_name);
+        rs = CheckValidNameType(UserOptionContext::get_instance()->user_name);
         if (!rs.ok()) {
             return rs;
         }
-        zone_req->set_namespace_name(ZoneOptionContext::get_instance()->namespace_name);
-        zone_req->set_zone(ZoneOptionContext::get_instance()->zone_name);
+        user_req->set_namespace_name(UserOptionContext::get_instance()->namespace_name);
+        user_req->set_username(UserOptionContext::get_instance()->user_name);
+        user_req->set_password(UserOptionContext::get_instance()->user_passwd);
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_remove(EA::proto::MetaManagerRequest *req) {
-        EA::proto::ZoneInfo *zone_req = req->mutable_zone_info();
-        req->set_op_type(EA::proto::OP_DROP_ZONE);
-        auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
+    turbo::Status make_user_remove(EA::proto::MetaManagerRequest *req) {
+        EA::proto::UserPrivilege *user_req = req->mutable_user_privilege();
+        req->set_op_type(EA::proto::OP_DROP_USER);
+        auto rs = CheckValidNameType(UserOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(ZoneOptionContext::get_instance()->zone_name);
+        rs = CheckValidNameType(UserOptionContext::get_instance()->user_name);
         if (!rs.ok()) {
             return rs;
         }
-        zone_req->set_namespace_name(ZoneOptionContext::get_instance()->namespace_name);
-        zone_req->set_zone(ZoneOptionContext::get_instance()->zone_name);
+        user_req->set_namespace_name(UserOptionContext::get_instance()->namespace_name);
+        user_req->set_username(UserOptionContext::get_instance()->user_name);
+        user_req->set_password(UserOptionContext::get_instance()->user_passwd);
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_modify(EA::proto::MetaManagerRequest *req) {
-        req->set_op_type(EA::proto::OP_MODIFY_ZONE);
-        EA::proto::ZoneInfo *zone_req = req->mutable_zone_info();
-        auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
+    turbo::Status make_user_modify(EA::proto::MetaManagerRequest *req) {/*
+        req->set_op_type(EA::proto::OP);
+        EA::proto::ZoneInfo *zone_req = req->mutable_user_info();
+        auto rs = CheckValidNameType(UserOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(ZoneOptionContext::get_instance()->zone_name);
+        rs = CheckValidNameType(UserOptionContext::get_instance()->zone_name);
         if (!rs.ok()) {
             return rs;
         }
-        zone_req->set_namespace_name(ZoneOptionContext::get_instance()->namespace_name);
-        zone_req->set_zone(ZoneOptionContext::get_instance()->zone_name);
+        zone_req->set_namespace_name(UserOptionContext::get_instance()->namespace_name);
+        zone_req->set_zone(UserOptionContext::get_instance()->zone_name);*/
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_list(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_ZONE);
+    turbo::Status make_user_list(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_USERPRIVILEG);
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_info(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_ZONE);
-        auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
+    turbo::Status make_user_info(EA::proto::QueryRequest *req) {
+        req->set_op_type(EA::proto::QUERY_USERPRIVILEG);
+        auto rs = CheckValidNameType(UserOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
         }
-        rs = CheckValidNameType(ZoneOptionContext::get_instance()->zone_name);
+        rs = CheckValidNameType(UserOptionContext::get_instance()->user_name);
         if (!rs.ok()) {
             return rs;
         }
-        req->set_namespace_name(ZoneOptionContext::get_instance()->namespace_name);
-        req->set_zone(ZoneOptionContext::get_instance()->zone_name);
+        req->set_namespace_name(UserOptionContext::get_instance()->namespace_name);
+        req->set_user_name(UserOptionContext::get_instance()->user_name);
         return turbo::OkStatus();
     }
 

@@ -20,6 +20,7 @@
 #include "elasticann/client/cluster_cmd.h"
 #include "elasticann/client/table_cmd.h"
 #include "elasticann/client/config_cmd.h"
+#include "elasticann/client/user_cmd.h"
 #include "elasticann/client/option_context.h"
 #include "turbo/format/print.h"
 
@@ -40,6 +41,7 @@ namespace EA::client {
         EA::client::setup_zone_cmd(*sub);
         EA::client::setup_config_cmd(*sub);
         EA::client::setup_servlet_cmd(*sub);
+        EA::client::setup_user_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
         sub->callback([sub]() { run_meta_cmd(*sub); });
         //sub->require_subcommand();
