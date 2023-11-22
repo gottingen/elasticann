@@ -43,6 +43,7 @@ namespace EA::client {
         std::vector<std::string> user_wd;
         bool force;
         bool is_db{false};
+        bool show_pwd{false};
     };
 
     // We could manually make a few variables and use shared pointers for each; this

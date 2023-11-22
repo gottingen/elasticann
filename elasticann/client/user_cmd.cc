@@ -104,6 +104,7 @@ namespace EA::client {
         idb->add_option("-n,--namespace", opt->namespace_name, "namespace name")->required();
         idb->add_option("-u,--user", opt->user_name, "user name")->required();
         idb->add_option("-p,--passwd", opt->user_passwd, "user name");
+        idb->add_flag("-s,--show", opt->show_pwd, "show passwd");
         idb->callback([]() { run_user_info_cmd(); });
 
     }
@@ -243,10 +244,18 @@ namespace EA::client {
 
         auto &users = res.user_privilege();
         turbo::Table summary;
-        summary.add_row({"namespace", "user", "version"});
+        summary.add_row({"namespace", "user", "version",  "passwd", "allow access ip"});
         for (auto &user: users) {
+            std::string passwd = "******";
+            turbo::Table ip_table;
+            for (auto ip : user.ip()) {
+                ip_table.add_row({ip});
+            }
+            if(UserOptionContext::get_instance()->show_pwd) {
+                passwd = user.password();
+            }
             summary.add_row(
-                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version())});
+                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version()),passwd, ip_table});
             auto last = summary.size() - 1;
             summary[last].format().font_color(turbo::Color::green);
         }
