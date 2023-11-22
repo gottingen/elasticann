@@ -216,12 +216,12 @@ carbin_cc_binary(
         PUBLIC
 )
 
-file(GLOB CLIENT_SRC client/*.cc)
+file(GLOB CLI_SRC cli/*.cc)
 carbin_cc_binary(
         NAMESPACE elasticann
         NAME eacli
         SOURCES
-        ${CLIENT_SRC}
+        ${CLI_SRC}
         COPTS
         ${USER_CXX_FLAGS}
         "-Wno-strict-aliasing"
