@@ -244,18 +244,44 @@ namespace EA::client {
 
         auto &users = res.user_privilege();
         turbo::Table summary;
-        summary.add_row({"namespace", "user", "version",  "passwd", "allow access ip"});
+        summary.add_row({"namespace", "user", "version",  "passwd", "allow access ip", "database", "zone", "table", "servlet"});
         for (auto &user: users) {
             std::string passwd = "******";
             turbo::Table ip_table;
             for (auto ip : user.ip()) {
                 ip_table.add_row({ip});
             }
+
+            turbo::Table database_table;
+            for (auto dp : user.privilege_database()) {
+                database_table.add_row({turbo::Format("{}:{} {}", dp.database(), EA::proto::RW_Name(dp.database_rw()), dp.force())});
+            }
+            turbo::Table zone_table;
+            for (auto zp : user.privilege_zone()) {
+                zone_table.add_row({turbo::Format("{}:{} {}", zp.zone(), EA::proto::RW_Name(zp.zone_rw()), zp.force())});
+            }
+
+            turbo::Table table_table;
+            for (auto tp : user.privilege_table()) {
+                table_table.add_row({turbo::Format("{}.{}:{} {}", tp.database(), tp.table_name(), EA::proto::RW_Name(tp.table_rw()), tp.force())});
+            }
+
+            turbo::Table servlet_table;
+            for (auto sp : user.privilege_servlet()) {
+                servlet_table.add_row({turbo::Format("{}.{}:{} {}", sp.zone(), sp.servlet_name(), EA::proto::RW_Name(sp.servlet_rw()), sp.force())});
+            }
+
             if(UserOptionContext::get_instance()->show_pwd) {
                 passwd = user.password();
             }
             summary.add_row(
-                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version()),passwd, ip_table});
+                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version()),passwd,
+                                        ip_table,
+                                        database_table,
+                                        zone_table,
+                                        table_table,
+                                        servlet_table
+                                        });
             auto last = summary.size() - 1;
             summary[last].format().font_color(turbo::Color::green);
         }
