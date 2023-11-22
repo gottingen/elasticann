@@ -38,43 +38,53 @@ namespace EA::cli {
         std::string config_type;
     };
 
-    void setup_config_cmd(turbo::App &app);
+    struct ConfigCmd {
+        static void setup_config_cmd(turbo::App &app);
 
-    void run_config_cmd(turbo::App *app);
+        static void run_config_cmd(turbo::App *app);
 
-    void run_config_create_cmd();
+        static void run_config_create_cmd();
 
-    void run_config_list_cmd();
+        static void run_config_list_cmd();
 
-    void run_config_version_list_cmd();
+        static void run_config_dump_cmd();
 
-    void run_config_get_cmd();
+        static void run_config_test_cmd();
 
-    void run_config_remove_cmd();
+        static void run_config_version_list_cmd();
 
-    [[nodiscard]] turbo::Status
-    make_config_create(EA::proto::MetaManagerRequest *req);
+        static void run_config_get_cmd();
 
-    [[nodiscard]] turbo::Status
-    make_config_list(EA::proto::QueryRequest *req);
+        static void run_config_remove_cmd();
 
-    [[nodiscard]] turbo::Status
-    make_config_list_version(EA::proto::QueryRequest *req);
+        [[nodiscard]] static turbo::Status
+        make_config_create(EA::proto::MetaManagerRequest *req);
 
-    [[nodiscard]] turbo::Status
-    make_config_get(EA::proto::QueryRequest *req);
+        [[nodiscard]] static turbo::Status
+        make_config_dump(EA::proto::ConfigInfo *req);
 
-    [[nodiscard]] turbo::Status
-    make_config_remove(EA::proto::MetaManagerRequest *req);
+        [[nodiscard]] static turbo::Status
+        make_config_list(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_config_list_version(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_config_get(EA::proto::QueryRequest *req);
+
+        [[nodiscard]] static turbo::Status
+        make_config_remove(EA::proto::MetaManagerRequest *req);
 
 
-    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryResponse &res);
+        static turbo::Table show_query_ops_config_list_response(const EA::proto::QueryResponse &res);
 
-    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res);
+        static turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res);
 
-    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status);
+        static turbo::Table
+        show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status);
 
-    turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res);
+        static turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res);
+    };
 
 }  // namespace EA::cli
 

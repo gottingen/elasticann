@@ -22,9 +22,11 @@
 #include "turbo/files/filesystem.h"
 #include "turbo/files/sequential_read_file.h"
 #include "turbo/times/clock.h"
+#include "json2pb/pb_to_json.h"
+#include "json2pb/json_to_pb.h"
 
 namespace EA::cli {
-    void setup_config_cmd(turbo::App &app) {
+    void ConfigCmd::setup_config_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
         auto opt = ConfigOptionContext::get_instance();
         auto *ns = app.add_subcommand("config", "config operations");
@@ -54,19 +56,31 @@ namespace EA::cli {
         cr->add_option("-n,--name", opt->config_name, "config name")->required();
         cr->add_option("-v, --version", opt->config_version, "config version [1.2.3]");
         cr->callback([]() { run_config_remove_cmd(); });
+
+        auto cd = ns->add_subcommand("dump", " dump config example to json file");
+        cd->add_option("-n,--name", opt->config_name, "config name")->default_val("example");
+        cd->add_option("-v, --version", opt->config_version, "config version")->default_val("1.2.3");
+        cd->add_option("-c, --content", opt->config_data, "config version")->default_val("{\"name\":\"abc\",\"age\":18, \"ip\":\"192.1.2.3\"}\n");
+        cd->add_option("-t, --type", opt->config_type, "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
+        cd->add_option("-o, --output", opt->config_file, "config save file")->default_val("example.json");
+        cd->callback([]() { run_config_dump_cmd(); });
+
+        auto ct = ns->add_subcommand("test", "test json config file");
+        ct->add_option("-f, --file", opt->config_file, "local config file")->required(true);
+        ct->callback([]() { run_config_test_cmd(); });
     }
 
     /// The function that runs our code.
     /// This could also simply be in the callback lambda itself,
     /// but having a separate function is cleaner.
-    void run_config_cmd(turbo::App *app) {
+    void ConfigCmd::run_config_cmd(turbo::App *app) {
         // Do stuff...
         if (app->get_subcommands().empty()) {
             turbo::Println("{}", app->help());
         }
     }
 
-    void run_config_create_cmd() {
+    void ConfigCmd::run_config_create_cmd() {
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
 
@@ -80,7 +94,82 @@ namespace EA::cli {
         ss.add_table("result", std::move(table));
     }
 
-    void run_config_list_cmd() {
+    void ConfigCmd::run_config_dump_cmd() {
+        EA::proto::ConfigInfo request;
+
+        auto rs = make_config_dump(&request);
+        if(!rs.ok()) {
+            turbo::Println(rs.ToString());
+            return;
+        }
+        turbo::SequentialWriteFile file;
+        rs = file.open(ConfigOptionContext::get_instance()->config_file, true);
+        if(!rs.ok()) {
+            turbo::Println(rs.ToString());
+            return;
+        }
+        std::string json;
+        std::string err;
+        if(!json2pb::ProtoMessageToJson(request,&json, &err)) {
+            turbo::Println(err);
+            return;
+        }
+        rs = file.write(json);
+        if(!rs.ok()) {
+            turbo::Println(rs.ToString());
+            return;
+        }
+        file.close();
+        turbo::Println("dump config to {}", ConfigOptionContext::get_instance()->config_file);
+    }
+
+    void ConfigCmd::run_config_test_cmd() {
+        EA::proto::ConfigInfo request;
+        if(ConfigOptionContext::get_instance()->config_file.empty()) {
+            turbo::Println("config file path empty");
+            return;
+        }
+        std::string content;
+        turbo::SequentialReadFile file;
+        auto rs = file.open(ConfigOptionContext::get_instance()->config_file);
+        if(!rs.ok()) {
+            turbo::Println(rs.ToString());
+            return;
+        }
+        auto r = file.read(&content);
+        if(!r.ok()) {
+            turbo::Println(r.status().ToString());
+            return;
+        }
+        std::string err;
+        if(!json2pb::JsonToProtoMessage(content, &request, &err)) {
+            turbo::Println("parse json to pb error:{}", err);
+            return;
+        }
+        turbo::Table result_table;
+        result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", request.version().major(),
+                                                                          request.version().minor(),
+                                                                          request.version().patch())});
+        auto last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(turbo::Table::Row_t{"type", config_type_to_string(request.type())});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(turbo::Table::Row_t{"size", turbo::Format(request.content().size())});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        turbo::Time cs = turbo::FromTimeT(request.time());
+        result_table.add_row(turbo::Table::Row_t{"time", turbo::FormatTime(cs)});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        result_table.add_row(turbo::Table::Row_t{"content", request.content()});
+        last = result_table.size() - 1;
+        result_table[last].format().font_color(turbo::Color::green);
+        std::cout<<result_table<<std::endl;
+        turbo::Println("parse json to pb success");
+    }
+
+    void ConfigCmd::run_config_list_cmd() {
         if (!ConfigOptionContext::get_instance()->config_name.empty()) {
             run_config_version_list_cmd();
             return;
@@ -102,7 +191,7 @@ namespace EA::cli {
         }
     }
 
-    void run_config_version_list_cmd() {
+    void ConfigCmd::run_config_version_list_cmd() {
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
 
@@ -120,7 +209,7 @@ namespace EA::cli {
         }
     }
 
-    void run_config_get_cmd() {
+    void ConfigCmd::run_config_get_cmd() {
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
 
@@ -143,7 +232,7 @@ namespace EA::cli {
         ss.add_table("summary", std::move(table));
     }
 
-    turbo::Status save_config_to_file(const std::string & path, const EA::proto::QueryResponse &res) {
+    turbo::Status ConfigCmd::save_config_to_file(const std::string & path, const EA::proto::QueryResponse &res) {
         turbo::SequentialWriteFile file;
         auto s = file.open(ConfigOptionContext::get_instance()->config_file);
         if(!s.ok()) {
@@ -157,7 +246,7 @@ namespace EA::cli {
         return turbo::OkStatus();
     }
 
-    void run_config_remove_cmd() {
+    void ConfigCmd::run_config_remove_cmd() {
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
 
@@ -172,7 +261,7 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    make_config_create(EA::proto::MetaManagerRequest *req) {
+    ConfigCmd::make_config_create(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_CREATE_CONFIG);
         auto rc = req->mutable_config_info();
         auto opt = ConfigOptionContext::get_instance();
@@ -213,13 +302,35 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    make_config_list(EA::proto::QueryRequest *req) {
+    ConfigCmd::make_config_dump(EA::proto::ConfigInfo *req) {
+        auto opt = ConfigOptionContext::get_instance();
+        req->set_name(opt->config_name);
+
+        req->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
+        auto r = string_to_config_type(opt->config_type);
+        if (!r.ok()) {
+            return r.status();
+        }
+        req->set_type(r.value());
+        if(!opt->config_version.empty()) {
+            auto v = req->mutable_version();
+            auto st = string_to_version(opt->config_version, v);
+            if (!st.ok()) {
+                return st;
+            }
+        }
+        req->set_content(opt->config_data);
+        return turbo::OkStatus();
+    }
+
+    [[nodiscard]] turbo::Status
+    ConfigCmd::make_config_list(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_LIST_CONFIG);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    make_config_list_version(EA::proto::QueryRequest *req) {
+    ConfigCmd::make_config_list_version(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
         auto opt = ConfigOptionContext::get_instance();
         req->set_config_name(opt->config_name);
@@ -227,7 +338,7 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    make_config_get(EA::proto::QueryRequest *req) {
+    ConfigCmd::make_config_get(EA::proto::QueryRequest *req) {
         req->set_op_type(EA::proto::QUERY_GET_CONFIG);
         auto opt = ConfigOptionContext::get_instance();
         req->set_config_name(opt->config_name);
@@ -239,7 +350,7 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    make_config_remove(EA::proto::MetaManagerRequest *req) {
+    ConfigCmd::make_config_remove(EA::proto::MetaManagerRequest *req) {
         req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
         auto rc = req->mutable_config_info();
         auto opt = ConfigOptionContext::get_instance();
@@ -251,7 +362,7 @@ namespace EA::cli {
         return turbo::OkStatus();
     }
 
-    turbo::Table show_query_ops_config_list_response(const EA::proto::QueryResponse &res) {
+    turbo::Table ConfigCmd::show_query_ops_config_list_response(const EA::proto::QueryResponse &res) {
         turbo::Table result;
         auto &config_list = res.config_infos();
         result.add_row(turbo::Table::Row_t{"config size", turbo::Format(config_list.size())});
@@ -270,7 +381,7 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res) {
+    turbo::Table ConfigCmd::show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res) {
         turbo::Table result;
         auto &config_versions = res.config_infos();
         result.add_row(turbo::Table::Row_t{"version size", turbo::Format(config_versions.size())});
@@ -290,7 +401,7 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status) {
+    turbo::Table ConfigCmd::show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status) {
         turbo::Table result_table;
         auto config = res.config_infos(0);
         result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", config.version().major(),

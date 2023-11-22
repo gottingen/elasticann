@@ -91,6 +91,22 @@ carbin_cc_library(
         ${CARBIN_DEPS_LINK}
 )
 
+file(GLOB EA_CLIENT client/*.cc)
+
+carbin_cc_library(
+        NAMESPACE elasticann
+        NAME client
+        SOURCES
+        ${EA_CLIENT}
+        COPTS
+        ${USER_CXX_FLAGS}
+        DEPS
+        eaproto::eaproto_STATIC
+        elasticann::common
+        elasticann::flags
+        ${CARBIN_DEPS_LINK}
+)
+
 
 file(GLOB META_SERVER meta_server/*.cc)
 

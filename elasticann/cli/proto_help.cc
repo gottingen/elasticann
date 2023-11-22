@@ -193,18 +193,18 @@ namespace EA::cli {
     turbo::Status string_to_version(const std::string &str, EA::proto::Version *v) {
         std::vector<std::string> vs = turbo::StrSplit(str, ".");
         if (vs.size() != 3)
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+            return turbo::InvalidArgumentError("version {} error, should be like 1.2.3", str);
         int64_t m;
         if (!turbo::SimpleAtoi(vs[0], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+            return turbo::InvalidArgumentError("version {} error, should be like 1.2.3", str);
         }
         v->set_major(m);
         if (!turbo::SimpleAtoi(vs[1], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+            return turbo::InvalidArgumentError("version {} error, should be like 1.2.3", str);
         }
         v->set_minor(m);
         if (!turbo::SimpleAtoi(vs[2], &m)) {
-            return turbo::InvalidArgumentError("version error, should be like 1.2.3");
+            return turbo::InvalidArgumentError("version {} error, should be like 1.2.3", str);
         }
         v->set_patch(m);
         return turbo::OkStatus();

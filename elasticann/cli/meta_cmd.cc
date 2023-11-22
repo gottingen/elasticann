@@ -39,7 +39,7 @@ namespace EA::cli {
         setup_cluster_cmd(*sub);
         setup_table_cmd(*sub);
         setup_zone_cmd(*sub);
-        setup_config_cmd(*sub);
+        ConfigCmd::setup_config_cmd(*sub);
         setup_servlet_cmd(*sub);
         setup_user_cmd(*sub);
         // Set the run function as callback to be called when this subcommand is issued.
