@@ -72,18 +72,12 @@ namespace EA::client {
 
         ScopeShower ss;
         auto rs = make_config_create(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
                          response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_config_list_cmd() {
@@ -96,21 +90,15 @@ namespace EA::client {
 
         ScopeShower ss;
         auto rs = make_config_list(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                          response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() == EA::proto::SUCCESS) {
             table = show_query_ops_config_list_response(response);
-            ss.add_table(std::move(table));
+            ss.add_table("summary", std::move(table));
         }
     }
 
@@ -120,21 +108,15 @@ namespace EA::client {
 
         ScopeShower ss;
         auto rs = make_config_list_version(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                          response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() == EA::proto::SUCCESS) {
             table = show_query_ops_config_list_version_response(response);
-            ss.add_table(std::move(table));
+            ss.add_table("summary", std::move(table));
         }
     }
 
@@ -144,18 +126,12 @@ namespace EA::client {
 
         ScopeShower ss;
         auto rs = make_config_get(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                          response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
@@ -164,7 +140,7 @@ namespace EA::client {
             save_status = save_config_to_file(ConfigOptionContext::get_instance()->config_file, response);
         }
         table = show_query_ops_config_get_response(response,save_status);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     turbo::Status save_config_to_file(const std::string & path, const EA::proto::QueryResponse &res) {
@@ -187,18 +163,12 @@ namespace EA::client {
 
         ScopeShower ss;
         auto rs = make_config_remove(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
                          response.errmsg());
-       ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     [[nodiscard]] turbo::Status

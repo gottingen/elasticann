@@ -87,18 +87,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_cluster_create_logical(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_logical_remove_cmd() {
@@ -106,18 +100,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_cluster_remove_logical(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_physical_create_cmd() {
@@ -125,54 +113,36 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_cluster_create_physical(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
     void run_physical_remove_cmd() {
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
-        auto r = make_cluster_remove_physical(&request);
-        if(!r.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(r, request)));
-            return;
-        }
-        auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        auto rs = make_cluster_remove_physical(&request);
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
+        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
     void run_physical_move_cmd() {
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto r = make_cluster_move_physical(&request);
-        if(!r.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(r, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, r, request);
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_logical_list_cmd() {
@@ -181,23 +151,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_cluster_query_logical_list(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
-        rs = RouterInteract::get_instance()->send_request("query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_logical_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     void run_logical_info_cmd() {
@@ -206,23 +170,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_cluster_query_logical_info(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
-        rs = RouterInteract::get_instance()->send_request("query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_logical_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     void run_physical_list_cmd() {
@@ -231,23 +189,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_cluster_query_physical_list(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
-        rs = RouterInteract::get_instance()->send_request("query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_physical_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     void run_physical_info_cmd() {
@@ -256,23 +208,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_cluster_query_physical_info(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
-        rs = RouterInteract::get_instance()->send_request("query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
+        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_physical_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     turbo::Table show_meta_query_logical_response(const EA::proto::QueryResponse &res) {

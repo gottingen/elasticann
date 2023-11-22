@@ -74,18 +74,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         auto rs = make_namespace_create(&request);
         ScopeShower ss;
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_ns_remove_cmd() {
@@ -95,18 +89,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_namespace_remove(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_ns_modify_cmd() {
@@ -116,18 +104,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_namespace_modify(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_ns_list_cmd() {
@@ -136,24 +118,18 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_namespace_query(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
 
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_ns_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     void run_ns_info_cmd() {
@@ -162,23 +138,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_namespace_query(&request);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if (!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_ns_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     turbo::Table show_meta_query_ns_response(const EA::proto::QueryResponse &res) {

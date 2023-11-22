@@ -81,18 +81,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs= make_servlet_create(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
     void run_servlet_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", ServletOptionContext::get_instance()->namespace_name);
@@ -100,18 +94,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_servlet_remove(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
     void run_servlet_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", ServletOptionContext::get_instance()->namespace_name);
@@ -119,18 +107,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_servlet_modify(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_servlet_list_cmd() {
@@ -139,23 +121,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_servlet_list(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_servlet_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     void run_servlet_info_cmd() {
@@ -164,45 +140,31 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_servlet_info(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_servlet_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     turbo::Table show_meta_query_servlet_response(const EA::proto::QueryResponse &res) {
-        turbo::Table result;
         auto &servlets = res.servlet_infos();
-        result.add_row(turbo::Table::Row_t{"servlet size", turbo::Format(servlets.size())});
-        auto last = result.size() - 1;
-        result[last].format().font_color(turbo::Color::green);
         turbo::Table sumary;
         sumary.add_row({"namespace", "zone", "servlet", "id", "version", "replica number", "resource tag"});
         for (auto &ns: servlets) {
             sumary.add_row(
                     turbo::Table::Row_t{ns.namespace_name(), ns.zone(), ns.servlet_name(), turbo::Format(ns.servlet_id()),
                           turbo::Format(ns.version()), turbo::Format(ns.replica_num()), ns.resource_tag()});
-            last = sumary.size() - 1;
+            auto last = sumary.size() - 1;
             sumary[last].format().font_color(turbo::Color::green);
         }
-        result.add_row({"summary info",
-                        sumary});
-        last = result.size() - 1;
-        result[last].format().font_color(turbo::Color::green);
-        return result;
+        return sumary;
     }
 
     turbo::Status make_servlet_create(EA::proto::MetaManagerRequest *req) {

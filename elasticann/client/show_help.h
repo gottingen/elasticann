@@ -72,15 +72,55 @@ namespace EA::client {
 
     struct ScopeShower {
         ~ScopeShower() {
-            for (auto &it : tables) {
+            /*for (auto &it : tables) {
                 std::cout<<it<<std::endl;
-            }
+            }*/
+            std::cout<<result_table<<std::endl;
         }
+
         void add_table(turbo::Table &&table) {
             tables.push_back(std::move(table));
         }
+        void add_table(const std::string &stage, turbo::Table &&table) {
+            result_table.add_row({stage,
+                                  std::move(table)});
+        }
+
+        void add_table(const std::string &stage, const std::string &msg) {
+            result_table.add_row({stage,msg});
+        }
+
         std::vector<turbo::Table> tables;
+        turbo::Table              result_table;
     };
 }  // namespace EA::client
+
+#define PREPARE_ERROR_RETURN(show, rs, request) \
+    do {                                            \
+        if(!rs.ok()) {                        \
+            show.add_table("prepare", std::move(ShowHelper::pre_send_error(rs, request))); \
+            return;                                            \
+        }                                               \
+    }while(0)
+
+#define PREPARE_ERROR_RETURN_OR_OK(show, rs, request) \
+    do {                                            \
+        if(!rs.ok()) {                        \
+            show.add_table("prepare", std::move(ShowHelper::pre_send_error(rs, request))); \
+            return;                                            \
+        } else {                                               \
+            show.add_table("prepare", "ok");                   \
+        }                                                      \
+    }while(0)
+
+#define RPC_ERROR_RETURN_OR_OK(show, rs, request) \
+    do {                                            \
+        if(!rs.ok()) {                               \
+            show.add_table("rpc", std::move(ShowHelper::rpc_error_status(rs, request.op_type())));\
+            return;                                    \
+        } else {                                        \
+            show.add_table("rpc","ok");                    \
+        }                                             \
+    }while(0)
 
 #endif  // ELASTICANN_CLIENT_SHOW_HELP_H_

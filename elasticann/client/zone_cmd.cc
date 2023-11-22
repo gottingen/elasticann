@@ -77,18 +77,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs= make_zone_create(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
     void run_zone_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
@@ -96,18 +90,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_zone_remove(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
     void run_zone_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
@@ -115,18 +103,12 @@ namespace EA::client {
         EA::proto::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_zone_modify(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
     }
 
     void run_zone_list_cmd() {
@@ -135,23 +117,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_zone_list(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_zone_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     void run_zone_info_cmd() {
@@ -160,23 +136,17 @@ namespace EA::client {
         EA::proto::QueryResponse response;
         ScopeShower ss;
         auto rs = make_zone_info(&request);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::pre_send_error(rs, request)));
-            return;
-        }
+        PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
-        if(!rs.ok()) {
-            ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
-            return;
-        }
+        RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table(std::move(table));
+        ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         table = show_meta_query_zone_response(response);
-        ss.add_table(std::move(table));
+        ss.add_table("summary", std::move(table));
     }
 
     turbo::Table show_meta_query_zone_response(const EA::proto::QueryResponse &res) {
