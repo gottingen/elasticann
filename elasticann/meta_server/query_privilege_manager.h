@@ -33,6 +33,8 @@ namespace EA {
 
         void get_flatten_privilege(const proto::QueryRequest *request, proto::QueryResponse *response);
 
+        void get_flatten_servlet_privilege(const proto::QueryRequest *request, proto::QueryResponse *response);
+
         void process_console_heartbeat(const proto::ConsoleHeartBeatRequest *request,
                                        proto::ConsoleHeartBeatResponse *response);
 
@@ -41,5 +43,7 @@ namespace EA {
 
         void construct_query_response_for_privilege(const proto::UserPrivilege &user_privilege,
                                                     std::map<std::string, std::multimap<std::string, proto::QueryUserPrivilege>> &namespace_privileges);
+        void construct_query_response_for_servlet_privilege(const proto::UserPrivilege &user_privilege,
+                                                    std::map<std::string, std::multimap<std::string, proto::QueryUserServletPrivilege>> &namespace_privileges);
     };
 }  // namespace EA

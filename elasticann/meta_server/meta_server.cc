@@ -480,6 +480,10 @@ namespace EA {
                 QueryPrivilegeManager::get_instance()->get_flatten_privilege(request, response);
                 break;
             }
+            case proto::QUERY_SERVLET_PRIVILEGE_FLATTEN: {
+                QueryPrivilegeManager::get_instance()->get_flatten_servlet_privilege(request, response);
+                break;
+            }
             case proto::QUERY_REGION_FLATTEN: {
                 QueryRegionManager::get_instance()->get_flatten_region(request, response);
                 break;
