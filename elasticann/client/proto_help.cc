@@ -14,6 +14,7 @@
 //
 #include "elasticann/client/proto_help.h"
 #include "turbo/strings/utility.h"
+#include "turbo/meta/reflect.h"
 
 namespace EA::client {
 
@@ -84,6 +85,8 @@ namespace EA::client {
     }
 
     std::string get_op_string(EA::proto::OpType type) {
+        return EA::proto::OpType_Name(type);
+        /*
         switch (type) {
             case EA::proto::OP_CREATE_NAMESPACE:
                 return "create namespace";
@@ -133,10 +136,12 @@ namespace EA::client {
                 return "upload dict";
             default:
                 return "unknown operation";
-        }
+        }*/
     }
 
     std::string get_op_string(EA::proto::QueryOpType type) {
+        return EA::proto::QueryOpType_Name(type);
+        /*
         switch (type) {
             case EA::proto::QUERY_NAMESPACE:
                 return "query namespace";
@@ -182,7 +187,7 @@ namespace EA::client {
                 return "download dict";
             default:
                 return "unknown operation";
-        }
+        }*/
     }
 
     turbo::Status string_to_version(const std::string &str, EA::proto::Version *v) {

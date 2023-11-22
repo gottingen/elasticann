@@ -32,6 +32,17 @@ namespace EA::client {
         std::string namespace_name;
         std::string user_name;
         std::string user_passwd;
+        std::vector<std::string> user_ips;
+        std::vector<std::string> user_rs;
+        std::vector<std::string> user_ws;
+        std::vector<std::string> user_rz;
+        std::vector<std::string> user_wz;
+        std::vector<std::string> user_rt;
+        std::vector<std::string> user_wt;
+        std::vector<std::string> user_rd;
+        std::vector<std::string> user_wd;
+        bool force;
+        bool is_db{false};
     };
 
     // We could manually make a few variables and use shared pointers for each; this
@@ -46,9 +57,13 @@ namespace EA::client {
 
     void run_user_remove_cmd();
 
-    void run_user_modify_cmd();
+    void run_user_add_privilege_cmd();
+
+    void run_user_remove_privilege_cmd();
 
     void run_user_list_cmd();
+
+    void run_user_flat_cmd();
 
     void run_user_info_cmd();
 
@@ -59,15 +74,22 @@ namespace EA::client {
     make_user_remove(EA::proto::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_modify(EA::proto::MetaManagerRequest *req);
+    make_user_add_privilege(EA::proto::MetaManagerRequest *req);
+
+    [[nodiscard]] turbo::Status
+    make_user_remove_privilege(EA::proto::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
     make_user_list(EA::proto::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
+    make_user_flat(EA::proto::QueryRequest *req);
+
+    [[nodiscard]] turbo::Status
     make_user_info(EA::proto::QueryRequest *req);
 
     turbo::Table show_meta_query_user_response(const EA::proto::QueryResponse &res);
+    turbo::Table show_meta_query_user_flat_response(const EA::proto::QueryResponse &res);
 
 }  // namespace EA::client
 
