@@ -25,7 +25,7 @@
 #include "turbo/base/status.h"
 #include <braft/raft.h>
 #include <bthread/mutex.h>
-#include "elasticann/config/gflags_defines.h"
+#include "elasticann/flags/plugin.h"
 
 namespace EA {
 

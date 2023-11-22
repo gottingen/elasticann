@@ -24,6 +24,7 @@
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/flags/cluster.h"
 
 namespace EA {
 

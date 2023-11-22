@@ -16,6 +16,7 @@
 
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "gflags/gflags.h"
+#include "elasticann/flags/meta.h"
 
 namespace EA {
 

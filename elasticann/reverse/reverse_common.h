@@ -29,6 +29,8 @@
 #include "elasticann/common/lru_cache.h"
 #include "elasticann/reverse/boolean_engine/boolean_executor.h"
 #include "elasticann/engine/my_rocksdb.h"
+#include "elasticann/flags/index.h"
+
 
 namespace EA {
 

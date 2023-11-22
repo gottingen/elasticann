@@ -17,6 +17,7 @@
 #pragma once
 
 #include "elasticann/common/common.h"
+#include "elasticann/flags/heartbeat.h"
 
 namespace EA {
 

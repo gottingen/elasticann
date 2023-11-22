@@ -26,6 +26,7 @@
 #include "elasticann/common/memory_profile.h"
 #include "turbo/files/filesystem.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/flags/meta.h"
 
 int main(int argc, char **argv) {
     google::SetCommandLineOption("flagfile", "conf/meta_gflags.conf");

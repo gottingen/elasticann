@@ -19,7 +19,6 @@
 #include "eaproto/ops/ops.interface.pb.h"
 #include "turbo/container/flat_hash_map.h"
 #include "elasticann/common/lru_cache.h"
-#include "elasticann/config/gflags_defines.h"
 #include "turbo/files/filesystem.h"
 #include <bthread/mutex.h>
 #include <memory>

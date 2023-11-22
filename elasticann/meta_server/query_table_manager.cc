@@ -18,6 +18,7 @@
 #include "elasticann/meta_server/query_region_manager.h"
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/ddl_manager.h"
+#include "elasticann/flags/cluster.h"
 #include <unordered_set>
 
 namespace EA {

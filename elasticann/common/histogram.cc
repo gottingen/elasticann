@@ -14,6 +14,7 @@
 //
 
 #include "elasticann/common/histogram.h"
+#include "elasticann/flags/execute.h"
 
 namespace EA {
 

@@ -25,6 +25,7 @@
 #include "rapidjson/prettywriter.h" // for stringify JSON
 #include <braft/util.h>
 #include <braft/storage.h>
+#include "elasticann/flags/meta.h"
 
 namespace EA {
 

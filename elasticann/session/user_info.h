@@ -26,6 +26,7 @@
 #include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/exec/plan.pb.h"
 #include "elasticann/common/common.h"
+#include "elasticann/flags/execute.h"
 
 namespace EA {
 

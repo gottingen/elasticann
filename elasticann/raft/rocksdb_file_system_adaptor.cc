@@ -20,6 +20,7 @@
 #include "elasticann/store/meta_writer.h"
 #include "elasticann/store/store.h"
 #include "elasticann/raft/log_entry_reader.h"
+#include "elasticann/flags/raft.h"
 
 namespace EA {
 

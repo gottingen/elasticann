@@ -23,6 +23,7 @@
 #include <google/protobuf/descriptor.h>
 #include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/common.h"
+#include "elasticann/flags/meta.h"
 
 namespace EA {
 

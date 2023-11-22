@@ -16,6 +16,7 @@
 #include "elasticann/ops/dict/query_dict_manager.h"
 #include "elasticann/ops/dict/dict_state_machine.h"
 #include "elasticann/ops/service_rocksdb.h"
+#include "elasticann/flags/dict.h"
 
 namespace EA {
     void DictServer::dict_manage(::google::protobuf::RpcController* controller,

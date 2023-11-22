@@ -2,11 +2,11 @@
 // Created by jeff on 23-7-2.
 //
 
-#ifndef ELASTICANN_COMMON_TLOG_H_
-#define ELASTICANN_COMMON_TLOG_H_
+#ifndef ELASTICANN_BASE_TLOG_H_
+#define ELASTICANN_BASE_TLOG_H_
 
 #include <initializer_list>
-#include "elasticann/config/gflags_defines.h"
+#include "elasticann/flags/log.h"
 #include "turbo/log/sinks/rotating_file_sink.h"
 #include "turbo/log/sinks/daily_file_sink.h"
 #include "turbo/log/sinks/stdout_color_sinks.h"
@@ -43,4 +43,4 @@ namespace EA {
         return true;
     }
 }
-#endif  // ELASTICANN_COMMON_TLOG_H_
+#endif  // ELASTICANN_BASE_TLOG_H_

@@ -16,6 +16,7 @@
 #include "elasticann/ops/plugin/query_plugin_manager.h"
 #include "elasticann/ops/plugin/plugin_state_machine.h"
 #include "elasticann/ops/service_rocksdb.h"
+#include "elasticann/flags/plugin.h"
 
 namespace EA {
     void PluginServer::plugin_manage(::google::protobuf::RpcController* controller,

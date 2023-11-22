@@ -42,7 +42,8 @@
 #include <gflags/gflags.h>
 #include "eaproto/meta/common.pb.h"
 #include "eaproto/meta/meta.interface.pb.h"
-#include "elasticann/common/tlog.h"
+#include "elasticann/base/tlog.h"
+#include "elasticann/flags/base.h"
 
 
 namespace EA {

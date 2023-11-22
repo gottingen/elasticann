@@ -27,7 +27,9 @@
 #include "elasticann/common/table_key.h"
 #include "elasticann/meta_server/ddl_manager.h"
 #include <braft/repeated_timer_task.h>
-#include "elasticann/config/gflags_defines.h"
+#include "elasticann/flags/meta.h"
+#include "elasticann/flags/store.h"
+#include "elasticann/flags/heartbeat.h"
 
 namespace EA {
 

@@ -5,7 +5,7 @@
 #include "elasticann/client/table_cmd.h"
 #include "elasticann/client/cluster_cmd.h"
 #include "elasticann/client/option_context.h"
-#include "elasticann/common/tlog.h"
+#include "elasticann/base/tlog.h"
 #include "elasticann/client/router_interact.h"
 #include "eaproto/router/router.interface.pb.h"
 #include "elasticann/client/proto_builder.h"

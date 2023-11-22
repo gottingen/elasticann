@@ -36,7 +36,6 @@ file(GLOB SESSION session/*.cc)
 file(GLOB SQLPARSER sqlparser/*.cc ${CMAKE_CURRENT_BINARY_DIR}/sqlparser/*.cc)
 file(GLOB STORE store/*.cc)
 file(GLOB COMMON common/*.cc)
-file(GLOB CONFIG config/*.cc)
 file(GLOB RPC rpc/*.cc)
 
 set(EA_COMMON
@@ -55,7 +54,6 @@ set(EA_COMMON
         ${SESSION}
         ${SQLPARSER}
         ${STORE}
-        ${CONFIG}
         ${RPC}
         )
 
@@ -68,6 +66,18 @@ add_definitions(
         -DBRPC_WITH_GLOG=OFF
 )
 
+file(GLOB EA_FLAGS flags/*.cc)
+carbin_cc_library(
+        NAMESPACE elasticann
+        NAME flags
+        SOURCES
+        ${EA_FLAGS}
+        COPTS
+        ${USER_CXX_FLAGS}
+        DEPS
+        ${CARBIN_DEPS_LINK}
+)
+
 carbin_cc_library(
         NAMESPACE elasticann
         NAME common
@@ -77,8 +87,10 @@ carbin_cc_library(
         ${USER_CXX_FLAGS}
         DEPS
         eaproto::eaproto_STATIC
+        elasticann::flags
         ${CARBIN_DEPS_LINK}
 )
+
 
 file(GLOB META_SERVER meta_server/*.cc)
 
@@ -92,6 +104,7 @@ carbin_cc_library(
         DEPS
         eaproto::eaproto_STATIC
         elasticann::common
+        elasticann::flags
         ${CARBIN_DEPS_LINK}
 )
 
@@ -107,6 +120,7 @@ carbin_cc_library(
         DEPS
         eaproto::eaproto_STATIC
         elasticann::common
+        elasticann::flags
         ${CARBIN_DEPS_LINK}
 )
 
@@ -123,6 +137,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::flags
         eaproto::eaproto_STATIC
         PUBLIC
 )
@@ -140,6 +155,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::flags
         elasticann::file_server
         eaproto::eaproto_STATIC
         PUBLIC
@@ -158,6 +174,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::flags
         elasticann::file_server
         eaproto::eaproto_STATIC
         PUBLIC
@@ -176,6 +193,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::flags
         eaproto::eaproto_STATIC
         PUBLIC
 )
@@ -192,6 +210,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::flags
         elasticann::file_server
         eaproto::eaproto_STATIC
         PUBLIC
@@ -226,6 +245,7 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::common
+        elasticann::flags
         eaproto::eaproto_STATIC
         PUBLIC
 )

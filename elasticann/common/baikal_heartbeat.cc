@@ -17,6 +17,7 @@
 #include "elasticann/common/baikal_heartbeat.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/common/task_fetcher.h"
+#include "elasticann/flags/cluster.h"
 #include "turbo/strings/str_split.h"
 
 namespace EA {

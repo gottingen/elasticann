@@ -25,6 +25,7 @@
 #include "elasticann/common/memory_profile.h"
 #include "turbo/files/filesystem.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/flags/dict.h"
 
 int main(int argc, char **argv) {
     google::SetCommandLineOption("flagfile", "conf/eadict_gflags.conf");

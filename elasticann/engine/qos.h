@@ -18,6 +18,7 @@
 
 #include "elasticann/common/common.h"
 #include "elasticann/common/concurrency.h"
+#include "elasticann/flags/engine.h"
 
 namespace EA {
 

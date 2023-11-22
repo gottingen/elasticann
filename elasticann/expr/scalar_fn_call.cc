@@ -19,6 +19,7 @@
 #include "elasticann/expr/row_expr.h"
 #include "elasticann/expr/literal.h"
 #include "elasticann/sqlparser/parser.h"
+#include "elasticann/flags/execute.h"
 
 namespace EA {
 

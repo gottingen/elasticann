@@ -30,6 +30,7 @@
 #include "elasticann/runtime/trace_state.h"
 #include "elasticann/common/statistics.h"
 #include "elasticann/common/memory_profile.h"
+#include "elasticann/flags/execute.h"
 #include "turbo/format/format.h"
 //#include "region_resource.h"
 

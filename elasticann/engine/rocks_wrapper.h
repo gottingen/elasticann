@@ -29,6 +29,7 @@
 #include "rocksdb/utilities/transaction_db.h"
 #include "elasticann/common/common.h"
 #include "turbo/format/format.h"
+#include "elasticann/flags/engine.h"
 
 namespace EA {
 

@@ -23,6 +23,7 @@
 #include <google/protobuf/descriptor.h>
 #include "eaproto/ops/ops.interface.pb.h"
 #include "elasticann/common/common.h"
+#include "elasticann/flags/dict.h"
 
 namespace EA {
 

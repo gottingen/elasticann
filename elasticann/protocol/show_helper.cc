@@ -21,6 +21,7 @@
 #include "elasticann/logical_plan/query_context.h"
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/flags/cluster.h"
 
 namespace EA {
 

@@ -17,7 +17,7 @@
 
 #include <brpc/channel.h>
 #include "turbo/base/status.h"
-#include "elasticann/common/tlog.h"
+#include "elasticann/base/tlog.h"
 #include <butil/endpoint.h>
 #include <brpc/channel.h>
 #include <brpc/server.h>

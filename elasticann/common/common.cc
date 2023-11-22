@@ -32,6 +32,7 @@
 #include "elasticann/common/expr_value.h"
 #include "re2/re2.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/flags/cluster.h"
 
 using google::protobuf::FieldDescriptorProto;
 
