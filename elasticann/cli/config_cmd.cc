@@ -24,8 +24,11 @@
 #include "turbo/times/clock.h"
 #include "json2pb/pb_to_json.h"
 #include "json2pb/json_to_pb.h"
+#include "elasticann/client/meta.h"
+#include "elasticann/client/config_info_builder.h"
 
 namespace EA::cli {
+
     void ConfigCmd::setup_config_cmd(turbo::App &app) {
         // Create the option and subcommand objects.
         auto opt = ConfigOptionContext::get_instance();
@@ -33,13 +36,18 @@ namespace EA::cli {
         ns->callback([ns]() { run_config_cmd(ns); });
 
         auto cc = ns->add_subcommand("create", " create config");
-        cc->add_option("-n,--name", opt->config_name, "config name")->required();
-        auto *inputs = cc->add_option_group("inputs", "config input source");
-        inputs->add_option("-d,--data", opt->config_data, "config content");
-        inputs->add_option("-f, --file", opt->config_file, "local config file");
-        inputs->require_option(1);
-        cc->add_option("-v, --version", opt->config_version, "config version [1.2.3]");
-        cc->add_option("-t, --type", opt->config_type, "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
+        auto *parameters_inputs = cc->add_option_group("parameters_inputs", "config input from parameters");
+        auto *json_inputs = cc->add_option_group("json_inputs", "config input source from json format");
+        parameters_inputs->add_option("-n,--name", opt->config_name, "config name")->required();
+        auto *df_inputs = parameters_inputs->add_option_group("data_or_file", "config input source");
+        df_inputs->add_option("-d,--data", opt->config_data, "config content");
+        df_inputs->add_option("-f, --file", opt->config_file, "local config file");
+        df_inputs->require_option(1);
+        parameters_inputs->add_option("-v, --version", opt->config_version, "config version [1.2.3]");
+        parameters_inputs->add_option("-t, --type", opt->config_type,
+                                      "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
+        json_inputs->add_option("-j, --json", opt->config_json, "local config file form json format");
+        cc->require_option(1);
         cc->callback([]() { run_config_create_cmd(); });
 
         auto cl = ns->add_subcommand("list", " list config");
@@ -57,17 +65,25 @@ namespace EA::cli {
         cr->add_option("-v, --version", opt->config_version, "config version [1.2.3]");
         cr->callback([]() { run_config_remove_cmd(); });
 
+
         auto cd = ns->add_subcommand("dump", " dump config example to json file");
-        cd->add_option("-n,--name", opt->config_name, "config name")->default_val("example");
-        cd->add_option("-v, --version", opt->config_version, "config version")->default_val("1.2.3");
-        cd->add_option("-c, --content", opt->config_data, "config version")->default_val("{\"name\":\"abc\",\"age\":18, \"ip\":\"192.1.2.3\"}\n");
-        cd->add_option("-t, --type", opt->config_type, "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
-        cd->add_option("-o, --output", opt->config_file, "config save file")->default_val("example.json");
+        auto *dump_parameters_inputs = cd->add_option_group("parameters_inputs", "config input from parameters");
+        auto *dump_default = cd->add_option_group("default_example", "default config example");
+        dump_parameters_inputs->add_option("-n,--name", opt->config_name, "config name")->required(true);
+        dump_parameters_inputs->add_option("-v, --version", opt->config_version, "config version")->required(true);
+        dump_parameters_inputs->add_option("-c, --content", opt->config_data, "config version")->required(true);
+        dump_parameters_inputs->add_option("-t, --type", opt->config_type,
+                                           "config type [json|toml|yaml|xml|gflags|text|ini]")->default_val("json");
+        dump_parameters_inputs->add_option("-o, --output", opt->config_file, "config save file");
+        dump_default->add_option("-e, --example", opt->config_example, "example output file");
+        cd->require_option(1);
         cd->callback([]() { run_config_dump_cmd(); });
+
 
         auto ct = ns->add_subcommand("test", "test json config file");
         ct->add_option("-f, --file", opt->config_file, "local config file")->required(true);
         ct->callback([]() { run_config_test_cmd(); });
+
     }
 
     /// The function that runs our code.
@@ -83,90 +99,128 @@ namespace EA::cli {
     void ConfigCmd::run_config_create_cmd() {
         EA::proto::MetaManagerRequest request;
         EA::proto::MetaManagerResponse response;
-
         ScopeShower ss;
-        auto rs = make_config_create(&request);
+        request.set_op_type(EA::proto::OP_CREATE_CONFIG);
+        auto opt = ConfigOptionContext::get_instance();
+        auto config_info = request.mutable_config_info();
+        EA::client::ConfigInfoBuilder builder(config_info);
+        /// json builder
+        turbo::Status rs;
+        if (!opt->config_json.empty()) {
+            rs = builder.build_from_json_file(opt->config_json);
+        } else {
+            /// parameter
+            if (!opt->config_file.empty()) {
+                rs = builder.build_from_file(opt->config_name,
+                                             opt->config_file,
+                                             opt->config_version,
+                                             opt->config_type);
+            } else {
+                rs = builder.build_from_content(opt->config_name,
+                                                opt->config_data,
+                                                opt->config_version,
+                                                opt->config_type);
+            }
+        }
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
-        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        rs = EA::client::MetaClient::get_instance()->meta_manager(request, response, nullptr);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
-                         response.errmsg());
-        ss.add_table("result", std::move(table));
+        auto table = ShowHelper::show_response(response.errcode(), response.op_type(),
+                                               response.errmsg());
+        ss.add_table("result", std::move(table), response.errcode() == EA::proto::SUCCESS);
     }
 
     void ConfigCmd::run_config_dump_cmd() {
         EA::proto::ConfigInfo request;
 
-        auto rs = make_config_dump(&request);
-        if(!rs.ok()) {
-            turbo::Println(rs.ToString());
+        ScopeShower ss;
+        auto opt = ConfigOptionContext::get_instance();
+        turbo::Status rs;
+        std::string file_path;
+        if (!opt->config_example.empty()) {
+            rs = make_example_config_dump(&request);
+            file_path = opt->config_example;
+        } else {
+            file_path = opt->config_file;
+            EA::client::ConfigInfoBuilder builder(&request);
+            rs = builder.build_from_content(opt->config_name, opt->config_data, opt->config_version, opt->config_type);
+        }
+
+        if (!rs.ok()) {
+            ss.add_table("prepare", rs.ToString(), false);
             return;
+        } else {
+            ss.add_table("prepare", "ok", true);
         }
         turbo::SequentialWriteFile file;
-        rs = file.open(ConfigOptionContext::get_instance()->config_file, true);
-        if(!rs.ok()) {
-            turbo::Println(rs.ToString());
+        rs = file.open(file_path, true);
+        if (!rs.ok()) {
+            ss.add_table("prepare file", rs.ToString(), false);
             return;
+        } else {
+            ss.add_table("prepare file", "ok", true);
         }
         std::string json;
         std::string err;
-        if(!json2pb::ProtoMessageToJson(request,&json, &err)) {
-            turbo::Println(err);
+        rs = EA::client::MetaClient::dump_proto(request, json);
+        if (!rs.ok()) {
+            ss.add_table("convert", rs.ToString(), false);
             return;
+        } else {
+            ss.add_table("convert", "ok", true);
         }
+
         rs = file.write(json);
-        if(!rs.ok()) {
-            turbo::Println(rs.ToString());
+        if (!rs.ok()) {
+            ss.add_table("write", rs.ToString(), false);
             return;
+        } else {
+            ss.add_table("write", "ok", true);
         }
         file.close();
-        turbo::Println("dump config to {}", ConfigOptionContext::get_instance()->config_file);
+        ss.add_table("summary", turbo::Format("success write to  file: {}", file_path), true);
     }
 
     void ConfigCmd::run_config_test_cmd() {
         EA::proto::ConfigInfo request;
-        if(ConfigOptionContext::get_instance()->config_file.empty()) {
-            turbo::Println("config file path empty");
+        ScopeShower ss;
+        if (ConfigOptionContext::get_instance()->config_file.empty()) {
+            ss.add_table("prepare", "no input file", false);
             return;
         }
         std::string content;
         turbo::SequentialReadFile file;
         auto rs = file.open(ConfigOptionContext::get_instance()->config_file);
-        if(!rs.ok()) {
-            turbo::Println(rs.ToString());
+        if (!rs.ok()) {
+            ss.add_table("open file", rs.ToString(), false);
             return;
         }
+        ss.add_table("open file", "ok", true);
         auto r = file.read(&content);
-        if(!r.ok()) {
-            turbo::Println(r.status().ToString());
+        if (!r.ok()) {
+            ss.add_table("read file", rs.ToString(), false);
             return;
         }
-        std::string err;
-        if(!json2pb::JsonToProtoMessage(content, &request, &err)) {
-            turbo::Println("parse json to pb error:{}", err);
+        ss.add_table("read file", "ok", true);
+        EA::client::ConfigInfoBuilder builder(&request);
+        rs = builder.build_from_json(content);
+        if (!rs.ok()) {
+            ss.add_table("convert", rs.ToString(), false);
             return;
         }
+        ss.add_table("convert", "ok", true);
+        turbo::Println("name size:{}",request.name().size());
         turbo::Table result_table;
+        result_table.add_row(turbo::Table::Row_t{"name", request.name()});
         result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", request.version().major(),
                                                                           request.version().minor(),
                                                                           request.version().patch())});
-        auto last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
         result_table.add_row(turbo::Table::Row_t{"type", config_type_to_string(request.type())});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
         result_table.add_row(turbo::Table::Row_t{"size", turbo::Format(request.content().size())});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
         turbo::Time cs = turbo::FromTimeT(request.time());
         result_table.add_row(turbo::Table::Row_t{"time", turbo::FormatTime(cs)});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
         result_table.add_row(turbo::Table::Row_t{"content", request.content()});
-        last = result_table.size() - 1;
-        result_table[last].format().font_color(turbo::Color::green);
-        std::cout<<result_table<<std::endl;
-        turbo::Println("parse json to pb success");
+        ss.add_table("result", std::move(result_table), true);
     }
 
     void ConfigCmd::run_config_list_cmd() {
@@ -180,14 +234,14 @@ namespace EA::cli {
         ScopeShower ss;
         auto rs = make_config_list(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
-        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        rs = EA::client::MetaClient::get_instance()->meta_query(request, response, nullptr);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
-                         response.errmsg());
-        ss.add_table("result", std::move(table));
-        if(response.errcode() == EA::proto::SUCCESS) {
+        auto table = ShowHelper::show_response(response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table("result", std::move(table), response.errcode() == EA::proto::SUCCESS);
+        if (response.errcode() == EA::proto::SUCCESS) {
             table = show_query_ops_config_list_response(response);
-            ss.add_table("summary", std::move(table));
+            ss.add_table("summary", std::move(table), true);
         }
     }
 
@@ -198,14 +252,14 @@ namespace EA::cli {
         ScopeShower ss;
         auto rs = make_config_list_version(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
-        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        rs = EA::client::MetaClient::get_instance()->meta_query(request, response, nullptr);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
-                         response.errmsg());
-        ss.add_table("result", std::move(table));
-        if(response.errcode() == EA::proto::SUCCESS) {
+        auto table = ShowHelper::show_response(response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table("result", std::move(table), response.errcode() == EA::proto::SUCCESS);
+        if (response.errcode() == EA::proto::SUCCESS) {
             table = show_query_ops_config_list_version_response(response);
-            ss.add_table("summary", std::move(table));
+            ss.add_table("summary", std::move(table), true);
         }
     }
 
@@ -213,33 +267,34 @@ namespace EA::cli {
         EA::proto::QueryRequest request;
         EA::proto::QueryResponse response;
 
-        ScopeShower ss;
+        ScopeShower ss("get config info");
         auto rs = make_config_get(&request);
+        ss.prepare(rs);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
-        rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
+        rs = EA::client::MetaClient::get_instance()->meta_query(request, response, nullptr);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
-                         response.errmsg());
-        ss.add_table("result", std::move(table));
-        if(response.errcode() != EA::proto::SUCCESS) {
+        auto table = ShowHelper::show_response(response.errcode(), request.op_type(),
+                                               response.errmsg());
+        ss.add_table("result", std::move(table), true);
+        if (response.errcode() != EA::proto::SUCCESS) {
             return;
         }
         turbo::Status save_status;
-        if(!ConfigOptionContext::get_instance()->config_file.empty()) {
+        if (!ConfigOptionContext::get_instance()->config_file.empty()) {
             save_status = save_config_to_file(ConfigOptionContext::get_instance()->config_file, response);
         }
-        table = show_query_ops_config_get_response(response,save_status);
-        ss.add_table("summary", std::move(table));
+        table = show_query_ops_config_get_response(response, save_status);
+        ss.add_table("summary", std::move(table), true);
     }
 
-    turbo::Status ConfigCmd::save_config_to_file(const std::string & path, const EA::proto::QueryResponse &res) {
+    turbo::Status ConfigCmd::save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res) {
         turbo::SequentialWriteFile file;
         auto s = file.open(ConfigOptionContext::get_instance()->config_file);
-        if(!s.ok()) {
+        if (!s.ok()) {
             return s;
         }
-        s= file.write(res.config_infos(0).content());
-        if(!s.ok()) {
+        s = file.write(res.config_infos(0).content());
+        if (!s.ok()) {
             return s;
         }
         file.close();
@@ -253,73 +308,27 @@ namespace EA::cli {
         ScopeShower ss;
         auto rs = make_config_remove(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
-        rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
+        rs = EA::client::MetaClient::get_instance()->meta_manager(request, response, nullptr);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), response.op_type(),
-                         response.errmsg());
-        ss.add_table("result", std::move(table));
+        auto table = ShowHelper::show_response(response.errcode(), response.op_type(),
+                                               response.errmsg());
+        ss.add_table("result", std::move(table), true);
     }
 
     [[nodiscard]] turbo::Status
-    ConfigCmd::make_config_create(EA::proto::MetaManagerRequest *req) {
-        req->set_op_type(EA::proto::OP_CREATE_CONFIG);
-        auto rc = req->mutable_config_info();
-        auto opt = ConfigOptionContext::get_instance();
-        rc->set_name(opt->config_name);
-
-        rc->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
-        auto r = string_to_config_type(opt->config_type);
-        if (!r.ok()) {
-            return r.status();
-        }
-        rc->set_type(r.value());
-        if(!opt->config_version.empty()) {
-            auto v = rc->mutable_version();
-            auto st = string_to_version(opt->config_version, v);
-            if (!st.ok()) {
-                return st;
-            }
-        }
-
-        if (!opt->config_data.empty()) {
-            rc->set_content(opt->config_data);
-            return turbo::OkStatus();
-        }
-        if (opt->config_file.empty()) {
-            return turbo::InvalidArgumentError("no config content");
-        }
-        turbo::SequentialReadFile file;
-        auto rs = file.open(opt->config_file);
-        if (!rs.ok()) {
-            return rs;
-        }
-        auto rr = file.read(&opt->config_data);
-        if (!rr.ok()) {
-            return rr.status();
-        }
-        rc->set_content(opt->config_data);
-        return turbo::OkStatus();
-    }
-
-    [[nodiscard]] turbo::Status
-    ConfigCmd::make_config_dump(EA::proto::ConfigInfo *req) {
-        auto opt = ConfigOptionContext::get_instance();
-        req->set_name(opt->config_name);
-
+    ConfigCmd::make_example_config_dump(EA::proto::ConfigInfo *req) {
+        req->set_name("example");
         req->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
-        auto r = string_to_config_type(opt->config_type);
-        if (!r.ok()) {
-            return r.status();
-        }
-        req->set_type(r.value());
-        if(!opt->config_version.empty()) {
-            auto v = req->mutable_version();
-            auto st = string_to_version(opt->config_version, v);
-            if (!st.ok()) {
-                return st;
-            }
-        }
-        req->set_content(opt->config_data);
+        req->set_type(EA::proto::CF_JSON);
+        auto v = req->mutable_version();
+        v->set_major(1);
+        v->set_minor(2);
+        v->set_patch(3);
+        req->set_content("{"
+                         "\"ip\":\"192.168.2.4\""
+                         "\"port\":23456"
+                         "\"apps\":[\"sug\",\"ranker\"]"
+                         "}");
         return turbo::OkStatus();
     }
 
@@ -393,7 +402,9 @@ namespace EA::cli {
         int i = 0;
         for (auto &ns: config_versions) {
             result.add_row(
-                    turbo::Table::Row_t{turbo::Format(i++), turbo::Format("{}.{}.{}", ns.version().major(), ns.version().minor(), ns.version().patch())});
+                    turbo::Table::Row_t{turbo::Format(i++),
+                                        turbo::Format("{}.{}.{}", ns.version().major(), ns.version().minor(),
+                                                      ns.version().patch())});
             last = result.size() - 1;
             result[last].format().font_color(turbo::Color::yellow);
 
@@ -401,7 +412,8 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table ConfigCmd::show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status) {
+    turbo::Table ConfigCmd::show_query_ops_config_get_response(const EA::proto::QueryResponse &res,
+                                                               const turbo::Status &save_status) {
         turbo::Table result_table;
         auto config = res.config_infos(0);
         result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", config.version().major(),
@@ -419,7 +431,7 @@ namespace EA::cli {
         result_table.add_row(turbo::Table::Row_t{"time", turbo::FormatTime(cs)});
         last = result_table.size() - 1;
         result_table[last].format().font_color(turbo::Color::green);
-        if(!ConfigOptionContext::get_instance()->config_file.empty()) {
+        if (!ConfigOptionContext::get_instance()->config_file.empty()) {
             result_table.add_row(turbo::Table::Row_t{"file", ConfigOptionContext::get_instance()->config_file});
             last = result_table.size() - 1;
             result_table[last].format().font_color(turbo::Color::green);

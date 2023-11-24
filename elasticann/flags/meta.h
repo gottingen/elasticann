@@ -26,6 +26,7 @@ namespace EA {
     DECLARE_int32(meta_replica_number);
     DECLARE_int32(meta_snapshot_interval_s);
     DECLARE_int32(meta_election_timeout_ms);
+    DECLARE_string(meta_raft_group);
     DECLARE_string(meta_log_uri);
     DECLARE_string(meta_stable_uri);
     DECLARE_string(meta_snapshot_uri);

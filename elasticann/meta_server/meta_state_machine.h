@@ -19,12 +19,13 @@
 #include <rocksdb/db.h>
 #include "elasticann/meta_server/base_state_machine.h"
 #include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/flags/meta.h"
 
 namespace EA {
     class MetaStateMachine : public BaseStateMachine {
     public:
         MetaStateMachine(const braft::PeerId &peerId) :
-                BaseStateMachine(0, "meta_raft", "/meta_server", peerId),
+                BaseStateMachine(0, FLAGS_meta_raft_group, "/meta_server", peerId),
                 _bth(&BTHREAD_ATTR_SMALL),
                 _healthy_check_start(false),
                 _baikal_heart_beat("baikal_heart_beat"),

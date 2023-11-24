@@ -90,7 +90,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
@@ -103,7 +103,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
@@ -116,7 +116,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
@@ -128,7 +128,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
@@ -140,7 +140,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, r, request);
         auto rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
@@ -154,7 +154,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
@@ -173,7 +173,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
@@ -192,7 +192,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {
@@ -211,7 +211,7 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_query", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
         if(response.errcode() != EA::proto::SUCCESS) {

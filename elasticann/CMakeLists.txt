@@ -243,6 +243,7 @@ carbin_cc_binary(
         "-Wno-strict-aliasing"
         DEPS
         ${CARBIN_DEPS_LINK}
+        elasticann::client
         eaproto::eaproto_STATIC
         PUBLIC
 )

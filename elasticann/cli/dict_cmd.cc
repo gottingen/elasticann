@@ -109,7 +109,7 @@ namespace EA::cli {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
@@ -131,7 +131,7 @@ namespace EA::cli {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
                 return;
             }
-            auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+            auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                    response.op_type(),
                                                    response.errmsg());
             ss.add_table(std::move(table));
@@ -192,7 +192,7 @@ namespace EA::cli {
         }
 
 
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, upload_response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, upload_response.errcode(),
                                                upload_response.op_type(),
                                                upload_response.errmsg());
         ss.add_table(std::move(table));
@@ -215,7 +215,7 @@ namespace EA::cli {
                 ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
                 return;
             }
-            auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+            auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                    response.op_type(),
                                                    response.errmsg());
             ss.add_table(std::move(table));
@@ -291,7 +291,7 @@ namespace EA::cli {
             turbo::Println("cksm download dict :{} fail, get:{} expect:{} ", file_path, download_cksm.value(), cksm);
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, download_response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, download_response.errcode(),
                                                download_response.op_type(),
                                                download_response.errmsg());
         ss.add_table(std::move(table));
@@ -313,7 +313,7 @@ namespace EA::cli {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
@@ -334,7 +334,7 @@ namespace EA::cli {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
@@ -355,7 +355,7 @@ namespace EA::cli {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
@@ -385,7 +385,7 @@ namespace EA::cli {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));
@@ -411,7 +411,7 @@ namespace EA::cli {
             ss.add_table(std::move(ShowHelper::rpc_error_status(rs, request.op_type())));
             return;
         }
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->server, response.errcode(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
                                                response.op_type(),
                                                response.errmsg());
         ss.add_table(std::move(table));

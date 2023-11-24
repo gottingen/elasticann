@@ -32,6 +32,8 @@ namespace EA::client {
 
     std::string version_to_string(const EA::proto::Version &v);
 
+    [[nodiscard]] turbo::Status CheckValidNameType(std::string_view ns);
+
 }  // namespace EA::client
 
 #endif // ELASTICANN_CLIENT_UTILITY_H_

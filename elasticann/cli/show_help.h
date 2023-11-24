@@ -26,10 +26,20 @@ namespace EA::cli {
     public:
         ~ShowHelper();
 
-        static turbo::Table show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt, const std::string &msg);
-        static turbo::Table show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt, const std::string &msg);
+        static turbo::Table
+        show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+                      const std::string &msg);
+        static turbo::Table
+        show_response(EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+                      const std::string &msg);
+
+        static turbo::Table show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt,
+                                          const std::string &msg);
+        static turbo::Table show_response(EA::proto::ErrCode code, EA::proto::OpType qt,
+                                          const std::string &msg);
 
         static turbo::Table rpc_error_status(const turbo::Status &s, EA::proto::OpType qt);
+
         static turbo::Table rpc_error_status(const turbo::Status &s, EA::proto::QueryOpType qt);
 
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
@@ -41,8 +51,15 @@ namespace EA::cli {
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req);
 
     private:
-        static turbo::Table show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg);
+        static turbo::Table
+        show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts,
+                           const std::string &msg);
+
+        static turbo::Table
+        show_response_impl(EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg);
+
         static turbo::Table rpc_error_status_impl(const turbo::Status &s, int qt, const std::string &qts);
+
     private:
         using Row_t = turbo::Table::Row_t;
         turbo::Table pre_send_result;
@@ -55,17 +72,34 @@ namespace EA::cli {
     ///
     /// inlines
     ///
-    inline turbo::Table ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt, const std::string &msg) {
+    inline turbo::Table
+    ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+                              const std::string &msg) {
         return show_response_impl(server, code, static_cast<int>(qt), get_op_string(qt), msg);
     }
 
-    inline turbo::Table ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt, const std::string &msg) {
+    inline turbo::Table
+    ShowHelper::show_response(EA::proto::ErrCode code, EA::proto::OpType qt,
+                              const std::string &msg) {
+        return show_response_impl(code, static_cast<int>(qt), get_op_string(qt), msg);
+    }
+
+    inline turbo::Table
+    ShowHelper::show_response(EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+                              const std::string &msg) {
+        return show_response_impl(code, static_cast<int>(qt), get_op_string(qt), msg);
+    }
+
+    inline turbo::Table
+    ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt,
+                              const std::string &msg) {
         return show_response_impl(server, code, static_cast<int>(qt), get_op_string(qt), msg);
     }
 
     inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::proto::OpType qt) {
         return rpc_error_status_impl(s, static_cast<int>(qt), get_op_string(qt));
     }
+
     inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::proto::QueryOpType qt) {
         return rpc_error_status_impl(s, static_cast<int>(qt), get_op_string(qt));
     }
@@ -73,14 +107,20 @@ namespace EA::cli {
     struct ScopeShower {
         ~ScopeShower();
 
+        ScopeShower();
+
+        explicit ScopeShower(const std::string &operation);
+
         void add_table(turbo::Table &&table);
 
-        void add_table(const std::string &stage, turbo::Table &&table);
+        void add_table(const std::string &stage, turbo::Table &&table, bool ok = true);
 
-        void add_table(const std::string &stage, const std::string &msg);
+        void add_table(const std::string &stage, const std::string &msg, bool ok);
+
+        void prepare(const turbo::Status &status);
 
         std::vector<turbo::Table> tables;
-        turbo::Table              result_table;
+        turbo::Table result_table;
     };
 }  // namespace EA::cli
 
@@ -95,20 +135,20 @@ namespace EA::cli {
 #define PREPARE_ERROR_RETURN_OR_OK(show, rs, request) \
     do {                                            \
         if(!rs.ok()) {                        \
-            show.add_table("prepare", std::move(ShowHelper::pre_send_error(rs, request))); \
+            show.add_table("prepare", std::move(ShowHelper::pre_send_error(rs, request)), false); \
             return;                                            \
         } else {                                               \
-            show.add_table("prepare", "ok");                   \
+            show.add_table("prepare", "ok", true);                   \
         }                                                      \
     }while(0)
 
 #define RPC_ERROR_RETURN_OR_OK(show, rs, request) \
     do {                                            \
         if(!rs.ok()) {                               \
-            show.add_table("rpc", std::move(ShowHelper::rpc_error_status(rs, request.op_type())));\
+            show.add_table("rpc", std::move(ShowHelper::rpc_error_status(rs, request.op_type())), false);\
             return;                                    \
         } else {                                        \
-            show.add_table("rpc","ok");                    \
+            show.add_table("rpc","ok", true);                    \
         }                                             \
     }while(0)
 

@@ -18,10 +18,11 @@
 namespace EA {
 
     /// for meta
-    DEFINE_string(meta_server_bns, "group.opera-qa-baikalMeta-000-yz.FENGCHAO.all", "meta server bns");
+    DEFINE_string(meta_server_bns, "127.0.0.1:8010", "meta server bns");
     DEFINE_int32(meta_replica_number, 3, "Meta replica num");
     DEFINE_int32(meta_snapshot_interval_s, 600, "raft snapshot interval(s)");
     DEFINE_int32(meta_election_timeout_ms, 1000, "raft election timeout(ms)");
+    DEFINE_string(meta_raft_group, "meta_raft", "meta raft group");
     DEFINE_string(meta_log_uri, "myraftlog://my_raft_log?id=", "raft log uri");
     DEFINE_string(meta_stable_uri, "local://./raft_data/stable", "raft stable path");
     DEFINE_string(meta_snapshot_uri, "local://./raft_data/snapshot", "raft snapshot path");

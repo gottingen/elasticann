@@ -18,7 +18,6 @@
 #include "elasticann/cli/zone_cmd.h"
 #include "elasticann/cli/servlet_cmd.h"
 #include "elasticann/cli/cluster_cmd.h"
-#include "elasticann/cli/table_cmd.h"
 #include "elasticann/cli/config_cmd.h"
 #include "elasticann/cli/user_cmd.h"
 #include "elasticann/cli/option_context.h"
@@ -37,7 +36,6 @@ namespace EA::cli {
         setup_namespace_cmd(*sub);
         setup_database_cmd(*sub);
         setup_cluster_cmd(*sub);
-        setup_table_cmd(*sub);
         setup_zone_cmd(*sub);
         ConfigCmd::setup_config_cmd(*sub);
         setup_servlet_cmd(*sub);

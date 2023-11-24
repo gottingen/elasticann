@@ -36,6 +36,9 @@ namespace EA::cli {
         std::string config_file;
         std::string config_version;
         std::string config_type;
+        std::string config_json;
+        std::string config_example;
+        EA::proto::ConfigInfo config_request;
     };
 
     struct ConfigCmd {
@@ -58,10 +61,7 @@ namespace EA::cli {
         static void run_config_remove_cmd();
 
         [[nodiscard]] static turbo::Status
-        make_config_create(EA::proto::MetaManagerRequest *req);
-
-        [[nodiscard]] static turbo::Status
-        make_config_dump(EA::proto::ConfigInfo *req);
+        make_example_config_dump(EA::proto::ConfigInfo *req);
 
         [[nodiscard]] static turbo::Status
         make_config_list(EA::proto::QueryRequest *req);

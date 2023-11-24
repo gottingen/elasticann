@@ -17,23 +17,72 @@
 #include "turbo/flags/flags.h"
 #include "turbo/format/print.h"
 #include "elasticann/cli/option_context.h"
+#include "elasticann/client/meta.h"
+#include "elasticann/client/base_message_sender.h"
+#include "elasticann/client/router_sender.h"
+#include "elasticann/client/meta_sender.h"
 
 int main(int argc, char **argv) {
     turbo::App app{"elastic ann search client"};
     auto opt = EA::cli::OptionContext::get_instance();
     app.add_flag("-V, --verbose", opt->verbose, "verbose detail message default(false)")->default_val(false);
-    app.add_option("-s,--server", opt->server, "server address default(\"127.0.0.0:8888\")")->default_val("127.0.0.0:8888");
-    app.add_option("-l,--lb", opt->load_balancer, "load balance default(\"rr\")")->default_val("rr");
-    app.add_option("-m,--timeout", opt->timeout_ms, "timeout ms default(2000)")->default_val(int32_t(2000));
-    app.add_option("-c,--connect", opt->connect_timeout_ms, "connect timeout ms default(100)")->default_val(int32_t(100));
-    app.add_option("-r,--retry", opt->max_retry, "max try time default(3)")->default_val(int32_t(3));
-    app.add_option("-i,--interval", opt->time_between_meta_connect_error_ms, "time between meta connect error ms default(1000)")->default_val(int32_t(1000));
+    app.add_option("-s,--server", opt->router_server, "server address default(\"127.0.0.1:8888\")")->default_val(
+            "127.0.0.1:8888");
+    app.add_option("-m,--meta_server", opt->meta_server, "server address default(\"127.0.0.1:8010\")")->default_val(
+            "127.0.0.1:8010");
+    app.add_option("-g,--meta_group", opt->meta_group, "server address default(\"meta_raft\")")->default_val(
+            "meta_raft");
+    app.add_flag("-r,--router", opt->router, "server address default(false)");
+    app.add_option("-L,--lb", opt->load_balancer, "load balance default(\"rr\")")->default_val("rr");
+    app.add_option("-T,--timeout", opt->timeout_ms, "timeout ms default(2000)");
+    app.add_option("-C,--connect", opt->connect_timeout_ms, "connect timeout ms default(100)");
+    app.add_option("-R,--retry", opt->max_retry, "max try time default(3)");
+    app.add_option("-I,--interval", opt->time_between_meta_connect_error_ms,
+                   "time between meta connect error ms default(1000)");
     app.callback([&app] {
         if (app.get_subcommands().empty()) {
             turbo::Println("{}", app.help());
         }
     });
 
+    auto func = []() {
+        auto opt = EA::cli::OptionContext::get_instance();
+        if (opt->verbose) {
+            turbo::Println("cli verbose all operations");
+        }
+        EA::client::BaseMessageSender *sender{nullptr};
+        if (opt->router) {
+            auto rs = EA::client::RouterSender::get_instance()->init(opt->router_server);
+            if (!rs.ok()) {
+                turbo::Println(rs.message());
+                exit(0);
+            }
+            EA::client::RouterSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
+                    .set_interval_time(opt->time_between_meta_connect_error_ms)
+                    .set_retry_time(opt->max_retry)
+                    .set_verbose(opt->verbose);
+            sender = EA::client::RouterSender::get_instance();
+            TLOG_INFO_IF(opt->verbose, "init connect success to router server {}", opt->router_server);
+        } else {
+            auto rs = EA::client::MetaSender::get_instance()->init(opt->meta_group, opt->meta_server);
+            if (!rs.ok()) {
+                turbo::Println(rs.message());
+                exit(0);
+            }
+            EA::client::MetaSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
+                    .set_interval_time(opt->time_between_meta_connect_error_ms)
+                    .set_retry_time(opt->max_retry)
+                    .set_verbose(opt->verbose);
+            sender = EA::client::MetaSender::get_instance();
+            TLOG_INFO_IF(opt->verbose, "init connect success to meta cluster {} {}", opt->meta_group, opt->meta_server);
+        }
+        auto r = EA::client::MetaClient::get_instance()->init(sender);
+        if (!r.ok()) {
+            turbo::Println("can not connect to meta server");
+            exit(0);
+        }
+    };
+    app.parse_complete_callback(func);
     // Call the setup functions for the subcommands.
     // They are kept alive by a shared pointer in the
     // lambda function

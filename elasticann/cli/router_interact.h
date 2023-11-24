@@ -60,8 +60,8 @@ namespace EA::cli {
                 channel_opt.timeout_ms =  OptionContext::get_instance()->timeout_ms;
                 channel_opt.connect_timeout_ms = OptionContext::get_instance()->connect_timeout_ms;
                 brpc::Channel short_channel;
-                if (short_channel.Init(OptionContext::get_instance()->server.c_str(), &channel_opt) != 0) {
-                    TLOG_WARN_IF(verbose, "connect with router server fail. channel Init fail, leader_addr:{}", OptionContext::get_instance()->server);
+                if (short_channel.Init(OptionContext::get_instance()->router_server.c_str(), &channel_opt) != 0) {
+                    TLOG_WARN_IF(verbose, "connect with router server fail. channel Init fail, leader_addr:{}", OptionContext::get_instance()->router_server);
                     ++retry_time;
                     continue;
                 }
@@ -85,7 +85,7 @@ namespace EA::cli {
                     return turbo::OkStatus();
                 }
             } while (retry_time < OptionContext::get_instance()->max_retry);
-            return turbo::DeadlineExceededError("try times {} and can not get response.", retry_time);
+            return turbo::DeadlineExceededError("try times {} reach max_try {} and can not get response.", retry_time, OptionContext::get_instance()->max_retry);
 
         }
 

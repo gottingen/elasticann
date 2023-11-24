@@ -17,6 +17,7 @@
 #include "elasticann/cli/proto_help.h"
 #include "turbo/format/print.h"
 #include "turbo/times/civil_time.h"
+#include "elasticann/cli/option_context.h"
 #include "turbo/times/time.h"
 
 namespace EA::cli {
@@ -31,13 +32,54 @@ namespace EA::cli {
 
     turbo::Table ShowHelper::show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
         turbo::Table response_result;
-        response_result.add_row(Row_t{"status", "server", "op code", "op string", "error code", "error message"});
+        std::string server_role;
+        std::string server_addr;
+        auto opt = EA::cli::OptionContext::get_instance();
+        if(opt->router) {
+            server_role = "router";
+            server_addr = opt->router_server;
+        } else {
+            server_role = "meta";
+            server_addr = opt->meta_server;
+        }
+        response_result.add_row(Row_t{"status", server_role, "op code", "op string", "error code", "error message"});
         if (code != EA::proto::SUCCESS) {
             response_result.add_row(
-                    Row_t{"fail", server, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
+                    Row_t{"fail", server_addr, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
         } else {
             response_result.add_row(
-                    Row_t{"success", server, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
+                    Row_t{"success", server_addr, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
+        }
+        auto last = response_result.size() - 1;
+        response_result[last][0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold});
+
+        if (code == EA::proto::SUCCESS) {
+            response_result[last][1].format().font_color(turbo::Color::yellow);
+        } else {
+            response_result[last][1].format().font_color(turbo::Color::red);
+        }
+        return response_result;
+    }
+
+    turbo::Table ShowHelper::show_response_impl(EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
+        turbo::Table response_result;
+        std::string server_role;
+        std::string server_addr;
+        auto opt = EA::cli::OptionContext::get_instance();
+        if(opt->router) {
+            server_role = "router";
+            server_addr = opt->router_server;
+        } else {
+            server_role = "meta";
+            server_addr = opt->meta_server;
+        }
+        response_result.add_row(Row_t{"status", server_role, "op code", "op string", "error code", "error message"});
+        if (code != EA::proto::SUCCESS) {
+            response_result.add_row(
+                    Row_t{"fail", server_addr, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
+        } else {
+            response_result.add_row(
+                    Row_t{"success", server_addr, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
         }
         auto last = response_result.size() - 1;
         response_result[last][0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold});
@@ -210,24 +252,69 @@ namespace EA::cli {
         return result;
 
     }
+    ScopeShower::ScopeShower() {
+        result_table.add_row({"phase","status"});
+        result_table[0].format().font_color(turbo::Color::blue);
+        result_table[0][1].format().font_align(turbo::FontAlign::left);
+        result_table[0][1].format().font_align(turbo::FontAlign::center);
+    }
 
+    ScopeShower::ScopeShower(const std::string & operation) {
+        result_table.add_row({"operation", operation});
+        result_table[0][0].format().font_color(turbo::Color::yellow).font_align(turbo::FontAlign::left);
+        result_table[0][1].format().font_color(turbo::Color::magenta).font_align(turbo::FontAlign::center);
+        result_table.add_row({"phase","status"});
+        result_table[1].format().font_color(turbo::Color::blue);
+        result_table[1][1].format().font_align(turbo::FontAlign::left);
+        result_table[1][1].format().font_align(turbo::FontAlign::center);
+
+    }
     ScopeShower::~ScopeShower() {
         /*for (auto &it : tables) {
             std::cout<<it<<std::endl;
         }*/
         std::cout<<result_table<<std::endl;
+        //std::cout<<std::endl;
     }
 
     void ScopeShower::add_table(turbo::Table &&table) {
         tables.push_back(std::move(table));
     }
-    void ScopeShower::add_table(const std::string &stage, turbo::Table &&table) {
-        result_table.add_row({stage,
-                              std::move(table)});
+    void ScopeShower::add_table(const std::string &stage, turbo::Table &&table, bool ok) {
+        auto &t = result_table.add_row({stage,std::move(table)});
+        auto last = result_table.size() - 1;
+        result_table[last][0].format().font_color(turbo::Color::yellow);
+        if(ok) {
+            result_table[last][1].format().font_color(turbo::Color::green);
+        } else {
+            result_table[last][1].format().font_color(turbo::Color::red);
+        }
     }
 
-    void ScopeShower::add_table(const std::string &stage, const std::string &msg) {
+    void ScopeShower::add_table(const std::string &stage, const std::string &msg, bool ok) {
         result_table.add_row({stage,msg});
+        auto last = result_table.size() - 1;
+        result_table[last][0].format().font_color(turbo::Color::yellow);
+        if(ok) {
+            result_table[last][1].format().font_color(turbo::Color::green).font_align(turbo::FontAlign::center);
+        } else {
+            result_table[last][1].format().font_color(turbo::Color::red).font_align(turbo::FontAlign::center);
+        }
+    }
+
+    void ScopeShower::prepare(const turbo::Status &status) {
+        if(status.ok()) {
+            result_table.add_row({"prepare", turbo::Table().add_row({"ok"})});
+            result_table[2][1].format().font_color(turbo::Color::green)
+                    .font_align(turbo::FontAlign::center)
+                    .font_style({turbo::FontStyle::concealed});
+        } else {
+            result_table.add_row({"prepare", turbo::Table().add_row({"ok"})});
+            result_table[2][1].format().font_color(turbo::Color::red)
+            .font_align(turbo::FontAlign::center)
+            .font_style({turbo::FontStyle::concealed});
+        }
+        result_table[2][0].format().font_color(turbo::Color::yellow);
     }
 
 }  // namespace EA::cli
