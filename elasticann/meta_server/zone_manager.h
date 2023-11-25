@@ -19,9 +19,10 @@
 #include <unordered_map>
 #include <set>
 #include <mutex>
-#include "elasticann/meta_server/meta_server.h"
-#include "elasticann/meta_server/schema_manager.h"
+#include "elasticann/meta_server/meta_constants.h"
 #include "eaproto/meta/meta.interface.pb.h"
+#include "bthread/mutex.h"
+#include "braft/raft.h"
 
 namespace EA {
     class ZoneManager {
@@ -220,16 +221,16 @@ namespace EA {
     }
 
     inline std::string ZoneManager::construct_zone_key(int64_t zone_id) {
-        std::string zone_key = MetaServer::SCHEMA_IDENTIFY
-                                   + MetaServer::ZONE_SCHEMA_IDENTIFY;
+        std::string zone_key = MetaConstants::SCHEMA_IDENTIFY
+                                   + MetaConstants::ZONE_SCHEMA_IDENTIFY;
         zone_key.append((char *) &zone_id, sizeof(int64_t));
         return zone_key;
     }
 
     inline std::string ZoneManager::construct_max_zone_id_key() {
-        std::string max_zone_id_key = MetaServer::SCHEMA_IDENTIFY
-                                          + MetaServer::MAX_ID_SCHEMA_IDENTIFY
-                                          + SchemaManager::MAX_ZONE_ID_KEY;
+        std::string max_zone_id_key = MetaConstants::SCHEMA_IDENTIFY
+                                          + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                          + MetaConstants::MAX_ZONE_ID_KEY;
         return max_zone_id_key;
     }
 }  // namespace EA

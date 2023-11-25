@@ -19,9 +19,10 @@
 #include <unordered_map>
 #include <set>
 #include <mutex>
-#include "elasticann/meta_server/meta_server.h"
-#include "elasticann/meta_server/schema_manager.h"
+#include "elasticann/meta_server/meta_constants.h"
 #include "eaproto/meta/meta.interface.pb.h"
+#include "bthread/mutex.h"
+#include "braft/raft.h"
 
 namespace EA {
     class ServletManager {
@@ -177,16 +178,16 @@ namespace EA {
     }
 
     inline std::string ServletManager::construct_servlet_key(int64_t servlet_id) {
-        std::string servlet_key = MetaServer::SCHEMA_IDENTIFY
-                                   + MetaServer::SERVLET_SCHEMA_IDENTIFY;
+        std::string servlet_key = MetaConstants::SCHEMA_IDENTIFY
+                                   + MetaConstants::SERVLET_SCHEMA_IDENTIFY;
         servlet_key.append((char *) &servlet_id, sizeof(int64_t));
         return servlet_key;
     }
 
     inline std::string ServletManager::construct_max_servlet_id_key() {
-        std::string max_servlet_id_key = MetaServer::SCHEMA_IDENTIFY
-                                          + MetaServer::MAX_ID_SCHEMA_IDENTIFY
-                                          + SchemaManager::MAX_SERVLET_ID_KEY;
+        std::string max_servlet_id_key = MetaConstants::SCHEMA_IDENTIFY
+                                          + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                          + MetaConstants::MAX_SERVLET_ID_KEY;
         return max_servlet_id_key;
     }
 }  // namespace EA

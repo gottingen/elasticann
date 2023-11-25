@@ -593,12 +593,12 @@ namespace EA {
     int MetaStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
         TLOG_WARN("start on snapshot load");
         //先删除数据
-        std::string remove_start_key(MetaServer::CLUSTER_IDENTIFY);
+        std::string remove_start_key(MetaConstants::CLUSTER_IDENTIFY);
         rocksdb::WriteOptions options;
         auto status = RocksWrapper::get_instance()->remove_range(options,
                                                                  RocksWrapper::get_instance()->get_meta_info_handle(),
                                                                  remove_start_key,
-                                                                 MetaServer::MAX_IDENTIFY,
+                                                                 MetaConstants::MAX_IDENTIFY,
                                                                  false);
         if (!status.ok()) {
             TLOG_ERROR("remove_range error when on snapshot load: code={}, msg={}",
@@ -612,7 +612,7 @@ namespace EA {
         rocksdb::ReadOptions read_options;
         std::unique_ptr<rocksdb::Iterator> iter(RocksWrapper::get_instance()->new_iterator(read_options,
                                                                                            RocksWrapper::get_instance()->get_meta_info_handle()));
-        iter->Seek(MetaServer::CLUSTER_IDENTIFY);
+        iter->Seek(MetaConstants::CLUSTER_IDENTIFY);
         for (; iter->Valid(); iter->Next()) {
             TLOG_WARN("iter key:{}, iter value:{} when on snapshot load",
                        iter->key().ToString(), iter->value().ToString());

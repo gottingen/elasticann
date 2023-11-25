@@ -20,8 +20,9 @@
 #include <set>
 #include <mutex>
 #include "eaproto/meta/meta.interface.pb.h"
-#include "elasticann/meta_server/meta_server.h"
-#include "elasticann/meta_server/schema_manager.h"
+#include "elasticann/meta_server/meta_constants.h"
+#include "braft/raft.h"
+#include "bthread/mutex.h"
 
 namespace EA {
     class NamespaceManager {
@@ -242,16 +243,16 @@ namespace EA {
     }
 
     inline std::string NamespaceManager::construct_namespace_key(int64_t namespace_id) {
-        std::string namespace_key = MetaServer::SCHEMA_IDENTIFY
-                                    + MetaServer::NAMESPACE_SCHEMA_IDENTIFY;
+        std::string namespace_key = MetaConstants::SCHEMA_IDENTIFY
+                                    + MetaConstants::NAMESPACE_SCHEMA_IDENTIFY;
         namespace_key.append((char *) &namespace_id, sizeof(int64_t));
         return namespace_key;
     }
 
     inline std::string NamespaceManager::construct_max_namespace_id_key() {
-        std::string max_namespace_id_key = MetaServer::SCHEMA_IDENTIFY
-                                           + MetaServer::MAX_ID_SCHEMA_IDENTIFY
-                                           + SchemaManager::MAX_NAMESPACE_ID_KEY;
+        std::string max_namespace_id_key = MetaConstants::SCHEMA_IDENTIFY
+                                           + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                           + MetaConstants::MAX_NAMESPACE_ID_KEY;
         return max_namespace_id_key;
     }
 

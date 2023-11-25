@@ -37,32 +37,6 @@
 
 namespace EA {
 
-    const std::string MetaServer::CLUSTER_IDENTIFY(1, 0x01);
-    const std::string MetaServer::LOGICAL_CLUSTER_IDENTIFY(1, 0x01);
-    const std::string MetaServer::LOGICAL_KEY = "logical_room";
-    const std::string MetaServer::PHYSICAL_CLUSTER_IDENTIFY(1, 0x02);
-    const std::string MetaServer::INSTANCE_CLUSTER_IDENTIFY(1, 0x03);
-    const std::string MetaServer::INSTANCE_PARAM_CLUSTER_IDENTIFY(1, 0x04);
-
-    const std::string MetaServer::PRIVILEGE_IDENTIFY(1, 0x03);
-
-    const std::string MetaServer::SCHEMA_IDENTIFY(1, 0x02);
-    const std::string MetaServer::MAX_ID_SCHEMA_IDENTIFY(1, 0x01);
-    const std::string MetaServer::NAMESPACE_SCHEMA_IDENTIFY(1, 0x02);
-    const std::string MetaServer::DATABASE_SCHEMA_IDENTIFY(1, 0x03);
-    const std::string MetaServer::TABLE_SCHEMA_IDENTIFY(1, 0x04);
-    const std::string MetaServer::REGION_SCHEMA_IDENTIFY(1, 0x05);
-    const std::string MetaServer::ZONE_SCHEMA_IDENTIFY(1, 0x09);
-    const std::string MetaServer::SERVLET_SCHEMA_IDENTIFY(1, 0x0A);
-
-    const std::string MetaServer::DDLWORK_IDENTIFY(1, 0x06);
-    const std::string MetaServer::STATISTICS_IDENTIFY(1, 0x07);
-    const std::string MetaServer::INDEX_DDLWORK_REGION_IDENTIFY(1, 0x08);
-
-    const std::string MetaServer::CONFIG_IDENTIFY(1, 0x04);
-
-    const std::string MetaServer::MAX_IDENTIFY(1, 0xFF);
-
     MetaServer::~MetaServer() {}
 
     int MetaServer::init(const std::vector<braft::PeerId> &peers) {

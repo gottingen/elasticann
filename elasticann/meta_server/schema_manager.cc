@@ -28,13 +28,6 @@
 
 namespace EA {
 
-    const std::string SchemaManager::MAX_NAMESPACE_ID_KEY = "max_namespace_id";
-    const std::string SchemaManager::MAX_DATABASE_ID_KEY = "max_database_id";
-    const std::string SchemaManager::MAX_ZONE_ID_KEY = "max_zone_id";
-    const std::string SchemaManager::MAX_SERVLET_ID_KEY = "max_zone_id";
-    const std::string SchemaManager::MAX_TABLE_ID_KEY = "max_table_id";
-    const std::string SchemaManager::MAX_REGION_ID_KEY = "max_region_id";
-
     /*
      *  该方法除了service层调用之外，schema自身也需要调用
      *  自身调用是response为NULL
@@ -607,36 +600,36 @@ namespace EA {
         RocksWrapper *db = RocksWrapper::get_instance();
         std::unique_ptr<rocksdb::Iterator> iter(
                 RocksWrapper::get_instance()->new_iterator(read_options, db->get_meta_info_handle()));
-        iter->Seek(MetaServer::SCHEMA_IDENTIFY);
-        std::string max_id_prefix = MetaServer::SCHEMA_IDENTIFY;
-        max_id_prefix += MetaServer::MAX_ID_SCHEMA_IDENTIFY;
+        iter->Seek(MetaConstants::SCHEMA_IDENTIFY);
+        std::string max_id_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        max_id_prefix += MetaConstants::MAX_ID_SCHEMA_IDENTIFY;
 
-        std::string namespace_prefix = MetaServer::SCHEMA_IDENTIFY;
-        namespace_prefix += MetaServer::NAMESPACE_SCHEMA_IDENTIFY;
+        std::string namespace_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        namespace_prefix += MetaConstants::NAMESPACE_SCHEMA_IDENTIFY;
 
-        std::string database_prefix = MetaServer::SCHEMA_IDENTIFY;
-        database_prefix += MetaServer::DATABASE_SCHEMA_IDENTIFY;
+        std::string database_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        database_prefix += MetaConstants::DATABASE_SCHEMA_IDENTIFY;
 
-        std::string zone_prefix = MetaServer::SCHEMA_IDENTIFY;
-        zone_prefix += MetaServer::ZONE_SCHEMA_IDENTIFY;
+        std::string zone_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        zone_prefix += MetaConstants::ZONE_SCHEMA_IDENTIFY;
 
-        std::string servlet_prefix = MetaServer::SCHEMA_IDENTIFY;
-        servlet_prefix += MetaServer::SERVLET_SCHEMA_IDENTIFY;
+        std::string servlet_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        servlet_prefix += MetaConstants::SERVLET_SCHEMA_IDENTIFY;
 
-        std::string table_prefix = MetaServer::SCHEMA_IDENTIFY;
-        table_prefix += MetaServer::TABLE_SCHEMA_IDENTIFY;
+        std::string table_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        table_prefix += MetaConstants::TABLE_SCHEMA_IDENTIFY;
 
-        std::string region_prefix = MetaServer::SCHEMA_IDENTIFY;
-        region_prefix += MetaServer::REGION_SCHEMA_IDENTIFY;
+        std::string region_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        region_prefix += MetaConstants::REGION_SCHEMA_IDENTIFY;
 
-        std::string ddl_prefix = MetaServer::SCHEMA_IDENTIFY;
-        ddl_prefix += MetaServer::DDLWORK_IDENTIFY;
+        std::string ddl_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        ddl_prefix += MetaConstants::DDLWORK_IDENTIFY;
 
-        std::string statistics_prefix = MetaServer::SCHEMA_IDENTIFY;
-        statistics_prefix += MetaServer::STATISTICS_IDENTIFY;
+        std::string statistics_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        statistics_prefix += MetaConstants::STATISTICS_IDENTIFY;
 
-        std::string index_ddl_region_prefix = MetaServer::SCHEMA_IDENTIFY;
-        index_ddl_region_prefix += MetaServer::INDEX_DDLWORK_REGION_IDENTIFY;
+        std::string index_ddl_region_prefix = MetaConstants::SCHEMA_IDENTIFY;
+        index_ddl_region_prefix += MetaConstants::INDEX_DDLWORK_REGION_IDENTIFY;
 
         for (; iter->Valid(); iter->Next()) {
             int ret = 0;
@@ -1095,32 +1088,32 @@ namespace EA {
                                             const std::string &value) {
         std::string max_key(key, max_id_prefix.size());
         int64_t *max_id = (int64_t *) (value.c_str());
-        if (max_key == SchemaManager::MAX_NAMESPACE_ID_KEY) {
+        if (max_key == MetaConstants::MAX_NAMESPACE_ID_KEY) {
             NamespaceManager::get_instance()->set_max_namespace_id(*max_id);
             TLOG_WARN("max_namespace_id:{}", *max_id);
             return 0;
         }
-        if (max_key == SchemaManager::MAX_DATABASE_ID_KEY) {
+        if (max_key == MetaConstants::MAX_DATABASE_ID_KEY) {
             DatabaseManager::get_instance()->set_max_database_id(*max_id);
             TLOG_WARN("max_database_id:{}", *max_id);
             return 0;
         }
-        if (max_key == SchemaManager::MAX_ZONE_ID_KEY) {
+        if (max_key == MetaConstants::MAX_ZONE_ID_KEY) {
             ZoneManager::get_instance()->set_max_zone_id(*max_id);
             TLOG_WARN("max_zone_id:{}", *max_id);
             return 0;
         }
-        if (max_key == SchemaManager::MAX_SERVLET_ID_KEY) {
+        if (max_key == MetaConstants::MAX_SERVLET_ID_KEY) {
             ServletManager::get_instance()->set_max_servlet_id(*max_id);
             TLOG_WARN("max_zone_id:{}", *max_id);
             return 0;
         }
-        if (max_key == SchemaManager::MAX_TABLE_ID_KEY) {
+        if (max_key == MetaConstants::MAX_TABLE_ID_KEY) {
             TableManager::get_instance()->set_max_table_id(*max_id);
             TLOG_WARN("max_table_id:{}", *max_id);
             return 0;
         }
-        if (max_key == SchemaManager::MAX_REGION_ID_KEY) {
+        if (max_key == MetaConstants::MAX_REGION_ID_KEY) {
             RegionManager::get_instance()->set_max_region_id(*max_id);
             TLOG_WARN("max_region_id:{}", *max_id);
             return 0;

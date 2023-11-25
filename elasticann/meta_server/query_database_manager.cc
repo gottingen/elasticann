@@ -15,6 +15,7 @@
 
 
 #include "elasticann/meta_server/query_database_manager.h"
+#include "elasticann/base/tlog.h"
 
 namespace EA {
     void QueryDatabaseManager::get_database_info(const proto::QueryRequest *request,

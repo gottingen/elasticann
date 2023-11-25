@@ -16,6 +16,7 @@
 #include "elasticann/common/common.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
+#include "elasticann/meta_server/meta_constants.h"
 
 namespace EA {
 
@@ -179,7 +180,7 @@ namespace EA {
         BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
         TLOG_INFO("start to load config snapshot");
         _configs.clear();
-        std::string config_prefix = MetaServer::CONFIG_IDENTIFY;
+        std::string config_prefix = MetaConstants::CONFIG_IDENTIFY;
         rocksdb::ReadOptions read_options;
         read_options.prefix_same_as_start = true;
         read_options.total_order_seek = false;
@@ -213,7 +214,7 @@ namespace EA {
     }
 
     std::string ConfigManager::make_config_key(const std::string &name, const turbo::ModuleVersion &version) {
-        return MetaServer::CONFIG_IDENTIFY + name + version.to_string();
+        return MetaConstants::CONFIG_IDENTIFY + name + version.to_string();
     }
 
 }  // namespace EA

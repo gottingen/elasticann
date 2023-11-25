@@ -21,9 +21,8 @@
 #include <mutex>
 #include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/db/store.interface.pb.h"
-#include "elasticann/meta_server/meta_server.h"
+#include "elasticann/meta_server/meta_constants.h"
 #include "elasticann/meta_server/meta_util.h"
-#include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/table_manager.h"
 #include "elasticann/base/thread_safe_map.h"
@@ -618,15 +617,15 @@ namespace EA {
     }
 
     inline std::string RegionManager::construct_region_key(int64_t region_id) {
-        std::string region_key = MetaServer::SCHEMA_IDENTIFY + MetaServer::REGION_SCHEMA_IDENTIFY;
+        std::string region_key = MetaConstants::SCHEMA_IDENTIFY + MetaConstants::REGION_SCHEMA_IDENTIFY;
         region_key.append((char *) &region_id, sizeof(int64_t));
         return region_key;
     }
 
     inline std::string RegionManager::construct_max_region_id_key() {
-        std::string max_region_id_key = MetaServer::SCHEMA_IDENTIFY
-                                        + MetaServer::MAX_ID_SCHEMA_IDENTIFY
-                                        + SchemaManager::MAX_REGION_ID_KEY;
+        std::string max_region_id_key = MetaConstants::SCHEMA_IDENTIFY
+                                        + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                        + MetaConstants::MAX_REGION_ID_KEY;
         return max_region_id_key;
     }
 

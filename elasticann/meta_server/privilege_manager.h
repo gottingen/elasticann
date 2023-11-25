@@ -20,7 +20,7 @@
 #include <bthread/mutex.h>
 #include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/meta_server/meta_state_machine.h"
-#include "elasticann/meta_server/meta_server.h"
+#include "elasticann/meta_server/meta_constants.h"
 
 namespace EA {
     class PrivilegeManager {
@@ -86,7 +86,7 @@ namespace EA {
         }
 
         std::string construct_privilege_key(const std::string &username) {
-            return MetaServer::PRIVILEGE_IDENTIFY + username;
+            return MetaConstants::PRIVILEGE_IDENTIFY + username;
         }
 
         void insert_database_privilege(const proto::PrivilegeDatabase &privilege_database,

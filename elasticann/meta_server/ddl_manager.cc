@@ -25,7 +25,7 @@ namespace EA {
 
     std::string construct_ddl_work_key(const std::string &identify, const std::initializer_list<int64_t> &ids) {
         std::string ddl_key;
-        ddl_key = MetaServer::SCHEMA_IDENTIFY + identify;
+        ddl_key = MetaConstants::SCHEMA_IDENTIFY + identify;
         for (auto id: ids) {
             ddl_key.append((char *) &id, sizeof(int64_t));
         }
@@ -467,7 +467,7 @@ namespace EA {
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
-                construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
+                construct_ddl_work_key(MetaConstants::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
             TLOG_ERROR("put meta info error.");
             return -1;
         }
@@ -496,7 +496,7 @@ namespace EA {
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
-                construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
+                construct_ddl_work_key(MetaConstants::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
             TLOG_ERROR("put meta info error.");
             return -1;
         }
@@ -546,7 +546,7 @@ namespace EA {
             auto task_id = std::to_string(table_id) + "_" + std::to_string(region_work.region_id());
             TLOG_INFO("init region_ddlwork task_{} table{} region_{} region_{}", task_id, table_id,
                       region_info->region_id(), region_work.ShortDebugString());
-            region_ddl_work_keys.emplace_back(construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
+            region_ddl_work_keys.emplace_back(construct_ddl_work_key(MetaConstants::INDEX_DDLWORK_REGION_IDENTIFY,
                                                                      {table_id, region_info->region_id()}));
             region_ddl_work_values.emplace_back(region_work_string);
             if (region_ddl_work_keys.size() == 100) {
@@ -587,7 +587,7 @@ namespace EA {
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
-                construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), ddl_work_string) != 0) {
+                construct_ddl_work_key(MetaConstants::DDLWORK_IDENTIFY, {table_id}), ddl_work_string) != 0) {
             TLOG_ERROR("put meta info error.");
             return -1;
         }
@@ -637,7 +637,7 @@ namespace EA {
             auto task_id = std::to_string(table_id) + "_" + std::to_string(region_work.region_id());
             TLOG_INFO("init region_ddlwork task_{} table{} region_{} region_{}", task_id, table_id,
                       region_info->region_id(), region_work.ShortDebugString());
-            region_ddl_work_keys.emplace_back(construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
+            region_ddl_work_keys.emplace_back(construct_ddl_work_key(MetaConstants::INDEX_DDLWORK_REGION_IDENTIFY,
                                                                      {table_id, region_info->region_id()}));
             region_ddl_work_values.emplace_back(region_work_string);
             if (region_ddl_work_keys.size() == 100) {
@@ -1210,7 +1210,7 @@ namespace EA {
             _region_ddlwork.erase(table_id);
         }
         rocksdb::WriteOptions write_options;
-        std::string begin_key = construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
+        std::string begin_key = construct_ddl_work_key(MetaConstants::INDEX_DDLWORK_REGION_IDENTIFY,
                                                        {table_id});
         std::string end_key = begin_key;
         end_key.append(8, 0xFF);
@@ -1242,7 +1242,7 @@ namespace EA {
             BAIDU_SCOPED_LOCK(_txn_mutex);
             _wait_txns.erase(table_id);
         }
-        std::string ddlwork_key = construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id});
+        std::string ddlwork_key = construct_ddl_work_key(MetaConstants::DDLWORK_IDENTIFY, {table_id});
         // 保存最新一条column ddl任务信息
         if (work_info.op_type() == proto::OP_MODIFY_FIELD) {
             std::string ddl_string;
@@ -1275,7 +1275,7 @@ namespace EA {
                 return -1;
             }
             if (MetaRocksdb::get_instance()->put_meta_info(
-                    construct_ddl_work_key(MetaServer::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
+                    construct_ddl_work_key(MetaConstants::DDLWORK_IDENTIFY, {table_id}), index_ddl_string) != 0) {
                 TLOG_ERROR("put meta info error.");
                 return -1;
             }
@@ -1361,7 +1361,7 @@ namespace EA {
             return -1;
         }
         if (MetaRocksdb::get_instance()->put_meta_info(
-                construct_ddl_work_key(MetaServer::INDEX_DDLWORK_REGION_IDENTIFY,
+                construct_ddl_work_key(MetaConstants::INDEX_DDLWORK_REGION_IDENTIFY,
                                        {work.table_id(), work.region_id()}), region_ddl_string) != 0) {
             TLOG_ERROR("put region info error.");
             return -1;

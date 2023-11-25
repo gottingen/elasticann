@@ -276,7 +276,7 @@ namespace EA {
 
     int PrivilegeManager::load_snapshot() {
         _user_privilege.clear();
-        std::string privilege_prefix = MetaServer::PRIVILEGE_IDENTIFY;
+        std::string privilege_prefix = MetaConstants::PRIVILEGE_IDENTIFY;
         rocksdb::ReadOptions read_options;
         read_options.prefix_same_as_start = true;
         read_options.total_order_seek = false;

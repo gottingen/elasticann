@@ -21,8 +21,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <set>
 
-#include "elasticann/meta_server/schema_manager.h"
-#include "elasticann/meta_server/meta_server.h"
+#include "elasticann/meta_server/meta_constants.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/common/table_key.h"
 #include "elasticann/meta_server/ddl_manager.h"
@@ -30,6 +29,9 @@
 #include "elasticann/flags/meta.h"
 #include "elasticann/flags/store.h"
 #include "elasticann/flags/heartbeat.h"
+#include "braft/raft.h"
+#include "bthread/mutex.h"
+#include "elasticann/meta_server/schema_manager.h"
 
 namespace EA {
 
@@ -1843,22 +1845,22 @@ namespace EA {
 
     inline std::string TableManager::construct_table_key(int64_t table_id) {
         std::string table_key;
-        table_key = MetaServer::SCHEMA_IDENTIFY + MetaServer::TABLE_SCHEMA_IDENTIFY;
+        table_key = MetaConstants::SCHEMA_IDENTIFY + MetaConstants::TABLE_SCHEMA_IDENTIFY;
         table_key.append((char *) &table_id, sizeof(int64_t));
         return table_key;
     }
 
     inline std::string TableManager::construct_statistics_key(int64_t table_id) {
         std::string table_key;
-        table_key = MetaServer::SCHEMA_IDENTIFY + MetaServer::STATISTICS_IDENTIFY;
+        table_key = MetaConstants::SCHEMA_IDENTIFY + MetaConstants::STATISTICS_IDENTIFY;
         table_key.append((char *) &table_id, sizeof(int64_t));
         return table_key;
     }
 
     inline std::string TableManager::construct_max_table_id_key() {
-        std::string max_table_id_key = MetaServer::SCHEMA_IDENTIFY
-                                       + MetaServer::MAX_ID_SCHEMA_IDENTIFY
-                                       + SchemaManager::MAX_TABLE_ID_KEY;
+        std::string max_table_id_key = MetaConstants::SCHEMA_IDENTIFY
+                                       + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                       + MetaConstants::MAX_TABLE_ID_KEY;
         return max_table_id_key;
     }
 

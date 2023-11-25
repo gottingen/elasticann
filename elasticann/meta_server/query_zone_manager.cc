@@ -15,6 +15,7 @@
 
 
 #include "elasticann/meta_server/query_zone_manager.h"
+#include "elasticann/base/tlog.h"
 
 namespace EA {
     void QueryZoneManager::get_zone_info(const proto::QueryRequest *request,

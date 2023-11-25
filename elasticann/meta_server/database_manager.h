@@ -19,9 +19,10 @@
 #include <unordered_map>
 #include <set>
 #include <mutex>
-#include "elasticann/meta_server/meta_server.h"
-#include "elasticann/meta_server/schema_manager.h"
 #include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/meta_server/meta_constants.h"
+#include "braft/raft.h"
+#include "bthread/mutex.h"
 
 namespace EA {
     class DatabaseManager {
@@ -223,16 +224,16 @@ namespace EA {
     }
 
     inline std::string DatabaseManager::construct_database_key(int64_t database_id) {
-        std::string database_key = MetaServer::SCHEMA_IDENTIFY
-                                   + MetaServer::DATABASE_SCHEMA_IDENTIFY;
+        std::string database_key = MetaConstants::SCHEMA_IDENTIFY
+                                   + MetaConstants::DATABASE_SCHEMA_IDENTIFY;
         database_key.append((char *) &database_id, sizeof(int64_t));
         return database_key;
     }
 
     inline std::string DatabaseManager::construct_max_database_id_key() {
-        std::string max_database_id_key = MetaServer::SCHEMA_IDENTIFY
-                                          + MetaServer::MAX_ID_SCHEMA_IDENTIFY
-                                          + SchemaManager::MAX_DATABASE_ID_KEY;
+        std::string max_database_id_key = MetaConstants::SCHEMA_IDENTIFY
+                                          + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                          + MetaConstants::MAX_DATABASE_ID_KEY;
         return max_database_id_key;
     }
 }  // namespace EA

@@ -38,26 +38,54 @@ namespace EA {
 
         ~ConfigManager();
 
+        ///
+        /// \brief preprocess for raft machine, check
+        ///        parameter
+        /// \param controller
+        /// \param request
+        /// \param response
+        /// \param done
         void process_schema_info(google::protobuf::RpcController *controller,
                                                 const proto::MetaManagerRequest *request,
                                                 proto::MetaManagerResponse *response,
                                                 google::protobuf::Closure *done);
+        ///
+        /// \param request
+        /// \param done
         void create_config(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void remove_config(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \return
         int load_snapshot();
 
+        ///
+        /// \param name
+        /// \param version
+        /// \return
         static std::string make_config_key(const std::string &name, const turbo::ModuleVersion &version);
 
+        ///
+        /// \param machine
         void set_meta_state_machine(MetaStateMachine *machine);
     private:
         ConfigManager();
 
+        ///
         friend class QueryConfigManager;
 
+        ///
+        /// \param value
+        /// \return
         int load_config_snapshot(const std::string &value);
 
+        ///
+        /// \param request
+        /// \param done
         void remove_config_all(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done);
 
     private:

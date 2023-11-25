@@ -31,31 +31,6 @@ namespace EA {
 
     class MetaServer : public proto::MetaService {
     public:
-        static const std::string CLUSTER_IDENTIFY;
-        static const std::string LOGICAL_CLUSTER_IDENTIFY;
-        static const std::string LOGICAL_KEY;
-        static const std::string PHYSICAL_CLUSTER_IDENTIFY;
-        static const std::string INSTANCE_CLUSTER_IDENTIFY;
-        static const std::string INSTANCE_PARAM_CLUSTER_IDENTIFY;
-
-        static const std::string PRIVILEGE_IDENTIFY;
-
-        static const std::string SCHEMA_IDENTIFY;
-        static const std::string MAX_ID_SCHEMA_IDENTIFY;
-        static const std::string NAMESPACE_SCHEMA_IDENTIFY;
-        static const std::string DATABASE_SCHEMA_IDENTIFY;
-        static const std::string ZONE_SCHEMA_IDENTIFY;
-        static const std::string SERVLET_SCHEMA_IDENTIFY;
-        static const std::string TABLE_SCHEMA_IDENTIFY;
-        static const std::string REGION_SCHEMA_IDENTIFY;
-        static const std::string DDLWORK_IDENTIFY;
-        static const std::string STATISTICS_IDENTIFY;
-        static const std::string INDEX_DDLWORK_REGION_IDENTIFY;
-
-        static const std::string CONFIG_IDENTIFY;
-
-        static const std::string MAX_IDENTIFY;
-
         virtual ~MetaServer();
 
         static MetaServer *get_instance() {

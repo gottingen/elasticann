@@ -1629,18 +1629,18 @@ namespace EA {
         RocksWrapper *db = RocksWrapper::get_instance();
         std::unique_ptr<rocksdb::Iterator> iter(
                 db->new_iterator(read_options, db->get_meta_info_handle()));
-        iter->Seek(MetaServer::CLUSTER_IDENTIFY);
-        std::string logical_prefix = MetaServer::CLUSTER_IDENTIFY;
-        logical_prefix += MetaServer::LOGICAL_CLUSTER_IDENTIFY + MetaServer::LOGICAL_KEY;
+        iter->Seek(MetaConstants::CLUSTER_IDENTIFY);
+        std::string logical_prefix = MetaConstants::CLUSTER_IDENTIFY;
+        logical_prefix += MetaConstants::LOGICAL_CLUSTER_IDENTIFY + MetaConstants::LOGICAL_KEY;
 
-        std::string physical_prefix = MetaServer::CLUSTER_IDENTIFY;
-        physical_prefix += MetaServer::PHYSICAL_CLUSTER_IDENTIFY;
+        std::string physical_prefix = MetaConstants::CLUSTER_IDENTIFY;
+        physical_prefix += MetaConstants::PHYSICAL_CLUSTER_IDENTIFY;
 
-        std::string instance_prefix = MetaServer::CLUSTER_IDENTIFY;
-        instance_prefix += MetaServer::INSTANCE_CLUSTER_IDENTIFY;
+        std::string instance_prefix = MetaConstants::CLUSTER_IDENTIFY;
+        instance_prefix += MetaConstants::INSTANCE_CLUSTER_IDENTIFY;
 
-        std::string instance_param_prefix = MetaServer::CLUSTER_IDENTIFY;
-        instance_param_prefix += MetaServer::INSTANCE_PARAM_CLUSTER_IDENTIFY;
+        std::string instance_param_prefix = MetaConstants::CLUSTER_IDENTIFY;
+        instance_param_prefix += MetaConstants::INSTANCE_PARAM_CLUSTER_IDENTIFY;
         int ret = 0;
         for (; iter->Valid(); iter->Next()) {
             if (iter->key().starts_with(instance_prefix)) {

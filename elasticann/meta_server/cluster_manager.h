@@ -20,7 +20,7 @@
 #include <bthread/mutex.h>
 #include <bitset>
 #include "eaproto/meta/meta.interface.pb.h"
-#include "elasticann/meta_server/meta_server.h"
+#include "elasticann/meta_server/meta_constants.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "turbo/strings/str_split.h"
@@ -794,26 +794,26 @@ namespace EA {
     }
 
     inline std::string ClusterManager::construct_logical_key() {
-        return MetaServer::CLUSTER_IDENTIFY
-               + MetaServer::LOGICAL_CLUSTER_IDENTIFY
-               + MetaServer::LOGICAL_KEY;
+        return MetaConstants::CLUSTER_IDENTIFY
+               + MetaConstants::LOGICAL_CLUSTER_IDENTIFY
+               + MetaConstants::LOGICAL_KEY;
     }
 
     inline std::string ClusterManager::construct_physical_key(const std::string &logical_key) {
-        return MetaServer::CLUSTER_IDENTIFY
-               + MetaServer::PHYSICAL_CLUSTER_IDENTIFY
+        return MetaConstants::CLUSTER_IDENTIFY
+               + MetaConstants::PHYSICAL_CLUSTER_IDENTIFY
                + logical_key;
     }
 
     inline std::string ClusterManager::construct_instance_key(const std::string &instance) {
-        return MetaServer::CLUSTER_IDENTIFY
-               + MetaServer::INSTANCE_CLUSTER_IDENTIFY
+        return MetaConstants::CLUSTER_IDENTIFY
+               + MetaConstants::INSTANCE_CLUSTER_IDENTIFY
                + instance;
     }
 
     inline std::string ClusterManager::construct_instance_param_key(const std::string &resource_tag_or_address) {
-        return MetaServer::CLUSTER_IDENTIFY
-               + MetaServer::INSTANCE_PARAM_CLUSTER_IDENTIFY
+        return MetaConstants::CLUSTER_IDENTIFY
+               + MetaConstants::INSTANCE_PARAM_CLUSTER_IDENTIFY
                + resource_tag_or_address;
     }
 

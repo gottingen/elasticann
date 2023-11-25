@@ -15,6 +15,7 @@
 
 
 #include "elasticann/meta_server/query_namespace_manager.h"
+#include "elasticann/base/tlog.h"
 
 namespace EA {
     void QueryNamespaceManager::get_namespace_info(const proto::QueryRequest *request,
