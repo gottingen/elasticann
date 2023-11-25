@@ -14,8 +14,8 @@
 //
 
 
-#include "elasticann/common/memory_profile.h"
-
+#include "elasticann/base/memory_profile.h"
+#include "elasticann/flags/base.h"
 #ifdef BAIKAL_TCMALLOC
 #include <gperftools/malloc_extension.h>
 #endif

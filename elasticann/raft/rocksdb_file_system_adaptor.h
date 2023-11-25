@@ -20,6 +20,7 @@
 #include <braft/file_system_adaptor.h>
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/engine/sst_file_writer.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
 

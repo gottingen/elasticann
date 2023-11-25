@@ -21,7 +21,7 @@
 #include "turbo/base/status.h"
 #include "turbo/format/table.h"
 #include <string>
-
+#include "elasticann/client/config_client.h"
 
 namespace EA::cli {
 
@@ -38,6 +38,9 @@ namespace EA::cli {
         std::string config_type;
         std::string config_json;
         std::string config_example;
+        std::vector<std::string> config_watch_list;
+        std::string config_watch_dir;
+        bool clean_local;
         EA::proto::ConfigInfo config_request;
     };
 
@@ -59,6 +62,8 @@ namespace EA::cli {
         static void run_config_get_cmd();
 
         static void run_config_remove_cmd();
+
+        static void run_config_watch_cmd();
 
         [[nodiscard]] static turbo::Status
         make_example_config_dump(EA::proto::ConfigInfo *req);
@@ -84,6 +89,8 @@ namespace EA::cli {
         show_query_ops_config_get_response(const EA::proto::QueryResponse &res, const turbo::Status &save_status);
 
         static turbo::Status save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res);
+
+        static turbo::Status save_config_to_file(const std::string &basedir, const EA::client::ConfigCallbackData &data);
     };
 
 }  // namespace EA::cli

@@ -15,6 +15,8 @@
 
 
 #include "elasticann/common/backup_stream.h"
+#include "elasticann/base/bthread.h"
+
 namespace EA {
 int StreamReceiver::on_received_messages(brpc::StreamId id, 
     butil::IOBuf *const messages[],

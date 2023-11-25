@@ -21,6 +21,7 @@
 #include "elasticann/common/common.h"
 #include "elasticann/raft/raft_control.h"
 #include "eaproto/ops/ops.interface.pb.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
     class DictStateMachine;

@@ -120,6 +120,34 @@ carbin_cc_test(
 
 carbin_cc_test(
         NAME
+        test_base
+        SOURCES
+        test_base.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
+        test_thread_safe_map
+        SOURCES
+        test_thread_safe_map.cc
+        DEPS
+        elasticann::common
+        elasticann::mete_server
+        ${CARBIN_DEPS_LINK}
+        COPTS
+        ${USER_CXX_FLAGS}
+        "-fno-access-control"
+)
+
+carbin_cc_test(
+        NAME
         test_database_manager
         SOURCES
         test_database_manager.cc

@@ -21,6 +21,7 @@
 #include "elasticann/raft/raft_control.h"
 #include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/db/store.interface.pb.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
     class BaseStateMachine;

@@ -33,7 +33,7 @@
 #include "elasticann/expr/fn_manager.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/engine/qos.h"
-#include "elasticann/common/memory_profile.h"
+#include "elasticann/base/memory_profile.h"
 
 brpc::Server server;
 

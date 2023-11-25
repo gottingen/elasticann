@@ -2,6 +2,7 @@
 
 #include "elasticann/common/common.h"
 #include "elasticann/common/task_fetcher.h"
+#include "elasticann/base/concurrency.h"
 
 namespace EA {
 

@@ -28,7 +28,7 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/db.h"
 #include "rocksdb/utilities/write_batch_with_index.h"
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include "elasticann/common/mut_table_key.h"
 #include "elasticann/raft/my_raft_log_storage.h"
 #include "turbo/strings/str_trim.h"
@@ -36,6 +36,7 @@
 //#include <jemalloc/jemalloc.h>
 #include "elasticann/engine/qos.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
 

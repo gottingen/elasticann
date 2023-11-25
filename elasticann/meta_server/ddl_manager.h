@@ -23,6 +23,7 @@
 #include "elasticann/meta_server/meta_server.h"
 #include "elasticann/meta_server/cluster_manager.h"
 #include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/base/thread_safe_map.h"
 
 namespace EA {
     struct MemRegionDdlWork {

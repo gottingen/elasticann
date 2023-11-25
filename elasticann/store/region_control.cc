@@ -18,7 +18,7 @@
 #include <turbo/files/filesystem.h>
 #include "elasticann/store/rpc_sender.h"
 #include "elasticann/store/store.h"
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include "elasticann/store/region.h"
 #include "elasticann/common/mut_table_key.h"
 #include "elasticann/raft/my_raft_log_storage.h"

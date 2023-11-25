@@ -30,6 +30,7 @@
 #include <braft/storage.h>
 #include <braft/local_storage.pb.h>
 #include <braft/protobuf_file.h>
+#include "elasticann/base/bthread.h"
 
 typedef braft::RaftMetaStorage RaftMetaStorage;
 

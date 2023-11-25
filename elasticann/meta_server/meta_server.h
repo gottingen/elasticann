@@ -20,6 +20,7 @@
 #include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/common.h"
 #include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
     class MetaStateMachine;

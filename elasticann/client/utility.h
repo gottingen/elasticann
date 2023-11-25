@@ -21,6 +21,7 @@
 #include "turbo/base/result_status.h"
 #include <string>
 #include "eaproto/meta/meta.interface.pb.h"
+#include "turbo/module/module_version.h"
 
 namespace EA::client {
 
@@ -29,8 +30,10 @@ namespace EA::client {
     turbo::ResultStatus<EA::proto::ConfigType> string_to_config_type(const std::string &str);
 
     turbo::Status string_to_version(const std::string &str, EA::proto::Version*v);
+    turbo::Status string_to_module_version(const std::string &str, turbo::ModuleVersion *v);
 
     std::string version_to_string(const EA::proto::Version &v);
+    std::string module_version_to_string(const turbo::ModuleVersion &v);
 
     [[nodiscard]] turbo::Status CheckValidNameType(std::string_view ns);
 

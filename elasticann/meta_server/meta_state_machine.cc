@@ -17,7 +17,7 @@
 #include "elasticann/meta_server/meta_state_machine.h"
 #include <braft/util.h>
 #include <braft/storage.h>
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/privilege_manager.h"
 #include "elasticann/meta_server/schema_manager.h"

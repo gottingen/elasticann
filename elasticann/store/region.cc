@@ -27,7 +27,7 @@
 #include "elasticann/raft/raft_log_compaction_filter.h"
 #include "elasticann/engine/split_compaction_filter.h"
 #include "elasticann/store/rpc_sender.h"
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include "elasticann/store/store.h"
 #include "elasticann/store/closure.h"
 #include "rapidjson/rapidjson.h"

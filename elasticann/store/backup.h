@@ -21,7 +21,7 @@
 #include <vector>
 #include <atomic>
 #include <memory>
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include <butil/iobuf.h>
 #include <butil/containers/bounded_queue.h>
 #include <butil/time.h>

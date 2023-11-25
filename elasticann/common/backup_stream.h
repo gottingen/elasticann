@@ -19,6 +19,7 @@
 #include "elasticann/common/common.h"
 #include <butil/iobuf.h>
 #include <brpc/stream.h>
+#include "elasticann/base/bthread.h"
 
 namespace EA {
 //backup

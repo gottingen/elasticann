@@ -15,6 +15,7 @@
 
 
 #include "elasticann/runtime/sorter.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
     int Sorter::get_next(RowBatch *batch, bool *eos) {

@@ -46,7 +46,7 @@
 #include "elasticann/store/meta_writer.h"
 #include "elasticann/store/rpc_sender.h"
 #include "elasticann/exec/exec_node.h"
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include "elasticann/store/backup.h"
 #include <braft/raft.h>
 

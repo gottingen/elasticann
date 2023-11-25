@@ -24,6 +24,7 @@
 #include "elasticann/sqlparser/parser.h"
 #include "turbo/format/format.h"
 #include "turbo/strings/str_split.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
     int InformationSchema::init() {

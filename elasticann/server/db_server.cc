@@ -28,7 +28,7 @@
 #include "elasticann/protocol/task_manager.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/common/information_schema.h"
-#include "elasticann/common/memory_profile.h"
+#include "elasticann/base/memory_profile.h"
 #include <turbo/files/filesystem.h>
 
 namespace EA {

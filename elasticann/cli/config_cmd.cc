@@ -84,6 +84,12 @@ namespace EA::cli {
         ct->add_option("-f, --file", opt->config_file, "local config file")->required(true);
         ct->callback([]() { run_config_test_cmd(); });
 
+        auto cw = ns->add_subcommand("watch", "watch config");
+        cw->add_option("-n, --name", opt->config_watch_list, "local config file")->required(true);
+        cw->add_option("-d, --dir", opt->config_watch_dir, "local config file")->default_val("watch_config");
+        cw->add_flag("-c, --clean", opt->clean_local, "clean cache")->default_val(false);
+        cw->callback([]() { run_config_watch_cmd(); });
+
     }
 
     /// The function that runs our code.
@@ -209,7 +215,7 @@ namespace EA::cli {
             return;
         }
         ss.add_table("convert", "ok", true);
-        turbo::Println("name size:{}",request.name().size());
+        turbo::Println("name size:{}", request.name().size());
         turbo::Table result_table;
         result_table.add_row(turbo::Table::Row_t{"name", request.name()});
         result_table.add_row(turbo::Table::Row_t{"version", turbo::Format("{}.{}.{}", request.version().major(),
@@ -443,5 +449,83 @@ namespace EA::cli {
         return result_table;
     }
 
+    void ConfigCmd::run_config_watch_cmd() {
+        auto opt= ConfigOptionContext::get_instance();
+        auto  rs = EA::client::ConfigClient::get_instance()->init();
+        if(opt->clean_local) {
+            turbo::Println("remove local config cache dir:{}",opt->config_watch_dir);
+            turbo::filesystem::remove_all(opt->config_watch_dir);
+        }
 
+        if(!turbo::filesystem::exists(opt->config_watch_dir)) {
+            turbo::filesystem::create_directories(opt->config_watch_dir);
+        }
+        if(!rs.ok()) {
+            turbo::Println("watch error:{}", rs.ToString());
+        }
+
+        auto new_config_func = [](const EA::client::ConfigCallbackData &data) ->void  {
+            auto opt= ConfigOptionContext::get_instance();
+            auto rs = save_config_to_file(opt->config_watch_dir,data);
+            if(rs.ok()) {
+                turbo::Println(turbo::color::green, "on new config:{} version:{}.{}.{} type:{}", data.config_name, data.new_version.major,
+                                                      data.new_version.minor, data.new_version.patch, data.type);
+            } else {
+                turbo::Println("{}", rs.ToString());
+            }
+            rs = EA::client::ConfigClient::get_instance()->apply(data.config_name, data.new_version);
+            if(rs.ok()) {
+                turbo::Println(turbo::color::green, "apply new config:{} version:{}.{}.{} type:{}", data.config_name, data.new_version.major,
+                               data.new_version.minor, data.new_version.patch, data.type);
+            } else {
+                turbo::Println("{}", rs.ToString());
+            }
+        };
+        auto new_version_func = [](const EA::client::ConfigCallbackData &data) ->void  {
+            auto opt= ConfigOptionContext::get_instance();
+            auto rs = save_config_to_file(opt->config_watch_dir,data);
+            if(rs.ok()) {
+                turbo::Println(turbo::color::green, "on new config version:{} version:{}.{}.{} type:{}", data.config_name, data.new_version.major,
+                               data.new_version.minor, data.new_version.patch, data.type);
+            }else {
+                turbo::Println("{}", rs.ToString());
+            }
+            rs = EA::client::ConfigClient::get_instance()->apply(data.config_name, data.new_version);
+            if(rs.ok()) {
+                turbo::Println(turbo::color::green, "apply new config version:{} version:{}.{}.{} type:{}", data.config_name, data.new_version.major,
+                               data.new_version.minor, data.new_version.patch, data.type);
+            }else {
+                turbo::Println("{}", rs.ToString());
+            }
+        };
+        EA::client::ConfigEventListener listener{new_config_func, new_version_func};
+        for(auto &it : opt->config_watch_list) {
+            rs = EA::client::ConfigClient::get_instance()->watch_config(it, listener);
+            if(!rs.ok()) {
+                turbo::Println(turbo::color::red,"{}", rs.ToString());
+            }
+        }
+        while (1) {
+            sleep(1);
+        }
+    }
+
+    turbo::Status ConfigCmd::save_config_to_file(const std::string &basedir, const EA::client::ConfigCallbackData &data) {
+        std::string file_name = turbo::Format("{}/{}-{}.{}.{}.{}", basedir, data.config_name, data.new_version.major,
+                                              data.new_version.minor, data.new_version.patch, data.type);
+        if(turbo::filesystem::exists(file_name)) {
+            return turbo::AlreadyExistsError("write file [{}] already exists", file_name);
+        }
+        turbo::SequentialWriteFile file;
+        auto rs = file.open(file_name, true);
+        if(!rs.ok()){
+            return rs;
+        }
+        rs = file.write(data.new_content);
+        if(!rs.ok()){
+            return rs;
+        }
+        file.close();
+        return turbo::OkStatus();
+    }
 }  // namespace EA::cli

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "elasticann/common/common.h"
-
+#include "elasticann/base/bthread.h"
+#include "elasticann/base/thread_safe_map.h"
 #include <atomic>
 
 namespace EA {

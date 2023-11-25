@@ -27,6 +27,7 @@
 #include "elasticann/engine/split_compaction_filter.h"
 #include "elasticann/engine/transaction_db_bthread_mutex.h"
 #include "turbo/strings/numbers.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
 

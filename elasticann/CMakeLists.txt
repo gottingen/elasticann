@@ -36,10 +36,12 @@ file(GLOB SESSION session/*.cc)
 file(GLOB SQLPARSER sqlparser/*.cc ${CMAKE_CURRENT_BINARY_DIR}/sqlparser/*.cc)
 file(GLOB STORE store/*.cc)
 file(GLOB COMMON common/*.cc)
+file(GLOB BASE base/*.cc)
 file(GLOB RPC rpc/*.cc)
 
 set(EA_COMMON
         ${COMMON}
+        ${BASE}
         ${ENGINE}
         ${EXEC}
         ${EXPR}

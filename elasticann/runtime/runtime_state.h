@@ -29,10 +29,11 @@
 #include "elasticann/protocol/mysql_err_code.h"
 #include "elasticann/runtime/trace_state.h"
 #include "elasticann/common/statistics.h"
-#include "elasticann/common/memory_profile.h"
+#include "elasticann/base/memory_profile.h"
 #include "elasticann/flags/execute.h"
 #include "turbo/format/format.h"
 //#include "region_resource.h"
+#include "elasticann/base/bthread.h"
 
 using google::protobuf::RepeatedPtrField;
 

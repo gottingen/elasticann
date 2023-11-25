@@ -22,7 +22,7 @@
 #include "elasticann/common/common.h"
 #include "elasticann/ops/ops_server.h"
 #include "elasticann/engine/rocks_wrapper.h"
-#include "elasticann/common/memory_profile.h"
+#include "elasticann/base/memory_profile.h"
 #include "turbo/files/filesystem.h"
 #include "turbo/strings/str_split.h"
 

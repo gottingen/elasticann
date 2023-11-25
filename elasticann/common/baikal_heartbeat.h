@@ -19,6 +19,7 @@
 #include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
 

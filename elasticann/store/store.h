@@ -32,6 +32,7 @@
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/rpc/meta_server_interact.h"
+#include "elasticann/flags/base.h"
 
 namespace EA {
     DECLARE_int32(snapshot_load_num);

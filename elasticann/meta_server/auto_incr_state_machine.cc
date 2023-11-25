@@ -26,6 +26,7 @@
 #include <braft/storage.h>
 #include "elasticann/meta_server/meta_util.h"
 #include "turbo/strings/numbers.h"
+#include "elasticann/base/bthread.h"
 
 namespace EA {
     void AutoIncrStateMachine::on_apply(braft::Iterator &iter) {

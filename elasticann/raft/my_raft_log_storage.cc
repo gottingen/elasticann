@@ -17,7 +17,7 @@
 #include "elasticann/raft/my_raft_log_storage.h"
 #include "elasticann/raft/raft_log_compaction_filter.h"
 #include "elasticann/raft/can_add_peer_setter.h"
-#include "elasticann/common/concurrency.h"
+#include "elasticann/base/concurrency.h"
 #include "eaproto/db/store.interface.pb.h"
 #include "turbo/strings/numbers.h"
 

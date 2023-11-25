@@ -19,6 +19,8 @@
 #include <unordered_map>
 #include "elasticann/common/common.h"
 #include "elasticann/engine/transaction.h"
+#include "elasticann/base/bthread.h"
+#include "elasticann/base/thread_safe_map.h"
 
 namespace EA {
     //class Region;

@@ -20,7 +20,7 @@
 #include "elasticann/common/mut_table_key.h"
 #include <bthread/unstable.h>
 #include <brpc/server.h>
-
+#include "elasticann/base/bthread.h"
 #include <google/protobuf/arena.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/dynamic_message.h>

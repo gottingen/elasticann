@@ -26,6 +26,7 @@
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/table_manager.h"
+#include "elasticann/base/thread_safe_map.h"
 
 namespace EA {
 
