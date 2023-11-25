@@ -97,10 +97,13 @@ int main(int argc, char **argv) {
     }
     TLOG_INFO("recevie kill signal, begin to quit");
     meta_server->shutdown_raft();
+    TLOG_INFO("meta_server shutdown raft");
     meta_server->close();
+    TLOG_INFO("meta_server close");
     EA::MemoryGCHandler::get_instance()->close();
+    TLOG_INFO("MemoryGCHandler close");
     EA::RocksWrapper::get_instance()->close();
-    TLOG_INFO("raft shut down, rocksdb close");
+    TLOG_INFO("rocksdb close");
     server.Stop(0);
     server.Join();
     TLOG_INFO("meta server quit success");

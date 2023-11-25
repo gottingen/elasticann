@@ -107,7 +107,7 @@ namespace EA {
         req.set_database(ctx->cur_db);
         req.set_table_name(info.short_name);
         proto::QueryResponse res;
-        MetaServerInteract::get_instance()->send_request("query", req, res);
+        MetaServerInteract::get_instance()->send_request("meta_query", req, res);
         int64_t row_count = -1;
         if (res.flatten_tables_size() == 1) {
             row_count = res.flatten_tables(0).row_count();

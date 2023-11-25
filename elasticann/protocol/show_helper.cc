@@ -181,7 +181,7 @@ namespace EA {
             req.set_resource_tag(resource_tag);
         }
         proto::QueryResponse res;
-        MetaServerInteract::get_instance()->send_request("query", req, res);
+        MetaServerInteract::get_instance()->send_request("meta_query", req, res);
         //TLOG_WARN("res:{}", res.ShortDebugString().c_str());
         std::vector<std::vector<std::string> > rows;
         rows.reserve(10);
@@ -1459,7 +1459,7 @@ namespace EA {
         req.set_database(db);
         proto::QueryResponse res;
         // 这个请求meta会对table_mutex加锁并copy所有table元数据，比较重
-        MetaServerInteract::get_instance()->send_request("query", req, res);
+        MetaServerInteract::get_instance()->send_request("meta_query", req, res);
         for (auto &table_info: res.flatten_tables()) {
             std::string create_time = "2018-08-09 15:01:40";
             if (!table_info.create_time().empty()) {
@@ -2372,7 +2372,7 @@ namespace EA {
         proto::QueryResponse response;
         request.set_op_type(proto::QUERY_USERPRIVILEG);
         request.set_user_name(username);
-        MetaServerInteract::get_instance()->send_request("query", request, response);
+        MetaServerInteract::get_instance()->send_request("meta_query", request, response);
         // Make rows.
         std::vector<std::vector<std::string> > rows;
         rows.reserve(10);
@@ -2454,7 +2454,7 @@ namespace EA {
         req.set_region_version(0);
         proto::StoreRes res;
         StoreInteract interact(store_addr);
-        interact.send_request("query", req, res);
+        interact.send_request("meta_query", req, res);
         TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), res.ShortDebugString().c_str());
         proto::RegionInfo region_info;
         for (auto txn_info: res.txn_infos()) {
@@ -2561,7 +2561,7 @@ namespace EA {
         proto::QueryResponse response;
         request.set_op_type(proto::QUERY_DDLWORK);
         request.set_table_id(table_id);
-        MetaServerInteract::get_instance()->send_request("query", request, response);
+        MetaServerInteract::get_instance()->send_request("meta_query", request, response);
         TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         if (show_region) {
             int work_done_count = 0;
@@ -2936,7 +2936,7 @@ namespace EA {
         proto::QueryResponse response;
         request.set_op_type(proto::QUERY_INDEX_DDL_WORK);
         request.set_table_id(table_id);
-        MetaServerInteract::get_instance()->send_request("query", request, response);
+        MetaServerInteract::get_instance()->send_request("meta_query", request, response);
         //TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
 
         auto index_info = factory->get_index_info(table_id);
@@ -3075,7 +3075,7 @@ namespace EA {
         proto::QueryResponse response;
         request.set_op_type(proto::QUERY_NETWORK_SEGMENT);
         request.set_resource_tag(resource_tag);
-        MetaServerInteract::get_instance()->send_request("query", request, response);
+        MetaServerInteract::get_instance()->send_request("meta_query", request, response);
         TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
 
         for (auto &info: response.instance_infos()) {
@@ -3127,7 +3127,7 @@ namespace EA {
         proto::QueryResponse response;
         request.set_op_type(proto::QUERY_RESOURCE_TAG_SWITCH);
         request.set_resource_tag(resource_tag);
-        MetaServerInteract::get_instance()->send_request("query", request, response);
+        MetaServerInteract::get_instance()->send_request("meta_query", request, response);
         TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         for (auto &info: response.resource_tag_infos()) {
             std::vector<std::string> row = {info.resource_tag(),
@@ -3179,7 +3179,7 @@ namespace EA {
         proto::QueryResponse response;
         request.set_op_type(proto::QUERY_INSTANCE_PARAM);
         request.set_resource_tag(resource_tag_or_instance);
-        MetaServerInteract::get_instance()->send_request("query", request, response);
+        MetaServerInteract::get_instance()->send_request("meta_query", request, response);
         TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
         for (auto &info: response.instance_params()) {
             for (auto &kv: info.params()) {
@@ -3379,7 +3379,7 @@ namespace EA {
             proto::QueryRequest request;
             proto::QueryResponse response;
             request.set_op_type(proto::QUERY_FAST_IMPORTER_TABLES);
-            MetaServerInteract::get_instance()->send_request("query", request, response);
+            MetaServerInteract::get_instance()->send_request("meta_query", request, response);
             for (auto &tb: response.flatten_tables()) {
                 if (tb.fast_importer_ts() > 24 * 60 * 60 * 1000 * 1000ULL) {
                     std::string full_name = tb.namespace_name() + "." + tb.table_name();
@@ -3395,7 +3395,7 @@ namespace EA {
             proto::QueryResponse response;
             request.set_op_type(proto::QUERY_RESOURCE_TAG_SWITCH);
             request.set_resource_tag("");
-            MetaServerInteract::get_instance()->send_request("query", request, response);
+            MetaServerInteract::get_instance()->send_request("meta_query", request, response);
             for (auto &info: response.resource_tag_infos()) {
                 if (!info.peer_load_balance()) {
                     std::vector<std::string> row = {"peer_load_balance", info.resource_tag(), "false"};

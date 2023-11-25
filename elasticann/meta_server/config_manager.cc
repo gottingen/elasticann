@@ -186,7 +186,7 @@ namespace EA {
         read_options.total_order_seek = false;
         RocksWrapper *db = RocksWrapper::get_instance();
         std::unique_ptr<rocksdb::Iterator> iter(
-                db->new_iterator(read_options, db->get_service_handle()));
+                db->new_iterator(read_options, db->get_meta_info_handle()));
         iter->Seek(config_prefix);
         for (; iter->Valid(); iter->Next()) {
             if(load_config_snapshot(iter->value().ToString()) != 0) {
@@ -203,6 +203,7 @@ namespace EA {
             TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
             return -1;
         }
+        ///TLOG_INFO("load config:{}", config_pb.name());
         if(_configs.find(config_pb.name()) == _configs.end()) {
             _configs[config_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::ConfigInfo>();
         }

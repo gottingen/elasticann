@@ -397,7 +397,7 @@ namespace EA {
         proto::QueryResponse query_response;
         query_request.set_op_type(proto::QUERY_REGION);
         query_request.add_region_ids(region_id);
-        if (meta_server_interact.send_request("query", query_request, query_response) != 0) {
+        if (meta_server_interact.send_request("meta_query", query_request, query_response) != 0) {
             TLOG_ERROR("send query request to meta server fail region_id:{} res: {}",
                      region_id, query_response.ShortDebugString());
             if (query_response.errcode() == proto::REGION_NOT_EXIST) {

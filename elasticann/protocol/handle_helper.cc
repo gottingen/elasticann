@@ -235,7 +235,7 @@ namespace EA {
     void HandleHelper::update_unhealthy_learners_schema(const proto::QueryRequest &query_req,
                                                         proto::QueryResponse &query_res,
                                                         std::vector<std::vector<std::string>> &update_learner_schema_result) {
-        int ret = MetaServerInteract::get_instance()->send_request("query", query_req, query_res);
+        int ret = MetaServerInteract::get_instance()->send_request("meta_query", query_req, query_res);
         if (ret != 0 || query_res.errcode() != proto::SUCCESS) {
             TLOG_WARN("send_request fail");
             return;
@@ -1232,7 +1232,7 @@ namespace EA {
         query_request.set_op_type(proto::QUERY_SCHEMA);
         query_request.set_namespace_name(ns);
         query_request.set_database(orgin_db);
-        ret = MetaServerInteract::get_instance()->send_request("query", query_request, query_response);
+        ret = MetaServerInteract::get_instance()->send_request("meta_query", query_request, query_response);
         TLOG_WARN("req:{} res:{}", query_request.ShortDebugString().c_str(),
                    query_response.ShortDebugString().c_str());
         if (ret != 0 || query_response.errcode() != proto::SUCCESS) {
@@ -1616,7 +1616,7 @@ namespace EA {
         req.set_force(true);
         proto::StoreRes res;
         StoreInteract interact(store_addr);
-        interact.send_request("query", req, res);
+        interact.send_request("meta_query", req, res);
         TLOG_WARN("req:{} res:{}", req.ShortDebugString().c_str(), req.ShortDebugString().c_str());
         if (!_make_response_packet(client, res.ShortDebugString())) {
             return false;

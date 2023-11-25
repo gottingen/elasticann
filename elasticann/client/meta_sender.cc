@@ -68,12 +68,12 @@ namespace EA::client {
 
     turbo::Status MetaSender::meta_query(const EA::proto::QueryRequest &request,
                                                 EA::proto::QueryResponse &response, int retry_times) {
-        return send_request("query", request, response, retry_times);
+        return send_request("meta_query", request, response, retry_times);
     }
 
     turbo::Status MetaSender::meta_query(const EA::proto::QueryRequest &request,
                                          EA::proto::QueryResponse &response) {
-        return send_request("query", request, response, _retry_times);
+        return send_request("meta_query", request, response, _retry_times);
     }
 
 

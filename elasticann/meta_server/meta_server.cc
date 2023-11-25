@@ -376,7 +376,7 @@ namespace EA {
         response->set_op_type(request->op_type());
     }
 
-    void MetaServer::query(google::protobuf::RpcController *controller,
+    void MetaServer::meta_query(google::protobuf::RpcController *controller,
                            const proto::QueryRequest *request,
                            proto::QueryResponse *response,
                            google::protobuf::Closure *done) {
@@ -743,7 +743,7 @@ namespace EA {
                 proto::QueryResponse query_res;
                 query_req.set_op_type(proto::QUERY_INSTANCE_FLATTEN);
                 query_req.set_instance_address(ip_port);
-                ret = meta_proxy(meta_bns)->send_request("query", query_req, query_res);
+                ret = meta_proxy(meta_bns)->send_request("meta_query", query_req, query_res);
                 if (ret != 0) {
                     TLOG_WARN("internal request fail, {}, {}",
                                query_req.ShortDebugString(),
@@ -797,11 +797,17 @@ namespace EA {
 
     void MetaServer::close() {
         _flush_bth.join();
+        TLOG_INFO("MetaServer flush joined");
         _apply_region_bth.join();
+        TLOG_INFO("MetaServer region joined");
         DDLManager::get_instance()->shutdown();
+        TLOG_INFO("MetaServer DDLManager shutdown");
         DBManager::get_instance()->shutdown();
+        TLOG_INFO("MetaServer DBManager shutdown");
         DDLManager::get_instance()->join();
+        TLOG_INFO("MetaServer DDLManager join");
         DBManager::get_instance()->join();
+        TLOG_INFO("MetaServer DBManager join");
     }
 
 }  // namespace Ea

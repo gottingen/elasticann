@@ -696,7 +696,7 @@ namespace EA {
                     }
                 }
             }
-
+            TLOG_INFO("end lock process ddl work.");
             for (auto &table_ddl_info: temp_ddl_mem) {
                 auto op_type = table_ddl_info.second.work_info.op_type();
                 if (op_type == proto::OP_DROP_INDEX) {
@@ -710,6 +710,7 @@ namespace EA {
                 }
             }
             bthread_usleep_fast_shutdown(20 * 1000 * 1000, _shutdown);
+            TLOG_INFO("end lock process ddl work round.");
         }
 
         return 0;

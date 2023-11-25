@@ -226,7 +226,7 @@ namespace EA {
                 //record->set_string(record->get_field_by_name("split_rows"), turbo::FormatRange("{}", rows, ","));
                 records.emplace_back(record);
             }
-            MetaServerInteract::get_instance()->send_request("query", req, res);
+            MetaServerInteract::get_instance()->send_request("meta_query", req, res);
             std::unordered_map<int64_t, std::string> region_lines;
             for (auto &info: res.region_infos()) {
                 region_lines[info.region_id()] = std::to_string(info.num_table_lines());
@@ -1224,7 +1224,7 @@ namespace EA {
             //1、设定查询请求的操作类型
             request.set_op_type(proto::QUERY_SHOW_VIRINDX_INFO_SQL);
             //2、发送请求
-            MetaServerInteract::get_instance()->send_request("query", request, response);
+            MetaServerInteract::get_instance()->send_request("meta_query", request, response);
             //3.取出response中的影响面信息
             auto &virtual_index_info_sqls = response.virtual_index_influence_info();//virtual_index_info   and   affected_sqls
             if (state->client_conn() == nullptr) {

@@ -31,7 +31,7 @@ namespace EA {
 
     class MetaServer : public proto::MetaService {
     public:
-        virtual ~MetaServer();
+        ~MetaServer() override;
 
         static MetaServer *get_instance() {
             static MetaServer _instance;
@@ -41,51 +41,51 @@ namespace EA {
         int init(const std::vector<braft::PeerId> &peers);
 
         //schema control method
-        virtual void meta_manager(google::protobuf::RpcController *controller,
+        void meta_manager(google::protobuf::RpcController *controller,
                                   const proto::MetaManagerRequest *request,
                                   proto::MetaManagerResponse *response,
-                                  google::protobuf::Closure *done);
+                                  google::protobuf::Closure *done) override;
 
-        virtual void query(google::protobuf::RpcController *controller,
+        void meta_query(google::protobuf::RpcController *controller,
                            const proto::QueryRequest *request,
                            proto::QueryResponse *response,
-                           google::protobuf::Closure *done);
+                           google::protobuf::Closure *done) override;
 
         //raft control method
-        virtual void raft_control(google::protobuf::RpcController *controller,
+        void raft_control(google::protobuf::RpcController *controller,
                                   const proto::RaftControlRequest *request,
                                   proto::RaftControlResponse *response,
-                                  google::protobuf::Closure *done);
+                                  google::protobuf::Closure *done) override;
 
-        virtual void store_heartbeat(google::protobuf::RpcController *controller,
+        void store_heartbeat(google::protobuf::RpcController *controller,
                                      const proto::StoreHeartBeatRequest *request,
                                      proto::StoreHeartBeatResponse *response,
-                                     google::protobuf::Closure *done);
+                                     google::protobuf::Closure *done) override;
 
-        virtual void baikal_heartbeat(google::protobuf::RpcController *controller,
+        void baikal_heartbeat(google::protobuf::RpcController *controller,
                                       const proto::BaikalHeartBeatRequest *request,
                                       proto::BaikalHeartBeatResponse *response,
-                                      google::protobuf::Closure *done);
+                                      google::protobuf::Closure *done) override;
 
-        virtual void baikal_other_heartbeat(google::protobuf::RpcController *controller,
+        void baikal_other_heartbeat(google::protobuf::RpcController *controller,
                                             const proto::BaikalOtherHeartBeatRequest *request,
                                             proto::BaikalOtherHeartBeatResponse *response,
-                                            google::protobuf::Closure *done);
+                                            google::protobuf::Closure *done) override;
 
-        virtual void console_heartbeat(google::protobuf::RpcController *controller,
+        void console_heartbeat(google::protobuf::RpcController *controller,
                                        const proto::ConsoleHeartBeatRequest *request,
                                        proto::ConsoleHeartBeatResponse *response,
-                                       google::protobuf::Closure *done);
+                                       google::protobuf::Closure *done) override;
 
-        virtual void tso_service(google::protobuf::RpcController *controller,
+        void tso_service(google::protobuf::RpcController *controller,
                                  const proto::TsoRequest *request,
                                  proto::TsoResponse *response,
-                                 google::protobuf::Closure *done);
+                                 google::protobuf::Closure *done) override;
 
-        virtual void migrate(google::protobuf::RpcController *controller,
+        void migrate(google::protobuf::RpcController *controller,
                              const proto::MigrateRequest * /*request*/,
                              proto::MigrateResponse *response,
-                             google::protobuf::Closure *done);
+                             google::protobuf::Closure *done) override;
 
         void flush_memtable_thread();
 

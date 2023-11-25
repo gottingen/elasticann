@@ -34,7 +34,7 @@ namespace EA {
                ::EA::proto::QueryResponse* response,
                ::google::protobuf::Closure* done) {
         brpc::ClosureGuard done_guard(done);
-        auto ret = MetaServerInteract::get_instance()->send_request("query", *request, *response);
+        auto ret = MetaServerInteract::get_instance()->send_request("meta_query", *request, *response);
         if(ret != 0) {
             TLOG_ERROR("rpc to meta server:query error:{}", controller->ErrorText());
         }
