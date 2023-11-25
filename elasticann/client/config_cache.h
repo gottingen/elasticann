@@ -98,12 +98,26 @@ namespace EA::client {
         turbo::Status remove_config(const std::string &config_name);
 
     private:
+        ///
+        /// \param dir
+        /// \param config
+        /// \return
         turbo::Status write_config_file(const std::string &dir, const EA::proto::ConfigInfo &config);
 
+        ///
+        /// \param dir
+        /// \param config
+        /// \return
         turbo::Status remove_config_file(const std::string &dir, const EA::proto::ConfigInfo &config);
 
+        ///
+        /// \param dir
+        /// \param config
+        /// \return
         std::string make_cache_file_path(const std::string &dir, const EA::proto::ConfigInfo &config);
 
+        ///
+        /// \param config
         void do_add_config(const EA::proto::ConfigInfo &config);
 
     private:

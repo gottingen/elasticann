@@ -130,6 +130,8 @@ namespace EA::client {
 
         turbo::Status select_leader();
 
+        ///
+        /// \param addr
         void set_leader_address(const butil::EndPoint &addr);
 
     private:

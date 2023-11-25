@@ -43,6 +43,7 @@ namespace EA::client {
     /// \brief return true, apply new version, false do not apply
     typedef std::function<void(const ConfigCallbackData &config_name)> ConfigCallback;
 
+    ///
     struct ConfigEventListener {
         ConfigCallback on_new_config;
         ConfigCallback on_new_version;
@@ -129,10 +130,20 @@ namespace EA::client {
         ///
         void period_check();
 
+        ///
+        /// \param config_name
+        /// \param version
+        /// \return
         turbo::Status do_apply(const std::string &config_name, const turbo::ModuleVersion &version);
 
+        ///
+        /// \param config_name
+        /// \return
         turbo::Status do_unapply(const std::string &config_name);
 
+        ///
+        /// \param config_name
+        /// \return
         turbo::Status do_unwatch_config(const std::string &config_name);
     private:
         turbo::flat_hash_map<std::string, turbo::ModuleVersion> _apply_version TURBO_GUARDED_BY(_watch_mutex);

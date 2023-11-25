@@ -52,23 +52,63 @@ namespace EA::client {
         turbo::Status build_from_file(const std::string &name, const std::string &file, const EA::proto::Version &version,
                                       const EA::proto::ConfigType &type = EA::proto::CF_JSON);
 
+        ///
+        /// \param name
+        /// \param file
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status build_from_file(const std::string &name, const std::string &file, const EA::proto::Version &version,
                                       const std::string &type = "json");
 
+        ///
+        /// \param name
+        /// \param file
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status build_from_file(const std::string &name, const std::string &file, const std::string &version,
                                       const EA::proto::ConfigType &type = EA::proto::CF_JSON);
 
+        ///
+        /// \param name
+        /// \param file
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status build_from_file(const std::string &name, const std::string &file, const std::string &version,
                                       const std::string &type = "json");
 
+        ///
+        /// \param name
+        /// \param content
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status build_from_content(const std::string &name, const std::string &content, const EA::proto::Version &version,
                                          const EA::proto::ConfigType &type = EA::proto::CF_JSON);
+        ///
+        /// \param name
+        /// \param content
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status build_from_content(const std::string &name, const std::string &content, const EA::proto::Version &version,
                                          const std::string &type = "json");
-
+        ///
+        /// \param name
+        /// \param content
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status build_from_content(const std::string &name, const std::string &content, const std::string &version,
                                          const EA::proto::ConfigType &type = EA::proto::CF_JSON);
-
+        ///
+        /// \param name
+        /// \param content
+        /// \param version
+        /// \param type
+        /// \return
         turbo::Status
         build_from_content(const std::string &name, const std::string &content, const std::string &version,
                            const std::string &type = "json");
