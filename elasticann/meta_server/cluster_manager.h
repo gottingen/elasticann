@@ -132,24 +132,53 @@ namespace EA {
         /// \param [out] done if and logical room has not been add to cluster, will return fail.
         void drop_logical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void add_physical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void drop_physical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void add_instance(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void drop_instance(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void update_instance(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void update_instance_param(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param done
         void move_physical(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param response
+        /// \param log_id
         void set_instance_migrate(const proto::MetaManagerRequest *request,
                                   proto::MetaManagerResponse *response,
                                   uint64_t log_id);
 
+        ///
+        /// \param request
+        /// \param response
+        /// \param log_id
         void set_instance_status(const proto::MetaManagerRequest *request,
                                  proto::MetaManagerResponse *response,
                                  uint64_t log_id);

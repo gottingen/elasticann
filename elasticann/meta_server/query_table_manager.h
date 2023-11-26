@@ -36,7 +36,7 @@ namespace EA {
 
         void get_primary_key_string(int64_t table_id, std::string &primary_key_string);
 
-        void decode_key(int64_t table_id, const TableKey &start_key, std::string &start_key_string);
+        //void decode_key(int64_t table_id, const TableKey &start_key, std::string &start_key_string);
 
         proto::PrimitiveType get_field_type(int64_t table_id,
                                             int32_t field_id,

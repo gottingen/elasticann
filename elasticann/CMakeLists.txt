@@ -14,48 +14,16 @@
 # limitations under the License.
 #
 
-
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/elasticann/sqlparser)
-execute_process(
-        COMMAND bash ${CMAKE_SOURCE_DIR}/elasticann/sqlparser/gen_source.sh ${CMAKE_SOURCE_DIR} opensource ${PROJECT_BINARY_DIR}/elasticann/sqlparser
-        RESULT_VARIABLE CMD_RET
-)
 file(COPY ${PROJECT_SOURCE_DIR}/conf DESTINATION ${PROJECT_BINARY_DIR})
 file(GLOB ENGINE engine/*.cc)
-file(GLOB EXEC exec/*.cc)
-file(GLOB EXPR expr/*.cc)
-file(GLOB LOGICAL_PLAN logical_plan/*.cc)
-file(GLOB MEM_ROW mem_row/*.cc)
-file(GLOB PHYSICAL_PLAN physical_plan/*.cc)
-file(GLOB PROTOCOL protocol/*.cc)
 file(GLOB RAFT raft/*.cc)
-file(GLOB RAFT_META raft_meta/*.cc)
-file(GLOB REVERSE reverse/*.cc)
-file(GLOB RUNTIME runtime/*.cc)
-file(GLOB SESSION session/*.cc)
-file(GLOB SQLPARSER sqlparser/*.cc ${CMAKE_CURRENT_BINARY_DIR}/sqlparser/*.cc)
-file(GLOB STORE store/*.cc)
-file(GLOB COMMON common/*.cc)
 file(GLOB BASE base/*.cc)
 file(GLOB RPC rpc/*.cc)
 
 set(EA_COMMON
-        ${COMMON}
         ${BASE}
         ${ENGINE}
-        ${EXEC}
-        ${EXPR}
-        ${LOGICAL_PLAN}
-        ${MEM_ROW}
-        ${PHYSICAL_PLAN}
-        ${PROTOCOL}
         ${RAFT}
-        ${RAFT_META}
-        ${REVERSE}
-        ${RUNTIME}
-        ${SESSION}
-        ${SQLPARSER}
-        ${STORE}
         ${RPC}
         )
 
@@ -112,110 +80,21 @@ carbin_cc_library(
 
 file(GLOB META_SERVER meta_server/*.cc)
 
-carbin_cc_library(
-        NAMESPACE elasticann
-        NAME mete_server
-        SOURCES
-        ${META_SERVER}
-        COPTS
-        ${USER_CXX_FLAGS}
-        DEPS
-        eaproto::eaproto_STATIC
-        elasticann::common
-        elasticann::flags
-        ${CARBIN_DEPS_LINK}
-)
-
-file(GLOB_RECURSE SERVICE_SERVER ops/*.cc)
-
-carbin_cc_library(
-        NAMESPACE elasticann
-        NAME file_server
-        SOURCES
-        ${SERVICE_SERVER}
-        COPTS
-        ${USER_CXX_FLAGS}
-        DEPS
-        eaproto::eaproto_STATIC
-        elasticann::common
-        elasticann::flags
-        ${CARBIN_DEPS_LINK}
-)
-
 carbin_cc_binary(
         NAMESPACE elasticann
         NAME eameta
         SOURCES
         ${META_SERVER}
-        ${RAFT_META}
-        server/eameta.cc
         COPTS
         ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
         DEPS
-        ${CARBIN_DEPS_LINK}
+        eaproto::eaproto_STATIC
         elasticann::common
         elasticann::flags
-        eaproto::eaproto_STATIC
-        PUBLIC
-)
-
-carbin_cc_binary(
-        NAMESPACE elasticann
-        NAME eaplugin
-        SOURCES
-        ${META_SERVER}
-        ${RAFT_META}
-        server/eaplugin.cc
-        COPTS
-        ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
-        DEPS
         ${CARBIN_DEPS_LINK}
-        elasticann::common
-        elasticann::flags
-        elasticann::file_server
-        eaproto::eaproto_STATIC
-        PUBLIC
 )
 
-carbin_cc_binary(
-        NAMESPACE elasticann
-        NAME eadict
-        SOURCES
-        ${META_SERVER}
-        ${RAFT_META}
-        server/eadict.cc
-        COPTS
-        ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
-        DEPS
-        ${CARBIN_DEPS_LINK}
-        elasticann::common
-        elasticann::flags
-        elasticann::file_server
-        eaproto::eaproto_STATIC
-        PUBLIC
-)
-
-file(GLOB STORE_SERVER raft_store/*.cc)
-carbin_cc_binary(
-        NAMESPACE elasticann
-        NAME eastore
-        SOURCES
-        ${STORE_SERVER}
-        server/eastore.cc
-        COPTS
-        ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
-        DEPS
-        ${CARBIN_DEPS_LINK}
-        elasticann::common
-        elasticann::flags
-        eaproto::eaproto_STATIC
-        PUBLIC
-)
-
+#[[
 file(GLOB ROUTER router/*.cc)
 carbin_cc_binary(
         NAMESPACE elasticann
@@ -233,7 +112,7 @@ carbin_cc_binary(
         eaproto::eaproto_STATIC
         PUBLIC
 )
-
+]]
 file(GLOB CLI_SRC cli/*.cc)
 carbin_cc_binary(
         NAMESPACE elasticann
@@ -249,37 +128,3 @@ carbin_cc_binary(
         eaproto::eaproto_STATIC
         PUBLIC
 )
-
-
-file(GLOB ROUTER_SERVER raft_dummy/*.cc)
-carbin_cc_binary(
-        NAMESPACE elasticann
-        NAME eadb
-        SOURCES
-        ${ROUTER_SERVER}
-        server/db_server.cc
-        COPTS
-        ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
-        DEPS
-        ${CARBIN_DEPS_LINK}
-        elasticann::common
-        elasticann::flags
-        eaproto::eaproto_STATIC
-        PUBLIC
-)
-#[[
-file(GLOB EA_CLIENT client/*.cc)
-carbin_cc_library(
-        NAMESPACE elasticann
-        NAME eaclient
-        SOURCES
-        ${EA_CLIENT}
-        COPTS
-        ${USER_CXX_FLAGS}
-        "-Wno-strict-aliasing"
-        DEPS
-        ${CARBIN_DEPS_LINK}
-        elasticann::common
-        elasticann::proto-object
-)]]

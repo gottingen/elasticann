@@ -14,6 +14,8 @@
 //
 
 #include "elasticann/engine/qos.h"
+#include "elasticann/engine/rocksdb_var.h"
+#include "elasticann/base/scope_exit.h"
 
 namespace EA {
 

@@ -20,6 +20,7 @@
 #include "elasticann/meta_server/query_table_manager.h"
 #include "turbo/strings/str_split.h"
 #include "turbo/strings/str_trim.h"
+#include "turbo/strings/utility.h"
 
 #include <cstdint>
 
@@ -45,8 +46,9 @@ namespace EA {
         query_region_info->set_create_time(s);
         std::string start_key_string;
         std::string end_key_string;
-        std::string raw_start_key = str_to_hex(std::string(region_info->start_key()));;
+        std::string raw_start_key;// = turbo::(std::string(region_info->start_key()));;
         QueryTableManager *qtmanager = QueryTableManager::get_instance();
+        /*
         if (region_info->start_key() == "") {
             start_key_string = "-oo";
         } else {
@@ -56,7 +58,7 @@ namespace EA {
             end_key_string = "+oo";
         } else {
             qtmanager->decode_key(table_id, TableKey(region_info->end_key()), end_key_string);
-        }
+        }*/
         query_region_info->set_start_key(start_key_string);
         query_region_info->set_end_key(end_key_string);
         query_region_info->set_raw_start_key(raw_start_key);

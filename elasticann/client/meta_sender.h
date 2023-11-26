@@ -22,7 +22,7 @@
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
 #include "eaproto/meta/meta.interface.pb.h"
-#include "elasticann/common/common.h"
+#include "elasticann/base/tlog.h"
 #include "elasticann/client/base_message_sender.h"
 
 namespace EA::client {

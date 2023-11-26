@@ -19,15 +19,16 @@
 #include "rocksdb/filter_policy.h"
 #include "rocksdb/statistics.h"
 #include <iostream>
-#include "elasticann/common/common.h"
-#include "elasticann/common/mut_table_key.h"
-#include "elasticann/common/table_key.h"
+//#include "elasticann/common/common.h"
+//#include "elasticann/common/mut_table_key.h"
+//#include "elasticann/common/table_key.h"
 #include "elasticann/engine/my_listener.h"
 #include "elasticann/raft/raft_log_compaction_filter.h"
 #include "elasticann/engine/split_compaction_filter.h"
 #include "elasticann/engine/transaction_db_bthread_mutex.h"
 #include "turbo/strings/numbers.h"
 #include "elasticann/base/bthread.h"
+
 
 namespace EA {
 
@@ -373,7 +374,6 @@ namespace EA {
             }
         }
         _is_init = true;
-        update_oldest_ts_in_binlog_cf();
         collect_rocks_options();
         TLOG_INFO("rocksdb init success");
         return 0;
@@ -468,37 +468,6 @@ namespace EA {
         }
 
         return 0;
-    }
-
-    void RocksWrapper::update_oldest_ts_in_binlog_cf() {
-        std::string start_key;
-        uint64_t endian_ts = KeyEncoder::to_endian_u64(
-                KeyEncoder::encode_i64(0));
-        start_key.append((char *) &endian_ts, sizeof(uint64_t));
-
-        rocksdb::ReadOptions option;
-        const uint64_t endian_max = UINT64_MAX;
-        std::string end_key;
-        end_key.append((char *) &endian_max, sizeof(uint64_t));
-        rocksdb::Slice upper_bound_slice = end_key;
-        option.iterate_upper_bound = &upper_bound_slice;
-        option.total_order_seek = true;
-        option.fill_cache = false;
-        std::unique_ptr<rocksdb::Iterator> iter(new_iterator(option, get_bin_log_handle()));
-        iter->Seek(start_key);
-        bool find = false;
-        for (; iter->Valid(); iter->Next()) {
-            int64_t tmp_ts = TableKey(iter->key()).extract_i64(0);
-            find = true;
-            TLOG_WARN("oldest_ts_in_binlog_cf changed: [{} => {}] [{} => {}]", _oldest_ts_in_binlog_cf, tmp_ts,
-                       ts_to_datetime_str(_oldest_ts_in_binlog_cf), ts_to_datetime_str(tmp_ts));
-            _oldest_ts_in_binlog_cf = tmp_ts;
-            break;
-        }
-
-        if (!find) {
-            TLOG_WARN("has no data in binlog cf");
-        }
     }
 
     int32_t RocksWrapper::delete_column_family(std::string cf_name) {

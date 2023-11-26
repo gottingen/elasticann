@@ -22,8 +22,8 @@
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
 #include "eaproto/meta/meta.interface.pb.h"
-#include "elasticann/common/common.h"
 #include "elasticann/flags/meta.h"
+#include "elasticann/base/tlog.h"
 
 namespace EA {
 

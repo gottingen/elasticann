@@ -27,9 +27,11 @@
 #include "rocksdb/slice_transform.h"
 #include "rocksdb/utilities/transaction.h"
 #include "rocksdb/utilities/transaction_db.h"
-#include "elasticann/common/common.h"
+//#include "elasticann/common/common.h"
 #include "turbo/format/format.h"
 #include "elasticann/flags/engine.h"
+#include "bthread/bthread.h"
+#include "bvar/bvar.h"
 
 namespace EA {
 
@@ -260,8 +262,6 @@ namespace EA {
                                     &pending_compaction_size);
             return 0;
         }
-
-        void update_oldest_ts_in_binlog_cf();
 
         int64_t get_oldest_ts_in_binlog_cf() const {
             return _oldest_ts_in_binlog_cf;

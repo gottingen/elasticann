@@ -24,7 +24,6 @@
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
-#include "elasticann/meta_server/ddl_manager.h"
 #include "turbo/strings/str_trim.h"
 #include "turbo/strings/match.h"
 
@@ -900,35 +899,6 @@ namespace EA {
     void TableManager::update_schema_conf(const proto::MetaManagerRequest &request,
                                           const int64_t apply_index,
                                           braft::Closure *done) {
-        update_table_internal(request, apply_index, done,
-                              [](const proto::MetaManagerRequest &request, proto::SchemaInfo &mem_schema_pb,
-                                 braft::Closure *done) {
-                                  const proto::SchemaConf &schema_conf = request.table_info().schema_conf();
-                                  TLOG_WARN("request:{}", request.ShortDebugString());
-                                  proto::SchemaConf *p_conf = mem_schema_pb.mutable_schema_conf();
-                                  if (schema_conf.storage_compute_separate()) {
-                                      for (auto &index: mem_schema_pb.indexs()) {
-                                          TLOG_INFO("index:{}", index.ShortDebugString());
-                                          if (index.index_type() == proto::I_FULLTEXT) {
-                                              TLOG_INFO("table has fulltext index, request:{}",
-                                                        request.ShortDebugString());
-                                              IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
-                                                                   "fulltext not support kv mode");
-                                              return;
-                                          }
-                                      }
-                                  }
-                                  update_schema_conf_common(request.table_info().table_name(), schema_conf, p_conf);
-                                  //代价开关操作，需要增加op_version
-                                  if (schema_conf.has_select_index_by_cost()) {
-                                      if (schema_conf.select_index_by_cost()) {
-                                          update_op_version(p_conf, "open cost switch");
-                                      } else {
-                                          update_op_version(p_conf, "close cost switch");
-                                      }
-                                  }
-                                  mem_schema_pb.set_version(mem_schema_pb.version() + 1);
-                              });
         if (request.table_info().schema_conf().has_pk_prefix_balance()) {
             update_pk_prefix_balance_timestamp(request.table_info().table_id(),
                                                request.table_info().schema_conf().pk_prefix_balance());
@@ -971,7 +941,6 @@ namespace EA {
 
         //inc op version
         proto::SchemaInfo mem_schema_pb = _table_info_map[table_id].schema_pb;
-        update_op_version(mem_schema_pb.mutable_schema_conf(), "update cost statistics");
         mem_schema_pb.set_version(mem_schema_pb.version() + 1);
         ret = update_schema_for_rocksdb(table_id, mem_schema_pb, done);
         if (ret < 0) {
@@ -1334,12 +1303,12 @@ namespace EA {
         }
         auto &table_mem = _table_info_map[table_id];
         if (request.has_ddlwork_info() && request.ddlwork_info().op_type() == proto::OP_MODIFY_FIELD) {
-            int ret = DDLManager::get_instance()->init_column_ddlwork(table_id, request.ddlwork_info(),
-                                                                      table_mem.partition_regions);
-            if (ret < 0) {
+            //int ret = DDLManager::get_instance()->init_column_ddlwork(table_id, request.ddlwork_info(),
+            //                                                          table_mem.partition_regions);
+            /*if (ret < 0) {
                 TLOG_WARN("table_id[{}] add index init ddlwork failed.", table_id);
                 IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "init index ddlwork failed");
-            }
+            }*/
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
             return;
         }
@@ -1708,7 +1677,7 @@ namespace EA {
             TLOG_ERROR("parse from pb fail when load ddl snapshot, key: {}", value);
             return -1;
         }
-        DDLManager::get_instance()->load_table_ddl_snapshot(work_info_pb);
+        //DDLManager::get_instance()->load_table_ddl_snapshot(work_info_pb);
         return 0;
     }
 
@@ -2300,21 +2269,13 @@ namespace EA {
             return -1;
         }
         auto iter = startkey_regiondesc_map.lower_bound(start_key);
-        if (iter == startkey_regiondesc_map.end()) {
-            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                      table_id, str_to_hex(start_key));
-        } else if (iter->first == start_key) {
-            TLOG_WARN("table_id:{} start_key:{} exist", table_id, str_to_hex(start_key));
-            return -1;
-        }
 
         if (iter == startkey_regiondesc_map.begin()) {
             TLOG_WARN("iter is the first");
             return -1;
         }
         --iter;
-        TLOG_WARN("table_id:{} start_key:{} region_id:{}",
-                  table_id, str_to_hex(start_key), iter->second.region_id);
+
         return iter->second.region_id;
     }
 
@@ -2332,12 +2293,10 @@ namespace EA {
         }
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                      table_id, str_to_hex(start_key));
+
             return -1;
         }
-        TLOG_WARN("table_id:{} start_key:{} region_id:{}",
-                  table_id, str_to_hex(start_key), iter->second.region_id);
+
         return iter->second.region_id;
     }
 
@@ -2350,8 +2309,7 @@ namespace EA {
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition];
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                      table_id, str_to_hex(start_key));
+
             return -1;
         }
         if (iter->second.region_id != region_id) {
@@ -2375,20 +2333,17 @@ namespace EA {
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition];
         auto iter = startkey_regiondesc_map.find(start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                      table_id, str_to_hex(start_key));
+
             return -1;
         }
         auto src_iter = iter;
         auto dst_iter = ++iter;
         if (dst_iter == startkey_regiondesc_map.end()) {
-            TLOG_WARN("table_id:{} can`t find region id start_key:{}",
-                      table_id, str_to_hex(end_key));
+
             return -1;
         }
         if (dst_iter->first != end_key) {
-            TLOG_WARN("table_id:{} start key nonsequence {} vs {}", table_id,
-                      str_to_hex(dst_iter->first), str_to_hex(end_key));
+
             return -1;
         }
         if (src_iter->second.merge_status == MERGE_IDLE
@@ -2427,14 +2382,10 @@ namespace EA {
                         auto first_region = RegionManager::get_instance()->
                                 get_region_info(iter->second.region_id);
                         if (first_region == nullptr) {
-                            TLOG_ERROR("table_id:{}, can`t find region_id:{} start_key:{}, in region info map",
-                                       table_id, iter->second.region_id, str_to_hex(iter->first));
+
                             continue;
                         }
-                        TLOG_WARN("table_id:{}, first region_id:{}, version:{}, key({}, {})",
-                                  table_id, first_region->region_id(), first_region->version(),
-                                  str_to_hex(first_region->start_key()),
-                                  str_to_hex(first_region->end_key()));
+
                         pre_region = first_region;
                         is_first_region = false;
                         continue;
@@ -2442,21 +2393,12 @@ namespace EA {
                     auto cur_region = RegionManager::get_instance()->
                             get_region_info(iter->second.region_id);
                     if (cur_region == nullptr) {
-                        TLOG_ERROR("table_id:{}, can`t find region_id:{} start_key:{}, in region info map",
-                                   table_id, iter->second.region_id, str_to_hex(iter->first));
+
                         is_first_region = true;
                         continue;
                     }
                     if (pre_region->end_key() != cur_region->start_key()) {
-                        TLOG_ERROR("table_id:{}, key nonsequence (region_id, version, "
-                                   "start_key, end_key) pre vs cur ({}, {}, {}, {}) vs "
-                                   "({}, {}, {}, {})", table_id,
-                                   pre_region->region_id(), pre_region->version(),
-                                   str_to_hex(pre_region->start_key()),
-                                   str_to_hex(pre_region->end_key()),
-                                   cur_region->region_id(), cur_region->version(),
-                                   str_to_hex(cur_region->start_key()),
-                                   str_to_hex(cur_region->end_key()));
+
                         is_first_region = true;
                         continue;
                     }
@@ -2479,8 +2421,7 @@ namespace EA {
         }
         if (region_info.start_key() == region_info.end_key()
             && !region_info.start_key().empty()) {
-            TLOG_WARN("table_id: {}, region_id: {}, start_key: {} is empty",
-                      table_id, region_id, str_to_hex(region_info.start_key()));
+
             return 0;
         }
         RegionDesc region;
@@ -2494,13 +2435,7 @@ namespace EA {
             int64_t origin_region_id = key_region_map[partition_id][region_info.start_key()].region_id;
             RegionManager *region_manager = RegionManager::get_instance();
             auto origin_region = region_manager->get_region_info(origin_region_id);
-            TLOG_ERROR("table_id:{} two regions has same start key ({}, {}, {}) vs ({}, {}, {})",
-                       table_id, origin_region->region_id(),
-                       str_to_hex(origin_region->start_key()),
-                       str_to_hex(origin_region->end_key()),
-                       region_id,
-                       str_to_hex(region_info.start_key()),
-                       str_to_hex(region_info.end_key()));
+
             return 0;
         }
         return 0;
@@ -2512,21 +2447,18 @@ namespace EA {
                                                           std::map<std::string, RegionDesc> &partition_region_map) {
         if (partition_region_map.size() == 0) {
             //首个region
-            TLOG_WARN("table_id:{} min_start_key:{}, max_end_key:{}", table_id,
-                      str_to_hex(min_start_key), str_to_hex(max_end_key));
+
             return true;
         }
         auto iter = partition_region_map.find(min_start_key);
         if (iter == partition_region_map.end()) {
-            TLOG_ERROR("table_id:{} can`t find min_start_key:{}",
-                       table_id, str_to_hex(min_start_key));
+
             return false;
         }
         if (!max_end_key.empty()) {
             auto endkey_iter = partition_region_map.find(max_end_key);
             if (endkey_iter == partition_region_map.end()) {
-                TLOG_ERROR("table_id:{} can`t find max_end_key:{}",
-                           table_id, str_to_hex(max_end_key));
+
                 return false;
             }
         }
@@ -2541,7 +2473,7 @@ namespace EA {
             TLOG_WARN("table_id: {} not exist", table_id);
             return false;
         }
-
+        /*
         for (const auto &start_pid_key: min_start_key) {
             auto partition_id = start_pid_key.first;
             auto &partition_startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map[partition_id];
@@ -2557,7 +2489,7 @@ namespace EA {
                            str_to_hex(max_pid_key->second));
                 return false;
             }
-        }
+        }*/
         return true;
     }
 
@@ -2569,7 +2501,7 @@ namespace EA {
             return;
         }
         auto &startkey_regiondesc_map = _table_info_map[table_id].startkey_regiondesc_map;
-        for (auto &partition_key_id: key_id_map) {
+        /*for (auto &partition_key_id: key_id_map) {
             auto partition = partition_key_id.first;
             for (auto &key_id: partition_key_id.second) {
                 RegionDesc region;
@@ -2579,7 +2511,7 @@ namespace EA {
                 TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
                           table_id, str_to_hex(key_id.first), key_id.second);
             }
-        }
+        }*/
     }
 
     void TableManager::partition_update_startkey_regionid_map(int64_t table_id, std::string min_start_key,
@@ -2594,15 +2526,15 @@ namespace EA {
                 region.region_id = key_id.second;
                 region.merge_status = MERGE_IDLE;
                 startkey_regiondesc_map[key_id.first] = region;
-                TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
-                          table_id, str_to_hex(key_id.first), key_id.second);
+                //TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
+                 //         table_id, str_to_hex(key_id.first), key_id.second);
             }
             return;
         }
         auto iter = startkey_regiondesc_map.find(min_start_key);
         if (iter == startkey_regiondesc_map.end()) {
-            TLOG_ERROR("table_id:{} can`t find start_key:{}",
-                       table_id, str_to_hex(min_start_key));
+            //TLOG_ERROR("table_id:{} can`t find start_key:{}",
+            //           table_id, str_to_hex(min_start_key));
             return;
         }
         int del_count = 0;
@@ -2612,9 +2544,9 @@ namespace EA {
                 break;
             }
             auto delete_iter = iter++;
-            TLOG_WARN("table_id:{} startkey:{} region_id:{} merge_status:{}, erase",
-                      table_id, str_to_hex(delete_iter->first),
-                      delete_iter->second.region_id, delete_iter->second.merge_status);
+            //TLOG_WARN("table_id:{} startkey:{} region_id:{} merge_status:{}, erase",
+               //       table_id, str_to_hex(delete_iter->first),
+               //       delete_iter->second.region_id, delete_iter->second.merge_status);
             tmp_status = delete_iter->second.merge_status;
             startkey_regiondesc_map.erase(delete_iter->first);
             del_count++;
@@ -2629,8 +2561,8 @@ namespace EA {
             region.region_id = key_id.second;
             region.merge_status = tmp_status;
             startkey_regiondesc_map[key_id.first] = region;
-            TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
-                      table_id, str_to_hex(key_id.first), key_id.second);
+            //TLOG_WARN("table_id:{}, startkey:{} region_id:{} insert",
+             //         table_id, str_to_hex(key_id.first), key_id.second);
         }
 
     }
@@ -2675,9 +2607,9 @@ namespace EA {
         if (iter != key_region_map.end()) {
             auto origin_region_info = iter->second;
             if (region_id != origin_region_info->region_id()) {
-                TLOG_ERROR("two diffrent regions:{}, {} has same start_key:{}",
-                           region_id, origin_region_info->region_id(),
-                           str_to_hex(start_key));
+                //TLOG_ERROR("two diffrent regions:{}, {} has same start_key:{}",
+                //           region_id, origin_region_info->region_id(),
+                 //          str_to_hex(start_key));
                 return;
             }
             if (leader_region_info.log_index() < origin_region_info->log_index()) {
@@ -2689,7 +2621,7 @@ namespace EA {
                           region_id);
                 return;
             }
-            if (leader_region_info.version() > origin_region_info->version()) {
+            if (leader_region_info.version() > origin_region_info->version()) {/*
                 if (end_key_compare(leader_region_info.end_key(), origin_region_info->end_key()) > 0) {
                     //end_key不可能变大
                     TLOG_ERROR("region_id:{}, version {} to {}, end_key {} to {}",
@@ -2698,26 +2630,16 @@ namespace EA {
                                str_to_hex(origin_region_info->end_key()),
                                str_to_hex(leader_region_info.end_key()));
                     return;
-                }
+                }*/
                 key_region_map.erase(iter);
                 auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
                 key_region_map[start_key] = ptr_region;
-                TLOG_WARN("region_id:{} has changed (version, start_key, end_key)"
-                          "({}, {}, {}) to ({}, {}, {})", region_id,
-                          origin_region_info->version(),
-                          str_to_hex(origin_region_info->start_key()),
-                          str_to_hex(origin_region_info->end_key()),
-                          leader_region_info.version(),
-                          str_to_hex(leader_region_info.start_key()),
-                          str_to_hex(leader_region_info.end_key()));
+
             }
         } else {
             auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
             key_region_map[start_key] = ptr_region;
-            TLOG_WARN("table_id:{} add new region_id:{}, key:({}, {}) version:{}",
-                      table_id, region_id, str_to_hex(start_key),
-                      str_to_hex(leader_region_info.end_key()),
-                      leader_region_info.version());
+
         }
     }
 
@@ -2752,23 +2674,12 @@ namespace EA {
                 id_region_map->erase(iter);
                 auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
                 id_region_map->insert(std::make_pair(region_id, ptr_region));
-                TLOG_WARN("table_id:{}, region_id:{} has changed (version, start_key, end_key)"
-                          "({}, {}, {}) to ({}, {}, {})", table_id, region_id,
-                          origin_region_info->version(),
-                          str_to_hex(origin_region_info->start_key()),
-                          str_to_hex(origin_region_info->end_key()),
-                          leader_region_info.version(),
-                          str_to_hex(leader_region_info.start_key()),
-                          str_to_hex(leader_region_info.end_key()));
+
             }
         } else {
             auto ptr_region = std::make_shared<proto::RegionInfo>(leader_region_info);
             id_region_map->insert(std::make_pair(region_id, ptr_region));
-            TLOG_WARN("table_id:{}, region_id:{} (version, start_key, end_key)"
-                      "({}, {}, {})", table_id, region_id,
-                      leader_region_info.version(),
-                      str_to_hex(leader_region_info.start_key()),
-                      str_to_hex(leader_region_info.end_key()));
+
         }
     }
 
@@ -2788,9 +2699,7 @@ namespace EA {
         for (auto region_iter = partition_region_map.find(new_start_key);
              region_iter != partition_region_map.end(); region_iter++) {
             if (region_iter->first > origin_start_key) {
-                TLOG_WARN("table_id:{} region_id:{} start_key:{} bigger than end_key:{}",
-                          table_id, region_iter->second.region_id, str_to_hex(region_iter->first),
-                          str_to_hex(origin_start_key));
+
                 return -1;
             }
             if (region_iter->first == origin_start_key) {
@@ -2800,9 +2709,7 @@ namespace EA {
             auto iter = id_noneregion_map.find(region_id);
             if (iter != id_noneregion_map.end()) {
                 regions.push_back(iter->second);
-                TLOG_WARN("table_id:{}, find region_id:{} in id_noneregion_map"
-                          "start_key:{}", table_id, region_id,
-                          str_to_hex(region_iter->first));
+
             } else {
                 TLOG_WARN("table_id:{}, can`t find region_id:{} in id_noneregion_map",
                           table_id, region_id);
@@ -2818,34 +2725,30 @@ namespace EA {
                                         std::vector<SmartRegionInfo> &regions) {
         if (new_end_key == origin_end_key) {
             return 0;
-        }
+        }/*
         if (end_key_compare(new_end_key, origin_end_key) > 0) {
             return -1;
-        }
+        }*/
         std::string key = new_end_key;
         for (auto region_iter = key_newregion_map.find(new_end_key);
              region_iter != key_newregion_map.end(); region_iter++) {
             SmartRegionInfo ptr_region = region_iter->second;
             if (key != ptr_region->start_key()) {
-                TLOG_WARN("table_id:{} can`t find start_key:{}, in key_region_map",
-                          table_id, str_to_hex(key));
+
                 return -1;
             }
-            TLOG_WARN("table_id:{}, find region_id:{} in key_region_map"
-                      "start_key:{}, end_key:{}", table_id, ptr_region->region_id(),
-                      str_to_hex(ptr_region->start_key()),
-                      str_to_hex(ptr_region->end_key()));
+
             regions.push_back(ptr_region);
             if (ptr_region->end_key() == origin_end_key) {
                 return 0;
-            }
+            }/*
             if (end_key_compare(ptr_region->end_key(), origin_end_key) > 0) {
                 TLOG_ERROR("table_id:{} region_id:{} end_key:{} bigger than end_key:{}",
                            table_id, ptr_region->region_id(),
                            str_to_hex(ptr_region->end_key()),
                            str_to_hex(origin_end_key));
                 return -1;
-            }
+            }*/
             key = ptr_region->end_key();
         }
         return -1;
@@ -2860,8 +2763,7 @@ namespace EA {
              region_iter != key_newregion_map.end(); region_iter++) {
             SmartRegionInfo ptr_region = region_iter->second;
             if (key != ptr_region->start_key()) {
-                TLOG_WARN("table_id:{} can`t find start_key:{}, in key_region_map",
-                          table_id, str_to_hex(key));
+
                 return -1;
             }
             region_cnt++;
@@ -2902,14 +2804,7 @@ namespace EA {
                 TLOG_WARN("can`t find region_id:{} in region info map", region_id);
                 continue;
             }
-            TLOG_WARN("table_id:{}, region_id:{} key has changed "
-                      "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
-                      table_id, region_id, master_region->version(),
-                      str_to_hex(master_region->start_key()),
-                      str_to_hex(master_region->end_key()),
-                      ptr_region->version(),
-                      str_to_hex(ptr_region->start_key()),
-                      str_to_hex(ptr_region->end_key()));
+
             if (ptr_region->version() <= master_region->version()) {
                 TLOG_WARN("table_id:{}, region_id:{}, version too small need erase",
                           table_id, region_id);
@@ -2975,14 +2870,7 @@ namespace EA {
                     }
                     if (ptr_region->version() <= master_region->version()) {
                         id_keyregion_map.erase(cur_iter);
-                        TLOG_WARN("table_id: {}, region_id:{} key has changed "
-                                  "(version, start_key, end_key),({}, {}, {})->({}, {}, {})",
-                                  table_info.first, region_id, master_region->version(),
-                                  str_to_hex(master_region->start_key()),
-                                  str_to_hex(master_region->end_key()),
-                                  ptr_region->version(),
-                                  str_to_hex(ptr_region->start_key()),
-                                  str_to_hex(ptr_region->end_key()));
+
                         continue;
                     }
                 }
@@ -3122,14 +3010,14 @@ namespace EA {
                 drop_virtual_index(request, apply_index, done);
                 IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
                 return;
-            } else {
+            } else {/*
                 int ret = DDLManager::get_instance()->init_del_index_ddlwork(table_id, *index_to_del);
                 if (ret != 0) {
                     IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "delete index init error.");
                     TLOG_WARN("DDL_LOG delete index init error index [{}].", index_to_del->index_name());
                 } else {
                     IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
-                }
+                }*/
                 return;
             }
         } else {
@@ -3385,13 +3273,13 @@ namespace EA {
             }
             return -1;
         }
-
+        /*
         int ret = DDLManager::get_instance()->init_index_ddlwork(table_id, index_info, table_mem.partition_regions);
         if (ret < 0) {
             TLOG_WARN("table_id[{}] add index init ddlwork failed.", table_id);
             IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "init index ddlwork failed");
             return -1;
-        }
+        }*/
         if (done) {
             IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
         }
@@ -3440,88 +3328,19 @@ namespace EA {
             return true;
         };
 
-        for (const auto &index_info: schema_info.indexs()) {
-            if (try_to_lower(index_info.index_name()) == try_to_lower(index_info_to_check.index_name())) {
-                //索引状态为NONE、IS_DELETE_ONLY并且索引的field一致，可以重建。
-                if (index_info.state() == proto::IS_NONE || index_info.state() == proto::IS_DELETE_ONLY) {
-                    if (same_index(index_info, index_info_to_check)) {
-                        index_id = index_info.index_id();
-                        TLOG_INFO("DDL_LOG rebuild index[{}]", index_id);
-                        return 1;
-                    } else {
-                        TLOG_WARN("DDL_LOG same index name, diff fields.");
-                        return -1;
-                    }
-                } else {
-                    if (same_index(index_info, index_info_to_check)) {
-                        TLOG_WARN("DDL_LOG same index name, same fields.");
-                        return 2;
-                    }
-                    TLOG_WARN("DDL_LOG rebuild index failed, index state not satisfy.");
-                    return -1;
-                }
-            } else {
-                /*
-            if (same_index(index_info, index_info_to_check)) {
-               TLOG_WARN("DDL_LOG diff index name, same fields.");
-                return -1;
-            }
-            */
-            }
-        }
         return 0;
     }
 
     void TableManager::update_index_status(const proto::MetaManagerRequest &request,
                                            const int64_t apply_index,
                                            braft::Closure *done) {
-        update_table_internal(request, apply_index, done,
-                              [](const proto::MetaManagerRequest &request, proto::SchemaInfo &mem_schema_pb,
-                                 braft::Closure *done) {
-                                  auto &&request_index_info = request.ddlwork_info();
-                                  auto index_iter = mem_schema_pb.mutable_indexs()->begin();
-                                  for (; index_iter != mem_schema_pb.mutable_indexs()->end(); index_iter++) {
-                                      if (request_index_info.index_id() == index_iter->index_id()) {
-                                          if (request_index_info.job_state() != proto::IS_DELETE_LOCAL &&
-                                              request_index_info.deleted()) {
-                                              //删除索引
-                                              TLOG_INFO("DDL_LOG udpate_index_status delete index [{}].",
-                                                        request_index_info.ShortDebugString());
-                                              update_op_version(mem_schema_pb.mutable_schema_conf(),
-                                                                "drop index " + index_iter->index_name());
-                                              mem_schema_pb.mutable_indexs()->erase(index_iter);
-                                          } else {
-                                              //改变索引状态
-                                              TLOG_INFO("DDL_LOG set state index state to [{}]",
-                                                        request_index_info.ShortDebugString());
-                                              index_iter->set_state(request_index_info.job_state());
-                                              if (request_index_info.op_type() == proto::OP_DROP_INDEX &&
-                                                  index_iter->hint_status() == proto::IHS_NORMAL) {
-                                                  index_iter->set_hint_status(proto::IHS_DISABLE);
-                                              }
-                                              if (request_index_info.job_state() == proto::IS_DELETE_LOCAL
-                                                  && request_index_info.status() == proto::DdlWorkDone) {
-                                                  // 局部索引保留IS_DELETE_LOCAL一段时间，以便store真正删除数据
-                                                  int64_t due_time = butil::gettimeofday_us() +
-                                                                     FLAGS_table_tombstone_gc_time_s * 1000 * 1000LL;
-                                                  index_iter->set_drop_timestamp(due_time);
-                                              }
-                                              if (request_index_info.job_state() == proto::IS_PUBLIC) {
-                                                  update_op_version(mem_schema_pb.mutable_schema_conf(),
-                                                                    "add index " + index_iter->index_name());
-                                              }
-                                          }
-                                          break;
-                                      }
-                                  }
-                                  mem_schema_pb.set_version(mem_schema_pb.version() + 1);
-                              });
+
     }
 
     void TableManager::delete_ddlwork(const proto::MetaManagerRequest &request, braft::Closure *done) {
         TLOG_INFO("delete ddlwork {} is_global[{}]", request.ShortDebugString(),
                   request.ddlwork_info().global());
-        DDLManager::get_instance()->delete_ddlwork(request, done);
+        //DDLManager::get_instance()->delete_ddlwork(request, done);
     }
 
     void TableManager::link_binlog(const proto::MetaManagerRequest &request, const int64_t apply_index,
@@ -3936,21 +3755,6 @@ namespace EA {
             auto &index_name = it1.virtual_index_name();
             auto &influenced_sql = it1.influenced_sql();
             auto virtual_index_id = it1.virtual_index_id();
-            if (_just_add_virtual_index_info.count(virtual_index_id) > 0) {
-                std::string row;
-                std::string database_name;
-                std::string table_name;
-                std::string sql;
-                uint64_t out[2];
-                EA::parse_sample_sql(influenced_sql, database_name, table_name, sql);
-                butil::MurmurHash3_x64_128(influenced_sql.c_str(), influenced_sql.size(), 0x1234, out);
-                std::string sign = std::to_string(out[0]);
-                row = database_name + "," + table_name + "," + index_name;
-                std::pair<std::string, std::string> sign_add_sql = {sign, sql};
-                _virtual_index_sql_map[row].insert(sign_add_sql);
-            } else {
-                continue;
-            }
         }
     }
 

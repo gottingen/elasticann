@@ -19,6 +19,7 @@
 #include <deque>
 #include <algorithm>
 #include <braft/log_entry.h>
+#include "elasticann/base/tlog.h"
 
 namespace EA {
 

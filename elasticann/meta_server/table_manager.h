@@ -23,8 +23,6 @@
 
 #include "elasticann/meta_server/meta_constants.h"
 #include "elasticann/meta_server/meta_util.h"
-#include "elasticann/common/table_key.h"
-#include "elasticann/meta_server/ddl_manager.h"
 #include <braft/repeated_timer_task.h>
 #include "elasticann/flags/meta.h"
 #include "elasticann/flags/store.h"
@@ -32,6 +30,8 @@
 #include "braft/raft.h"
 #include "bthread/mutex.h"
 #include "elasticann/meta_server/schema_manager.h"
+#include "elasticann/base/double_buffer.h"
+#include "elasticann/meta_server/cluster_manager.h"
 
 namespace EA {
 
@@ -1545,9 +1545,10 @@ namespace EA {
             auto iter = info->table_pk_types.find(table_id);
             if (iter != info->table_pk_types.end() && !iter->second.empty()) {
                 // 之前解析过表主键，则直接从双buffer获取表主键解析key即可
+                /*
                 TableKey tableKey(start_key, true);
                 key = std::to_string(table_id) + "_" +
-                      tableKey.decode_start_key_string(iter->second, pk_prefix_dimension);
+                      tableKey.decode_start_key_string(iter->second, pk_prefix_dimension);*/
                 return true;
             }
         }
@@ -1580,13 +1581,14 @@ namespace EA {
         if (pk_types.empty()) {
             return false;
         }
+        /*
         TableKey tableKey(start_key, true);
         key = std::to_string(table_id) + "_" + tableKey.decode_start_key_string(pk_types, pk_prefix_dimension);
         auto call_func = [table_id, pk_types](TableSchedulingInfo &infos) -> int {
             infos.table_pk_types[table_id] = pk_types;
             return 1;
         };
-        _table_scheduling_infos.Modify(call_func);
+        _table_scheduling_infos.Modify(call_func);*/
         return true;
     }
 
@@ -1709,7 +1711,7 @@ namespace EA {
     }
 
     inline bool TableManager::check_table_has_ddlwork(int64_t table_id) {
-        return DDLManager::get_instance()->check_table_has_ddlwork(table_id);
+        return false;
     }
 
     inline bool TableManager::check_table_is_linked(int64_t table_id) {
@@ -1752,13 +1754,14 @@ namespace EA {
             default:
                 break;
         }
+        /*
         int s = primitive_to_proto_type(src_type);
         int t = primitive_to_proto_type(target_type);
         if (s == t) return true;
         if (s == FieldDescriptorProto::TYPE_SINT32 && t == FieldDescriptorProto::TYPE_SINT64) return true;
         if (s == FieldDescriptorProto::TYPE_SINT64 && t == FieldDescriptorProto::TYPE_SINT32) return true;
         if (s == FieldDescriptorProto::TYPE_UINT32 && t == FieldDescriptorProto::TYPE_UINT64) return true;
-        if (s == FieldDescriptorProto::TYPE_UINT64 && t == FieldDescriptorProto::TYPE_UINT32) return true;
+        if (s == FieldDescriptorProto::TYPE_UINT64 && t == FieldDescriptorProto::TYPE_UINT32) return true;*/
         return false;
     }
 

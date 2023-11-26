@@ -58,6 +58,27 @@ namespace EA {
         static const int AutoIDMachineRegion;
         static const int TsoMachineRegion;
     };
+
+    namespace tso {
+        constexpr int64_t update_timestamp_interval_ms = 50LL; // 50ms
+        constexpr int64_t update_timestamp_guard_ms = 1LL; // 1ms
+        constexpr int64_t save_interval_ms = 3000LL;  // 3000ms
+        constexpr int64_t base_timestamp_ms = 1577808000000LL; // 2020-01-01 12:00:00
+        constexpr int logical_bits = 18;
+        constexpr int64_t max_logical = 1 << logical_bits;
+
+        inline int64_t clock_realtime_ms() {
+            struct timespec tp;
+            ::clock_gettime(CLOCK_REALTIME, &tp);
+            return tp.tv_sec * 1000ULL + tp.tv_nsec / 1000000ULL - base_timestamp_ms;
+        }
+
+        inline uint32_t get_timestamp_internal(int64_t offset) {
+            return ((offset >> 18) + base_timestamp_ms) / 1000;
+        }
+
+    } // namespace tso
+
 }  // namespace EA
 
 #endif  // ELASTICANN_META_SERVER_META_CONSTANTS_H_

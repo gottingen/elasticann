@@ -17,7 +17,6 @@
 #include "elasticann/meta_server/query_table_manager.h"
 #include "elasticann/meta_server/query_region_manager.h"
 #include "elasticann/meta_server/region_manager.h"
-#include "elasticann/meta_server/ddl_manager.h"
 #include "elasticann/flags/cluster.h"
 #include <unordered_set>
 
@@ -395,7 +394,7 @@ namespace EA {
             primary_key_string.erase(primary_key_string.size() - 1);
         }
     }
-
+/*
     void QueryTableManager::decode_key(int64_t table_id, const TableKey &start_key, std::string &start_key_string) {
         proto::SchemaInfo table_info;
         auto ret = TableManager::get_instance()->get_table_info(table_id, table_info);
@@ -418,9 +417,9 @@ namespace EA {
             start_key_string.pop_back();
         }
     }
-
+*/
     void QueryTableManager::get_ddlwork_info(const proto::QueryRequest *request, proto::QueryResponse *response) {
-        DDLManager::get_instance()->get_ddlwork_info(request->table_id(), response);
+        //DDLManager::get_instance()->get_ddlwork_info(request->table_id(), response);
     }
 
     void QueryTableManager::get_virtual_index_influence_info(const proto::QueryRequest *request,

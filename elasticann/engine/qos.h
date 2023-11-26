@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "elasticann/common/common.h"
 #include "elasticann/base/concurrency.h"
 #include "elasticann/flags/engine.h"
+#include "elasticann/base/time_cast.h"
 
 namespace EA {
 

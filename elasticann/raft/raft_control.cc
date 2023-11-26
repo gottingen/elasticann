@@ -17,6 +17,7 @@
 #include "elasticann/raft/raft_control.h"
 #include <algorithm>
 #include "elasticann/raft/update_region_status.h"
+#include "elasticann/base/tlog.h"
 
 namespace braft {
     DECLARE_int32(raft_election_heartbeat_factor);

@@ -18,7 +18,6 @@
 
 #include <braft/raft.h>
 #include "eaproto/meta/meta.interface.pb.h"
-#include "elasticann/common/common.h"
 #include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/base/bthread.h"
 
@@ -117,7 +116,6 @@ namespace EA {
         AutoIncrStateMachine *_auto_incr_state_machine = nullptr;
         TSOStateMachine *_tso_state_machine = nullptr;
         Bthread _flush_bth;
-        //region区间修改等信息应用raft
         Bthread _apply_region_bth;
         bool _init_success = false;
         bool _shutdown = false;

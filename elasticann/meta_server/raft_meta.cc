@@ -14,19 +14,20 @@
 //
 
 
-#pragma once
-
-#include <braft/raft.h>
-#include <brpc/channel.h>
-#include <brpc/server.h>
-#include <brpc/controller.h>
-#include "eaproto/raft/raft.pb.h"
+#include "elasticann/raft/update_region_status.h"
+#include "elasticann/raft/split_index_getter.h"
+#include "elasticann/raft/can_add_peer_setter.h"
 
 namespace EA {
-    extern void common_raft_control(google::protobuf::RpcController *controller,
-                                    const proto::RaftControlRequest *request,
-                                    proto::RaftControlResponse *response,
-                                    google::protobuf::Closure *done,
-                                    braft::Node *node);
+    void UpdateRegionStatus::reset_region_status(int64_t /*region_id*/) {
+        return;
+    }
+
+    int64_t SplitIndexGetter::get_split_index(int64_t /*region_id*/) {
+        return INT_FAST64_MAX;
+    }
+
+    void CanAddPeerSetter::set_can_add_peer(int64_t /*region_id*/) {
+    }
 }
 

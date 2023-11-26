@@ -16,8 +16,9 @@
 
 #include "elasticann/raft/my_raft_meta_storage.h"
 #include <sstream>
-#include "elasticann/common/mut_table_key.h"
 #include "turbo/strings/numbers.h"
+#include "elasticann/base/tlog.h"
+#include "elasticann/base/mut_table_key.h"
 
 namespace EA {
     //DEFINE_string(old_stable_path, "/home/work/shared/data/raft_data/stable", "old stable path");

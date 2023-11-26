@@ -24,7 +24,6 @@
 #include "elasticann/base/key_encoder.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include <bthread/mutex.h>
-#include "elasticann/common/common.h"
 #include <butil/arena.h>
 #include <butil/raw_pack.h>
 #include <braft/storage.h>

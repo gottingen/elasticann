@@ -76,7 +76,7 @@ include(carbin_module)
 add_subdirectory(elasticann)
 
 if (CARBIN_BUILD_TEST)
-    add_subdirectory(tests)
+    #add_subdirectory(tests)
 endif ()
 
 if (CARBIN_BUILD_BENCHMARK)

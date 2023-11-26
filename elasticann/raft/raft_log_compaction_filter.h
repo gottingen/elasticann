@@ -21,6 +21,7 @@
 #include "elasticann/raft/my_raft_log_storage.h"
 #include "elasticann/base/key_encoder.h"
 #include "elasticann/raft/split_index_getter.h"
+#include "elasticann/base/tlog.h"
 
 namespace EA {
     class RaftLogCompactionFilter : public rocksdb::CompactionFilter {

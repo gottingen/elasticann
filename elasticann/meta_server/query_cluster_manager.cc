@@ -217,14 +217,14 @@ namespace EA {
         QueryRegionManager::get_instance()->get_peer_ids_per_instance(instance,
                                                                       peer_ids);
         if (region_ids == peer_ids) {
-            std::string str = "peer_ids equal to region_ids, size: " + to_string(region_ids.size());
+            std::string str = "peer_ids equal to region_ids, size: " + std::to_string(region_ids.size());
             response->set_errmsg(str);
             return;
         }
         std::string str = "peer_ids not equal to region_ids, peer_id_size: "
-                          + to_string(peer_ids.size())
+                          + std::to_string(peer_ids.size())
                           + ", region_id_size: "
-                          + to_string(region_ids.size());
+                          + std::to_string(region_ids.size());
         response->set_errmsg(str);
         for (auto &region_id: region_ids) {
             if (peer_ids.find(region_id) == peer_ids.end()) {

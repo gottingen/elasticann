@@ -19,9 +19,7 @@
 #include <rocksdb/compaction_filter.h>
 #include <bthread/mutex.h>
 #include "elasticann/base/key_encoder.h"
-#include "elasticann/common/type_utils.h"
-#include "elasticann/common/schema_factory.h"
-#include "elasticann/engine/transaction.h"
+#include "elasticann/base/double_buffer.h"
 
 namespace EA {
 
@@ -63,53 +61,6 @@ namespace EA {
                     std::string * /*new_value*/,
                     bool * /*value_changed*/) const override {
             //只对最后2层做filter
-            if (level < 5) {
-                return false;
-            }
-            static int prefix_len = sizeof(int64_t) * 2;
-            if ((int) key.size() < prefix_len) {
-                return false;
-            }
-            TableKey table_key(key);
-            int64_t region_id = table_key.extract_i64(0);
-            FilterRegionInfo *filter_info = get_filter_region_info(region_id);
-            if (filter_info == nullptr || filter_info->end_key.empty()) {
-                return false;
-            }
-            const std::string &end_key = filter_info->end_key;
-            int64_t index_id = table_key.extract_i64(sizeof(int64_t));
-            // cstore, primary column key format: index_id = table_id(32byte) + field_id(32byte)
-            if ((index_id & SIGN_MASK_32) != 0) {
-                index_id = index_id >> 32;
-            }
-            auto index_info = _factory->get_split_index_info(index_id);
-            if (index_info == nullptr) {
-                return false;
-            }
-
-            //int ret1 = 0;
-            int ret2 = 0;
-            if (index_info->type == proto::I_PRIMARY || index_info->is_global) {
-                ret2 = end_key.compare(0, std::string::npos,
-                                       key.data() + prefix_len, key.size() - prefix_len);
-                // TLOG_WARN("split compaction filter, region_id: {}, index_id: {}, end_key: {}, key: {}, ret: {}",
-                //     region_id, index_id, rocksdb::Slice(end_key).ToString(true),
-                //     key.ToString(true), ret2);
-                return (ret2 <= 0);
-            } else if (index_info->type == proto::I_UNIQ || index_info->type == proto::I_KEY) {
-                auto pk_info = _factory->get_split_index_info(index_info->pk);
-                if (pk_info == nullptr) {
-                    return false;
-                }
-                rocksdb::Slice key_slice(key);
-                key_slice.remove_prefix(sizeof(int64_t) * 2);
-                rocksdb::Slice value_slice(value);
-                if (filter_info->use_ttl) {
-                    ttl_decode(value_slice, index_info, filter_info->online_ttl_base_expire_time_us);
-                }
-                return !Transaction::fits_region_range(key_slice, value_slice,
-                                                       nullptr, &end_key, *pk_info, *index_info);
-            }
             return false;
         }
 
@@ -152,7 +103,6 @@ namespace EA {
 
     private:
         SplitCompactionFilter() {
-            _factory = SchemaFactory::get_instance();
             _range_key_map.read_background()->init(12301);
             _range_key_map.read()->init(12301);
             _binlog_region_id_set.read_background()->init(12301);
@@ -162,7 +112,6 @@ namespace EA {
         // region_id => end_key
         mutable DoubleBufKey _range_key_map;
         mutable DoubleBufBinlog _binlog_region_id_set;
-        SchemaFactory *_factory;
     };
 }//namespace
 

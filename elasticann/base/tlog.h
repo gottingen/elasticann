@@ -11,7 +11,7 @@
 #include "turbo/log/sinks/daily_file_sink.h"
 #include "turbo/log/sinks/stdout_color_sinks.h"
 #include "turbo/files/filesystem.h"
-#include "elasticann/common/proto_helper.h"
+#include "elasticann/base/proto_helper.h"
 #include "turbo/log/logging.h"
 
 namespace EA {

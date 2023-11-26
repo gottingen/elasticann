@@ -70,7 +70,7 @@ namespace EA {
 
         ~MyRaftLogStorage();
 
-        MyRaftLogStorage() : _db(nullptr), _raftlog_handle(nullptr), _binlog_handle(nullptr) {
+        MyRaftLogStorage() : _db(nullptr), _raftlog_handle(nullptr){
             bthread_mutex_init(&_mutex, nullptr);
         }
 
@@ -120,14 +120,8 @@ namespace EA {
                          rocksdb::ColumnFamilyHandle *raftlog_handle,
                          rocksdb::ColumnFamilyHandle *binlog_handle);
 
-        int get_binlog_entry(rocksdb::Slice &raftlog_value_slice, std::string &binlog_value);
+        int _build_key_value(SlicePartsVec &kv_raftlog_vec, const braft::LogEntry *entry, butil::Arena &arena);
 
-        int _build_key_value(SlicePartsVec &kv_raftlog_vec, SlicePartsVec &kv_binlog_vec,
-                             const braft::LogEntry *entry, butil::Arena &arena);
-
-        int _construct_slice_array(void *head_buf, const butil::IOBuf &binlog_buf, rocksdb::SliceParts *raftlog_value,
-                                   rocksdb::SliceParts *binlog_key, rocksdb::SliceParts *binlog_value,
-                                   butil::Arena &arena);
 
         rocksdb::Slice *_construct_slice_array(
                 void *head_buf,
@@ -156,8 +150,6 @@ namespace EA {
 
         RocksWrapper *_db;
         rocksdb::ColumnFamilyHandle *_raftlog_handle;
-        rocksdb::ColumnFamilyHandle *_binlog_handle;
-        bool _is_binlog_region = false;
 
         IndexTermMap _term_map;
         bthread_mutex_t _mutex; // for term_map

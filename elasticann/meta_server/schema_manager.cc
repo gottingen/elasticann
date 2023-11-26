@@ -22,9 +22,10 @@
 #include "elasticann/meta_server/servlet_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/region_manager.h"
-#include "elasticann/meta_server/ddl_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/engine/rocks_wrapper.h"
+#include "elasticann/base/scope_exit.h"
+#include "elasticann/base/key_encoder.h"
 
 namespace EA {
 
@@ -628,8 +629,6 @@ namespace EA {
         std::string statistics_prefix = MetaConstants::SCHEMA_IDENTIFY;
         statistics_prefix += MetaConstants::STATISTICS_IDENTIFY;
 
-        std::string index_ddl_region_prefix = MetaConstants::SCHEMA_IDENTIFY;
-        index_ddl_region_prefix += MetaConstants::INDEX_DDLWORK_REGION_IDENTIFY;
 
         for (; iter->Valid(); iter->Next()) {
             int ret = 0;
@@ -651,8 +650,6 @@ namespace EA {
                 ret = TableManager::get_instance()->load_statistics_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(ddl_prefix)) {
                 ret = TableManager::get_instance()->load_ddl_snapshot(iter->value().ToString());
-            } else if (iter->key().starts_with(index_ddl_region_prefix)) {
-                ret = DDLManager::get_instance()->load_region_ddl_snapshot(iter->value().ToString());
             } else {
                 TLOG_ERROR("unsupport schema info when load snapshot, key:{}", iter->key().data());
             }

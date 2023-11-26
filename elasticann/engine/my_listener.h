@@ -18,6 +18,7 @@
 
 #include "rocksdb/listener.h"
 #include "elasticann/engine/rocks_wrapper.h"
+#include "elasticann/base/tlog.h"
 
 namespace EA {
 class MyListener : public rocksdb::EventListener {

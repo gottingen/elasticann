@@ -81,6 +81,9 @@ namespace EA {
 
         int load_auto_increment(const std::string &max_id_file);
 
+        ///
+        /// \param json_string
+        /// \return
         int parse_json_string(const std::string &json_string);
 
         std::unordered_map<int64_t, uint64_t> _auto_increment_map;

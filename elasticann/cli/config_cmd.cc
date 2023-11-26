@@ -26,6 +26,7 @@
 #include "json2pb/json_to_pb.h"
 #include "elasticann/client/meta.h"
 #include "elasticann/client/config_info_builder.h"
+#include "nlohmann/json.hpp"
 
 namespace EA::cli {
 
@@ -295,7 +296,7 @@ namespace EA::cli {
 
     turbo::Status ConfigCmd::save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res) {
         turbo::SequentialWriteFile file;
-        auto s = file.open(ConfigOptionContext::get_instance()->config_file);
+        auto s = file.open(path, true);
         if (!s.ok()) {
             return s;
         }
@@ -330,11 +331,15 @@ namespace EA::cli {
         v->set_major(1);
         v->set_minor(2);
         v->set_patch(3);
-        req->set_content("{"
-                         "\"ip\":\"192.168.2.4\""
-                         "\"port\":23456"
-                         "\"apps\":[\"sug\",\"ranker\"]"
-                         "}");
+
+        nlohmann::json json_content;
+        json_content["servlet"] = "sug";
+        json_content["zone"]["name"] = "ea_search";
+        json_content["zone"]["user"] = "jeff";
+        json_content["zone"]["instance"] = {"192.168.1.2","192.168.1.3","192.168.1.3"};
+        nlohmann::to_string(json_content);
+        req->set_content(nlohmann::to_string(json_content));
+        std::cout<<json_content<<std::endl;
         return turbo::OkStatus();
     }
 

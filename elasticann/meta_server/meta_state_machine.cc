@@ -18,6 +18,7 @@
 #include <braft/util.h>
 #include <braft/storage.h>
 #include "elasticann/base/concurrency.h"
+#include "elasticann/base/scope_exit.h"
 #include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/privilege_manager.h"
 #include "elasticann/meta_server/schema_manager.h"
@@ -34,8 +35,8 @@
 #include "elasticann/meta_server/query_privilege_manager.h"
 #include "elasticann/meta_server/query_table_manager.h"
 #include "elasticann/meta_server/query_region_manager.h"
-#include "elasticann/meta_server/ddl_manager.h"
 #include "elasticann/engine/sst_file_writer.h"
+#include "elasticann/raft/parse_path.h"
 
 namespace EA {
 
@@ -147,7 +148,6 @@ namespace EA {
         SchemaManager::get_instance()->process_baikal_heartbeat(request, response, log_id);
         int64_t schema_time = step_time_cost.get_time();
         step_time_cost.reset();
-        DBManager::get_instance()->process_baikal_heartbeat(request, response, cntl);
         int64_t ddl_time = step_time_cost.get_time();
         step_time_cost.reset();
         _baikal_heart_beat << time_cost.get_time();
@@ -500,12 +500,6 @@ namespace EA {
                     TableManager::get_instance()->drop_learner(request, iter.index(), done);
                     break;
                 }
-                case proto::OP_UPDATE_INDEX_REGION_DDL_WORK:
-                case proto::OP_SUSPEND_DDL_WORK:
-                case proto::OP_RESTART_DDL_WORK: {
-                    DDLManager::get_instance()->raft_update_info(request, iter.index(), done);
-                    break;
-                }
                 case proto::OP_REMOVE_GLOBAL_INDEX_DATA: {
                     TableManager::get_instance()->remove_global_index_data(request, iter.index(), done);
                     break;
@@ -683,7 +677,6 @@ namespace EA {
             TLOG_ERROR("store check thread has already started");
         }
         BaseStateMachine::on_leader_start();
-        DDLManager::get_instance()->on_leader_start();
         TableManager::get_instance()->on_leader_start();
         _is_leader.store(true);
     }
@@ -728,8 +721,6 @@ namespace EA {
         RegionManager::get_instance()->clear_region_learner_peer_state_map();
         TLOG_WARN("leader stop");
         BaseStateMachine::on_leader_stop();
-        DBManager::get_instance()->clear_all_tasks();
-        DDLManager::get_instance()->clear_txn_info();
         TableManager::get_instance()->on_leader_stop();
         QueryTableManager::get_instance()->clean_cache();
     }

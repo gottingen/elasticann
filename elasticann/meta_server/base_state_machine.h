@@ -17,11 +17,11 @@
 #pragma once
 
 #include <braft/raft.h>
-#include "elasticann/common/common.h"
 #include "elasticann/raft/raft_control.h"
 #include "eaproto/meta/meta.interface.pb.h"
 #include "eaproto/db/store.interface.pb.h"
 #include "elasticann/base/bthread.h"
+#include "elasticann/base/time_cast.h"
 
 namespace EA {
     class BaseStateMachine;

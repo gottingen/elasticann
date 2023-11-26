@@ -327,12 +327,7 @@ namespace EA {
         std::string address = instance_info.address();
         std::string physical_room = instance_info.physical_room();
         if (!instance_info.has_physical_room() || instance_info.physical_room().size() == 0) {
-            auto ret = get_physical_room(address, physical_room);
-            if (ret < 0) {
-                TLOG_WARN("get physical room fail when add instance, instance:{}", address);
-                IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "instance to hostname fail");
-                return;
-            }
+            auto ret = FLAGS_default_physical_room;
         }
         instance_info.set_physical_room(physical_room);
         if (_physical_info.find(physical_room) != _physical_info.end()) {
@@ -1828,12 +1823,7 @@ namespace EA {
                 return 0;
             }
             // 校验container_id和address是否一致，不一致则不加到meta中
-            if (same_with_container_id_and_address(instance_info.table_info().container_id(),
-                                                   instance_info.address())) {
-                return -1;
-            } else {
-                return 0;
-            }
+            return -1;
         }
         if (_instance_info[instance].resource_tag != instance_info.table_info().resource_tag()) {
             return -2;

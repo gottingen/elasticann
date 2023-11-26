@@ -16,12 +16,12 @@
 
 #include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/cluster_manager.h"
-#include "elasticann/common/common.h"
 #include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "turbo/format/format.h"
+#include "elasticann/base/scope_exit.h"
 
 namespace EA {
 
@@ -102,9 +102,10 @@ namespace EA {
                 if (max_end_key_iter == max_end_key.end()) {
                     max_end_key[partition_id] = region_info.end_key();
                 } else {
+                    /*
                     if (end_key_compare(max_end_key_iter->second, region_info.end_key()) <= 0) {
                         max_end_key_iter->second = region_info.end_key();
-                    }
+                    }*/
                 }
             }
             if (!key_init) {

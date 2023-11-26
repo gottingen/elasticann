@@ -33,7 +33,7 @@
 #include "elasticann/meta_server/query_region_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
-#include "elasticann/meta_server/ddl_manager.h"
+#include "elasticann/base/key_encoder.h"
 
 namespace EA {
 
@@ -92,10 +92,6 @@ namespace EA {
         PrivilegeManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         ClusterManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         MetaServerInteract::get_instance()->init();
-        DDLManager::get_instance()->set_meta_state_machine(_meta_state_machine);
-        DBManager::get_instance()->set_meta_state_machine(_meta_state_machine);
-        DDLManager::get_instance()->launch_work();
-        DBManager::get_instance()->init();
         _flush_bth.run([this]() { flush_memtable_thread(); });
         _apply_region_bth.run([this]() { apply_region_thread(); });
         _init_success = true;
@@ -512,10 +508,6 @@ namespace EA {
                 QueryRegionManager::get_instance()->get_region_learner_status(request, response);
                 break;
             }
-            case proto::QUERY_INDEX_DDL_WORK: {
-                DDLManager::get_instance()->get_index_ddlwork_info(request, response);
-                break;
-            }
             case proto::QUERY_INSTANCE_PARAM: {
                 QueryClusterManager::get_instance()->get_instance_param(request, response);
                 break;
@@ -675,13 +667,13 @@ namespace EA {
         if (data != nullptr) {
             std::string decode_data = url_decode(*data);
             TLOG_WARN("start any_migrate {} {}", data->c_str(), decode_data);
-            json2pb(decode_data, &request);
+            //json2pb(decode_data, &request);
         }
         static std::map<std::string, std::string> bns_pre_ip_port;
         static std::mutex bns_mutex;
         for (auto &instance: request.targets_list().instances()) {
             std::string bns = instance.name();
-            std::string meta_bns = store_or_db_bns_to_meta_bns(bns);
+            std::string meta_bns = "";//store_or_db_bns_to_meta_bns(bns);
             std::string event = instance.event();
             auto res_instance = response->mutable_data()->mutable_targets_list()->add_instances();
             res_instance->set_name(bns);
@@ -692,13 +684,7 @@ namespace EA {
             if (instance.has_pre_host() && instance.has_pre_port()) {
                 ip_port = instance.pre_host() + ":" + instance.pre_port();
             } else {
-                get_instance_from_bns(&ret, bns, bns_instances, false);
-                if (bns_instances.size() != 1) {
-                    TLOG_WARN("bns:{} must have 1 instance", bns);
-                    res_instance->set_status("PROCESSING");
-                    return;
-                }
-                ip_port = bns_instances[0];
+                return;
             }
 
             if (meta_bns.empty()) {
@@ -800,14 +786,6 @@ namespace EA {
         TLOG_INFO("MetaServer flush joined");
         _apply_region_bth.join();
         TLOG_INFO("MetaServer region joined");
-        DDLManager::get_instance()->shutdown();
-        TLOG_INFO("MetaServer DDLManager shutdown");
-        DBManager::get_instance()->shutdown();
-        TLOG_INFO("MetaServer DBManager shutdown");
-        DDLManager::get_instance()->join();
-        TLOG_INFO("MetaServer DDLManager join");
-        DBManager::get_instance()->join();
-        TLOG_INFO("MetaServer DBManager join");
     }
 
 }  // namespace Ea

@@ -214,12 +214,13 @@ namespace EA {
         std::string remove_peer;
         std::string add_peer;
         int ret = 0;
+        /*
         if (get_instance_from_bns(&ret, FLAGS_meta_server_bns, instances, false) != 0 ||
             (int32_t) instances.size() != FLAGS_meta_replica_number) {
             TLOG_WARN("get instance from bns fail, bns:%s, ret:{}, instance.size:{}",
                        FLAGS_meta_server_bns.c_str(), ret, instances.size());
             return;
-        }
+        }*/
         std::set<std::string> instance_set;
         for (auto &instance: instances) {
             instance_set.insert(instance);

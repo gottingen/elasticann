@@ -18,7 +18,6 @@
 
 #include <string>
 #include <vector>
-#include "elasticann/common/common.h"
 #include "turbo/strings/str_split.h"
 #include "elasticann/meta_server/base_state_machine.h"
 
