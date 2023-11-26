@@ -17,7 +17,7 @@
 #pragma once
 
 #include "elasticann/common/expr_value.h"
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "rocksdb/slice.h"
 
 namespace EA {

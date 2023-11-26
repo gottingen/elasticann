@@ -18,7 +18,7 @@
 
 #include "elasticann/reverse/reverse_common.h"
 #include "rocksdb/utilities/transaction.h"
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "elasticann/common/table_record.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/engine/transaction.h"

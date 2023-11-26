@@ -17,7 +17,7 @@
 #pragma once
 
 #include "elasticann/common/common.h"
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "rocksdb/slice.h"
 #include "elasticann/common/expr_value.h"
 #include "turbo/platform/port.h"

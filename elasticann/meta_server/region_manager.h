@@ -470,7 +470,7 @@ namespace EA {
                     request.set_op_type(proto::OP_ADD_INSTANCE);
                     proto::InstanceInfo *instance_info = request.mutable_instance();
                     instance_info->set_address(peer_pair.first);
-                    instance_info->set_resource_tag(resource_tag);
+                    instance_info->mutable_table_info()->set_resource_tag(resource_tag);
                     instance_info->set_status(proto::FAULTY);
                     ClusterManager::get_instance()->process_cluster_info(nullptr, &request, nullptr, nullptr);
                 }

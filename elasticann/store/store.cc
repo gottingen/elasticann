@@ -1742,15 +1742,15 @@ namespace EA {
             instance_info->set_address(_address);
         }
         instance_info->set_physical_room(_physical_room);
-        instance_info->set_resource_tag(_resource_tag);
-        instance_info->set_dml_latency(dml_time_cost.latency(60));
-        instance_info->set_dml_qps(dml_time_cost.qps(60));
-        instance_info->set_raft_total_latency(raft_total_cost.latency(60));
-        instance_info->set_raft_total_qps(raft_total_cost.qps(60));
-        instance_info->set_select_latency(select_time_cost.latency(60));
-        instance_info->set_select_qps(select_time_cost.qps(60));
-        instance_info->set_network_segment(FLAGS_store_network_segment);
-        instance_info->set_container_id(FLAGS_store_container_id);
+        instance_info->mutable_table_info()->set_resource_tag(_resource_tag);
+        instance_info->mutable_table_info()->set_dml_latency(dml_time_cost.latency(60));
+        instance_info->mutable_table_info()->set_dml_qps(dml_time_cost.qps(60));
+        instance_info->mutable_table_info()->set_raft_total_latency(raft_total_cost.latency(60));
+        instance_info->mutable_table_info()->set_raft_total_qps(raft_total_cost.qps(60));
+        instance_info->mutable_table_info()->set_select_latency(select_time_cost.latency(60));
+        instance_info->mutable_table_info()->set_select_qps(select_time_cost.qps(60));
+        instance_info->mutable_table_info()->set_network_segment(FLAGS_store_network_segment);
+        instance_info->mutable_table_info()->set_container_id(FLAGS_store_container_id);
         int64_t rocks_hang_check_cost = 0;
         if (FLAGS_store_rocks_hang_check && count > 2) {
             if (last_rocks_hang_check_ok.get_time() > 30 * 1000 * 1000LL) {
@@ -1769,7 +1769,7 @@ namespace EA {
                            last_rocks_hang_check_ok.get_time(), last_rocks_hang_check_cost);
             }
         }
-        instance_info->set_rocks_hang_check_cost(rocks_hang_check_cost);
+        instance_info->mutable_table_info()->set_rocks_hang_check_cost(rocks_hang_check_cost);
         // 读取硬盘参数
         struct statfs sfs;
         statfs(FLAGS_store_db_path.c_str(), &sfs);

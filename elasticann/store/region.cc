@@ -450,8 +450,7 @@ namespace EA {
 
             // if this is the BEGIN cmd, we need to refresh the txn handler
             if (op_type == proto::OP_BEGIN && (nullptr == (txn = _txn_pool.get_txn(txn_id)))) {
-                char errmsg[100];
-                snprintf(errmsg, sizeof(errmsg), "TransactionError: txn: {}_{}:{} last_seq:{}"
+                auto errmsg = turbo::Format("TransactionError: txn: {}_{}:{} last_seq:{}"
                                                  "get txn failed after begin", _region_id, txn_id, seq_id, last_seq);
                 TLOG_ERROR("{}", errmsg);
                 response.set_errcode(proto::EXEC_FAIL);

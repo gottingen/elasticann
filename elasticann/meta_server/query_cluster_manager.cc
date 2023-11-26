@@ -276,9 +276,9 @@ namespace EA {
             for (auto &network_segment_to_instances: manager->_resource_tag_instances_by_network[resource_tag]) {
                 for (auto &instance: network_segment_to_instances.second) {
                     auto info = response->add_instance_infos();
-                    info->set_resource_tag(resource_tag);
+                    info->mutable_table_info()->set_resource_tag(resource_tag);
                     info->set_address(instance);
-                    info->set_network_segment(network_segment_to_instances.first + "/" +
+                    info->mutable_table_info()->set_network_segment(network_segment_to_instances.first + "/" +
                                               std::to_string(network_segment_to_instances.first.size()));
                 }
             }
@@ -297,7 +297,7 @@ namespace EA {
         instance_pb->set_address(instance_mem.address);
         instance_pb->set_capacity(instance_mem.capacity);
         instance_pb->set_used_size(instance_mem.used_size);
-        instance_pb->set_resource_tag(instance_mem.resource_tag);
+        instance_pb->mutable_table_info()->set_resource_tag(instance_mem.resource_tag);
         instance_pb->set_physical_room(instance_mem.physical_room);
         instance_pb->set_status(instance_mem.instance_status.state);
     }

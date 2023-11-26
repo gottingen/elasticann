@@ -19,6 +19,7 @@
 #include "elasticann/meta_server/base_state_machine.h"
 #include <braft/repeated_timer_task.h>
 #include <time.h>
+#include "elasticann/meta_server/meta_constants.h"
 
 namespace EA {
 
@@ -48,7 +49,7 @@ namespace EA {
     class TSOStateMachine : public EA::BaseStateMachine {
     public:
         TSOStateMachine(const braft::PeerId &peerId) :
-                BaseStateMachine(2, "tso_raft", "/tso", peerId) {
+                BaseStateMachine(MetaConstants::TsoMachineRegion, "tso_raft", "/tso", peerId) {
             bthread_mutex_init(&_tso_mutex, nullptr);
         }
 

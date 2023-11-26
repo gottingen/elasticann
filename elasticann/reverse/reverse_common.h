@@ -25,7 +25,7 @@
 #include <iomanip>
 #include "eaproto/db/reverse.pb.h"
 #include "elasticann/engine/rocks_wrapper.h"
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "elasticann/common/lru_cache.h"
 #include "elasticann/reverse/boolean_engine/boolean_executor.h"
 #include "elasticann/engine/my_rocksdb.h"

@@ -20,12 +20,13 @@
 #include "elasticann/meta_server/base_state_machine.h"
 #include "eaproto/meta/meta.interface.pb.h"
 #include "elasticann/flags/meta.h"
+#include "elasticann/meta_server/meta_constants.h"
 
 namespace EA {
     class MetaStateMachine : public BaseStateMachine {
     public:
         MetaStateMachine(const braft::PeerId &peerId) :
-                BaseStateMachine(0, FLAGS_meta_raft_group, "/meta_server", peerId),
+                BaseStateMachine(MetaConstants::MetaMachineRegion, FLAGS_meta_raft_group, "/meta_server", peerId),
                 _bth(&BTHREAD_ATTR_SMALL),
                 _healthy_check_start(false),
                 _baikal_heart_beat("baikal_heart_beat"),
@@ -33,7 +34,7 @@ namespace EA {
             bthread_mutex_init(&_param_mutex, nullptr);
         }
 
-        virtual ~MetaStateMachine() {
+        ~MetaStateMachine() override {
             bthread_mutex_destroy(&_param_mutex);
         }
 
@@ -60,15 +61,15 @@ namespace EA {
         void healthy_check_function();
 
         // state machine method
-        virtual void on_apply(braft::Iterator &iter);
+        void on_apply(braft::Iterator &iter) override;
 
-        virtual void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done);
+        void on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) override;
 
-        virtual int on_snapshot_load(braft::SnapshotReader *reader);
+        int on_snapshot_load(braft::SnapshotReader *reader) override;
 
-        virtual void on_leader_start();
+        void on_leader_start() override;
 
-        virtual void on_leader_stop();
+        void on_leader_stop() override;
 
         int64_t applied_index() { return _applied_index; }
 

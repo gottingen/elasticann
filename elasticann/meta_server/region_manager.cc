@@ -1072,7 +1072,7 @@ namespace EA {
             instance_status != proto::MIGRATE && instance_status != proto::SLOW) {
             return;
         }
-        std::string resource_tag = request->instance_info().resource_tag();
+        std::string resource_tag = request->instance_info().table_info().resource_tag();
         if (!whether_can_decide) {
             TLOG_WARN("meta state machine can not decide, resource_tag: {}, instance: {}",
                        resource_tag, instance);

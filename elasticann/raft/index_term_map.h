@@ -19,7 +19,6 @@
 #include <deque>
 #include <algorithm>
 #include <braft/log_entry.h>
-#include "elasticann/common/common.h"
 
 namespace EA {
 

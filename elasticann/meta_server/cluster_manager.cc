@@ -458,8 +458,8 @@ namespace EA {
         if (!instance_info.has_used_size()) {
             instance_info.set_used_size(_instance_info[address].used_size);
         }
-        if (!instance_info.has_resource_tag()) {
-            instance_info.set_resource_tag(_instance_info[address].resource_tag);
+        if (!instance_info.table_info().has_resource_tag()) {
+            instance_info.mutable_table_info()->set_resource_tag(_instance_info[address].resource_tag);
         }
         //这两个信息不允许改
         instance_info.set_status(_instance_info[address].instance_status.state);
@@ -483,23 +483,23 @@ namespace EA {
             BAIDU_SCOPED_LOCK(_instance_mutex);
             _instance_info[address].capacity = instance_info.capacity();
             _instance_info[address].used_size = instance_info.used_size();
-            if (_instance_info[address].resource_tag != instance_info.resource_tag()) {
+            if (_instance_info[address].resource_tag != instance_info.table_info().resource_tag()) {
                 // 更新instance resource tag, 同时更改instance的网段
                 _resource_tag_instance_map[_instance_info[address].resource_tag].erase(address);
                 auto_network_segments_division(_instance_info[address].resource_tag);
-                _instance_info[address].resource_tag = instance_info.resource_tag();
-                _instance_info[address].network_segment_self_defined = instance_info.network_segment();
+                _instance_info[address].resource_tag = instance_info.table_info().resource_tag();
+                _instance_info[address].network_segment_self_defined = instance_info.table_info().network_segment();
                 _resource_tag_instance_map[_instance_info[address].resource_tag].insert(address);
                 auto_network_segments_division(_instance_info[address].resource_tag);
                 resource_tag_changed = true;
-            } else if (_instance_info[address].network_segment_self_defined != instance_info.network_segment()) {
-                _instance_info[address].network_segment_self_defined = instance_info.network_segment();
+            } else if (_instance_info[address].network_segment_self_defined != instance_info.table_info().network_segment()) {
+                _instance_info[address].network_segment_self_defined = instance_info.table_info().network_segment();
                 auto_network_segments_division(_instance_info[address].resource_tag);
             }
         }
         // 更新调度相关的内存值
         if (resource_tag_changed) {
-            IdcInfo new_idc(instance_info.resource_tag(), instance_info.logical_room(), instance_info.physical_room());
+            IdcInfo new_idc(instance_info.table_info().resource_tag(), instance_info.logical_room(), instance_info.physical_room());
             auto call_func = [](std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info,
                                 const std::string &address,
                                 const IdcInfo &new_idc) -> int {
@@ -748,7 +748,7 @@ namespace EA {
                 instance->set_physical_room(instance_physical_pair.second);
                 auto iter = _instance_info.find(instance_physical_pair.first);
                 if (iter != _instance_info.end()) {
-                    instance->set_resource_tag(iter->second.resource_tag);
+                    instance->mutable_table_info()->set_resource_tag(iter->second.resource_tag);
                 }
             }
         }
@@ -776,7 +776,7 @@ namespace EA {
     void ClusterManager::process_instance_param_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
                                                                     proto::StoreHeartBeatResponse *response) {
         std::string address = request->instance_info().address();
-        std::string resource_tag = request->instance_info().resource_tag();
+        std::string resource_tag = request->instance_info().table_info().resource_tag();
 
         BAIDU_SCOPED_LOCK(_instance_param_mutex);
 
@@ -894,7 +894,7 @@ namespace EA {
     void ClusterManager::process_peer_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
                                                           proto::StoreHeartBeatResponse *response) {
         std::string instance = request->instance_info().address();
-        std::string resource_tag = request->instance_info().resource_tag();
+        std::string resource_tag = request->instance_info().table_info().resource_tag();
         std::unordered_map<int64_t, std::vector<int64_t>> table_regions;
         std::unordered_map<int64_t, int64_t> table_region_counts;
         std::unordered_map<int64_t, bool> is_learner_tables;
@@ -1742,7 +1742,7 @@ namespace EA {
         }
         auto call_func = [](std::unordered_map<std::string, InstanceSchedulingInfo> &scheduling_info,
                             const proto::InstanceInfo &instance_pb) -> int {
-            scheduling_info[instance_pb.address()].idc = {instance_pb.resource_tag(), instance_pb.logical_room(),
+            scheduling_info[instance_pb.address()].idc = {instance_pb.table_info().resource_tag(), instance_pb.logical_room(),
                                                           instance_pb.physical_room()};
             scheduling_info[instance_pb.address()].pk_prefix_region_count = std::unordered_map<std::string, int64_t>{};
             scheduling_info[instance_pb.address()].regions_count_map = std::unordered_map<int64_t, int64_t>{};
@@ -1828,35 +1828,35 @@ namespace EA {
                 return 0;
             }
             // 校验container_id和address是否一致，不一致则不加到meta中
-            if (same_with_container_id_and_address(instance_info.container_id(),
+            if (same_with_container_id_and_address(instance_info.table_info().container_id(),
                                                    instance_info.address())) {
                 return -1;
             } else {
                 return 0;
             }
         }
-        if (_instance_info[instance].resource_tag != instance_info.resource_tag()) {
+        if (_instance_info[instance].resource_tag != instance_info.table_info().resource_tag()) {
             return -2;
         }
         auto &is = _instance_info[instance];
-        if (instance_info.has_network_segment() &&
-            (instance_info.network_segment() != is.network_segment_self_defined)) {
+        if (instance_info.table_info().has_network_segment() &&
+            (instance_info.table_info().network_segment() != is.network_segment_self_defined)) {
             // store gflag-network_segment changed
             return -2;
         }
         is.capacity = instance_info.capacity();
         is.used_size = instance_info.used_size();
-        is.resource_tag = instance_info.resource_tag();
-        is.version = instance_info.version();
+        is.resource_tag = instance_info.table_info().resource_tag();
+        is.version = instance_info.table_info().version();
         is.instance_status.timestamp = butil::gettimeofday_us();
-        is.dml_latency = instance_info.dml_latency();
-        is.dml_qps = instance_info.dml_qps();
-        is.raft_total_latency = instance_info.raft_total_latency();
-        is.raft_total_qps = instance_info.raft_total_qps();
-        is.select_latency = instance_info.select_latency();
-        is.select_qps = instance_info.select_qps();
+        is.dml_latency = instance_info.table_info().dml_latency();
+        is.dml_qps = instance_info.table_info().dml_qps();
+        is.raft_total_latency = instance_info.table_info().raft_total_latency();
+        is.raft_total_qps = instance_info.table_info().raft_total_qps();
+        is.select_latency = instance_info.table_info().select_latency();
+        is.select_qps = instance_info.table_info().select_qps();
         is.instance_status.timestamp = butil::gettimeofday_us();
-        int64_t store_rocks_check_cost = instance_info.rocks_hang_check_cost();
+        int64_t store_rocks_check_cost = instance_info.table_info().rocks_hang_check_cost();
         auto &status = is.instance_status.state;
         if (status == proto::NORMAL) {
             if (FLAGS_store_rocks_hang_check) {

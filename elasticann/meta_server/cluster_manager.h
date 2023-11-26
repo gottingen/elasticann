@@ -76,10 +76,10 @@ namespace EA {
                 capacity(instance_info.capacity()),
                 //若请求中没有该字段，为了安全起见
                 used_size(instance_info.capacity()),
-                resource_tag(instance_info.resource_tag()),
+                resource_tag(instance_info.table_info().resource_tag()),
                 physical_room(instance_info.physical_room()),
                 logical_room(instance_info.logical_room()),
-                version(instance_info.version()) {
+                version(instance_info.table_info().version()) {
             if (instance_info.has_used_size()) {
                 used_size = instance_info.used_size();
             }
@@ -89,10 +89,10 @@ namespace EA {
                 instance_status.state = proto::NORMAL;
             }
             instance_status.timestamp = butil::gettimeofday_us();
-            if (instance_info.has_network_segment() && !instance_info.network_segment().empty()) {
+            if (instance_info.has_table_info() && instance_info.table_info().has_network_segment() && !instance_info.table_info().network_segment().empty()) {
                 // if store's network_segment is set by gflag:
-                network_segment_self_defined = instance_info.network_segment();
-                network_segment = instance_info.network_segment();
+                network_segment_self_defined = instance_info.table_info().network_segment();
+                network_segment = instance_info.table_info().network_segment();
             }
         }
     };
@@ -328,14 +328,14 @@ namespace EA {
         std::unordered_map<std::string, std::set<std::string>> _logical_physical_map;
 
         bthread_mutex_t _instance_mutex;
-        //物理机房与实例对应关系, key:实例， value:物理机房
+        ///物理机房与实例对应关系, key:实例， value:物理机房
         std::unordered_map<std::string, std::string> _instance_physical_map;
-        //物理机房与实例对应关系, key:物理机房， value:实例
+        ///物理机房与实例对应关系, key:物理机房， value:实例
         std::unordered_map<std::string, std::set<std::string>> _physical_instance_map;
         //resource_tag与实例对应关系, key:resource_tag， value:实例
         std::unordered_map<std::string, std::set<std::string>> _resource_tag_instance_map;
 
-        //实例信息
+        ///实例信息
         std::unordered_map<std::string, Instance> _instance_info;
         std::unordered_map<std::string, TimeCost> _tombstone_instance;
         std::unordered_set<std::string> _slow_instances;

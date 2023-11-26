@@ -15,7 +15,7 @@
 
 
 #include "elasticann/protocol/data_buffer.h"
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 
 namespace EA {
     DataBuffer::DataBuffer(size_t capacity) {

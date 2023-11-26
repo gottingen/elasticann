@@ -18,7 +18,7 @@
 
 #include <rocksdb/compaction_filter.h>
 #include <bthread/mutex.h>
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "elasticann/common/type_utils.h"
 #include "elasticann/common/schema_factory.h"
 #include "elasticann/engine/transaction.h"

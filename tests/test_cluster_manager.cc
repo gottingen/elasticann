@@ -205,7 +205,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     /* modify_tag 给实例加tag*/
     EA::proto::MetaManagerRequest request_tag;
     request_tag.mutable_instance()->set_address("127.0.0.1:8010");
-    request_tag.mutable_instance()->set_resource_tag("resource_tag1");
+    request_tag.mutable_instance()->mutable_table_info()->set_resource_tag("resource_tag1");
     _cluster_manager->update_instance(request_tag, NULL);
     _cluster_manager->load_snapshot();
 
@@ -388,14 +388,14 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     request_instance.mutable_instance()->set_address("127.0.0.3:8010");
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(5000);
-    request_instance.mutable_instance()->set_resource_tag("resource_tag1");
+    request_instance.mutable_instance()->mutable_table_info()->set_resource_tag("resource_tag1");
     request_instance.mutable_instance()->set_physical_room("py2");
     _cluster_manager->add_instance(request_instance, NULL);
     request_instance.mutable_instance()->clear_physical_room();
     request_instance.mutable_instance()->set_address("127.0.0.4:8010");
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(4000);
-    request_instance.mutable_instance()->set_resource_tag("resource_tag1");
+    request_instance.mutable_instance()->mutable_table_info()->set_resource_tag("resource_tag1");
     request_instance.mutable_instance()->set_physical_room("py2");
     _cluster_manager->add_instance(request_instance, NULL);
     DOCTEST_REQUIRE_EQ(4, _cluster_manager->_physical_info.size());
@@ -592,7 +592,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
             request_instance.mutable_instance()->set_used_size(5000);
             request_instance.mutable_instance()->set_physical_room("py2");
             request_instance.mutable_instance()->
-                    set_resource_tag(resource_ip
+                    mutable_table_info()->set_resource_tag(resource_ip
                                              .first);
             _cluster_manager->
                     add_instance(request_instance,
@@ -846,7 +846,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(5000);
     request_instance.mutable_instance()->set_physical_room("py2");
-    request_instance.mutable_instance()->set_resource_tag("add_drop_tag1");
+    request_instance.mutable_instance()->mutable_table_info()->set_resource_tag("add_drop_tag1");
     _cluster_manager->
             add_instance(request_instance,
                          NULL);
@@ -879,7 +879,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     request_instance.mutable_instance()->set_used_size(5000);
     request_instance.mutable_instance()->set_physical_room("py2");
     request_instance.mutable_instance()->
-            set_resource_tag(resource_tag);
+            mutable_table_info()->set_resource_tag(resource_tag);
     _cluster_manager->
             add_instance(request_instance,
                          NULL);
@@ -908,7 +908,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     request_instance.mutable_instance()->set_used_size(5000);
     request_instance.mutable_instance()->set_physical_room("py2");
     request_instance.mutable_instance()->
-            set_resource_tag(resource_tag);
+            mutable_table_info()->set_resource_tag(resource_tag);
     _cluster_manager->
             add_instance(request_instance,
                          NULL);
@@ -972,7 +972,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     request_change_resource_tag1.mutable_instance()->set_capacity(100000);
     request_change_resource_tag1.mutable_instance()->set_used_size(5000);
     request_change_resource_tag1.mutable_instance()->set_physical_room("py2");
-    request_change_resource_tag1.mutable_instance()->set_resource_tag("add_drop_tag2");
+    request_change_resource_tag1.mutable_instance()->mutable_table_info()->set_resource_tag("add_drop_tag2");
     _cluster_manager->
             update_instance(request_change_resource_tag1,
                             nullptr);
@@ -1027,7 +1027,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
             request_instance.mutable_instance()->set_used_size(5000);
             request_instance.mutable_instance()->set_physical_room("py2");
             request_instance.mutable_instance()->
-                    set_resource_tag(resource_ip
+                    mutable_table_info()->set_resource_tag(resource_ip
                                              .first);
             _cluster_manager->
                     add_instance(request_instance,
@@ -1068,8 +1068,8 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     request_change_network_tag1.mutable_instance()->set_capacity(100000);
     request_change_network_tag1.mutable_instance()->set_used_size(5000);
     request_change_network_tag1.mutable_instance()->set_physical_room("py2");
-    request_change_network_tag1.mutable_instance()->set_resource_tag("gflag_tag");
-    request_change_network_tag1.mutable_instance()->set_network_segment("bj-network1");
+    request_change_network_tag1.mutable_instance()->mutable_table_info()->set_resource_tag("gflag_tag");
+    request_change_network_tag1.mutable_instance()->mutable_table_info()->set_network_segment("bj-network1");
     _cluster_manager->
             update_instance(request_change_network_tag1,
                             nullptr);
@@ -1145,8 +1145,8 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     request_change_network_tag1.mutable_instance()->set_capacity(100000);
     request_change_network_tag1.mutable_instance()->set_used_size(5000);
     request_change_network_tag1.mutable_instance()->set_physical_room("py2");
-    request_change_network_tag1.mutable_instance()->set_resource_tag("gflag_tag");
-    request_change_network_tag1.mutable_instance()->set_network_segment("");
+    request_change_network_tag1.mutable_instance()->mutable_table_info()->set_resource_tag("gflag_tag");
+    request_change_network_tag1.mutable_instance()->mutable_table_info()->set_network_segment("");
     _cluster_manager->
             update_instance(request_change_network_tag1,
                             nullptr);
@@ -1202,7 +1202,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
         request_instance.mutable_instance()->set_used_size(5000);
         request_instance.mutable_instance()->set_physical_room("py2");
         request_instance.mutable_instance()->
-                set_resource_tag(resource_tag);
+                mutable_table_info()->set_resource_tag(resource_tag);
         _cluster_manager->
                 add_instance(request_instance,
                              NULL);
@@ -1244,7 +1244,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
         request_instance.mutable_instance()->set_used_size(5000);
         request_instance.mutable_instance()->set_physical_room("py2");
         request_instance.mutable_instance()->
-                set_resource_tag(resource_tag);
+                mutable_table_info()->set_resource_tag(resource_tag);
         _cluster_manager->
                 add_instance(request_instance,
                              NULL);

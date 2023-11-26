@@ -377,7 +377,7 @@ namespace EA {
         int64_t leader_region_time = step_time_cost.get_time();
         step_time_cost.reset();
 
-        std::string resource_tag = request->instance_info().resource_tag();
+        std::string resource_tag = request->instance_info().table_info().resource_tag();
         RegionManager::get_instance()->leader_load_balance(_meta_state_machine->whether_can_decide(),
                                                            _meta_state_machine->get_load_balance(resource_tag), request,
                                                            response);

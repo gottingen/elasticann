@@ -17,13 +17,14 @@
 
 #include <unordered_map>
 #include "elasticann/meta_server/base_state_machine.h"
+#include "elasticann/meta_server/meta_constants.h"
 
 namespace EA {
     class AutoIncrStateMachine : public EA::BaseStateMachine {
     public:
 
         explicit AutoIncrStateMachine(const braft::PeerId &peerId) :
-                BaseStateMachine(1, "auto_incr_raft", "/auto_incr", peerId) {}
+                BaseStateMachine(MetaConstants::AutoIDMachineRegion, "auto_incr_raft", "/auto_incr", peerId) {}
 
         ~AutoIncrStateMachine() override = default;
 

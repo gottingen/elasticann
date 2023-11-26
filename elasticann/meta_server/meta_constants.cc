@@ -50,4 +50,8 @@ namespace EA {
     const std::string MetaConstants::MAX_SERVLET_ID_KEY = "max_zone_id";
     const std::string MetaConstants::MAX_TABLE_ID_KEY = "max_table_id";
     const std::string MetaConstants::MAX_REGION_ID_KEY = "max_region_id";
+
+    const int MetaConstants::MetaMachineRegion = 0;
+    const int MetaConstants::AutoIDMachineRegion = 1;
+    const int MetaConstants::TsoMachineRegion = 1;
 }  // namespace EA

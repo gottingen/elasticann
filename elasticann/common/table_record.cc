@@ -16,7 +16,7 @@
 
 #include "elasticann/common/table_key.h"
 #include "elasticann/common/mut_table_key.h"
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "elasticann/common/table_record.h"
 #include "turbo/platform/port.h"
 

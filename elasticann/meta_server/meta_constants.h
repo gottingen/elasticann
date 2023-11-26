@@ -53,6 +53,10 @@ namespace EA {
         static const std::string MAX_SERVLET_ID_KEY;
         static const std::string MAX_TABLE_ID_KEY;
         static const std::string MAX_REGION_ID_KEY;
+
+        static const int MetaMachineRegion;
+        static const int AutoIDMachineRegion;
+        static const int TsoMachineRegion;
     };
 }  // namespace EA
 

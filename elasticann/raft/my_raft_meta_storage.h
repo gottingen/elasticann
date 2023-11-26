@@ -21,7 +21,7 @@
 #include <atomic>
 #include <string>
 #include <map>
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include <bthread/mutex.h>
 #include "elasticann/common/common.h"

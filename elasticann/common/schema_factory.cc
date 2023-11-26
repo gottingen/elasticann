@@ -165,7 +165,7 @@ namespace EA {
                 continue;
             }
             tmp_map[address].logical_room = iter->second;
-            tmp_map[address].resource_tag = instance.resource_tag();
+            tmp_map[address].resource_tag = instance.table_info().resource_tag();
             idc_mapping.instance_info_mapping[address] = tmp_map[address];
         }
         return 1;

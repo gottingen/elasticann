@@ -3079,7 +3079,7 @@ namespace EA {
         TLOG_WARN("req:{} res:{}", request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
 
         for (auto &info: response.instance_infos()) {
-            std::vector<std::string> row = {info.resource_tag(), info.network_segment(), info.address()};
+            std::vector<std::string> row = {info.table_info().resource_tag(), info.table_info().network_segment(), info.address()};
             rows.emplace_back(row);
         }
         // Make mysql packet.

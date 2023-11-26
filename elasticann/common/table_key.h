@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "elasticann/common/key_encoder.h"
+#include "elasticann/base/key_encoder.h"
 #include "rocksdb/slice.h"
 #include "elasticann/common/schema_factory.h"
 
