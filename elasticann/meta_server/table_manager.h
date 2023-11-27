@@ -46,7 +46,6 @@ namespace EA {
     };
 
     struct TableMem {
-        bool whether_level_table;
         proto::SchemaInfo schema_pb;
         std::unordered_map<int64_t, std::set<int64_t>> partition_regions;//该信息只保存在内存中
         std::unordered_map<std::string, int32_t> field_id_map;
@@ -60,7 +59,6 @@ namespace EA {
         std::map<int64_t, SmartRegionInfo> id_noneregion_map;
         //region id => region 存放key发生变化的region，以该region为基准，查找merge或split所涉及到的所有region
         std::map<int64_t, SmartRegionInfo> id_keyregion_map;
-        bool is_global_index = false;
         int64_t global_index_id = 0;
         int64_t main_table_id = 0;
         bool is_partition = false;
@@ -74,10 +72,8 @@ namespace EA {
         std::vector<proto::Expr> range_infos;
 
         bool exist_global_index(int64_t global_index_id) {
-            for (auto &index: schema_pb.indexs()) {
-                if (index.is_global() && index.index_id() == global_index_id) {
+            for (auto &index: schema_pb.indexes()) {
                     return true;
-                }
             }
             return false;
         }
@@ -206,42 +202,12 @@ namespace EA {
         void rename_table(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
 
         ///
-        /// \brief swap two table, when not doing any ddl
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void swap_table(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
         /// \brief
         /// \param request
         /// \param apply_index
         /// \param done
         void
         update_byte_size(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
-        /// \brief update table meta info
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void
-        update_split_lines(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
-        /// \brief update table meta info
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void update_charset(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
-        /// \brief update table meta info, not complete impl
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void
-        modify_partition(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
 
         ///
         /// \brief update table meta info
@@ -340,28 +306,6 @@ namespace EA {
         /// \param apply_index
         /// \param done
         void modify_field(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
-        /// \brief
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void link_binlog(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
-        /// \brief
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void unlink_binlog(const proto::MetaManagerRequest &request, const int64_t apply_index, braft::Closure *done);
-
-        ///
-        /// \brief
-        /// \param request
-        /// \param apply_index
-        /// \param done
-        void set_index_hint_status(const proto::MetaManagerRequest &request, const int64_t apply_index,
-                                   braft::Closure *done);
 
         ///
         /// \brief
@@ -843,12 +787,6 @@ namespace EA {
                                       const std::string &table_name,
                                       std::shared_ptr<std::vector<proto::InitRegion>> init_regions);
 
-        int write_schema_for_level(const TableMem &table_mem,
-                                   const int64_t apply_index,
-                                   braft::Closure *done,
-                                   int64_t max_table_id_tmp,
-                                   bool has_auto_increment);
-
         int update_schema_for_rocksdb(int64_t table_id,
                                       const proto::SchemaInfo &schema_info,
                                       braft::Closure *done);
@@ -972,8 +910,6 @@ namespace EA {
 
         void erase_table_tombstone(int64_t table_id);
 
-        void swap_table_name(const std::string &old_table_name, const std::string &new_table_name);
-
         bool whether_replica_dists(int64_t table_id);
 
         bool cancel_in_fast_importer(const int64_t &table_id);
@@ -986,7 +922,6 @@ namespace EA {
 
         bool check_table_is_linked(int64_t table_id);
 
-        bool check_filed_is_linked(int64_t table_id, int32_t field_id);
 
         bool check_field_is_compatible_type(proto::PrimitiveType src_type, proto::PrimitiveType target_type);
 
@@ -1027,10 +962,9 @@ namespace EA {
         BAIDU_SCOPED_LOCK(_table_mutex);
         _table_info_map[schema_pb.table_id()].schema_pb = schema_pb;
         _table_info_map[schema_pb.table_id()].print();
-        for (auto &index_info: schema_pb.indexs()) {
+        for (auto &index_info: schema_pb.indexes()) {
             if (is_global_index(index_info)) {
                 _table_info_map[index_info.index_id()].schema_pb = schema_pb;
-                _table_info_map[index_info.index_id()].is_global_index = true;
                 _table_info_map[index_info.index_id()].main_table_id = schema_pb.table_id();
                 _table_info_map[index_info.index_id()].global_index_id = index_info.index_id();
                 _table_info_map[index_info.index_id()].print();
@@ -1080,13 +1014,12 @@ namespace EA {
             _table_tombstone_map.erase(table_id);
         }
         //全局二级索引有region信息，所以需要独立为一项
-        for (auto &index_info: table_mem.schema_pb.indexs()) {
+        for (auto &index_info: table_mem.schema_pb.indexes()) {
             if (!is_global_index(index_info)) {
                 continue;
             }
             std::string index_table_name = table_name + "\001" + index_info.index_name();
             _table_info_map[index_info.index_id()] = table_mem;
-            _table_info_map[index_info.index_id()].is_global_index = true;
             _table_info_map[index_info.index_id()].main_table_id = table_id;
             _table_info_map[index_info.index_id()].global_index_id = index_info.index_id();
             _table_id_map[index_table_name] = index_info.index_id();
@@ -1103,7 +1036,7 @@ namespace EA {
                                  + "\001" + _table_info_map[table_id].schema_pb.database()
                                  + "\001" + _table_info_map[table_id].schema_pb.table_name();
         //处理全局二级索引
-        for (auto &index_info: _table_info_map[table_id].schema_pb.indexs()) {
+        for (auto &index_info: _table_info_map[table_id].schema_pb.indexes()) {
             if (!is_global_index(index_info)) {
                 continue;
             }
@@ -1163,7 +1096,7 @@ namespace EA {
             return;
         }
         int64_t table_id = _table_id_map[old_table_name];
-        for (auto &index_info: _table_info_map[table_id].schema_pb.indexs()) {
+        for (auto &index_info: _table_info_map[table_id].schema_pb.indexes()) {
             if (!is_global_index(index_info)) {
                 continue;
             }
@@ -1173,49 +1106,6 @@ namespace EA {
             _table_id_map[new_index_table_name] = index_info.index_id();
         }
         _table_id_map.erase(old_table_name);
-        _table_id_map[new_table_name] = table_id;
-    }
-
-    inline void TableManager::swap_table_name(const std::string &old_table_name, const std::string &new_table_name) {
-        BAIDU_SCOPED_LOCK(_table_mutex);
-        if (_table_id_map.find(old_table_name) == _table_id_map.end()) {
-            return;
-        }
-        if (_table_id_map.find(new_table_name) == _table_id_map.end()) {
-            return;
-        }
-        int64_t table_id = _table_id_map[old_table_name];
-        int64_t new_table_id = _table_id_map[new_table_name];
-        // globalindex名称映射需要先删后加
-        for (auto &index_info: _table_info_map[table_id].schema_pb.indexs()) {
-            if (!is_global_index(index_info)) {
-                continue;
-            }
-            std::string old_index_table_name = old_table_name + "\001" + index_info.index_name();
-            _table_id_map.erase(old_index_table_name);
-        }
-        for (auto &index_info: _table_info_map[new_table_id].schema_pb.indexs()) {
-            if (!is_global_index(index_info)) {
-                continue;
-            }
-            std::string new_index_table_name = new_table_name + "\001" + index_info.index_name();
-            _table_id_map.erase(new_index_table_name);
-        }
-        for (auto &index_info: _table_info_map[table_id].schema_pb.indexs()) {
-            if (!is_global_index(index_info)) {
-                continue;
-            }
-            std::string new_index_table_name = new_table_name + "\001" + index_info.index_name();
-            _table_id_map[new_index_table_name] = index_info.index_id();
-        }
-        for (auto &index_info: _table_info_map[new_table_id].schema_pb.indexs()) {
-            if (!is_global_index(index_info)) {
-                continue;
-            }
-            std::string old_index_table_name = old_table_name + "\001" + index_info.index_name();
-            _table_id_map[old_index_table_name] = index_info.index_id();
-        }
-        _table_id_map[old_table_name] = new_table_id;
         _table_id_map[new_table_name] = table_id;
     }
 
@@ -1565,7 +1455,7 @@ namespace EA {
             for (auto &field: schema_info.fields()) {
                 filed_types[field.field_id()] = field.mysql_type();
             }
-            for (auto &idx: schema_info.indexs()) {
+            for (auto &idx: schema_info.indexes()) {
                 if (idx.index_type() != proto::I_PRIMARY) {
                     continue;
                 }
@@ -1658,7 +1548,7 @@ namespace EA {
         }
         std::set<int64_t> global_indexs;
         global_indexs.insert(table_id);
-        for (auto &index_info: _table_info_map[table_id].schema_pb.indexs()) {
+        for (auto &index_info: _table_info_map[table_id].schema_pb.indexes()) {
             if (is_global_index(index_info)) {
                 global_indexs.insert(index_info.index_id());
             }
@@ -1723,18 +1613,6 @@ namespace EA {
         return table_iter->second.is_linked || table_iter->second.binlog_target_ids.size() > 0;
     }
 
-    inline bool TableManager::check_filed_is_linked(int64_t table_id, int32_t field_id) {
-        BAIDU_SCOPED_LOCK(_table_mutex);
-        auto table_iter = _table_info_map.find(table_id);
-        if (table_iter == _table_info_map.end()) {
-            return false;
-        }
-        if (table_iter->second.is_linked && table_iter->second.schema_pb.has_link_field()) {
-            return table_iter->second.schema_pb.link_field().field_id() == field_id;
-        }
-        return false;
-    }
-
     inline bool
     TableManager::check_field_is_compatible_type(proto::PrimitiveType src_type, proto::PrimitiveType target_type) {
         if (src_type == target_type) {
@@ -1771,53 +1649,13 @@ namespace EA {
             return -1;
         }
         auto &table_info = _table_info_map[table_id].schema_pb;
-        for (const auto &index_info: table_info.indexs()) {
+        for (const auto &index_info: table_info.indexes()) {
             if (index_info.index_id() == index_id) {
                 index_state = index_info.state();
                 return 0;
             }
         }
         return -1;
-    }
-
-    inline void TableManager::get_delay_delete_index(std::vector<proto::SchemaInfo> &index_to_delete,
-                                                     std::vector<proto::SchemaInfo> &index_to_clear) {
-        auto current_time = butil::gettimeofday_us();
-        BAIDU_SCOPED_LOCK(_table_mutex);
-        for (auto &table_info: _table_info_map) {
-            if (table_info.second.is_global_index) {
-                continue;
-            }
-            if (check_table_has_ddlwork(table_info.first)) {
-                continue;
-            }
-            auto &schema_pb = table_info.second.schema_pb;
-            for (auto &index: schema_pb.indexs()) {
-                if (index.hint_status() == proto::IHS_DISABLE &&
-                    index.state() != proto::IS_DELETE_LOCAL &&
-                    index.drop_timestamp() != 0 &&
-                    index.drop_timestamp() < current_time) {
-                    proto::SchemaInfo delete_schema = schema_pb;
-                    delete_schema.clear_indexs();
-                    auto index_ptr = delete_schema.add_indexs();
-                    index_ptr->CopyFrom(index);
-                    index_to_delete.emplace_back(delete_schema);
-                    TLOG_INFO("delete index start {}", delete_schema.ShortDebugString());
-                    break;
-                } else if (index.hint_status() == proto::IHS_DISABLE &&
-                           index.state() == proto::IS_DELETE_LOCAL &&
-                           index.drop_timestamp() != 0 &&
-                           index.drop_timestamp() < current_time) {
-                    proto::SchemaInfo delete_schema = schema_pb;
-                    delete_schema.clear_indexs();
-                    auto index_ptr = delete_schema.add_indexs();
-                    index_ptr->CopyFrom(index);
-                    index_to_clear.emplace_back(delete_schema);
-                    TLOG_INFO("clear local index start {}", delete_schema.ShortDebugString());
-                    break;
-                }
-            }
-        }
     }
 
     inline int TableManager::check_table_exist(const proto::SchemaInfo &schema_info,
@@ -1868,8 +1706,7 @@ namespace EA {
     }
 
     inline bool TableManager::is_global_index(const proto::IndexInfo &index_info) {
-        return index_info.is_global() == true &&
-               (index_info.index_type() == proto::I_UNIQ || index_info.index_type() == proto::I_KEY);
+        return true;
     }
 
 }  // namespace EA

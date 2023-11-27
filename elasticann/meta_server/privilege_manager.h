@@ -27,6 +27,8 @@ namespace EA {
     public:
         friend class QueryPrivilegeManager;
 
+        ///
+        /// \return
         static PrivilegeManager *get_instance() {
             static PrivilegeManager instance;
             return &instance;
@@ -71,11 +73,18 @@ namespace EA {
         /// \param done
         void drop_privilege(const proto::MetaManagerRequest &request, braft::Closure *done);
 
+        ///
+        /// \param request
+        /// \param response
         void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
                                       proto::BaikalHeartBeatResponse *response);
 
+        ///
+        /// \return
         int load_snapshot();
 
+        ///
+        /// \param meta_state_machine
         void set_meta_state_machine(MetaStateMachine *meta_state_machine) {
             _meta_state_machine = meta_state_machine;
         }
@@ -85,40 +94,77 @@ namespace EA {
             bthread_mutex_init(&_user_mutex, nullptr);
         }
 
+        ///
+        /// \param username
+        /// \return
         std::string construct_privilege_key(const std::string &username) {
             return MetaConstants::PRIVILEGE_IDENTIFY + username;
         }
 
+        ///
+        /// \param privilege_database
+        /// \param mem_privilege
         void insert_database_privilege(const proto::PrivilegeDatabase &privilege_database,
                                        proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param privilege_table
+        /// \param mem_privilege
         void insert_table_privilege(const proto::PrivilegeTable &privilege_table,
                                     proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param privilege_zone
+        /// \param mem_privilege
         void insert_zone_privilege(const proto::PrivilegeZone &privilege_zone,
                                        proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param privilege_servlet
+        /// \param mem_privilege
         void insert_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
                                    proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param bns
+        /// \param mem_privilege
         void insert_bns(const std::string &bns, proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param ip
+        /// \param mem_privilege
         void insert_ip(const std::string &ip, proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param privilege_database
+        /// \param mem_privilege
         void delete_database_privilege(const proto::PrivilegeDatabase &privilege_database,
                                        proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param privilege_table
+        /// \param mem_privilege
         void delete_table_privilege(const proto::PrivilegeTable &privilege_table,
                                     proto::UserPrivilege &mem_privilege);
-
+        ///
+        /// \param privilege_zone
+        /// \param mem_privilege
         void delete_zone_privilege(const proto::PrivilegeZone &privilege_zone,
                                        proto::UserPrivilege &mem_privilege);
-
+        ///
+        /// \param privilege_servlet
+        /// \param mem_privilege
         void delete_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
                                     proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param bns
+        /// \param mem_privilege
         void delete_bns(const std::string &bns, proto::UserPrivilege &mem_privilege);
 
+        ///
+        /// \param ip
+        /// \param mem_privilege
         void delete_ip(const std::string &ip, proto::UserPrivilege &mem_privilege);
 
         //username和privilege对应关系

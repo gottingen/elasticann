@@ -31,8 +31,7 @@ namespace EA {
                 for (auto &table_mem: manager->_table_info_map) {
                     if (request->has_namespace_name() && request->has_database()) {
                         if (table_mem.second.schema_pb.namespace_name() == request->namespace_name() &&
-                            table_mem.second.schema_pb.database() == request->database() &&
-                            !table_mem.second.is_global_index) {
+                            table_mem.second.schema_pb.database() == request->database()) {
                             auto table_pb = response->add_schema_infos();
                             *table_pb = table_mem.second.schema_pb;
                         }
@@ -58,7 +57,7 @@ namespace EA {
 
                 std::vector<int64_t> global_index_ids;
                 global_index_ids.push_back(main_table_id);
-                for (auto &index_info: manager->_table_info_map[main_table_id].schema_pb.indexs()) {
+                for (auto &index_info: manager->_table_info_map[main_table_id].schema_pb.indexes()) {
                     if (!manager->is_global_index(index_info)) {
                         continue;
                     }
@@ -144,18 +143,16 @@ namespace EA {
             auto record_ptr = response->add_flatten_schema_infos();
             *record_ptr = field_schema;
         }
-        for (auto &index_info: schema_pb.indexs()) {
+        for (auto &index_info: schema_pb.indexes()) {
             proto::QuerySchema index_schema;
             index_schema.set_field_or_index("Index");
             //index_schema.set_field_or_index("Field");
             index_schema.set_column_name(index_info.index_name());
             index_schema.set_column_id(index_info.index_id());
             std::string type = proto::IndexType_Name(index_info.index_type());
-            if (index_info.is_global()) {
                 type += " GLOBAL";
-            }
             if (index_info.index_type() == proto::I_FULLTEXT) {
-                type += "(" + proto::SegmentType_Name(index_info.segment_type()) + ")";
+                type += "(" + proto::SegmentType_Name(index_info.term_info().segment_type()) + ")";
             }
             //index_schema.set_column_type(proto::IndexType_Name(index_info.index_type()));
             index_schema.set_column_type(type);
@@ -186,8 +183,6 @@ namespace EA {
         flatten_table_info->set_namespace_name(table_info.schema_pb.namespace_name());
         flatten_table_info->set_database(table_info.schema_pb.database());
         flatten_table_info->set_table_name(table_info.schema_pb.table_name());
-        flatten_table_info->set_upper_table_name(table_info.schema_pb.upper_table_name());
-        flatten_table_info->set_region_size(table_info.schema_pb.region_size());
         flatten_table_info->set_replica_num(table_info.schema_pb.replica_num());
         flatten_table_info->set_resource_tag(table_info.schema_pb.resource_tag());
         flatten_table_info->set_max_field_id(table_info.schema_pb.max_field_id());
@@ -380,7 +375,7 @@ namespace EA {
             primary_key_string = "table has been deleted";
             return;
         }
-        for (auto &index_info: table_info.indexs()) {
+        for (auto &index_info: table_info.indexes()) {
             if (index_info.index_type() != proto::I_PRIMARY) {
                 continue;
             }
@@ -452,8 +447,6 @@ namespace EA {
             table_info->set_namespace_name(info.namespace_name());
             table_info->set_database(info.database());
             table_info->set_table_name(info.table_name());
-            table_info->set_upper_table_name(info.upper_table_name());
-            table_info->set_region_size(info.region_size());
             table_info->set_replica_num(info.replica_num());
             table_info->set_resource_tag(info.resource_tag());
             table_info->set_max_field_id(info.max_field_id());

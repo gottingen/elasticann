@@ -22,20 +22,28 @@ namespace EA {
 
     class QueryConfigManager {
     public:
+        ///
+        /// \return
         static QueryConfigManager *get_instance() {
             static QueryConfigManager ins;
             return &ins;
         }
 
-        void
-        get_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
+        ///
+        /// \param request
+        /// \param response
+        void get_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
 
-        void
-        list_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
+        ///
+        /// \param request
+        /// \param response
+        void list_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
 
-        void
-        list_config_version(const ::EA::proto::QueryRequest *request,
-                            ::EA::proto::QueryResponse *response);
+        ///
+        /// \param request
+        /// \param response
+        void list_config_version(const ::EA::proto::QueryRequest *request,
+                                 ::EA::proto::QueryResponse *response);
     };
 }  // namespace EA
 

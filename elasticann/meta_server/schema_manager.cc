@@ -170,12 +170,6 @@ namespace EA {
                                        "no bye_size_per_record", request->op_type(), log_id);
                     return;
                 }
-                if (request->op_type() == proto::OP_UPDATE_SPLIT_LINES
-                    && !request->table_info().has_region_split_lines()) {
-                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
-                                       "no region_split_lines", request->op_type(), log_id);
-                    return;
-                }
                 if (request->op_type() == proto::OP_UPDATE_SCHEMA_CONF
                     && !request->table_info().has_schema_conf()) {
                     ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
@@ -194,8 +188,7 @@ namespace EA {
                                        "no new table name", request->op_type(), log_id);
                     return;
                 }
-                if (request->op_type() == proto::OP_CREATE_TABLE
-                    && !request->table_info().has_upper_table_name()) {
+                if (request->op_type() == proto::OP_CREATE_TABLE) {
                     auto ret = pre_process_for_create_table(request, response, log_id);
                     if (ret < 0) {
                         return;
@@ -230,18 +223,7 @@ namespace EA {
                                        "ttl_duration must > 0", request->op_type(), log_id);
                     return;
                 }
-                if (request->op_type() == proto::OP_MODIFY_PARTITION
-                    && !request->table_info().has_partition_info()) {
-                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
-                                       "no partition_info", request->op_type(), log_id);
-                    return;
-                }
-                if (request->op_type() == proto::OP_UPDATE_CHARSET
-                    && !request->table_info().has_charset()) {
-                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
-                                       "no charset", request->op_type(), log_id);
-                    return;
-                }
+
                 _meta_state_machine->process(controller, request, response, done_guard.release());
                 return;
             }
@@ -446,9 +428,6 @@ namespace EA {
                     if (ret < 0) {
                         TLOG_WARN("Fail to get_table_info, table_id: {}", table_id);
                         continue;
-                    }
-                    if (table_info.has_binlog_info() && table_info.binlog_info().has_binlog_table_id()) {
-                        heartbeat_binlog_table_ids.insert(table_info.binlog_info().binlog_table_id());
                     }
                 }
                 if (heartbeat_binlog_table_ids.empty()) {
@@ -685,9 +664,8 @@ namespace EA {
         std::set<std::string> indexs_name;
         std::string primary_index_name;
         //校验只有普通索引和uniq 索引可以设置全局属性
-        for (auto &index_info: request->table_info().indexs()) {
-            if (index_info.is_global()
-                && index_info.index_type() != proto::I_UNIQ
+        for (auto &index_info: request->table_info().indexes()) {
+            if (index_info.index_type() != proto::I_UNIQ
                 && index_info.index_type() != proto::I_KEY) {
                 ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
                                    "global index only support I_UNIQ or I_KEY", request->op_type(), log_id);
@@ -698,45 +676,19 @@ namespace EA {
                                    "index name repeated", request->op_type(), log_id);
                 return -1;
             }
-            if (index_info.index_type() == proto::I_PRIMARY || index_info.is_global()) {
+            if (index_info.index_type() == proto::I_PRIMARY) {
                 primary_index_name = index_info.index_name();
                 TLOG_INFO("set primary index name {}", primary_index_name);
             }
             indexs_name.insert(index_info.index_name());
         }
-        // 分区表多region时，设置多split_key
-        if (table_info.has_region_num() && request->table_info().split_keys_size() == 0) {
-            int32_t region_num = table_info.region_num();
-            if (region_num > 1) {
-                auto split_keys = table_info.add_split_keys();
-                split_keys->set_index_name(primary_index_name);
-                for (auto index = 1; index < region_num; ++index) {
-                    split_keys->add_split_keys(std::string(index + 1, 0x01));
-                }
-            }
-        }
+
         //校验split_key是否有序
         int32_t total_region_count = 0;
         std::set<std::string> split_index_names;
-        for (auto &split_key: request->table_info().split_keys()) {
-            if (indexs_name.find(split_key.index_name()) == indexs_name.end()) {
-                ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
-                                   "index_name for split key not exist", request->op_type(), log_id);
-                return -1;
-            }
-            for (auto i = 1; i < split_key.split_keys_size(); ++i) {
-                if (split_key.split_keys(i) <= split_key.split_keys(i - 1)) {
-                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
-                                       "split key not sorted", request->op_type(), log_id);
-                    return -1;
-                }
-            }
-            total_region_count += split_key.split_keys_size() + 1;
-            split_index_names.insert(split_key.index_name());
-        }
         //全局二级索引或者主键索引没有指定split_key
-        for (auto &index_info: request->table_info().indexs()) {
-            if (index_info.index_type() == proto::I_PRIMARY || index_info.is_global()) {
+        for (auto &index_info: request->table_info().indexes()) {
+            if (index_info.index_type() == proto::I_PRIMARY) {
                 if (split_index_names.find(index_info.index_name()) == split_index_names.end()) {
                     ++total_region_count;
                 }
@@ -786,11 +738,8 @@ namespace EA {
                 table_info_ptr->set_##TABLE_INFO_FIELD(database_info.TABLE_INFO_FIELD()); \
             } \
         }
-            SET_REQUEST_TABLE_INFO(engine);
-            SET_REQUEST_TABLE_INFO(charset);
             SET_REQUEST_TABLE_INFO(byte_size_per_record);
             SET_REQUEST_TABLE_INFO(replica_num);
-            SET_REQUEST_TABLE_INFO(region_split_lines);
 
 #undef SET_REQUEST_TABLE_INFO
 

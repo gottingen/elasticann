@@ -388,10 +388,6 @@ namespace EA {
                     TableManager::get_instance()->rename_table(request, iter.index(), done);
                     break;
                 }
-                case proto::OP_SWAP_TABLE: {
-                    TableManager::get_instance()->swap_table(request, iter.index(), done);
-                    break;
-                }
                 case proto::OP_ADD_FIELD: {
                     TableManager::get_instance()->add_field(request, iter.index(), done);
                     break;
@@ -418,18 +414,6 @@ namespace EA {
                 }
                 case proto::OP_UPDATE_BYTE_SIZE: {
                     TableManager::get_instance()->update_byte_size(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_SPLIT_LINES: {
-                    TableManager::get_instance()->update_split_lines(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_MODIFY_PARTITION: {
-                    TableManager::get_instance()->modify_partition(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_CHARSET: {
-                    TableManager::get_instance()->update_charset(request, iter.index(), done);
                     break;
                 }
                 case proto::OP_UPDATE_MAIN_LOGICAL_ROOM: {
@@ -478,18 +462,6 @@ namespace EA {
                 }
                 case proto::OP_UPDATE_STATISTICS: {
                     TableManager::get_instance()->update_statistics(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_LINK_BINLOG: {
-                    TableManager::get_instance()->link_binlog(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UNLINK_BINLOG: {
-                    TableManager::get_instance()->unlink_binlog(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_SET_INDEX_HINT_STATUS: {
-                    TableManager::get_instance()->set_index_hint_status(request, iter.index(), done);
                     break;
                 }
                 case proto::OP_ADD_LEARNER: {

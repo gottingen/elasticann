@@ -23,14 +23,13 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 
 namespace EA {
-    //合法性检查，真正的处理在state_machine中
+
     void PrivilegeManager::process_user_privilege(google::protobuf::RpcController *controller,
                                                   const proto::MetaManagerRequest *request,
                                                   proto::MetaManagerResponse *response,
                                                   google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
+        auto *cntl = static_cast<brpc::Controller *>(controller);
         uint64_t log_id = 0;
         if (cntl->has_log_id()) {
             log_id = cntl->log_id();
@@ -78,7 +77,7 @@ namespace EA {
         std::string username = user_privilege.username();
         if (_user_privilege.find(username) != _user_privilege.end()) {
             TLOG_WARN("request username has been created, username:{}",
-                       user_privilege.username());
+                      user_privilege.username());
             IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "username has been repeated");
             return;
         }
@@ -289,7 +288,7 @@ namespace EA {
             proto::UserPrivilege user_privilege;
             if (!user_privilege.ParseFromString(iter->value().ToString())) {
                 TLOG_ERROR("parse from pb fail when load privilege snapshot, key:{}",
-                         iter->key().data());
+                           iter->key().data());
                 return -1;
             }
             TLOG_WARN("user_privilege:{}", user_privilege.ShortDebugString());
@@ -350,7 +349,7 @@ namespace EA {
     }
 
     void PrivilegeManager::insert_zone_privilege(const proto::PrivilegeZone &privilege_zone,
-                               proto::UserPrivilege &mem_privilege) {
+                                                 proto::UserPrivilege &mem_privilege) {
         bool whether_exist = false;
         for (auto &mem_zone: *mem_privilege.mutable_privilege_zone()) {
             if (mem_zone.zone_id() == privilege_zone.zone_id()) {
@@ -373,7 +372,7 @@ namespace EA {
     }
 
     void PrivilegeManager::insert_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
-                                  proto::UserPrivilege &mem_privilege) {
+                                                    proto::UserPrivilege &mem_privilege) {
         bool whether_exist = false;
         int64_t zone_id = privilege_servlet.zone_id();
         int64_t servlet_id = privilege_servlet.servlet_id();
@@ -467,14 +466,14 @@ namespace EA {
     }
 
     void PrivilegeManager::delete_zone_privilege(const proto::PrivilegeZone &privilege_zone,
-                               proto::UserPrivilege &mem_privilege) {
+                                                 proto::UserPrivilege &mem_privilege) {
         proto::UserPrivilege copy_mem_privilege = mem_privilege;
         mem_privilege.clear_privilege_zone();
         for (auto &copy_zone: copy_mem_privilege.privilege_zone()) {
             if (copy_zone.zone_id() == privilege_zone.zone_id()) {
                 //收回写权限
                 if (privilege_zone.has_zone_rw() &&
-                        privilege_zone.zone_rw() < copy_zone.zone_rw()) {
+                    privilege_zone.zone_rw() < copy_zone.zone_rw()) {
                     auto add_zone = mem_privilege.add_privilege_zone();
                     *add_zone = privilege_zone;
                 }
@@ -487,7 +486,7 @@ namespace EA {
     }
 
     void PrivilegeManager::delete_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
-                                  proto::UserPrivilege &mem_privilege) {
+                                                    proto::UserPrivilege &mem_privilege) {
         int64_t zone_id = privilege_servlet.zone_id();
         int64_t servlet_id = privilege_servlet.servlet_id();
         proto::UserPrivilege copy_mem_privilege = mem_privilege;
@@ -496,7 +495,7 @@ namespace EA {
             if (zone_id == copy_servlet.zone_id() && servlet_id == copy_servlet.servlet_id()) {
                 //写权限收回
                 if (privilege_servlet.has_servlet_rw() &&
-                        privilege_servlet.servlet_rw() < copy_servlet.servlet_rw()) {
+                    privilege_servlet.servlet_rw() < copy_servlet.servlet_rw()) {
                     auto add_servlet = mem_privilege.add_privilege_servlet();
                     *add_servlet = privilege_servlet;
                 }
@@ -506,6 +505,7 @@ namespace EA {
             }
         }
     }
+
     void PrivilegeManager::delete_bns(const std::string &bns,
                                       proto::UserPrivilege &mem_privilege) {
         proto::UserPrivilege copy_mem_privilege = mem_privilege;
