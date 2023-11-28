@@ -64,8 +64,8 @@ protected:
  */
 DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     _state_machine->set_global_network_segment_balance(false);
-    EA::proto::MetaManagerRequest request_logical;
-    request_logical.set_op_type(EA::proto::OP_ADD_LOGICAL);
+    EA::servlet::MetaManagerRequest request_logical;
+    request_logical.set_op_type(EA::servlet::OP_ADD_LOGICAL);
     //批量增加逻辑机房
     request_logical.mutable_logical_rooms()->add_logical_rooms("lg1");
     request_logical.mutable_logical_rooms()->add_logical_rooms("lg2");
@@ -106,8 +106,8 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(0, _cluster_manager->_instance_info.size());
 
     /* 开始测试新增物理机房 */
-    EA::proto::MetaManagerRequest request_physical;
-    request_physical.set_op_type(EA::proto::OP_ADD_PHYSICAL);
+    EA::servlet::MetaManagerRequest request_physical;
+    request_physical.set_op_type(EA::servlet::OP_ADD_PHYSICAL);
     //给一个不存在的逻辑机房加物理机房，应该报错
     request_physical.mutable_physical_rooms()->set_logical_room("lg4");
     request_physical.mutable_physical_rooms()->add_physical_rooms("py1");
@@ -172,8 +172,8 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(0, _cluster_manager->_instance_info.size());
 
     /* 测试增加实例 */
-    EA::proto::MetaManagerRequest request_instance;
-    request_instance.set_op_type(EA::proto::OP_ADD_INSTANCE);
+    EA::servlet::MetaManagerRequest request_instance;
+    request_instance.set_op_type(EA::servlet::OP_ADD_INSTANCE);
     request_instance.mutable_instance()->set_address("127.0.0.1:8010");
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(5000);
@@ -203,15 +203,15 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(1, _cluster_manager->_instance_info.size());
 
     /* modify_tag 给实例加tag*/
-    EA::proto::MetaManagerRequest request_tag;
+    EA::servlet::MetaManagerRequest request_tag;
     request_tag.mutable_instance()->set_address("127.0.0.1:8010");
     request_tag.mutable_instance()->mutable_table_info()->set_resource_tag("resource_tag1");
     _cluster_manager->update_instance(request_tag, NULL);
     _cluster_manager->load_snapshot();
 
     /* 添加一个南京的逻辑机房, 把lg401 从lg1机房转到lg4机房 */
-    EA::proto::MetaManagerRequest request_move;
-    request_move.set_op_type(EA::proto::OP_ADD_LOGICAL);
+    EA::servlet::MetaManagerRequest request_move;
+    request_move.set_op_type(EA::servlet::OP_ADD_LOGICAL);
     request_move.mutable_logical_rooms()->add_logical_rooms("lg4");
     _cluster_manager->add_logical(request_move, NULL);
     DOCTEST_REQUIRE_EQ(6, _cluster_manager->_physical_info.size());
@@ -226,7 +226,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(1, _cluster_manager->_physical_instance_map["py2"].size());
     DOCTEST_REQUIRE_EQ(1, _cluster_manager->_instance_info.size());
 
-    request_move.set_op_type(EA::proto::OP_MOVE_PHYSICAL);
+    request_move.set_op_type(EA::servlet::OP_MOVE_PHYSICAL);
     request_move.mutable_move_physical_request()->set_physical_room("lg401");
     request_move.mutable_move_physical_request()->set_old_logical_room("lg1");
     request_move.mutable_move_physical_request()->set_new_logical_room("lg4");
@@ -247,8 +247,8 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(2, _cluster_manager->_logical_physical_map["lg2"].size());
     DOCTEST_REQUIRE_EQ(0, _cluster_manager->_logical_physical_map["lg3"].size());
 
-    EA::proto::MetaManagerRequest request_remove_logical;
-    request_remove_logical.set_op_type(EA::proto::OP_DROP_LOGICAL);
+    EA::servlet::MetaManagerRequest request_remove_logical;
+    request_remove_logical.set_op_type(EA::servlet::OP_DROP_LOGICAL);
     //删除一个有物理机房的逻辑机房， 报错
     request_remove_logical.mutable_logical_rooms()->add_logical_rooms("lg3");
     request_remove_logical.mutable_logical_rooms()->add_logical_rooms("lg4");
@@ -273,8 +273,8 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(2, _cluster_manager->_logical_physical_map["lg2"].size());
 
     //删除物理机房
-    EA::proto::MetaManagerRequest request_remove_physical;
-    request_remove_physical.set_op_type(EA::proto::OP_DROP_PHYSICAL);
+    EA::servlet::MetaManagerRequest request_remove_physical;
+    request_remove_physical.set_op_type(EA::servlet::OP_DROP_PHYSICAL);
     request_remove_physical.mutable_physical_rooms()->set_logical_room("lg2");
     request_remove_physical.mutable_physical_rooms()->add_physical_rooms("py4");
     _cluster_manager->drop_physical(request_remove_physical, NULL);
@@ -311,7 +311,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(0, _cluster_manager->_logical_physical_map["lg2"].size());
 
     //删除逻辑机房
-    request_remove_logical.set_op_type(EA::proto::OP_DROP_LOGICAL);
+    request_remove_logical.set_op_type(EA::servlet::OP_DROP_LOGICAL);
     request_remove_logical.mutable_logical_rooms()->clear_logical_rooms();
     request_remove_logical.mutable_logical_rooms()->add_logical_rooms("lg2");
     _cluster_manager->drop_logical(request_remove_logical, NULL);
@@ -327,15 +327,15 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     DOCTEST_REQUIRE_EQ(2, _cluster_manager->_logical_physical_map["lg1"].size());
     DOCTEST_REQUIRE_EQ(1, _cluster_manager->_logical_physical_map["lg4"].size());
     //删除一个有实例的物理机房，报错
-    request_remove_physical.set_op_type(EA::proto::OP_DROP_PHYSICAL);
+    request_remove_physical.set_op_type(EA::servlet::OP_DROP_PHYSICAL);
     request_remove_physical.mutable_physical_rooms()->clear_physical_rooms();
     request_remove_physical.mutable_physical_rooms()->set_logical_room("lg1");
     request_remove_physical.mutable_physical_rooms()->add_physical_rooms("py2");
     _cluster_manager->drop_physical(request_remove_physical, NULL);
 
     //删除实例
-    EA::proto::MetaManagerRequest request_remove_instance;
-    request_remove_instance.set_op_type(EA::proto::OP_DROP_INSTANCE);
+    EA::servlet::MetaManagerRequest request_remove_instance;
+    request_remove_instance.set_op_type(EA::servlet::OP_DROP_INSTANCE);
     request_remove_instance.mutable_instance()->set_address("127.0.0.1:8010");
     _cluster_manager->drop_instance(request_remove_instance, NULL);
     DOCTEST_REQUIRE_EQ(4, _cluster_manager->_physical_info.size());
@@ -371,7 +371,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_and_drop") {
     request_physical.mutable_physical_rooms()->clear_physical_rooms();
     request_physical.mutable_physical_rooms()->add_physical_rooms("py2");
     _cluster_manager->add_physical(request_physical, NULL);
-    request_instance.set_op_type(EA::proto::OP_ADD_INSTANCE);
+    request_instance.set_op_type(EA::servlet::OP_ADD_INSTANCE);
     request_instance.mutable_instance()->clear_physical_room();
     request_instance.mutable_instance()->set_address("127.0.0.1:8010");
     request_instance.mutable_instance()->set_capacity(100000);
@@ -583,9 +583,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
         for (
             auto &ip
                 : resource_ip.second) {
-            EA::proto::MetaManagerRequest request_instance;
+            EA::servlet::MetaManagerRequest request_instance;
             request_instance.
-                    set_op_type(EA::proto::OP_ADD_INSTANCE);
+                    set_op_type(EA::servlet::OP_ADD_INSTANCE);
             request_instance.mutable_instance()->
                     set_address(ip);
             request_instance.mutable_instance()->set_capacity(100000);
@@ -839,9 +839,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     size_t network_segment_size, prefix;
 
 // 加入"10.0.0.0:8010", 开启全局网段balance开关
-    EA::proto::MetaManagerRequest request_instance;
+    EA::servlet::MetaManagerRequest request_instance;
     request_instance.
-            set_op_type(EA::proto::OP_ADD_INSTANCE);
+            set_op_type(EA::servlet::OP_ADD_INSTANCE);
     request_instance.mutable_instance()->set_address("10.0.0.0:8010");
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(5000);
@@ -873,7 +873,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
 
 // 加入"10.0.0.0:8010"
     request_instance.
-            set_op_type(EA::proto::OP_ADD_INSTANCE);
+            set_op_type(EA::servlet::OP_ADD_INSTANCE);
     request_instance.mutable_instance()->set_address("10.222.0.1:8010");
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(5000);
@@ -902,7 +902,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
 
 // 再加一个instance
     request_instance.
-            set_op_type(EA::proto::OP_ADD_INSTANCE);
+            set_op_type(EA::servlet::OP_ADD_INSTANCE);
     request_instance.mutable_instance()->set_address("10.223.0.1:8010");
     request_instance.mutable_instance()->set_capacity(100000);
     request_instance.mutable_instance()->set_used_size(5000);
@@ -935,9 +935,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     DOCTEST_REQUIRE_EQ(10, pick_times["10.223.0.1:8010"]);
 
 // 删除一个instance
-    EA::proto::MetaManagerRequest request_remove_instance;
+    EA::servlet::MetaManagerRequest request_remove_instance;
     request_remove_instance.
-            set_op_type(EA::proto::OP_DROP_INSTANCE);
+            set_op_type(EA::servlet::OP_DROP_INSTANCE);
     request_remove_instance.mutable_instance()->set_address("10.0.0.0:8010");
     _cluster_manager->
             drop_instance(request_remove_instance,
@@ -965,9 +965,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     DOCTEST_REQUIRE_EQ(15, pick_times["10.223.0.1:8010"]);
 
 // 更改一个instance的resource tag，同步更改network信息
-    EA::proto::MetaManagerRequest request_change_resource_tag1;
+    EA::servlet::MetaManagerRequest request_change_resource_tag1;
     request_change_resource_tag1.
-            set_op_type(EA::proto::OP_UPDATE_INSTANCE);
+            set_op_type(EA::servlet::OP_UPDATE_INSTANCE);
     request_change_resource_tag1.mutable_instance()->set_address("10.223.0.1:8010");
     request_change_resource_tag1.mutable_instance()->set_capacity(100000);
     request_change_resource_tag1.mutable_instance()->set_used_size(5000);
@@ -1018,9 +1018,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
         for (
             auto &ip
                 : resource_ip.second) {
-            EA::proto::MetaManagerRequest request_instance;
+            EA::servlet::MetaManagerRequest request_instance;
             request_instance.
-                    set_op_type(EA::proto::OP_ADD_INSTANCE);
+                    set_op_type(EA::servlet::OP_ADD_INSTANCE);
             request_instance.mutable_instance()->
                     set_address(ip);
             request_instance.mutable_instance()->set_capacity(100000);
@@ -1061,9 +1061,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
     DOCTEST_REQUIRE_EQ(10, pick_times["11.0.0.4:8010"]);
 
 // 模拟用户自定义store网段，更改两个instance的network segment gflag，自定义网段为bj-network1，模拟汇报心跳
-    EA::proto::MetaManagerRequest request_change_network_tag1;
+    EA::servlet::MetaManagerRequest request_change_network_tag1;
     request_change_network_tag1.
-            set_op_type(EA::proto::OP_UPDATE_INSTANCE);
+            set_op_type(EA::servlet::OP_UPDATE_INSTANCE);
     request_change_network_tag1.mutable_instance()->set_address("11.0.0.1:8010");
     request_change_network_tag1.mutable_instance()->set_capacity(100000);
     request_change_network_tag1.mutable_instance()->set_used_size(5000);
@@ -1140,7 +1140,7 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_load_balance_by_network_segm
 
 // 模拟用户取消store网段gflag，走update_instance
     request_change_network_tag1.
-            set_op_type(EA::proto::OP_UPDATE_INSTANCE);
+            set_op_type(EA::servlet::OP_UPDATE_INSTANCE);
     request_change_network_tag1.mutable_instance()->set_address("11.0.0.1:8010");
     request_change_network_tag1.mutable_instance()->set_capacity(100000);
     request_change_network_tag1.mutable_instance()->set_used_size(5000);
@@ -1193,9 +1193,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
             auto i = 0;
             i < 100; ++i) {
         std::string ip = "12.1." + std::to_string(i) + ".100:8000";
-        EA::proto::MetaManagerRequest request_instance;
+        EA::servlet::MetaManagerRequest request_instance;
         request_instance.
-                set_op_type(EA::proto::OP_ADD_INSTANCE);
+                set_op_type(EA::servlet::OP_ADD_INSTANCE);
         request_instance.mutable_instance()->
                 set_address(ip);
         request_instance.mutable_instance()->set_capacity(100000);
@@ -1235,9 +1235,9 @@ DOCTEST_TEST_CASE_FIXTURE(ClusterManagerTest, "test_add_cluster") {
             auto i = 0;
             i < 100; ++i) {
         std::string ip = "12.1." + std::to_string(i) + ".101:8000";
-        EA::proto::MetaManagerRequest request_instance;
+        EA::servlet::MetaManagerRequest request_instance;
         request_instance.
-                set_op_type(EA::proto::OP_ADD_INSTANCE);
+                set_op_type(EA::servlet::OP_ADD_INSTANCE);
         request_instance.mutable_instance()->
                 set_address(ip);
         request_instance.mutable_instance()->set_capacity(100000);

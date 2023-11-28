@@ -1,0 +1,186 @@
+// Copyright 2023 The Elastic AI Search Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+syntax="proto2";
+package EA.servlet;
+option cc_generic_services = true;
+import "elasticann/proto/servlet/version.proto";
+import "elasticann/proto/servlet/error_code.proto";
+import "elasticann/proto/servlet/optype.proto";
+import "elasticann/proto/servlet/raft.proto";
+import "elasticann/proto/servlet/user.struct.proto";
+import "elasticann/proto/servlet/unique_id.proto";
+import "elasticann/proto/servlet/config.struct.proto";
+
+enum Status {
+  NORMAL = 1;
+  FAULTY = 2;
+  DEAD   = 3;
+  MIGRATE= 4;
+  FULL   = 5;
+  SLOW   = 6;
+  BUSY   = 7;
+};
+
+message NameSpaceInfo {
+  required string namespace_name         = 1;
+  optional int64 namespace_id            = 2;
+  optional int64 quota                   = 3;
+  optional int64 version                 = 4;
+  optional bool deleted                  = 5;
+  optional string resource_tag           = 6;
+  optional int64 byte_size_per_record    = 9;
+  optional int64 replica_num             = 10;
+  optional int64 region_split_lines      = 11;
+};
+
+message ZoneInfo {
+  required string zone                   = 1;
+  optional int64 zone_id                 = 2;
+  required string namespace_name         = 3;
+  optional int64 namespace_id            = 4;
+  optional int64 quota                   = 5;
+  optional int64 version                 = 6;
+  optional bool   deleted                = 7;
+  optional string resource_tag           = 8;
+  optional int64 byte_size_per_record    = 11;
+  optional int64 replica_num             = 12;
+  optional int64 region_split_lines      = 13; //region分裂行数阈值
+};
+
+message ServletInfo {
+    optional int64       servlet_id              = 1;
+    required string      servlet_name            = 2;
+    required string      zone                    = 3;
+    optional int64       zone_id                 = 4;
+    required string      namespace_name          = 5;
+    optional int64       namespace_id            = 6;
+    optional int64       replica_num             = 7;
+    optional string      resource_tag            = 8;
+    optional int64       version                 = 9;
+    optional Status      status                  = 10;
+    optional bool        deleted                 = 11;
+    optional uint32      timestamp               = 12;
+    optional string      conf                    = 15;
+    repeated string      env                     = 16;
+    optional string      comment                 = 17;
+    optional Version     conf_verson             = 18;
+}
+
+message ServletInstance {
+    required string namespace_name  = 1;
+    required string zone_name       = 2;
+    required string servlet_name    = 3;
+    optional string address         = 6;
+    optional string color           = 7;
+    optional string env             = 8;
+    optional Status status          = 9;
+    optional string version         = 10;
+    required int32  timestamp       = 11;
+    optional int32  weight          = 12;
+};
+
+message ServletHeartbeat {
+    required string address         = 1;
+}
+
+
+message MetaManagerRequest {
+  required OpType              op_type                = 1; //一级操作符
+  optional NameSpaceInfo       namespace_info         = 3; //建/改/删 namepace, 对应操作OP_CREATE
+  optional UserPrivilege       user_privilege         = 5; //创建用户, 权限增删
+  repeated int64               drop_region_ids        = 12; //支持批量删除
+  optional AutoIncrementRequest auto_increment        = 14; //自增主键id生成和更新
+  repeated string               resource_tags         = 16; //针对resource_tag做某些操作
+  optional bool                 need_merge            = 18;
+  optional bool                add_delete_region      = 21; //添加被删除的region
+  optional ConfigInfo          config_info            = 29;
+  optional ZoneInfo            zone_info              = 30;
+  optional ServletInfo         servlet_info           = 31;
+  optional ServletHeartbeat    servlet_renew          = 33;
+
+};
+
+message MetaManagerResponse {
+  required ErrCode errcode                            = 1;
+  optional string errmsg                              = 2;
+  optional string leader                              = 3;
+  optional OpType op_type                             = 5;
+  optional uint64 start_id                            = 6;
+  optional uint64 end_id                              = 7;
+};
+
+
+message QueryRequest {
+  required QueryOpType   op_type                       = 1;
+  optional string        logical_room                  = 2;
+  optional string        physical_room                 = 3;
+  optional string        instance_address              = 4;
+  optional string        user_name                     = 5;
+  optional string        namespace_name                = 6;
+  optional string        resource_tag                  = 14;
+  optional string        config_name                   = 17;
+  optional Version       config_version                = 18;
+  optional string        zone                          = 19;
+  optional string        servlet                       = 20;
+  optional string        color                         = 21;
+  optional Status        status                        = 22;
+  optional string        env                           = 23;
+};
+
+message QueryResponse {
+  required ErrCode                   errcode                       = 1;
+  optional string                    errmsg                        = 2;
+  optional string                    leader                        = 3;
+  repeated UserPrivilege             user_privilege                = 7;
+  repeated NameSpaceInfo             namespace_infos               = 8;
+  repeated QueryInstance             flatten_instances             = 12;
+  repeated QueryUserPrivilege        flatten_privileges            = 13;
+  repeated int64                     peer_ids                      = 17;
+  repeated ZoneInfo                  zone_infos                    = 27;
+  repeated ServletInfo               servlet_infos                 = 28;
+  repeated ConfigInfo                config_infos                  = 29;
+  repeated QueryUserServletPrivilege flatten_servlet_privileges    = 30;
+  repeated ServletInstance           servlet_instance              = 31;
+};
+
+
+
+message QueryUserPrivilege {
+  required string         username        = 1;
+  required string         namespace_name  = 2;
+  required string         privilege       = 3;
+  required RW             table_rw        = 4;
+  optional string         password        = 5;
+};
+
+message QueryUserServletPrivilege {
+  required string         username        = 1;
+  required string         namespace_name  = 2;
+  required string         privilege       = 3;
+  required RW             servlet_rw      = 4;
+  optional string         password        = 5;
+};
+
+message QueryInstance {
+  required string        address                      = 1;
+  optional int64         capacity                     = 2;
+  optional int64         used_size                    = 3;
+  optional string        resource_tag                 = 4;
+  optional Status        status                       = 5;
+  optional string        physical_room                = 6;
+  optional string        logical_room                 = 7;
+  optional string        version                      = 14;
+};

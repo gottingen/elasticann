@@ -23,13 +23,13 @@ namespace EA {
     turbo::ModuleVersion ConfigManager::kDefaultVersion(0,0,1);
 
     void ConfigManager::process_schema_info(google::protobuf::RpcController *controller,
-                             const proto::MetaManagerRequest *request,
-                             proto::MetaManagerResponse *response,
+                             const EA::servlet::MetaManagerRequest *request,
+                             EA::servlet::MetaManagerResponse *response,
                              google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         if (!_meta_state_machine->is_leader()) {
             if (response) {
-                response->set_errcode(proto::NOT_LEADER);
+                response->set_errcode(EA::servlet::NOT_LEADER);
                 response->set_errmsg("not leader");
                 response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
             }
@@ -45,7 +45,7 @@ namespace EA {
             }
         }
         ON_SCOPE_EXIT(([cntl, log_id, response]() {
-            if (response != nullptr && response->errcode() != proto::SUCCESS) {
+            if (response != nullptr && response->errcode() != EA::servlet::SUCCESS) {
                 const auto &remote_side_tmp = butil::endpoint2str(cntl->remote_side());
                 const char *remote_side = remote_side_tmp.c_str();
                 TLOG_WARN("response error, remote_side:{}, log_id:{}", remote_side, log_id);
@@ -53,23 +53,23 @@ namespace EA {
         }));
 
         switch (request->op_type()) {
-            case proto::OP_CREATE_CONFIG:
-            case proto::OP_REMOVE_CONFIG:
+            case EA::servlet::OP_CREATE_CONFIG:
+            case EA::servlet::OP_REMOVE_CONFIG:
                 if(!request->has_config_info()) {
-                    ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
+                    ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
                                        "no config_info", request->op_type(), log_id);
                     return;
                 }
                 _meta_state_machine->process(controller, request, response, done_guard.release());
                 return;
             default:
-                ERROR_SET_RESPONSE(response, proto::INPUT_PARAM_ERROR,
+                ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
                                    "invalid op_type", request->op_type(), log_id);
                 return;
         }
 
     }
-    void ConfigManager::create_config(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done) {
+    void ConfigManager::create_config(const ::EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         auto &create_request = request.config_info();
         auto &name = create_request.name();
         turbo::ModuleVersion version = kDefaultVersion;
@@ -82,41 +82,41 @@ namespace EA {
 
         BAIDU_SCOPED_LOCK(_config_mutex);
         if (_configs.find(name) == _configs.end()) {
-            _configs[name] = std::map<turbo::ModuleVersion, EA::proto::ConfigInfo>();
+            _configs[name] = std::map<turbo::ModuleVersion, EA::servlet::ConfigInfo>();
         }
         auto it = _configs.find(name);
         // do not rewrite.
         if (it->second.find(version) != it->second.end()) {
             /// already exists
             TLOG_INFO("config :{} version: {} exist", name, version.to_string());
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config already exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "config already exist");
             return;
         }
         if(!it->second.empty() && it->second.rbegin()->first >= version) {
             /// Version numbers must increase monotonically
             TLOG_INFO("config :{} version: {} must be larger than current:{}", name, version.to_string(), it->second.rbegin()->first.to_string());
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "Version numbers must increase monotonically");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "Version numbers must increase monotonically");
             return;
         }
         std::string rocks_key = make_config_key(name, version);
         std::string rocks_value;
         if (!create_request.SerializeToString(&rocks_value)) {
-            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
 
         int ret = MetaRocksdb::get_instance()->put_meta_info(rocks_key, rocks_value);
         if (ret < 0) {
-            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INTERNAL_ERROR, "write db fail");
             return;
         }
         it->second[version] = create_request;
         TLOG_INFO("config :{} version: {} create", name, version.to_string());
-        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
     }
 
 
-    void ConfigManager::remove_config(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done) {
+    void ConfigManager::remove_config(const ::EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         auto &remove_request = request.config_info();
         auto &name = remove_request.name();
         bool remove_signal = remove_request.has_version();
@@ -127,7 +127,7 @@ namespace EA {
         }
         auto it = _configs.find(name);
         if (it == _configs.end()) {
-            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::PARSE_TO_PB_FAIL, "config not exist");
             return;
         }
         turbo::ModuleVersion version(remove_request.version().major(), remove_request.version().minor(),
@@ -136,28 +136,28 @@ namespace EA {
         if (it->second.find(version) == it->second.end()) {
             /// not exists
             TLOG_INFO("config :{} version: {} not exist", name, version.to_string());
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "config not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "config not exist");
         }
 
         std::string rocks_key = make_config_key(name, version);
         int ret = MetaRocksdb::get_instance()->delete_meta_info(std::vector{rocks_key});
         if (ret < 0) {
-            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INTERNAL_ERROR, "delete from db fail");
             return;
         }
         it->second.erase(version);
         if(it->second.empty()) {
             _configs.erase(name);
         }
-        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
     }
 
-    void ConfigManager::remove_config_all(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done) {
+    void ConfigManager::remove_config_all(const ::EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         auto &remove_request = request.config_info();
         auto &name = remove_request.name();
         auto it = _configs.find(name);
         if (it == _configs.end()) {
-            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "config not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::PARSE_TO_PB_FAIL, "config not exist");
             return;
         }
         std::vector<std::string> del_keys;
@@ -169,11 +169,11 @@ namespace EA {
 
         int ret = MetaRocksdb::get_instance()->delete_meta_info(del_keys);
         if (ret < 0) {
-            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "delete from db fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INTERNAL_ERROR, "delete from db fail");
             return;
         }
         _configs.erase(name);
-        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
     }
 
     int ConfigManager::load_snapshot() {
@@ -198,14 +198,14 @@ namespace EA {
     }
 
     int ConfigManager::load_config_snapshot(const std::string &value) {
-        proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         if (!config_pb.ParseFromString(value)) {
             TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
             return -1;
         }
         ///TLOG_INFO("load config:{}", config_pb.name());
         if(_configs.find(config_pb.name()) == _configs.end()) {
-            _configs[config_pb.name()] = std::map<turbo::ModuleVersion, EA::proto::ConfigInfo>();
+            _configs[config_pb.name()] = std::map<turbo::ModuleVersion, EA::servlet::ConfigInfo>();
         }
         auto it = _configs.find(config_pb.name());
         turbo::ModuleVersion version(config_pb.version().major(), config_pb.version().minor(),

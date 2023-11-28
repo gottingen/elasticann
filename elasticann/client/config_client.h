@@ -23,7 +23,7 @@
 #include <map>
 #include "turbo/base/status.h"
 #include "turbo/module/module_version.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include <functional>
 #include "elasticann/client/base_message_sender.h"
 #include "elasticann/client/meta.h"

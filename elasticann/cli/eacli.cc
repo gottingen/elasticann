@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 #include "elasticann/cli/meta_cmd.h"
-#include "elasticann/cli/ops_cmd.h"
 #include "turbo/flags/flags.h"
 #include "turbo/format/print.h"
 #include "elasticann/cli/option_context.h"
@@ -26,14 +25,11 @@ int main(int argc, char **argv) {
     turbo::App app{"elastic ann search client"};
     auto opt = EA::cli::OptionContext::get_instance();
     app.add_flag("-V, --verbose", opt->verbose, "verbose detail message default(false)")->default_val(false);
-    app.add_option("-s,--server", opt->router_server, "server address default(\"127.0.0.1:8888\")")->default_val(
-            "127.0.0.1:8888");
+    app.add_option("-s,--server", opt->router_server, "server address default(\"127.0.0.1:8010\")")->default_val(
+            "127.0.0.1:8010");
     app.add_option("-m,--meta_server", opt->meta_server, "server address default(\"127.0.0.1:8010\")")->default_val(
             "127.0.0.1:8010");
-    app.add_option("-g,--meta_group", opt->meta_group, "server address default(\"meta_raft\")")->default_val(
-            "meta_raft");
-    app.add_flag("-r,--router", opt->router, "server address default(false)");
-    app.add_option("-L,--lb", opt->load_balancer, "load balance default(\"rr\")")->default_val("rr");
+    app.add_flag("-r,--router", opt->router, "server address default(false)")->default_val(false);
     app.add_option("-T,--timeout", opt->timeout_ms, "timeout ms default(2000)");
     app.add_option("-C,--connect", opt->connect_timeout_ms, "connect timeout ms default(100)");
     app.add_option("-R,--retry", opt->max_retry, "max try time default(3)");
@@ -64,21 +60,21 @@ int main(int argc, char **argv) {
             sender = EA::client::RouterSender::get_instance();
             TLOG_INFO_IF(opt->verbose, "init connect success to router server {}", opt->router_server);
         } else {
-            auto rs = EA::client::MetaSender::get_instance()->init(opt->meta_group, opt->meta_server);
-            if (!rs.ok()) {
-                turbo::Println(rs.message());
-                exit(0);
-            }
             EA::client::MetaSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
                     .set_interval_time(opt->time_between_meta_connect_error_ms)
                     .set_retry_time(opt->max_retry)
                     .set_verbose(opt->verbose);
+            auto rs = EA::client::MetaSender::get_instance()->init(opt->meta_server);
+            if (!rs.ok()) {
+                turbo::Println("{}", rs.message());
+                exit(0);
+            }
             sender = EA::client::MetaSender::get_instance();
-            TLOG_INFO_IF(opt->verbose, "init connect success to meta cluster {} {}", opt->meta_group, opt->meta_server);
+            TLOG_INFO_IF(opt->verbose, "init connect success to meta server:{}", opt->meta_server);
         }
         auto r = EA::client::MetaClient::get_instance()->init(sender);
         if (!r.ok()) {
-            turbo::Println("can not connect to meta server");
+            turbo::Println("set up meta server error:{}",r.message());
             exit(0);
         }
     };
@@ -87,7 +83,6 @@ int main(int argc, char **argv) {
     // They are kept alive by a shared pointer in the
     // lambda function
     EA::cli::setup_meta_cmd(app);
-    EA::cli::setup_ops_cmd(app);
     // More setup if needed, i.e., other subcommands etc.
 
     TURBO_FLAGS_PARSE(app, argc, argv);

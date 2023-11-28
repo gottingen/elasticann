@@ -78,7 +78,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::check_config(const std::string &json_content) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         std::string errmsg;
         if (!json2pb::JsonToProtoMessage(json_content, &config_pb, &errmsg)) {
             return turbo::InvalidArgumentError(errmsg);
@@ -100,7 +100,7 @@ namespace EA::client {
         return check_config(config_data);
     }
 
-    turbo::Status MetaClient::dump_config_file(const std::string &config_path, const EA::proto::ConfigInfo &config) {
+    turbo::Status MetaClient::dump_config_file(const std::string &config_path, const EA::servlet::ConfigInfo &config) {
         turbo::SequentialWriteFile file;
         auto rs = file.open(config_path, true);
         if (!rs.ok()) {
@@ -122,10 +122,10 @@ namespace EA::client {
     turbo::Status
     MetaClient::create_config(const std::string &config_name, const std::string &content,
                               const std::string &version, const std::string &config_type, int *retry_times) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
 
-        request.set_op_type(EA::proto::OP_CREATE_CONFIG);
+        request.set_op_type(EA::servlet::OP_CREATE_CONFIG);
         auto rc = request.mutable_config_info();
         ConfigInfoBuilder builder(rc);
         auto rs = builder.build_from_content(config_name, content, version, config_type);
@@ -136,24 +136,24 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnavailableError(response.errmsg());
         }
         return turbo::OkStatus();
     }
 
     turbo::Status
-    MetaClient::create_config(const EA::proto::ConfigInfo &request,
+    MetaClient::create_config(const EA::servlet::ConfigInfo &request,
                               int *retry_times) {
-        EA::proto::MetaManagerRequest meta_request;
-        EA::proto::MetaManagerResponse response;
-        meta_request.set_op_type(EA::proto::OP_CREATE_CONFIG);
+        EA::servlet::MetaManagerRequest meta_request;
+        EA::servlet::MetaManagerResponse response;
+        meta_request.set_op_type(EA::servlet::OP_CREATE_CONFIG);
         *meta_request.mutable_config_info() = request;
         auto rs = meta_manager(meta_request, response, retry_times);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnavailableError(response.errmsg());
         }
         return turbo::OkStatus();
@@ -163,8 +163,8 @@ namespace EA::client {
                                                     const std::string &path,
                                                     const std::string &config_type, const std::string &version,
                                                     int *retry_times) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
         EA::client::ConfigInfoBuilder builder(request.mutable_config_info());
         auto rs = builder.build_from_file(config_name, path, version, config_type);
         if(!rs.ok()) {
@@ -174,15 +174,15 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnavailableError(response.errmsg());
         }
         return turbo::OkStatus();
     }
 
     turbo::Status MetaClient::create_config_by_json(const std::string &json_path, int *retry_times) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
         EA::client::ConfigInfoBuilder builder(request.mutable_config_info());
         auto rs = builder.build_from_json_file(json_path);
         if(!rs.ok()) {
@@ -192,21 +192,21 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnavailableError(response.errmsg());
         }
         return turbo::OkStatus();
     }
 
     turbo::Status MetaClient::list_config(std::vector<std::string> &configs, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_LIST_CONFIG);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_LIST_CONFIG);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         auto res_configs = response.config_infos();
@@ -218,15 +218,15 @@ namespace EA::client {
 
     turbo::Status MetaClient::list_config_version(const std::string &config_name, std::vector<std::string> &versions,
                                                   int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_LIST_CONFIG_VERSION);
         request.set_config_name(config_name);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         auto res_configs = response.config_infos();
@@ -239,15 +239,15 @@ namespace EA::client {
     turbo::Status
     MetaClient::list_config_version(const std::string &config_name, std::vector<turbo::ModuleVersion> &versions,
                                     int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_LIST_CONFIG_VERSION);
         request.set_config_name(config_name);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         auto res_configs = response.config_infos();
@@ -259,11 +259,11 @@ namespace EA::client {
     }
 
     turbo::Status
-    MetaClient::get_config(const std::string &config_name, const std::string &version, EA::proto::ConfigInfo &config,
+    MetaClient::get_config(const std::string &config_name, const std::string &version, EA::servlet::ConfigInfo &config,
                            int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_GET_CONFIG);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_GET_CONFIG);
         request.set_config_name(config_name);
         auto rs = string_to_version(version, request.mutable_config_version());
         if (!rs.ok()) {
@@ -273,7 +273,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         if (response.config_infos_size() != 1) {
@@ -287,7 +287,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::get_config(const std::string &config_name, const std::string &version, std::string &config,
                            int *retry_time, std::string *type, uint32_t *time) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = get_config(config_name, version, config_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -345,17 +345,17 @@ namespace EA::client {
     }
 
     turbo::Status
-    MetaClient::get_config_latest(const std::string &config_name, EA::proto::ConfigInfo &config,
+    MetaClient::get_config_latest(const std::string &config_name, EA::servlet::ConfigInfo &config,
                                   int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_GET_CONFIG);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_GET_CONFIG);
         request.set_config_name(config_name);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         if (response.config_infos_size() != 1) {
@@ -369,7 +369,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::get_config_latest(const std::string &config_name, std::string &config, std::string &version,
                                   int *retry_time) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = get_config_latest(config_name, config_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -383,7 +383,7 @@ namespace EA::client {
     MetaClient::get_config_latest(const std::string &config_name, std::string &config, std::string &version,
                                   std::string &type,
                                   int *retry_time) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = get_config_latest(config_name, config_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -397,7 +397,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::get_config_latest(const std::string &config_name, std::string &config, turbo::ModuleVersion &version,
                                   int *retry_time) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = get_config_latest(config_name, config_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -412,7 +412,7 @@ namespace EA::client {
     MetaClient::get_config_latest(const std::string &config_name, std::string &config, turbo::ModuleVersion &version,
                                   std::string &type,
                                   int *retry_time) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = get_config_latest(config_name, config_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -426,7 +426,7 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::get_config_latest(const std::string &config_name, std::string &config, int *retry_time) {
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = get_config_latest(config_name, config_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -437,10 +437,10 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::remove_config(const std::string &config_name, const std::string &version, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
 
-        request.set_op_type(EA::proto::OP_REMOVE_CONFIG);
+        request.set_op_type(EA::servlet::OP_REMOVE_CONFIG);
         auto rc = request.mutable_config_info();
         rc->set_name(config_name);
         auto rs = string_to_version(version, rc->mutable_version());
@@ -451,7 +451,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         return turbo::OkStatus();
@@ -459,10 +459,10 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::remove_config(const std::string &config_name, const turbo::ModuleVersion &version, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
 
-        request.set_op_type(EA::proto::OP_REMOVE_CONFIG);
+        request.set_op_type(EA::servlet::OP_REMOVE_CONFIG);
         auto rc = request.mutable_config_info();
         rc->set_name(config_name);
         rc->mutable_version()->set_major(version.major);
@@ -472,7 +472,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         return turbo::OkStatus();
@@ -480,28 +480,28 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::remove_config_all_version(const std::string &config_name, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
 
-        request.set_op_type(EA::proto::OP_REMOVE_CONFIG);
+        request.set_op_type(EA::servlet::OP_REMOVE_CONFIG);
         auto rc = request.mutable_config_info();
         rc->set_name(config_name);
         auto rs = meta_manager(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::create_namespace(EA::proto::NameSpaceInfo &info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    turbo::Status MetaClient::create_namespace(EA::servlet::NameSpaceInfo &info, int *retry_time) {
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
 
-        EA::proto::NameSpaceInfo *ns_req = request.mutable_namespace_info();
+        EA::servlet::NameSpaceInfo *ns_req = request.mutable_namespace_info();
         *ns_req = info;
         auto rs = meta_manager(request, response, retry_time);
         if (!rs.ok()) {
@@ -511,11 +511,11 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_namespace(const std::string &ns, int64_t quota, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
 
-        EA::proto::NameSpaceInfo *ns_req = request.mutable_namespace_info();
+        EA::servlet::NameSpaceInfo *ns_req = request.mutable_namespace_info();
         auto rs = CheckValidNameType(ns);
         if (!rs.ok()) {
             return rs;
@@ -532,9 +532,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_namespace_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
         auto rs = load_proto(json_str, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
@@ -547,9 +547,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_namespace_by_file(const std::string &path, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
         auto rs = load_proto_from_file(path, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
@@ -562,11 +562,11 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::remove_namespace(const std::string &ns, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_DROP_NAMESPACE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_DROP_NAMESPACE);
 
-        EA::proto::NameSpaceInfo *ns_req = request.mutable_namespace_info();
+        EA::servlet::NameSpaceInfo *ns_req = request.mutable_namespace_info();
         auto rs = CheckValidNameType(ns);
         if (!rs.ok()) {
             return rs;
@@ -579,10 +579,10 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::modify_namespace(EA::proto::NameSpaceInfo &ns_info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+    turbo::Status MetaClient::modify_namespace(EA::servlet::NameSpaceInfo &ns_info, int *retry_time) {
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_MODIFY_NAMESPACE);
         *request.mutable_namespace_info() = ns_info;
         auto rs = meta_manager(request, response, retry_time);
         if (!rs.ok()) {
@@ -592,9 +592,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::modify_namespace_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_MODIFY_NAMESPACE);
         auto rs = load_proto(json_str, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
@@ -607,9 +607,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::modify_namespace_by_file(const std::string &path, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_MODIFY_NAMESPACE);
         auto rs = load_proto_from_file(path, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
@@ -622,7 +622,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::list_namespace(std::vector<std::string> &ns_list, int *retry_time) {
-        std::vector<EA::proto::NameSpaceInfo> ns_proto_list;
+        std::vector<EA::servlet::NameSpaceInfo> ns_proto_list;
         auto rs = list_namespace(ns_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -633,15 +633,15 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::list_namespace(std::vector<EA::proto::NameSpaceInfo> &ns_list, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_NAMESPACE);
+    turbo::Status MetaClient::list_namespace(std::vector<EA::servlet::NameSpaceInfo> &ns_list, int *retry_time) {
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_NAMESPACE);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         for (auto &ns: response.namespace_infos()) {
@@ -651,7 +651,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::list_namespace_to_json(std::vector<std::string> &ns_list, int *retry_time) {
-        std::vector<EA::proto::NameSpaceInfo> ns_proto_list;
+        std::vector<EA::servlet::NameSpaceInfo> ns_proto_list;
         auto rs = list_namespace(ns_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -690,10 +690,10 @@ namespace EA::client {
     }
 
     turbo::Status
-    MetaClient::get_namespace(const std::string &ns_name, EA::proto::NameSpaceInfo &ns_pb, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_NAMESPACE);
+    MetaClient::get_namespace(const std::string &ns_name, EA::servlet::NameSpaceInfo &ns_pb, int *retry_time) {
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_NAMESPACE);
         if (ns_name.empty()) {
             return turbo::InvalidArgumentError("namespace name empty");
         }
@@ -702,7 +702,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         if (response.namespace_infos_size() != 1) {
@@ -713,7 +713,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::get_namespace_json(const std::string &ns_name, std::string &json_str, int *retry_time) {
-        EA::proto::NameSpaceInfo ns_pb;
+        EA::servlet::NameSpaceInfo ns_pb;
         auto rs = get_namespace(ns_name, ns_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -723,7 +723,7 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::save_namespace_json(const std::string &ns_name, const std::string &json_path, int *retry_time) {
-        EA::proto::NameSpaceInfo ns_pb;
+        EA::servlet::NameSpaceInfo ns_pb;
         auto rs = get_namespace(ns_name, ns_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -731,308 +731,11 @@ namespace EA::client {
         return dump_proto_to_file(json_path, ns_pb);
     }
 
-    turbo::Status MetaClient::create_database(EA::proto::DataBaseInfo &info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_DATABASE);
 
-        auto *db_req = request.mutable_database_info();
-        *db_req = info;
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::create_database(const std::string &ns, const std::string &database, int64_t quota, int *retry_time) {
-        EA::proto::DataBaseInfo database_pb;
-        database_pb.set_namespace_name(ns);
-        database_pb.set_database(database);
-        if (quota != 0) {
-            database_pb.set_quota(quota);
-        }
-        return create_database(database_pb, retry_time);
-    }
-
-    turbo::Status MetaClient::create_database_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_DATABASE);
-        auto rs = load_proto(json_str, *request.mutable_database_info());
-        if (!rs.ok()) {
-            return rs;
-        }
-        rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::create_database_by_file(const std::string &path, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_DATABASE);
-        auto rs = load_proto_from_file(path, *request.mutable_database_info());
-        if (!rs.ok()) {
-            return rs;
-        }
-        rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::remove_database(const std::string &ns, const std::string &database, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_DROP_DATABASE);
-
-        auto *db_req = request.mutable_database_info();
-        db_req->set_namespace_name(ns);
-        db_req->set_database(database);
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::modify_database(EA::proto::DataBaseInfo &db_info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_DATABASE);
-
-        auto *db_req = request.mutable_database_info();
-        *db_req = db_info;
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::modify_database_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_DATABASE);
-        auto rs = load_proto(json_str, *request.mutable_database_info());
-        if (!rs.ok()) {
-            return rs;
-        }
-        rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::modify_database_by_file(const std::string &path, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_DATABASE);
-        auto rs = load_proto_from_file(path, *request.mutable_database_info());
-        if (!rs.ok()) {
-            return rs;
-        }
-        rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::list_database(std::vector<EA::proto::DataBaseInfo> &db_list, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_DATABASE);
-        auto rs = meta_query(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        for (auto &ns: response.database_infos()) {
-            db_list.push_back(ns);
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::list_database(const std::string &ns, std::vector<EA::proto::DataBaseInfo> &db_list, int *retry_time) {
-        std::vector<EA::proto::DataBaseInfo> all_db_list;
-        auto rs = list_database(db_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: all_db_list) {
-            if (db.namespace_name() == ns) {
-                db_list.push_back(db);
-            }
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::list_database(std::vector<std::string> &db_list, int *retry_time) {
-        std::vector<EA::proto::DataBaseInfo> db_proto_list;
-        auto rs = list_database(db_proto_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: db_proto_list) {
-            db_list.push_back(turbo::Format("{},{}", db.namespace_name(), db.database()));
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::list_database(std::string &ns, std::vector<std::string> &db_list, int *retry_time) {
-        std::vector<EA::proto::DataBaseInfo> db_proto_list;
-        auto rs = list_database(ns, db_proto_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: db_proto_list) {
-            db_list.push_back(turbo::Format("{},{}", db.namespace_name(), db.database()));
-        }
-        return turbo::OkStatus();
-    }
-
-
-    turbo::Status MetaClient::list_database_to_json(std::vector<std::string> &db_list, int *retry_time) {
-        std::vector<EA::proto::DataBaseInfo> db_proto_list;
-        auto rs = list_database(db_proto_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: db_proto_list) {
-            std::string json_content;
-            auto r = dump_proto(db, json_content);
-            if (!r.ok()) {
-                return r;
-            }
-            db_list.push_back(json_content);
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::list_database_to_json(const std::string &ns, std::vector<std::string> &db_list, int *retry_time) {
-        std::vector<EA::proto::DataBaseInfo> db_proto_list;
-        auto rs = list_database(ns, db_proto_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: db_proto_list) {
-            std::string json_content;
-            auto r = dump_proto(db, json_content);
-            if (!r.ok()) {
-                return r;
-            }
-            db_list.push_back(json_content);
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::list_database_to_file(const std::string &save_path, int *retry_time) {
-        std::vector<std::string> json_list;
-        auto rs = list_database_to_json(json_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-
-        turbo::SequentialWriteFile file;
-        rs = file.open(save_path, true);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: json_list) {
-            rs = file.write(db);
-            if (!rs.ok()) {
-                return rs;
-            }
-        }
-        file.close();
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::list_database_to_file(const std::string &ns, const std::string &save_path, int *retry_time) {
-        std::vector<std::string> json_list;
-        auto rs = list_database_to_json(ns, json_list, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-
-        turbo::SequentialWriteFile file;
-        rs = file.open(save_path, true);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &db: json_list) {
-            rs = file.write(db);
-            if (!rs.ok()) {
-                return rs;
-            }
-        }
-        file.close();
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::get_database(const std::string &ns_name, const std::string &db_name, EA::proto::DataBaseInfo &db_pb,
-                             int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_DATABASE);
-        if (ns_name.empty()) {
-            return turbo::InvalidArgumentError("namespace name empty");
-        }
-        request.set_namespace_name(ns_name);
-        request.set_database(db_name);
-        auto rs = meta_query(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        if (response.database_infos_size() != 1) {
-            return turbo::UnknownError("bad proto format for database info size {}", response.database_infos_size());
-        }
-        db_pb = response.database_infos(0);
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::get_database_json(const std::string &ns_name, const std::string &db_name, std::string &json_str,
-                                  int *retry_time) {
-        EA::proto::DataBaseInfo db_pb;
-        auto rs = get_database(ns_name, db_name, db_pb, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return dump_proto(db_pb, json_str);
-    }
-
-    turbo::Status
-    MetaClient::save_database_json(const std::string &ns_name, const std::string &db_name, const std::string &json_path,
-                                   int *retry_time) {
-        EA::proto::DataBaseInfo db_pb;
-        auto rs = get_database(ns_name, db_name, db_pb, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        return dump_proto_to_file(json_path, db_pb);
-    }
-
-    turbo::Status MetaClient::create_zone(EA::proto::ZoneInfo &zone_info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_ZONE);
+    turbo::Status MetaClient::create_zone(EA::servlet::ZoneInfo &zone_info, int *retry_time) {
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_ZONE);
 
         auto *zone_req = request.mutable_zone_info();
         *zone_req = zone_info;
@@ -1045,7 +748,7 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::create_zone(const std::string &ns, const std::string &zone, int64_t quota, int *retry_time) {
-        EA::proto::ZoneInfo zone_pb;
+        EA::servlet::ZoneInfo zone_pb;
         zone_pb.set_namespace_name(ns);
         zone_pb.set_zone(zone);
         if (quota != 0) {
@@ -1055,9 +758,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_zone_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_ZONE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_ZONE);
         auto rs = load_proto(json_str, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
@@ -1070,9 +773,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_zone_by_file(const std::string &path, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_ZONE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_ZONE);
         auto rs = load_proto_from_file(path, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
@@ -1085,9 +788,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::remove_zone(const std::string &ns, const std::string &zone, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_DROP_ZONE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_DROP_ZONE);
 
         auto *zone_req = request.mutable_zone_info();
         zone_req->set_namespace_name(ns);
@@ -1099,10 +802,10 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::modify_zone(EA::proto::ZoneInfo &zone_info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_ZONE);
+    turbo::Status MetaClient::modify_zone(EA::servlet::ZoneInfo &zone_info, int *retry_time) {
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_MODIFY_ZONE);
 
         auto *zone_req = request.mutable_zone_info();
         *zone_req = zone_info;
@@ -1114,9 +817,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::modify_zone_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_ZONE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_MODIFY_ZONE);
         auto rs = load_proto(json_str, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
@@ -1129,9 +832,9 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::modify_zone_by_file(const std::string &path, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MODIFY_ZONE);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_MODIFY_ZONE);
         auto rs = load_proto_from_file(path, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
@@ -1143,15 +846,15 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::list_zone(std::vector<EA::proto::ZoneInfo> &zone_list, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_ZONE);
+    turbo::Status MetaClient::list_zone(std::vector<EA::servlet::ZoneInfo> &zone_list, int *retry_time) {
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_ZONE);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         for (auto &zone: response.zone_infos()) {
@@ -1161,8 +864,8 @@ namespace EA::client {
     }
 
     turbo::Status
-    MetaClient::list_zone(const std::string &ns, std::vector<EA::proto::ZoneInfo> &zone_list, int *retry_time) {
-        std::vector<EA::proto::ZoneInfo> all_zone_list;
+    MetaClient::list_zone(const std::string &ns, std::vector<EA::servlet::ZoneInfo> &zone_list, int *retry_time) {
+        std::vector<EA::servlet::ZoneInfo> all_zone_list;
         auto rs = list_zone(zone_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1176,7 +879,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::list_zone(std::vector<std::string> &zone_list, int *retry_time) {
-        std::vector<EA::proto::ZoneInfo> zone_proto_list;
+        std::vector<EA::servlet::ZoneInfo> zone_proto_list;
         auto rs = list_zone(zone_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1188,7 +891,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::list_zone(std::string &ns, std::vector<std::string> &zone_list, int *retry_time) {
-        std::vector<EA::proto::ZoneInfo> zone_proto_list;
+        std::vector<EA::servlet::ZoneInfo> zone_proto_list;
         auto rs = list_zone(ns, zone_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1201,7 +904,7 @@ namespace EA::client {
 
 
     turbo::Status MetaClient::list_zone_to_json(std::vector<std::string> &zone_list, int *retry_time) {
-        std::vector<EA::proto::ZoneInfo> zone_proto_list;
+        std::vector<EA::servlet::ZoneInfo> zone_proto_list;
         auto rs = list_zone(zone_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1219,7 +922,7 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::list_zone_to_json(const std::string &ns, std::vector<std::string> &zone_list, int *retry_time) {
-        std::vector<EA::proto::ZoneInfo> zone_proto_list;
+        std::vector<EA::servlet::ZoneInfo> zone_proto_list;
         auto rs = list_zone(ns, zone_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1280,11 +983,11 @@ namespace EA::client {
     }
 
     turbo::Status
-    MetaClient::get_zone(const std::string &ns_name, const std::string &zone_name, EA::proto::ZoneInfo &zone_pb,
+    MetaClient::get_zone(const std::string &ns_name, const std::string &zone_name, EA::servlet::ZoneInfo &zone_pb,
                          int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_ZONE);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_ZONE);
         if (ns_name.empty()) {
             return turbo::InvalidArgumentError("namespace name empty");
         }
@@ -1294,7 +997,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         if (response.zone_infos_size() != 1) {
@@ -1307,7 +1010,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::get_zone_json(const std::string &ns_name, const std::string &zone_name, std::string &json_str,
                               int *retry_time) {
-        EA::proto::ZoneInfo zone_pb;
+        EA::servlet::ZoneInfo zone_pb;
         auto rs = get_zone(ns_name, zone_name, zone_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1318,7 +1021,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::save_zone_json(const std::string &ns_name, const std::string &zone_name, const std::string &json_path,
                                int *retry_time) {
-        EA::proto::ZoneInfo zone_pb;
+        EA::servlet::ZoneInfo zone_pb;
         auto rs = get_zone(ns_name, zone_name, zone_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1326,10 +1029,10 @@ namespace EA::client {
         return dump_proto_to_file(json_path, zone_pb);
     }
 
-    turbo::Status MetaClient::create_servlet(EA::proto::ServletInfo &servlet_info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_SERVLET);
+    turbo::Status MetaClient::create_servlet(EA::servlet::ServletInfo &servlet_info, int *retry_time) {
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_SERVLET);
 
         auto *servlet_req = request.mutable_servlet_info();
         *servlet_req = servlet_info;
@@ -1343,7 +1046,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::create_servlet(const std::string &ns, const std::string &zone, const std::string &servlet,
                                int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         servlet_pb.set_namespace_name(ns);
         servlet_pb.set_zone(zone);
         servlet_pb.set_servlet_name(servlet);
@@ -1351,7 +1054,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_servlet_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         auto rs = load_proto(json_str, servlet_pb);
         if (!rs.ok()) {
             return rs;
@@ -1360,7 +1063,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::create_servlet_by_file(const std::string &path, int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         auto rs = load_proto_from_file(path, servlet_pb);
         if (!rs.ok()) {
             return rs;
@@ -1370,9 +1073,9 @@ namespace EA::client {
 
     turbo::Status MetaClient::remove_servlet(const std::string &ns, const std::string &zone, const std::string &servlet,
                                              int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_DROP_SERVLET);
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_DROP_SERVLET);
 
         auto *servlet_req = request.mutable_servlet_info();
         servlet_req->set_namespace_name(ns);
@@ -1385,10 +1088,10 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::modify_servlet(EA::proto::ServletInfo &servlet_info, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_CREATE_SERVLET);
+    turbo::Status MetaClient::modify_servlet(EA::servlet::ServletInfo &servlet_info, int *retry_time) {
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
+        request.set_op_type(EA::servlet::OP_CREATE_SERVLET);
 
         auto *servlet_req = request.mutable_servlet_info();
         *servlet_req = servlet_info;
@@ -1400,7 +1103,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::modify_servlet_by_json(const std::string &json_str, int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         auto rs = load_proto(json_str, servlet_pb);
         if (!rs.ok()) {
             return rs;
@@ -1409,7 +1112,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::modify_servlet_by_file(const std::string &path, int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         auto rs = load_proto_from_file(path, servlet_pb);
         if (!rs.ok()) {
             return rs;
@@ -1417,15 +1120,15 @@ namespace EA::client {
         return modify_servlet(servlet_pb, retry_time);
     }
 
-    turbo::Status MetaClient::list_servlet(std::vector<EA::proto::ServletInfo> &servlet_list, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_ZONE);
+    turbo::Status MetaClient::list_servlet(std::vector<EA::servlet::ServletInfo> &servlet_list, int *retry_time) {
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_ZONE);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         for (auto &servlet: response.servlet_infos()) {
@@ -1435,9 +1138,9 @@ namespace EA::client {
     }
 
     turbo::Status
-    MetaClient::list_servlet(const std::string &ns, std::vector<EA::proto::ServletInfo> &servlet_list,
+    MetaClient::list_servlet(const std::string &ns, std::vector<EA::servlet::ServletInfo> &servlet_list,
                              int *retry_time) {
-        std::vector<EA::proto::ServletInfo> all_servlet_list;
+        std::vector<EA::servlet::ServletInfo> all_servlet_list;
         auto rs = list_servlet(all_servlet_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1452,8 +1155,8 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::list_servlet(const std::string &ns, const std::string &zone,
-                             std::vector<EA::proto::ServletInfo> &servlet_list, int *retry_time) {
-        std::vector<EA::proto::ServletInfo> all_servlet_list;
+                             std::vector<EA::servlet::ServletInfo> &servlet_list, int *retry_time) {
+        std::vector<EA::servlet::ServletInfo> all_servlet_list;
         auto rs = list_servlet(all_servlet_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1467,7 +1170,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::list_servlet(std::vector<std::string> &servlet_list, int *retry_time) {
-        std::vector<EA::proto::ServletInfo> all_servlet_list;
+        std::vector<EA::servlet::ServletInfo> all_servlet_list;
         auto rs = list_servlet(all_servlet_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1480,7 +1183,7 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::list_servlet(const std::string &ns, std::vector<std::string> &servlet_list, int *retry_time) {
-        std::vector<EA::proto::ServletInfo> all_servlet_list;
+        std::vector<EA::servlet::ServletInfo> all_servlet_list;
         auto rs = list_servlet(all_servlet_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1496,7 +1199,7 @@ namespace EA::client {
     turbo::Status
     MetaClient::list_servlet(const std::string &ns, const std::string &zone, std::vector<std::string> &servlet_list,
                              int *retry_time) {
-        std::vector<EA::proto::ServletInfo> all_servlet_list;
+        std::vector<EA::servlet::ServletInfo> all_servlet_list;
         auto rs = list_servlet(all_servlet_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1510,7 +1213,7 @@ namespace EA::client {
     }
 
     turbo::Status MetaClient::list_servlet_to_json(std::vector<std::string> &servlet_list, int *retry_time) {
-        std::vector<EA::proto::ServletInfo> servlet_proto_list;
+        std::vector<EA::servlet::ServletInfo> servlet_proto_list;
         auto rs = list_servlet(servlet_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1528,7 +1231,7 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::list_servlet_to_json(const std::string &ns, std::vector<std::string> &servlet_list, int *retry_time) {
-        std::vector<EA::proto::ServletInfo> servlet_proto_list;
+        std::vector<EA::servlet::ServletInfo> servlet_proto_list;
         auto rs = list_servlet(servlet_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1548,7 +1251,7 @@ namespace EA::client {
 
     turbo::Status MetaClient::list_servlet_to_json(const std::string &ns, const std::string &zone,
                                                    std::vector<std::string> &servlet_list, int *retry_time) {
-        std::vector<EA::proto::ServletInfo> servlet_proto_list;
+        std::vector<EA::servlet::ServletInfo> servlet_proto_list;
         auto rs = list_servlet(servlet_proto_list, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1637,16 +1340,16 @@ namespace EA::client {
 
     turbo::Status
     MetaClient::get_servlet(const std::string &ns_name, const std::string &zone_name, const std::string &servlet,
-                            EA::proto::ServletInfo &servlet_pb,
+                            EA::servlet::ServletInfo &servlet_pb,
                             int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_ZONE);
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
+        request.set_op_type(EA::servlet::QUERY_ZONE);
         auto rs = meta_query(request, response, retry_time);
         if (!rs.ok()) {
             return rs;
         }
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return turbo::UnknownError(response.errmsg());
         }
         if (response.servlet_infos_size() != 1) {
@@ -1660,7 +1363,7 @@ namespace EA::client {
     MetaClient::get_servlet_json(const std::string &ns_name, const std::string &zone_name, const std::string &servlet,
                                  std::string &json_str,
                                  int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         auto rs = get_servlet(ns_name, zone_name, servlet, servlet_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1672,7 +1375,7 @@ namespace EA::client {
     MetaClient::save_servlet_json(const std::string &ns_name, const std::string &zone_name, const std::string &servlet,
                                   const std::string &json_path,
                                   int *retry_time) {
-        EA::proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         auto rs = get_servlet(ns_name, zone_name, servlet, servlet_pb, retry_time);
         if (!rs.ok()) {
             return rs;
@@ -1680,179 +1383,6 @@ namespace EA::client {
         rs = dump_proto_to_file(json_path, servlet_pb);
         return rs;
 
-    }
-
-    turbo::Status MetaClient::add_logical(const std::vector<std::string> &logical_list, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_ADD_LOGICAL);
-        for (auto &logical: logical_list) {
-            request.mutable_logical_rooms()->add_logical_rooms(logical);
-        }
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        return turbo::OkStatus();
-    }
-
-
-    turbo::Status MetaClient::add_logical(const std::string &logical, int *retry_time) {
-        return add_logical({logical}, retry_time);
-    }
-
-    turbo::Status MetaClient::remove_logical(const std::vector<std::string> &logical_list, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_DROP_LOGICAL);
-        for (auto &logical: logical_list) {
-            request.mutable_logical_rooms()->add_logical_rooms(logical);
-        }
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::remove_logical(const std::string &logical, int *retry_time) {
-        return remove_logical({logical}, retry_time);
-    }
-
-    turbo::Status
-    MetaClient::add_physical(const std::string &logical, const std::vector<std::string> &physicals, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_ADD_PHYSICAL);
-        request.mutable_physical_rooms()->set_logical_room(logical);
-        for (auto &pm: physicals) {
-            request.mutable_physical_rooms()->add_physical_rooms(pm);
-        }
-
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::add_physical(const std::string &logical, const std::string &physical, int *retry_time) {
-        return add_physical(logical, {physical}, retry_time);
-    }
-
-    turbo::Status MetaClient::remove_physical(const std::string &logical, const std::vector<std::string> &physicals,
-                                              int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_DROP_PHYSICAL);
-        request.mutable_physical_rooms()->set_logical_room(logical);
-        for (auto &pm: physicals) {
-            request.mutable_physical_rooms()->add_physical_rooms(pm);
-        }
-
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::remove_physical(const std::string &logical, const std::string &physical, int *retry_time) {
-        return remove_physical(logical, {physical}, retry_time);
-    }
-
-    turbo::Status MetaClient::move_physical(const std::string &logical_from, const std::string &logical_to,
-                                            const std::string &physical, int *retry_time) {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
-        request.set_op_type(EA::proto::OP_MOVE_PHYSICAL);
-        request.mutable_move_physical_request()->set_old_logical_room(logical_from);
-        request.mutable_move_physical_request()->set_new_logical_room(logical_to);
-        request.mutable_move_physical_request()->set_physical_room(physical);
-        auto rs = meta_manager(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::list_logical(std::vector<std::string> &logicals, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_LOGICAL);
-        auto rs = meta_query(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        for (auto &logical: response.physical_rooms()) {
-            logicals.push_back(logical.logical_room());
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::get_logical(const std::string &logical, EA::proto::PhysicalRoom &rooms, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_LOGICAL);
-        request.set_logical_room(logical);
-        auto rs = meta_query(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        rooms = response.physical_rooms(0);
-        return turbo::OkStatus();
-    }
-
-    turbo::Status
-    MetaClient::get_logical(const std::string &logical, std::vector<std::string> &physicals, int *retry_time) {
-        EA::proto::PhysicalRoom ph;
-        auto rs = get_logical(logical, ph, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        for (auto &p: ph.physical_rooms()) {
-            physicals.push_back(p);
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::list_physical(std::vector<EA::proto::PhysicalRoom> &rooms, int *retry_time) {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
-        request.set_op_type(EA::proto::QUERY_PHYSICAL);
-        auto rs = meta_query(request, response, retry_time);
-        if (!rs.ok()) {
-            return rs;
-        }
-        if (response.errcode() != EA::proto::SUCCESS) {
-            return turbo::UnknownError(response.errmsg());
-        }
-        for (auto &ph: response.physical_rooms()) {
-            rooms.push_back(ph);
-        }
-        return turbo::OkStatus();
     }
 
 }  // namespace EA::client

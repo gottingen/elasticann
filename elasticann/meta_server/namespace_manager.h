@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <set>
 #include <mutex>
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/meta_server/meta_constants.h"
 #include "braft/raft.h"
 #include "bthread/mutex.h"
@@ -43,21 +43,21 @@ namespace EA {
         ///        failed when exists
         /// \param request
         /// \param done
-        void create_namespace(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void create_namespace(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief remove namespace
         ///        failed when exists db in the namespace
         /// \param request
         /// \param done
-        void drop_namespace(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void drop_namespace(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief modify namespace
         ///        name and quota can be modify
         /// \param request
         /// \param done
-        void modify_namespace(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void modify_namespace(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief load namespace snapshot called by meta state machine
@@ -114,7 +114,7 @@ namespace EA {
         /// \param namespace_id
         /// \param namespace_info
         /// \return
-        int get_namespace_info(const int64_t &namespace_id, proto::NameSpaceInfo &namespace_info);
+        int get_namespace_info(const int64_t &namespace_id, EA::servlet::NameSpaceInfo &namespace_info);
 
         ///
         /// \brief clear memory values.
@@ -126,7 +126,7 @@ namespace EA {
         ///
         /// \brief set namespace info for space.
         /// \param namespace_info
-        void set_namespace_info(const proto::NameSpaceInfo &namespace_info);
+        void set_namespace_info(const EA::servlet::NameSpaceInfo &namespace_info);
 
         ///
         /// \brief erase info for namespace
@@ -149,7 +149,7 @@ namespace EA {
         // namespace层级name与id的映射关系
         std::unordered_map<std::string, int64_t> _namespace_id_map;
         // namespace层级，id与info的映射关系
-        std::unordered_map<int64_t, proto::NameSpaceInfo> _namespace_info_map;
+        std::unordered_map<int64_t, EA::servlet::NameSpaceInfo> _namespace_info_map;
         std::unordered_map<int64_t, std::set<int64_t>> _database_ids; //only in memory, not in rocksdb
         std::unordered_map<int64_t, std::set<int64_t>> _zone_ids; //only in memory, not in rocksdb
     };
@@ -168,7 +168,7 @@ namespace EA {
         return _max_namespace_id;
     }
 
-    inline void NamespaceManager::set_namespace_info(const proto::NameSpaceInfo &namespace_info) {
+    inline void NamespaceManager::set_namespace_info(const EA::servlet::NameSpaceInfo &namespace_info) {
         BAIDU_SCOPED_LOCK(_namespace_mutex);
         _namespace_id_map[namespace_info.namespace_name()] = namespace_info.namespace_id();
         _namespace_info_map[namespace_info.namespace_id()] = namespace_info;
@@ -223,7 +223,7 @@ namespace EA {
         return _namespace_info_map[namespace_id].resource_tag();
     }
 
-    inline int NamespaceManager::get_namespace_info(const int64_t &namespace_id, proto::NameSpaceInfo &namespace_info) {
+    inline int NamespaceManager::get_namespace_info(const int64_t &namespace_id, EA::servlet::NameSpaceInfo &namespace_info) {
         BAIDU_SCOPED_LOCK(_namespace_mutex);
         if (_namespace_info_map.find(namespace_id) == _namespace_info_map.end()) {
             return -1;

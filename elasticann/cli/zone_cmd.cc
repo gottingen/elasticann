@@ -16,7 +16,7 @@
 #include "elasticann/cli/option_context.h"
 #include "elasticann/base/tlog.h"
 #include "elasticann/cli/router_interact.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/cli/show_help.h"
 #include "turbo/format/print.h"
 #include "elasticann/cli/validator.h"
@@ -73,8 +73,8 @@ namespace EA::cli {
 
     void run_zone_create_cmd() {
         turbo::Println(turbo::color::green, "start to create namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
         ScopeShower ss;
         auto rs= make_zone_create(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -86,8 +86,8 @@ namespace EA::cli {
     }
     void run_zone_remove_cmd() {
         turbo::Println(turbo::color::green, "start to remove namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_zone_remove(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -99,8 +99,8 @@ namespace EA::cli {
     }
     void run_zone_modify_cmd() {
         turbo::Println(turbo::color::green, "start to modify namespace: {}", ZoneOptionContext::get_instance()->namespace_name);
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
         ScopeShower ss;
         auto rs = make_zone_modify(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -113,8 +113,8 @@ namespace EA::cli {
 
     void run_zone_list_cmd() {
         turbo::Println(turbo::color::green, "start to get zone list");
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
         ScopeShower ss;
         auto rs = make_zone_list(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -123,7 +123,7 @@ namespace EA::cli {
         auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
-        if(response.errcode() != EA::proto::SUCCESS) {
+        if(response.errcode() != EA::servlet::SUCCESS) {
             return;
         }
         table = show_meta_query_zone_response(response);
@@ -132,8 +132,8 @@ namespace EA::cli {
 
     void run_zone_info_cmd() {
         turbo::Println(turbo::color::green, "start to get zone list");
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
         ScopeShower ss;
         auto rs = make_zone_info(&request);
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
@@ -142,14 +142,14 @@ namespace EA::cli {
         auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
-        if(response.errcode() != EA::proto::SUCCESS) {
+        if(response.errcode() != EA::servlet::SUCCESS) {
             return;
         }
         table = show_meta_query_zone_response(response);
         ss.add_table("summary", std::move(table));
     }
 
-    turbo::Table show_meta_query_zone_response(const EA::proto::QueryResponse &res) {
+    turbo::Table show_meta_query_zone_response(const EA::servlet::QueryResponse &res) {
         auto &zones = res.zone_infos();
         turbo::Table summary;
         summary.add_row({"namespace", "zone", "id", "version", "quota", "replica number", "resource tag",
@@ -166,9 +166,9 @@ namespace EA::cli {
         return summary;
     }
 
-    turbo::Status make_zone_create(EA::proto::MetaManagerRequest *req) {
-        EA::proto::ZoneInfo *zone_req = req->mutable_zone_info();
-        req->set_op_type(EA::proto::OP_CREATE_ZONE);
+    turbo::Status make_zone_create(EA::servlet::MetaManagerRequest *req) {
+        EA::servlet::ZoneInfo *zone_req = req->mutable_zone_info();
+        req->set_op_type(EA::servlet::OP_CREATE_ZONE);
         auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
@@ -182,9 +182,9 @@ namespace EA::cli {
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_remove(EA::proto::MetaManagerRequest *req) {
-        EA::proto::ZoneInfo *zone_req = req->mutable_zone_info();
-        req->set_op_type(EA::proto::OP_DROP_ZONE);
+    turbo::Status make_zone_remove(EA::servlet::MetaManagerRequest *req) {
+        EA::servlet::ZoneInfo *zone_req = req->mutable_zone_info();
+        req->set_op_type(EA::servlet::OP_DROP_ZONE);
         auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
@@ -198,9 +198,9 @@ namespace EA::cli {
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_modify(EA::proto::MetaManagerRequest *req) {
-        req->set_op_type(EA::proto::OP_MODIFY_ZONE);
-        EA::proto::ZoneInfo *zone_req = req->mutable_zone_info();
+    turbo::Status make_zone_modify(EA::servlet::MetaManagerRequest *req) {
+        req->set_op_type(EA::servlet::OP_MODIFY_ZONE);
+        EA::servlet::ZoneInfo *zone_req = req->mutable_zone_info();
         auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;
@@ -214,13 +214,13 @@ namespace EA::cli {
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_list(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_ZONE);
+    turbo::Status make_zone_list(EA::servlet::QueryRequest *req) {
+        req->set_op_type(EA::servlet::QUERY_ZONE);
         return turbo::OkStatus();
     }
 
-    turbo::Status make_zone_info(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_ZONE);
+    turbo::Status make_zone_info(EA::servlet::QueryRequest *req) {
+        req->set_op_type(EA::servlet::QUERY_ZONE);
         auto rs = CheckValidNameType(ZoneOptionContext::get_instance()->namespace_name);
         if (!rs.ok()) {
             return rs;

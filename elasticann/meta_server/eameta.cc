@@ -18,9 +18,9 @@
 #include <fstream>
 #include <brpc/server.h>
 #include <gflags/gflags.h>
-#include "elasticann/raft/my_raft_log.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_server.h"
+#include "elasticann/meta_server/router_service.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/base/memory_profile.h"
 #include "turbo/files/filesystem.h"
@@ -39,12 +39,9 @@ int main(int argc, char **argv) {
     }
     TLOG_INFO("log file load success");
 
-    // 注册自定义的raft log的存储方式
-    EA::register_myraft_extension();
-
     //add service
     brpc::Server server;
-    //将raft加入到baidu-rpc server中
+
     if (0 != braft::add_service(&server, EA::FLAGS_meta_listen.c_str())) {
         TLOG_ERROR("Fail to init raft");
         return -1;
@@ -57,7 +54,7 @@ int main(int argc, char **argv) {
     std::vector<std::string> instances;
     bool completely_deploy = false;
     bool use_bns = false;
-    //指定的是ip:port的形式
+
     std::vector<std::string> list_raft_peers = turbo::StrSplit(EA::FLAGS_meta_server_bns, ',');
     for (auto &raft_peer: list_raft_peers) {
         TLOG_INFO("raft_peer:{}", raft_peer.c_str());
@@ -66,31 +63,40 @@ int main(int argc, char **argv) {
     }
 
     EA::MetaServer *meta_server = EA::MetaServer::get_instance();
-    //注册处理meta逻辑的service服务
-    if (0 != server.AddService(meta_server, brpc::SERVER_DOESNT_OWN_SERVICE)) {
-        TLOG_ERROR("Fail to Add idonlyeService");
+    auto *router_server = EA::servlet::RouterServiceImpl::get_instance();
+    auto rs = router_server->init(EA::FLAGS_meta_server_bns);
+    if(!rs.ok()) {
+        TLOG_ERROR("Fail init router server {}", rs.message());
         return -1;
     }
-    //启动端口
+    // registry meta service
+    if (0 != server.AddService(meta_server, brpc::SERVER_DOESNT_OWN_SERVICE)) {
+        TLOG_ERROR("Fail to Add meta Service");
+        return -1;
+    }
+    // registry router service
+    if (0 != server.AddService(router_server, brpc::SERVER_DOESNT_OWN_SERVICE)) {
+        TLOG_ERROR("Fail to Add router Service");
+        return -1;
+    }
+    // enable ports
     if (server.Start(EA::FLAGS_meta_listen.c_str(), nullptr) != 0) {
         TLOG_ERROR("Fail to start server");
         return -1;
     }
-    TLOG_INFO("baidu-rpc server start");
+    TLOG_INFO("ea meta server start");
     if (meta_server->init(peers) != 0) {
         TLOG_ERROR("meta server init fail");
         return -1;
     }
     EA::MemoryGCHandler::get_instance()->init();
     if (!completely_deploy && use_bns) {
-        // 循环等待数据加载成功, ip_list配置区分不了全新/更新部署
         while (!meta_server->have_data()) {
             bthread_usleep(1000 * 1000);
         }
         std::ofstream init_fs("init.success", std::ofstream::out | std::ofstream::trunc);
     }
     TLOG_INFO("meta server init success");
-    //server.RunUntilAskedToQuit(); 这个方法会先把端口关了，导致丢请求
     while (!brpc::IsAskedToQuit()) {
         bthread_usleep(1000000L);
     }

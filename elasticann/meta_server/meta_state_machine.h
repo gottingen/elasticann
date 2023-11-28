@@ -18,7 +18,7 @@
 
 #include <rocksdb/db.h>
 #include "elasticann/meta_server/base_state_machine.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/flags/meta.h"
 #include "elasticann/meta_server/meta_constants.h"
 
@@ -38,25 +38,6 @@ namespace EA {
             bthread_mutex_destroy(&_param_mutex);
         }
 
-        void store_heartbeat(google::protobuf::RpcController *controller,
-                             const proto::StoreHeartBeatRequest *request,
-                             proto::StoreHeartBeatResponse *response,
-                             google::protobuf::Closure *done);
-
-        void baikal_heartbeat(google::protobuf::RpcController *controller,
-                              const proto::BaikalHeartBeatRequest *request,
-                              proto::BaikalHeartBeatResponse *response,
-                              google::protobuf::Closure *done);
-
-        void baikal_other_heartbeat(google::protobuf::RpcController *controller,
-                                    const proto::BaikalOtherHeartBeatRequest *request,
-                                    proto::BaikalOtherHeartBeatResponse *response,
-                                    google::protobuf::Closure *done);
-
-        void console_heartbeat(google::protobuf::RpcController *controller,
-                               const proto::ConsoleHeartBeatRequest *request,
-                               proto::ConsoleHeartBeatResponse *response,
-                               google::protobuf::Closure *done);
 
         void healthy_check_function();
 
@@ -72,9 +53,6 @@ namespace EA {
         void on_leader_stop() override;
 
         int64_t applied_index() { return _applied_index; }
-
-        //经过3个周期后才可以做决策
-        bool whether_can_decide();
 
         void set_global_load_balance(bool open) {
             BAIDU_SCOPED_LOCK(_param_mutex);

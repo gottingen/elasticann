@@ -35,26 +35,26 @@ namespace EA {
         /// \brief table inc id initialize
         /// \param request [in]
         /// \param done [out]
-        void add_table_id(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void add_table_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief table inc id removing
         /// \param request [in]
         /// \param done [out]
-        void drop_table_id(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void drop_table_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief gen a table inc id by given count in request
         /// \param request [in]
         /// \param done [out]
-        void gen_id(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void gen_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief reset a table inc by start_id or increment_id, if backwards,
         ///        increment_info.force() should be enabled.
         /// \param request [in]
         /// \param done [out]
-        void update(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void update(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief override BaseStateMachine::on_snapshot_save

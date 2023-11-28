@@ -109,7 +109,7 @@ namespace EA {
     do {\
         if (!init) {\
             TLOG_WARN("have not init, log_id:{}", log_id);\
-            response->set_errcode(proto::HAVE_NOT_INIT);\
+            response->set_errcode(EA::servlet::HAVE_NOT_INIT);\
             response->set_errmsg("have not init");\
             return;\
         }\

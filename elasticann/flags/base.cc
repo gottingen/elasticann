@@ -41,11 +41,6 @@ namespace EA {
     DEFINE_bool(need_verify_ddl_permission, false, "default true");
     DEFINE_int32(histogram_split_threshold_percent, 50, "histogram_split_threshold default 0.5");
     DEFINE_int32(limit_slow_sql_size, 50, "each sign to slow query sql counts, default: 50");
-#ifdef BAIKALDB_REVISION
-    DEFINE_string(db_version, "5.7.16-BaikalDB-v"BAIKALDB_REVISION, "db version");
-#else
-    DEFINE_string(db_version, "5.7.16-BaikalDB", "db version");
-#endif
     DEFINE_bool(like_predicate_use_re2, false, "LikePredicate use re2");
     DEFINE_bool(transfor_hll_raw_to_sparse, false, "try transfor raw hll to sparse");
 }

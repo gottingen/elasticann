@@ -18,19 +18,14 @@
 #include "elasticann/meta_server/auto_incr_state_machine.h"
 #include "elasticann/meta_server/tso_state_machine.h"
 #include "elasticann/meta_server/meta_state_machine.h"
-#include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/privilege_manager.h"
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/config_manager.h"
 #include "elasticann/meta_server/query_config_manager.h"
-#include "elasticann/meta_server/query_cluster_manager.h"
 #include "elasticann/meta_server/query_privilege_manager.h"
 #include "elasticann/meta_server/query_namespace_manager.h"
-#include "elasticann/meta_server/query_database_manager.h"
 #include "elasticann/meta_server/query_zone_manager.h"
 #include "elasticann/meta_server/query_servlet_manager.h"
-#include "elasticann/meta_server/query_table_manager.h"
-#include "elasticann/meta_server/query_region_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/base/key_encoder.h"
@@ -90,19 +85,10 @@ namespace EA {
         SchemaManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         ConfigManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         PrivilegeManager::get_instance()->set_meta_state_machine(_meta_state_machine);
-        ClusterManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         MetaServerInteract::get_instance()->init();
         _flush_bth.run([this]() { flush_memtable_thread(); });
-        _apply_region_bth.run([this]() { apply_region_thread(); });
         _init_success = true;
         return 0;
-    }
-
-    void MetaServer::apply_region_thread() {
-        while (!_shutdown) {
-            TableManager::get_instance()->get_update_regions_apply_raft();
-            bthread_usleep_fast_shutdown(FLAGS_region_apply_raft_interval_ms * 1000, _shutdown);
-        }
     }
 
     void MetaServer::flush_memtable_thread() {
@@ -124,10 +110,10 @@ namespace EA {
         }
     }
 
-//该方法主要做请求分发
+
     void MetaServer::meta_manager(google::protobuf::RpcController *controller,
-                                  const proto::MetaManagerRequest *request,
-                                  proto::MetaManagerResponse *response,
+                                  const EA::servlet::MetaManagerRequest *request,
+                                  EA::servlet::MetaManagerResponse *response,
                                   google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         brpc::Controller *cntl =
@@ -137,244 +123,63 @@ namespace EA {
             log_id = cntl->log_id();
         }
         RETURN_IF_NOT_INIT(_init_success, response, log_id);
-        if (request->op_type() == proto::OP_ADD_PHYSICAL
-            || request->op_type() == proto::OP_ADD_LOGICAL
-            || request->op_type() == proto::OP_ADD_INSTANCE
-            || request->op_type() == proto::OP_DROP_PHYSICAL
-            || request->op_type() == proto::OP_DROP_LOGICAL
-            || request->op_type() == proto::OP_DROP_INSTANCE
-            || request->op_type() == proto::OP_UPDATE_INSTANCE
-            || request->op_type() == proto::OP_UPDATE_INSTANCE_PARAM
-            || request->op_type() == proto::OP_MOVE_PHYSICAL) {
-            ClusterManager::get_instance()->process_cluster_info(controller,
-                                                                 request,
-                                                                 response,
-                                                                 done_guard.release());
-            return;
-        }
-        if (request->op_type() == proto::OP_CREATE_USER
-            || request->op_type() == proto::OP_DROP_USER
-            || request->op_type() == proto::OP_ADD_PRIVILEGE
-            || request->op_type() == proto::OP_DROP_PRIVILEGE) {
+        if (request->op_type() == EA::servlet::OP_CREATE_USER
+            || request->op_type() == EA::servlet::OP_DROP_USER
+            || request->op_type() == EA::servlet::OP_ADD_PRIVILEGE
+            || request->op_type() == EA::servlet::OP_DROP_PRIVILEGE) {
             PrivilegeManager::get_instance()->process_user_privilege(controller,
                                                                      request,
                                                                      response,
                                                                      done_guard.release());
             return;
         }
-        if (request->op_type() == proto::OP_CREATE_NAMESPACE
-            || request->op_type() == proto::OP_DROP_NAMESPACE
-            || request->op_type() == proto::OP_MODIFY_NAMESPACE
-            || request->op_type() == proto::OP_CREATE_DATABASE
-            || request->op_type() == proto::OP_DROP_DATABASE
-            || request->op_type() == proto::OP_MODIFY_DATABASE
-            || request->op_type() == proto::OP_CREATE_ZONE
-            || request->op_type() == proto::OP_DROP_ZONE
-            || request->op_type() == proto::OP_MODIFY_ZONE
-            || request->op_type() == proto::OP_CREATE_SERVLET
-            || request->op_type() == proto::OP_DROP_SERVLET
-            || request->op_type() == proto::OP_MODIFY_SERVLET
-            || request->op_type() == proto::OP_CREATE_TABLE
-            || request->op_type() == proto::OP_DROP_TABLE
-            || request->op_type() == proto::OP_DROP_TABLE_TOMBSTONE
-            || request->op_type() == proto::OP_RESTORE_TABLE
-            || request->op_type() == proto::OP_RENAME_TABLE
-            || request->op_type() == proto::OP_SWAP_TABLE
-            || request->op_type() == proto::OP_ADD_FIELD
-            || request->op_type() == proto::OP_DROP_FIELD
-            || request->op_type() == proto::OP_RENAME_FIELD
-            || request->op_type() == proto::OP_MODIFY_FIELD
-            || request->op_type() == proto::OP_UPDATE_REGION
-            || request->op_type() == proto::OP_DROP_REGION
-            || request->op_type() == proto::OP_SPLIT_REGION
-            || request->op_type() == proto::OP_MERGE_REGION
-            || request->op_type() == proto::OP_UPDATE_BYTE_SIZE
-            || request->op_type() == proto::OP_UPDATE_SPLIT_LINES
-            || request->op_type() == proto::OP_UPDATE_SCHEMA_CONF
-            || request->op_type() == proto::OP_UPDATE_DISTS
-            || request->op_type() == proto::OP_UPDATE_TTL_DURATION
-            || request->op_type() == proto::OP_UPDATE_STATISTICS
-            || request->op_type() == proto::OP_MODIFY_RESOURCE_TAG
-            || request->op_type() == proto::OP_ADD_INDEX
-            || request->op_type() == proto::OP_DROP_INDEX
-            || request->op_type() == proto::OP_DELETE_DDLWORK
-            || request->op_type() == proto::OP_LINK_BINLOG
-            || request->op_type() == proto::OP_UNLINK_BINLOG
-            || request->op_type() == proto::OP_SET_INDEX_HINT_STATUS
-            || request->op_type() == proto::OP_UPDATE_INDEX_REGION_DDL_WORK
-            || request->op_type() == proto::OP_SUSPEND_DDL_WORK
-            || request->op_type() == proto::OP_UPDATE_MAIN_LOGICAL_ROOM
-            || request->op_type() == proto::OP_UPDATE_TABLE_COMMENT
-            || request->op_type() == proto::OP_ADD_LEARNER
-            || request->op_type() == proto::OP_DROP_LEARNER
-            || request->op_type() == proto::OP_RESTART_DDL_WORK
-            || request->op_type() == proto::OP_MODIFY_PARTITION
-            || request->op_type() == proto::OP_UPDATE_CHARSET) {
+        if (request->op_type() == EA::servlet::OP_CREATE_NAMESPACE
+            || request->op_type() == EA::servlet::OP_DROP_NAMESPACE
+            || request->op_type() == EA::servlet::OP_MODIFY_NAMESPACE
+            || request->op_type() == EA::servlet::OP_CREATE_ZONE
+            || request->op_type() == EA::servlet::OP_DROP_ZONE
+            || request->op_type() == EA::servlet::OP_MODIFY_ZONE
+            || request->op_type() == EA::servlet::OP_CREATE_SERVLET
+            || request->op_type() == EA::servlet::OP_DROP_SERVLET
+            || request->op_type() == EA::servlet::OP_MODIFY_SERVLET
+            || request->op_type() == EA::servlet::OP_MODIFY_RESOURCE_TAG
+            || request->op_type() == EA::servlet::OP_UPDATE_MAIN_LOGICAL_ROOM) {
             SchemaManager::get_instance()->process_schema_info(controller,
                                                                request,
                                                                response,
                                                                done_guard.release());
             return;
         }
-        if(request->op_type() == proto::OP_CREATE_CONFIG
-            ||request->op_type() == proto::OP_REMOVE_CONFIG) {
+        if(request->op_type() == EA::servlet::OP_CREATE_CONFIG
+            ||request->op_type() == EA::servlet::OP_REMOVE_CONFIG) {
             ConfigManager::get_instance()->process_schema_info(controller,
                                                                request,
                                                                response,
                                                                done_guard.release());
             return;
         }
-        if (request->op_type() == proto::OP_GEN_ID_FOR_AUTO_INCREMENT
-            || request->op_type() == proto::OP_UPDATE_FOR_AUTO_INCREMENT
-            || request->op_type() == proto::OP_ADD_ID_FOR_AUTO_INCREMENT
-            || request->op_type() == proto::OP_DROP_ID_FOR_AUTO_INCREMENT) {
+        if (request->op_type() == EA::servlet::OP_GEN_ID_FOR_AUTO_INCREMENT
+            || request->op_type() == EA::servlet::OP_UPDATE_FOR_AUTO_INCREMENT
+            || request->op_type() == EA::servlet::OP_ADD_ID_FOR_AUTO_INCREMENT
+            || request->op_type() == EA::servlet::OP_DROP_ID_FOR_AUTO_INCREMENT) {
             _auto_incr_state_machine->process(controller,
                                               request,
                                               response,
                                               done_guard.release());
             return;
         }
-        if (request->op_type() == proto::OP_SET_INSTANCE_MIGRATE) {
-            ClusterManager::get_instance()->set_instance_migrate(request, response, log_id);
-            return;
-        }
-        if (request->op_type() == proto::OP_SET_INSTANCE_STATUS) {
-            ClusterManager::get_instance()->set_instance_status(request, response, log_id);
-            return;
-        }
-        if (request->op_type() == proto::OP_OPEN_LOAD_BALANCE) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_errmsg("success");
-            response->set_op_type(request->op_type());
-            if (request->resource_tags_size() == 0) {
-                _meta_state_machine->set_global_load_balance(true);
-                TLOG_WARN("open global load balance");
-                return;
-            }
-            for (auto &resource_tag: request->resource_tags()) {
-                _meta_state_machine->set_load_balance(resource_tag, true);
-                TLOG_WARN("open load balance for resource_tag: {}", resource_tag);
-            }
-            return;
-        }
-        if (request->op_type() == proto::OP_CLOSE_LOAD_BALANCE) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_errmsg("success");
-            response->set_op_type(request->op_type());
-            if (request->resource_tags_size() == 0) {
-                _meta_state_machine->set_global_load_balance(false);
-                TLOG_WARN("close global load balance");
-                return;
-            }
-            for (auto &resource_tag: request->resource_tags()) {
-                _meta_state_machine->set_load_balance(resource_tag, false);
-                TLOG_WARN("close load balance for resource_tag: {}", resource_tag);
-            }
-            return;
-        }
-        if (request->op_type() == proto::OP_OPEN_MIGRATE) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_errmsg("success");
-            response->set_op_type(request->op_type());
-            if (request->resource_tags_size() == 0) {
-                _meta_state_machine->set_global_migrate(true);
-                TLOG_WARN("open global migrate");
-                return;
-            }
-            for (auto &resource_tag: request->resource_tags()) {
-                _meta_state_machine->set_migrate(resource_tag, true);
-                TLOG_WARN("open migrate for resource_tag: {}", resource_tag);
-            }
-            return;
-        }
-        if (request->op_type() == proto::OP_CLOSE_MIGRATE) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_errmsg("success");
-            response->set_op_type(request->op_type());
-            if (request->resource_tags_size() == 0) {
-                _meta_state_machine->set_global_migrate(false);
-                TLOG_WARN("close migrate");
-                return;
-            }
-            for (auto &resource_tag: request->resource_tags()) {
-                _meta_state_machine->set_migrate(resource_tag, false);
-                TLOG_WARN("close migrate for resource_tag: {}", resource_tag);
-            }
-            return;
-        }
-        if (request->op_type() == proto::OP_OPEN_NETWORK_SEGMENT_BALANCE) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_errmsg("success");
-            response->set_op_type(request->op_type());
-            if (request->resource_tags_size() == 0) {
-                _meta_state_machine->set_global_network_segment_balance(true);
-                TLOG_WARN("open global network segment balance");
-                return;
-            }
-            for (auto &resource_tag: request->resource_tags()) {
-                _meta_state_machine->set_network_segment_balance(resource_tag, true);
-                TLOG_WARN("open network segment balance for resource_tag: {}", resource_tag);
-            }
-            return;
-        }
-        if (request->op_type() == proto::OP_CLOSE_NETWORK_SEGMENT_BALANCE) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_errmsg("success");
-            response->set_op_type(request->op_type());
-            if (request->resource_tags_size() == 0) {
-                _meta_state_machine->set_global_network_segment_balance(false);
-                TLOG_WARN("close global network segment balance");
-                return;
-            }
-            for (auto &resource_tag: request->resource_tags()) {
-                _meta_state_machine->set_network_segment_balance(resource_tag, false);
-                TLOG_WARN("close network segment balance for resource_tag: {}", resource_tag);
-            }
-            return;
-        }
-        if (request->op_type() == proto::OP_OPEN_UNSAFE_DECISION) {
-            _meta_state_machine->set_unsafe_decision(true);
-            response->set_errcode(proto::SUCCESS);
-            response->set_op_type(request->op_type());
-            TLOG_WARN("open unsafe decision");
-            return;
-        }
-        if (request->op_type() == proto::OP_CLOSE_UNSAFE_DECISION) {
-            _meta_state_machine->set_unsafe_decision(false);
-            response->set_errcode(proto::SUCCESS);
-            response->set_op_type(request->op_type());
-            TLOG_WARN("close unsafe decision");
-            return;
-        }
-        if (request->op_type() == proto::OP_RESTORE_REGION) {
-            response->set_errcode(proto::SUCCESS);
-            response->set_op_type(request->op_type());
-            RegionManager::get_instance()->restore_region(*request, response);
-            return;
-        }
-        if (request->op_type() == proto::OP_RECOVERY_ALL_REGION) {
-            if (!_meta_state_machine->is_leader()) {
-                response->set_errcode(proto::NOT_LEADER);
-                response->set_errmsg("not leader");
-                response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
-                TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
-                return;
-            }
-            response->set_errcode(proto::SUCCESS);
-            response->set_op_type(request->op_type());
-            RegionManager::get_instance()->recovery_all_region(*request, response);
-            return;
-        }
+
+
         TLOG_ERROR("request has wrong op_type:{} , log_id:{}",
                  request->op_type(), log_id);
-        response->set_errcode(proto::INPUT_PARAM_ERROR);
+        response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
         response->set_errmsg("invalid op_type");
         response->set_op_type(request->op_type());
     }
 
     void MetaServer::meta_query(google::protobuf::RpcController *controller,
-                           const proto::QueryRequest *request,
-                           proto::QueryResponse *response,
+                           const EA::servlet::QueryRequest *request,
+                           EA::servlet::QueryResponse *response,
                            google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         brpc::Controller *cntl =
@@ -387,162 +192,58 @@ namespace EA {
         }
         RETURN_IF_NOT_INIT(_init_success, response, log_id);
         TimeCost time_cost;
-        response->set_errcode(proto::SUCCESS);
+        response->set_errcode(EA::servlet::SUCCESS);
         response->set_errmsg("success");
         switch (request->op_type()) {
-            case proto::QUERY_LOGICAL: {
-                QueryClusterManager::get_instance()->get_logical_info(request, response);
-                break;
-            }
-            case proto::QUERY_PHYSICAL: {
-                QueryClusterManager::get_instance()->get_physical_info(request, response);
-                break;
-            }
-            case proto::QUERY_INSTANCE: {
-                QueryClusterManager::get_instance()->get_instance_info(request, response);
-                break;
-            }
-            case proto::QUERY_USERPRIVILEG: {
+            case EA::servlet::QUERY_USER_PRIVILEGE: {
                 QueryPrivilegeManager::get_instance()->get_user_info(request, response);
                 break;
             }
-            case proto::QUERY_NAMESPACE: {
+            case EA::servlet::QUERY_NAMESPACE: {
                 QueryNamespaceManager::get_instance()->get_namespace_info(request, response);
                 break;
             }
-            case proto::QUERY_DATABASE: {
-                QueryDatabaseManager::get_instance()->get_database_info(request, response);
-                break;
-            }
-            case proto::QUERY_ZONE: {
+            case EA::servlet::QUERY_ZONE: {
                 QueryZoneManager::get_instance()->get_zone_info(request, response);
                 break;
             }
-            case proto::QUERY_SERVLET: {
+            case EA::servlet::QUERY_SERVLET: {
                 QueryServletManager::get_instance()->get_servlet_info(request, response);
                 break;
             }
-            case proto::QUERY_GET_CONFIG: {
+            case EA::servlet::QUERY_GET_CONFIG: {
                 QueryConfigManager::get_instance()->get_config(request, response);
                 break;
             }
-            case proto::QUERY_LIST_CONFIG: {
+            case EA::servlet::QUERY_LIST_CONFIG: {
                 QueryConfigManager::get_instance()->list_config(request, response);
                 break;
             }
-            case proto::QUERY_LIST_CONFIG_VERSION: {
+            case EA::servlet::QUERY_LIST_CONFIG_VERSION: {
                 QueryConfigManager::get_instance()->list_config_version(request, response);
                 break;
             }
-            case proto::QUERY_SCHEMA: {
-                QueryTableManager::get_instance()->get_schema_info(request, response);
-                break;
-            }
-            case proto::QUERY_REGION: {
-                QueryRegionManager::get_instance()->get_region_info(request, response);
-                break;
-            }
-            case proto::QUERY_INSTANCE_FLATTEN: {
-                QueryClusterManager::get_instance()->get_flatten_instance(request, response);
-                break;
-            }
-            case proto::QUERY_PRIVILEGE_FLATTEN: {
-                QueryPrivilegeManager::get_instance()->get_flatten_privilege(request, response);
-                break;
-            }
-            case proto::QUERY_SERVLET_PRIVILEGE_FLATTEN: {
+
+            case EA::servlet::QUERY_SERVLET_PRIVILEGE_FLATTEN: {
                 QueryPrivilegeManager::get_instance()->get_flatten_servlet_privilege(request, response);
                 break;
             }
-            case proto::QUERY_REGION_FLATTEN: {
-                QueryRegionManager::get_instance()->get_flatten_region(request, response);
-                break;
-            }
-            case proto::QUERY_TABLE_FLATTEN: {
-                QueryTableManager::get_instance()->get_flatten_table(request, response);
-                break;
-            }
-            case proto::QUERY_SCHEMA_FLATTEN: {
-                QueryTableManager::get_instance()->get_flatten_schema(request, response);
-                break;
-            }
-            case proto::QUERY_TRANSFER_LEADER: {
-                QueryRegionManager::get_instance()->send_transfer_leader(request, response);
-                break;
-            }
-            case proto::QUERY_SET_PEER: {
-                QueryRegionManager::get_instance()->send_set_peer(request, response);
-                break;
-            }
-            case proto::QUERY_DIFF_REGION_IDS: {
-                QueryClusterManager::get_instance()->get_diff_region_ids(request, response);
-                break;
-            }
-            case proto::QUERY_REGION_IDS: {
-                QueryClusterManager::get_instance()->get_region_ids(request, response);
-                break;
-            }
-            case proto::QUERY_DDLWORK: {
-                QueryTableManager::get_instance()->get_ddlwork_info(request, response);
-                break;
-            }
-            case proto::QUERY_REGION_PEER_STATUS: {
-                if (!_meta_state_machine->is_leader()) {
-                    response->set_errcode(proto::NOT_LEADER);
-                    response->set_errmsg("not leader");
-                    response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
-                    TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
-                    return;
-                }
-                QueryRegionManager::get_instance()->get_region_peer_status(request, response);
-                break;
-            }
-            case proto::QUERY_REGION_LEARNER_STATUS: {
-                if (!_meta_state_machine->is_leader()) {
-                    response->set_errcode(proto::NOT_LEADER);
-                    response->set_errmsg("not leader");
-                    response->set_leader(butil::endpoint2str(_meta_state_machine->get_leader()).c_str());
-                    TLOG_WARN("meta state machine is not leader, request: {}", request->ShortDebugString());
-                    return;
-                }
-                QueryRegionManager::get_instance()->get_region_learner_status(request, response);
-                break;
-            }
-            case proto::QUERY_INSTANCE_PARAM: {
-                QueryClusterManager::get_instance()->get_instance_param(request, response);
-                break;
-            }
-            case proto::QUERY_NETWORK_SEGMENT: {
-                QueryClusterManager::get_instance()->get_network_segment(request, response);
-                break;
-            }
-            case proto::QUERY_RESOURCE_TAG_SWITCH: {
-                ClusterManager::get_instance()->get_switch(request, response);
-                break;
-            }
-            case proto::QUERY_SHOW_VIRINDX_INFO_SQL: {
-                QueryTableManager::get_instance()->get_virtual_index_influence_info(request, response);
-                break;
-            }
-            case proto::QUERY_FAST_IMPORTER_TABLES: {
-                QueryTableManager::get_instance()->get_table_in_fast_importer(request, response);
-                break;
-            }
+
             default: {
                 TLOG_WARN("invalid op_type, request:{} logid:{}",
                            request->ShortDebugString(), log_id);
-                response->set_errcode(proto::INPUT_PARAM_ERROR);
+                response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
                 response->set_errmsg("invalid op_type");
             }
         }
         TLOG_INFO("query op_type_name:{}, time_cost:{}, log_id:{}, ip:{}, request: {}",
-                  proto::QueryOpType_Name(request->op_type()),
+                  EA::servlet::QueryOpType_Name(request->op_type()),
                   time_cost.get_time(), log_id, remote_side, request->ShortDebugString());
     }
 
     void MetaServer::raft_control(google::protobuf::RpcController *controller,
-                                  const proto::RaftControlRequest *request,
-                                  proto::RaftControlResponse *response,
+                                  const EA::servlet::RaftControlRequest *request,
+                                  EA::servlet::RaftControlResponse *response,
                                   google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         if (request->region_id() == 0) {
@@ -558,82 +259,15 @@ namespace EA {
             return;
         }
         response->set_region_id(request->region_id());
-        response->set_errcode(proto::INPUT_PARAM_ERROR);
+        response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
         response->set_errmsg("unmatch region id");
         TLOG_ERROR("unmatch region_id in meta server, request: {}", request->ShortDebugString());
     }
 
-    void MetaServer::store_heartbeat(google::protobuf::RpcController *controller,
-                                     const proto::StoreHeartBeatRequest *request,
-                                     proto::StoreHeartBeatResponse *response,
-                                     google::protobuf::Closure *done) {
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        RETURN_IF_NOT_INIT(_init_success, response, log_id);
-        if (_meta_state_machine != nullptr) {
-            _meta_state_machine->store_heartbeat(controller, request, response, done_guard.release());
-        }
-    }
-
-    void MetaServer::baikal_heartbeat(google::protobuf::RpcController *controller,
-                                      const proto::BaikalHeartBeatRequest *request,
-                                      proto::BaikalHeartBeatResponse *response,
-                                      google::protobuf::Closure *done) {
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        RETURN_IF_NOT_INIT(_init_success, response, log_id);
-        if (_meta_state_machine != nullptr) {
-            _meta_state_machine->baikal_heartbeat(controller, request, response, done_guard.release());
-        }
-    }
-
-    void MetaServer::baikal_other_heartbeat(google::protobuf::RpcController *controller,
-                                            const proto::BaikalOtherHeartBeatRequest *request,
-                                            proto::BaikalOtherHeartBeatResponse *response,
-                                            google::protobuf::Closure *done) {
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        RETURN_IF_NOT_INIT(_init_success, response, log_id);
-        if (_meta_state_machine != nullptr) {
-            _meta_state_machine->baikal_other_heartbeat(controller, request, response, done_guard.release());
-        }
-    }
-
-    void MetaServer::console_heartbeat(google::protobuf::RpcController *controller,
-                                       const proto::ConsoleHeartBeatRequest *request,
-                                       proto::ConsoleHeartBeatResponse *response,
-                                       google::protobuf::Closure *done) {
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        RETURN_IF_NOT_INIT(_init_success, response, log_id);
-        if (_meta_state_machine != nullptr) {
-            _meta_state_machine->console_heartbeat(controller, request, response, done_guard.release());
-        }
-    }
 
     void MetaServer::tso_service(google::protobuf::RpcController *controller,
-                                 const proto::TsoRequest *request,
-                                 proto::TsoResponse *response,
+                                 const EA::servlet::TsoRequest *request,
+                                 EA::servlet::TsoResponse *response,
                                  google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         brpc::Controller *cntl =
@@ -645,120 +279,6 @@ namespace EA {
         RETURN_IF_NOT_INIT(_init_success, response, log_id);
         if (_tso_state_machine != nullptr) {
             _tso_state_machine->process(controller, request, response, done_guard.release());
-        }
-    }
-
-    void MetaServer::migrate(google::protobuf::RpcController *controller,
-                             const proto::MigrateRequest * /*request*/,
-                             proto::MigrateResponse *response,
-                             google::protobuf::Closure *done) {
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        const std::string *data = cntl->http_request().uri().GetQuery("data");
-        cntl->http_response().set_content_type("text/plain");
-        if (!_init_success) {
-            TLOG_WARN("migrate have not init");
-            cntl->http_response().set_status_code(brpc::HTTP_STATUS_INTERNAL_SERVER_ERROR);
-            return;
-        }
-        proto::MigrateRequest request;
-        TLOG_WARN("start any_migrate");
-        if (data != nullptr) {
-            std::string decode_data = url_decode(*data);
-            TLOG_WARN("start any_migrate {} {}", data->c_str(), decode_data);
-            //json2pb(decode_data, &request);
-        }
-        static std::map<std::string, std::string> bns_pre_ip_port;
-        static std::mutex bns_mutex;
-        for (auto &instance: request.targets_list().instances()) {
-            std::string bns = instance.name();
-            std::string meta_bns = "";//store_or_db_bns_to_meta_bns(bns);
-            std::string event = instance.event();
-            auto res_instance = response->mutable_data()->mutable_targets_list()->add_instances();
-            res_instance->set_name(bns);
-            res_instance->set_status("PROCESSING");
-            std::vector<std::string> bns_instances;
-            int ret = 0;
-            std::string ip_port;
-            if (instance.has_pre_host() && instance.has_pre_port()) {
-                ip_port = instance.pre_host() + ":" + instance.pre_port();
-            } else {
-                return;
-            }
-
-            if (meta_bns.empty()) {
-                res_instance->set_status("PROCESSING");
-                return;
-            }
-
-            if (event == "EXPECTED_MIGRATE") {
-                proto::MetaManagerRequest internal_req;
-                proto::MetaManagerResponse internal_res;
-                internal_req.set_op_type(proto::OP_SET_INSTANCE_MIGRATE);
-                internal_req.mutable_instance()->set_address(ip_port);
-                ret = meta_proxy(meta_bns)->send_request("meta_manager", internal_req, internal_res);
-                if (ret != 0) {
-                    TLOG_WARN("internal request fail, bns:{}, {}, {}",
-                               bns,
-                               internal_req.ShortDebugString(),
-                               internal_res.ShortDebugString());
-                    res_instance->set_status("PROCESSING");
-                    return;
-                }
-                TLOG_WARN("bns: {}, meta_bns: {}, status:{}",
-                           bns, meta_bns, internal_res.errmsg());
-                res_instance->set_status(internal_res.errmsg());
-                if (internal_res.errmsg() == "ALLOWED") {
-                    TLOG_WARN("bns: {}, meta_bns: {} ALLOWED", bns, meta_bns);
-                }
-                BAIDU_SCOPED_LOCK(bns_mutex);
-                bns_pre_ip_port[bns] = ip_port;
-            } else if (event == "MIGRATED") {
-                if (instance.pre_host() == instance.post_host()) {
-                    res_instance->set_status("SUCCESS");
-                    TLOG_WARN("instance not migrate, request: {}, meta_bns: {}",
-                               instance.ShortDebugString(), meta_bns);
-                } else {
-                    BAIDU_SCOPED_LOCK(bns_mutex);
-                    if (bns != "" && bns_pre_ip_port.count(bns) == 1) {
-                        ip_port = bns_pre_ip_port[bns];
-                    }
-                }
-                proto::QueryRequest query_req;
-                proto::QueryResponse query_res;
-                query_req.set_op_type(proto::QUERY_INSTANCE_FLATTEN);
-                query_req.set_instance_address(ip_port);
-                ret = meta_proxy(meta_bns)->send_request("meta_query", query_req, query_res);
-                if (ret != 0) {
-                    TLOG_WARN("internal request fail, {}, {}",
-                               query_req.ShortDebugString(),
-                               query_res.ShortDebugString());
-                    res_instance->set_status("PROCESSING");
-                    return;
-                }
-                if (query_res.flatten_instances_size() == 1) {
-                    // 在扩缩容等非迁移场景，NORMAL（非MIGRATE）实例也会收到MIGRATED指令
-                    // 此时不需要drop
-                    if (query_res.flatten_instances(0).status() == proto::NORMAL) {
-                        res_instance->set_status("SUCCESS");
-                        return;
-                    }
-                }
-                proto::MetaManagerRequest internal_req;
-                proto::MetaManagerResponse internal_res;
-                internal_req.set_op_type(proto::OP_DROP_INSTANCE);
-                internal_req.mutable_instance()->set_address(ip_port);
-                ret = meta_proxy(meta_bns)->send_request("meta_manager", internal_req, internal_res);
-                if (ret != 0) {
-                    TLOG_WARN("internal request fail, {}, {}",
-                               internal_req.ShortDebugString(),
-                               internal_res.ShortDebugString());
-                    res_instance->set_status("PROCESSING");
-                    return;
-                }
-                res_instance->set_status("SUCCESS");
-            }
         }
     }
 
@@ -784,8 +304,6 @@ namespace EA {
     void MetaServer::close() {
         _flush_bth.join();
         TLOG_INFO("MetaServer flush joined");
-        _apply_region_bth.join();
-        TLOG_INFO("MetaServer region joined");
     }
 
 }  // namespace Ea

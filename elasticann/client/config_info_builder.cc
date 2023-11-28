@@ -20,12 +20,12 @@
 
 namespace EA::client {
 
-    ConfigInfoBuilder::ConfigInfoBuilder(EA::proto::ConfigInfo *info) : _info(info) {
+    ConfigInfoBuilder::ConfigInfoBuilder(EA::servlet::ConfigInfo *info) : _info(info) {
         _info->Clear();
     }
 
 
-    void ConfigInfoBuilder::set_info(EA::proto::ConfigInfo *info) {
+    void ConfigInfoBuilder::set_info(EA::servlet::ConfigInfo *info) {
         _info = info;
         _info->Clear();
     }
@@ -65,8 +65,8 @@ namespace EA::client {
     }
 
     turbo::Status ConfigInfoBuilder::build_from_file(const std::string &name, const std::string &file_path,
-                                                     const EA::proto::Version &version,
-                                                     const EA::proto::ConfigType &type) {
+                                                     const EA::servlet::Version &version,
+                                                     const EA::servlet::ConfigType &type) {
         turbo::SequentialReadFile file;
         auto rs = file.open(file_path);
         if (!rs.ok()) {
@@ -82,7 +82,7 @@ namespace EA::client {
     }
 
     turbo::Status ConfigInfoBuilder::build_from_file(const std::string &name, const std::string &file_path,
-                                                     const EA::proto::Version &version,
+                                                     const EA::servlet::Version &version,
                                                      const std::string &type) {
         turbo::SequentialReadFile file;
         auto rs = file.open(file_path);
@@ -104,7 +104,7 @@ namespace EA::client {
 
     turbo::Status ConfigInfoBuilder::build_from_file(const std::string &name, const std::string &file_path,
                                                      const std::string &version,
-                                                     const EA::proto::ConfigType &type) {
+                                                     const EA::servlet::ConfigType &type) {
         turbo::SequentialReadFile file;
         auto rs = file.open(file_path);
         if (!rs.ok()) {
@@ -116,7 +116,7 @@ namespace EA::client {
             return frs.status();
         }
 
-        EA::proto::Version tmp_version;
+        EA::servlet::Version tmp_version;
         rs = string_to_version(version, &tmp_version);
         if (!rs.ok()) {
             return rs;
@@ -144,7 +144,7 @@ namespace EA::client {
             return rt.status();
         }
 
-        EA::proto::Version tmp_version;
+        EA::servlet::Version tmp_version;
         rs = string_to_version(version, &tmp_version);
         if (!rs.ok()) {
             return rs;
@@ -154,8 +154,8 @@ namespace EA::client {
     }
 
     turbo::Status ConfigInfoBuilder::build_from_content(const std::string &name, const std::string &content,
-                                                        const EA::proto::Version &version,
-                                                        const EA::proto::ConfigType &type) {
+                                                        const EA::servlet::Version &version,
+                                                        const EA::servlet::ConfigType &type) {
         _info->set_name(name);
         _info->set_content(content);
         *_info->mutable_version() = version;
@@ -164,7 +164,7 @@ namespace EA::client {
     }
 
     turbo::Status ConfigInfoBuilder::build_from_content(const std::string &name, const std::string &content,
-                                                        const EA::proto::Version &version,
+                                                        const EA::servlet::Version &version,
                                                         const std::string &type) {
         auto rt = string_to_config_type(type);
         if (!rt.ok()) {
@@ -175,8 +175,8 @@ namespace EA::client {
 
     turbo::Status ConfigInfoBuilder::build_from_content(const std::string &name, const std::string &content,
                                                         const std::string &version,
-                                                        const EA::proto::ConfigType &type) {
-        EA::proto::Version tmp_version;
+                                                        const EA::servlet::ConfigType &type) {
+        EA::servlet::Version tmp_version;
         auto rs = string_to_version(version, &tmp_version);
         if (!rs.ok()) {
             return rs;
@@ -192,7 +192,7 @@ namespace EA::client {
         if (!rt.ok()) {
             return rt.status();
         }
-        EA::proto::Version tmp_version;
+        EA::servlet::Version tmp_version;
         auto rs = string_to_version(version, &tmp_version);
         if (!rs.ok()) {
             return rs;

@@ -45,8 +45,8 @@ protected:
 // add_logic add_physical add_instance
 DOCTEST_TEST_CASE_FIXTURE(AutoIncrStateMachineTest, "test_create_drop_modify") {
     //test_point: add_table
-    EA::proto::MetaManagerRequest add_table_id_request;
-    add_table_id_request.set_op_type(EA::proto::OP_ADD_ID_FOR_AUTO_INCREMENT);
+    EA::servlet::MetaManagerRequest add_table_id_request;
+    add_table_id_request.set_op_type(EA::servlet::OP_ADD_ID_FOR_AUTO_INCREMENT);
     add_table_id_request.mutable_auto_increment()->set_table_id(1);
     add_table_id_request.mutable_auto_increment()->set_start_id(10);
     _auto_incr->add_table_id(add_table_id_request, NULL);
@@ -61,8 +61,8 @@ DOCTEST_TEST_CASE_FIXTURE(AutoIncrStateMachineTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(10, _auto_incr->_auto_increment_map[1]);
     DOCTEST_REQUIRE_EQ(1, _auto_incr->_auto_increment_map[2]);
     //test_point: gen_id
-    EA::proto::MetaManagerRequest gen_id_request;
-    gen_id_request.set_op_type(EA::proto::OP_GEN_ID_FOR_AUTO_INCREMENT);
+    EA::servlet::MetaManagerRequest gen_id_request;
+    gen_id_request.set_op_type(EA::servlet::OP_GEN_ID_FOR_AUTO_INCREMENT);
     gen_id_request.mutable_auto_increment()->set_table_id(1);
     gen_id_request.mutable_auto_increment()->set_count(13);
     _auto_incr->gen_id(gen_id_request, NULL);
@@ -77,8 +77,8 @@ DOCTEST_TEST_CASE_FIXTURE(AutoIncrStateMachineTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(36, _auto_incr->_auto_increment_map[1]);
 
     //test_point: update
-    EA::proto::MetaManagerRequest update_id_request;
-    update_id_request.set_op_type(EA::proto::OP_UPDATE_FOR_AUTO_INCREMENT);
+    EA::servlet::MetaManagerRequest update_id_request;
+    update_id_request.set_op_type(EA::servlet::OP_UPDATE_FOR_AUTO_INCREMENT);
     update_id_request.mutable_auto_increment()->set_table_id(1);
     update_id_request.mutable_auto_increment()->set_start_id(38);
     _auto_incr->gen_id(update_id_request, NULL);
@@ -86,8 +86,8 @@ DOCTEST_TEST_CASE_FIXTURE(AutoIncrStateMachineTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(39, _auto_incr->_auto_increment_map[1]);
 
     //test_point: drop_table_id
-    EA::proto::MetaManagerRequest drop_id_request;
-    drop_id_request.set_op_type(EA::proto::OP_DROP_ID_FOR_AUTO_INCREMENT);
+    EA::servlet::MetaManagerRequest drop_id_request;
+    drop_id_request.set_op_type(EA::servlet::OP_DROP_ID_FOR_AUTO_INCREMENT);
     drop_id_request.mutable_auto_increment()->set_table_id(2);
     _auto_incr->drop_table_id(drop_id_request, NULL);
     DOCTEST_REQUIRE_EQ(1, _auto_incr->_auto_increment_map.size());

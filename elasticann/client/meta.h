@@ -25,7 +25,7 @@
 #include "elasticann/base/tlog.h"
 #include "elasticann/flags/meta.h"
 #include <google/protobuf/descriptor.h>
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/module/module_version.h"
 #include "elasticann/client/base_message_sender.h"
 
@@ -82,7 +82,7 @@ namespace EA::client {
         /// \param config_path
         /// \param config
         /// \return
-        static turbo::Status dump_config_file(const std::string &config_path, const EA::proto::ConfigInfo &config);
+        static turbo::Status dump_config_file(const std::string &config_path, const EA::servlet::ConfigInfo &config);
 
         ///
         /// \param config_name
@@ -102,7 +102,7 @@ namespace EA::client {
         /// \param response
         /// \param retry_time
         /// \return
-        turbo::Status create_config(const EA::proto::ConfigInfo &request, int *retry_times = nullptr);
+        turbo::Status create_config(const EA::servlet::ConfigInfo &request, int *retry_times = nullptr);
 
         ///
         /// \param config_name
@@ -150,7 +150,7 @@ namespace EA::client {
         /// \param config
         /// \return
         turbo::Status
-        get_config(const std::string &config_name, const std::string &version, EA::proto::ConfigInfo &config,
+        get_config(const std::string &config_name, const std::string &version, EA::servlet::ConfigInfo &config,
                    int *retry_time = nullptr);
 
         ///
@@ -189,7 +189,7 @@ namespace EA::client {
         /// \param retry_time
         /// \return
         turbo::Status
-        get_config_latest(const std::string &config_name, EA::proto::ConfigInfo &config,
+        get_config_latest(const std::string &config_name, EA::servlet::ConfigInfo &config,
                           int *retry_time = nullptr);
 
         ///
@@ -271,7 +271,7 @@ namespace EA::client {
         /// \param info
         /// \param retry_time
         /// \return
-        turbo::Status create_namespace(EA::proto::NameSpaceInfo &info, int *retry_time = nullptr);
+        turbo::Status create_namespace(EA::servlet::NameSpaceInfo &info, int *retry_time = nullptr);
 
         ///
         /// \param ns
@@ -302,7 +302,7 @@ namespace EA::client {
         /// \param ns
         /// \param retry_time
         /// \return
-        turbo::Status modify_namespace(EA::proto::NameSpaceInfo &ns_info, int *retry_time = nullptr);
+        turbo::Status modify_namespace(EA::servlet::NameSpaceInfo &ns_info, int *retry_time = nullptr);
 
         ///
         /// \param json_str
@@ -326,7 +326,7 @@ namespace EA::client {
         /// \param ns_list
         /// \param retry_time
         /// \return
-        turbo::Status list_namespace(std::vector<EA::proto::NameSpaceInfo> &ns_list, int *retry_time = nullptr);
+        turbo::Status list_namespace(std::vector<EA::servlet::NameSpaceInfo> &ns_list, int *retry_time = nullptr);
 
         ///
         /// \param ns_list
@@ -346,7 +346,7 @@ namespace EA::client {
         /// \param retry_time
         /// \return
         turbo::Status
-        get_namespace(const std::string &ns_name, EA::proto::NameSpaceInfo &ns_pb, int *retry_time = nullptr);
+        get_namespace(const std::string &ns_name, EA::servlet::NameSpaceInfo &ns_pb, int *retry_time = nullptr);
 
         ///
         /// \param ns_name
@@ -367,140 +367,7 @@ namespace EA::client {
         /// \param info
         /// \param retry_time
         /// \return
-        turbo::Status create_database(EA::proto::DataBaseInfo &info, int *retry_time = nullptr);
-
-        ///
-        /// \param ns
-        /// \param database
-        /// \param quota
-        /// \param retry_time
-        /// \return
-        turbo::Status create_database(const std::string &ns, const std::string &database, int64_t quota = 0,
-                                      int *retry_time = nullptr);
-
-        ///
-        /// \param json_str
-        /// \param retry_time
-        /// \return
-        turbo::Status create_database_by_json(const std::string &json_str, int *retry_time = nullptr);
-
-        ///
-        /// \param path
-        /// \param retry_time
-        /// \return
-        turbo::Status create_database_by_file(const std::string &path, int *retry_time = nullptr);
-
-        ///
-        /// \param ns
-        /// \param database
-        /// \param retry_time
-        /// \return
-        turbo::Status remove_database(const std::string &ns, const std::string &database, int *retry_time = nullptr);
-
-        ///
-        /// \param db_info
-        /// \param retry_time
-        /// \return
-        turbo::Status modify_database(EA::proto::DataBaseInfo &db_info, int *retry_time = nullptr);
-
-        ///
-        /// \param json_str
-        /// \param retry_time
-        /// \return
-        turbo::Status modify_database_by_json(const std::string &json_str, int *retry_time = nullptr);
-
-        ///
-        /// \param path
-        /// \param retry_time
-        /// \return
-        turbo::Status modify_database_by_file(const std::string &path, int *retry_time = nullptr);
-
-        ///
-        /// \param db_list
-        /// \param retry_time
-        /// \return
-        turbo::Status list_database(std::vector<EA::proto::DataBaseInfo> &db_list, int *retry_time = nullptr);
-
-        ///
-        /// \param ns
-        /// \param db_list
-        /// \param retry_time
-        /// \return
-        turbo::Status
-        list_database(const std::string &ns, std::vector<EA::proto::DataBaseInfo> &db_list, int *retry_time = nullptr);
-
-        ///
-        /// \param db_list
-        /// \param retry_time
-        /// \return
-        turbo::Status list_database(std::vector<std::string> &db_list, int *retry_time = nullptr);
-
-        ///
-        /// \param ns
-        /// \param db_list
-        /// \param retry_time
-        /// \return
-        turbo::Status list_database(std::string &ns, std::vector<std::string> &db_list, int *retry_time = nullptr);
-
-        ///
-        /// \param ns_list
-        /// \param retry_time
-        /// \return
-        turbo::Status list_database_to_json(std::vector<std::string> &db_list, int *retry_time = nullptr);
-
-        ///
-        /// \param ns
-        /// \param ns_list
-        /// \param retry_time
-        /// \return
-        turbo::Status
-        list_database_to_json(const std::string &ns, std::vector<std::string> &ns_list, int *retry_time = nullptr);
-
-        ///
-        /// \param save_path
-        /// \param retry_time
-        /// \return
-        turbo::Status list_database_to_file(const std::string &save_path, int *retry_time = nullptr);
-
-        ///
-        /// \param ns
-        /// \param save_path
-        /// \param retry_time
-        /// \return
-        turbo::Status
-        list_database_to_file(const std::string &ns, const std::string &save_path, int *retry_time = nullptr);
-
-        ///
-        /// \param ns_name
-        /// \param db_pb
-        /// \param retry_time
-        /// \return
-        turbo::Status
-        get_database(const std::string &ns_name, const std::string &db_name, EA::proto::DataBaseInfo &db_pb,
-                     int *retry_time = nullptr);
-
-        ///
-        /// \param ns_name
-        /// \param json_str
-        /// \param retry_time
-        /// \return
-        turbo::Status get_database_json(const std::string &ns_name, const std::string &db_name, std::string &json_str,
-                                        int *retry_time = nullptr);
-
-        ///
-        /// \param ns_name
-        /// \param json_path
-        /// \param retry_time
-        /// \return
-        turbo::Status
-        save_database_json(const std::string &ns_name, const std::string &db_name, const std::string &json_path,
-                           int *retry_time = nullptr);
-
-        ///
-        /// \param info
-        /// \param retry_time
-        /// \return
-        turbo::Status create_zone(EA::proto::ZoneInfo &info, int *retry_time = nullptr);
+        turbo::Status create_zone(EA::servlet::ZoneInfo &info, int *retry_time = nullptr);
 
         ///
         /// \param ns
@@ -534,7 +401,7 @@ namespace EA::client {
         /// \param zone_info
         /// \param retry_time
         /// \return
-        turbo::Status modify_zone(EA::proto::ZoneInfo &zone_info, int *retry_time = nullptr);
+        turbo::Status modify_zone(EA::servlet::ZoneInfo &zone_info, int *retry_time = nullptr);
 
         ///
         /// \param json_str
@@ -552,7 +419,7 @@ namespace EA::client {
         /// \param zone_list
         /// \param retry_time
         /// \return
-        turbo::Status list_zone(std::vector<EA::proto::ZoneInfo> &zone_list, int *retry_time = nullptr);
+        turbo::Status list_zone(std::vector<EA::servlet::ZoneInfo> &zone_list, int *retry_time = nullptr);
 
         ///
         /// \param ns
@@ -560,7 +427,7 @@ namespace EA::client {
         /// \param retry_time
         /// \return
         turbo::Status
-        list_zone(const std::string &ns, std::vector<EA::proto::ZoneInfo> &zone_list, int *retry_time = nullptr);
+        list_zone(const std::string &ns, std::vector<EA::servlet::ZoneInfo> &zone_list, int *retry_time = nullptr);
 
         ///
         /// \param zone_list
@@ -608,7 +475,7 @@ namespace EA::client {
         /// \param zone_pb
         /// \param retry_time
         /// \return
-        turbo::Status get_zone(const std::string &ns_name, const std::string &zone_name, EA::proto::ZoneInfo &zone_pb,
+        turbo::Status get_zone(const std::string &ns_name, const std::string &zone_name, EA::servlet::ZoneInfo &zone_pb,
                                int *retry_time = nullptr);
 
         ///
@@ -632,7 +499,7 @@ namespace EA::client {
         /// \param servlet_info
         /// \param retry_time
         /// \return
-        turbo::Status create_servlet(EA::proto::ServletInfo &servlet_info, int *retry_time = nullptr);
+        turbo::Status create_servlet(EA::servlet::ServletInfo &servlet_info, int *retry_time = nullptr);
 
         ///
         /// \param ns
@@ -667,7 +534,7 @@ namespace EA::client {
         /// \param zone_info
         /// \param retry_time
         /// \return
-        turbo::Status modify_servlet(EA::proto::ServletInfo &servlet_info, int *retry_time = nullptr);
+        turbo::Status modify_servlet(EA::servlet::ServletInfo &servlet_info, int *retry_time = nullptr);
 
         ///
         /// \param json_str
@@ -685,7 +552,7 @@ namespace EA::client {
         /// \param servlet_list
         /// \param retry_time
         /// \return
-        turbo::Status list_servlet(std::vector<EA::proto::ServletInfo> &servlet_list, int *retry_time = nullptr);
+        turbo::Status list_servlet(std::vector<EA::servlet::ServletInfo> &servlet_list, int *retry_time = nullptr);
 
         ///
         /// \param ns
@@ -693,7 +560,7 @@ namespace EA::client {
         /// \param retry_time
         /// \return
         turbo::Status
-        list_servlet(const std::string &ns, std::vector<EA::proto::ServletInfo> &servlet_list, int *retry_time = nullptr);
+        list_servlet(const std::string &ns, std::vector<EA::servlet::ServletInfo> &servlet_list, int *retry_time = nullptr);
 
         ///
         /// \param ns
@@ -702,7 +569,7 @@ namespace EA::client {
         /// \param retry_time
         /// \return
         turbo::Status
-        list_servlet(const std::string &ns, const std::string &zone, std::vector<EA::proto::ServletInfo> &servlet_list, int *retry_time = nullptr);
+        list_servlet(const std::string &ns, const std::string &zone, std::vector<EA::servlet::ServletInfo> &servlet_list, int *retry_time = nullptr);
 
         ///
         /// \param servlet_list
@@ -774,7 +641,7 @@ namespace EA::client {
         /// \param servlet_pb
         /// \param retry_time
         /// \return
-        turbo::Status get_servlet(const std::string &ns_name, const std::string &zone_name, const std::string &servlet, EA::proto::ServletInfo &servlet_pb,
+        turbo::Status get_servlet(const std::string &ns_name, const std::string &zone_name, const std::string &servlet, EA::servlet::ServletInfo &servlet_pb,
                                int *retry_time = nullptr);
 
         ///
@@ -799,122 +666,35 @@ namespace EA::client {
                        int *retry_time = nullptr);
 
         ///
-        /// \param logical_list
-        /// \param retry_time
-        /// \return
-        turbo::Status add_logical(const std::vector<std::string> &logical_list, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param retry_time
-        /// \return
-        turbo::Status add_logical(const std::string &logical, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param retry_time
-        /// \return
-        turbo::Status remove_logical(const std::vector<std::string> &logical_list, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param retry_time
-        /// \return
-        turbo::Status remove_logical(const std::string &logical, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param physical
-        /// \param retry_time
-        /// \return
-        turbo::Status add_physical(const std::string &logical, const std::vector<std::string> &physicals, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param physical
-        /// \param retry_time
-        /// \return
-        turbo::Status add_physical(const std::string &logical, const std::string &physical, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param physicals
-        /// \param retry_time
-        /// \return
-        turbo::Status remove_physical(const std::string &logical, const std::vector<std::string> &physicals, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param physical
-        /// \param retry_time
-        /// \return
-        turbo::Status remove_physical(const std::string &logical, const std::string &physical, int *retry_time = nullptr);
-
-        ///
-        /// \param logical_from
-        /// \param logical_to
-        /// \param physical
-        /// \param retry_time
-        /// \return
-        turbo::Status move_physical(const std::string &logical_from, const std::string &logical_to, const std::string &physical, int *retry_time = nullptr);
-
-        ///
-        /// \param retry_time
-        /// \return
-        turbo::Status list_logical(std::vector<std::string> &logicals, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param rooms
-        /// \param retry_time
-        /// \return
-        turbo::Status get_logical(const std::string &logical, EA::proto::PhysicalRoom &rooms, int *retry_time = nullptr);
-
-        ///
-        /// \param logical
-        /// \param physicals
-        /// \param retry_time
-        /// \return
-        turbo::Status get_logical(const std::string &logical, std::vector<std::string> &physicals, int *retry_time = nullptr);
-
-        ///
-        /// \param rooms
-        /// \param retry_time
-        /// \return
-        turbo::Status list_physical(std::vector<EA::proto::PhysicalRoom> &rooms, int *retry_time = nullptr);
-
-        turbo::Status list_instance(std::vector<EA::proto::InstanceInfo> &instance_list, int *retry_time = nullptr);
-
-        ///
         /// \param request
         /// \param response
         /// \param retry_time
         /// \return
-        turbo::Status meta_manager(const EA::proto::MetaManagerRequest &request,
-                                   EA::proto::MetaManagerResponse &response, int *retry_time);
+        turbo::Status meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                   EA::servlet::MetaManagerResponse &response, int *retry_time);
 
         ///
         /// \param request
         /// \param response
         /// \param retry_times
         /// \return
-        turbo::Status meta_query(const EA::proto::QueryRequest &request,
-                                 EA::proto::QueryResponse &response, int *retry_time);
+        turbo::Status meta_query(const EA::servlet::QueryRequest &request,
+                                 EA::servlet::QueryResponse &response, int *retry_time);
 
     private:
         BaseMessageSender *_sender;
     };
 
-    inline turbo::Status MetaClient::meta_manager(const EA::proto::MetaManagerRequest &request,
-                               EA::proto::MetaManagerResponse &response, int *retry_time) {
+    inline turbo::Status MetaClient::meta_manager(const EA::servlet::MetaManagerRequest &request,
+                               EA::servlet::MetaManagerResponse &response, int *retry_time) {
         if(!retry_time) {
             return _sender->meta_manager(request, response);
         }
         return _sender->meta_manager(request, response, *retry_time);
     }
 
-    inline turbo::Status MetaClient::meta_query(const EA::proto::QueryRequest &request,
-                             EA::proto::QueryResponse &response, int *retry_time) {
+    inline turbo::Status MetaClient::meta_query(const EA::servlet::QueryRequest &request,
+                             EA::servlet::QueryResponse &response, int *retry_time) {
         if(!retry_time) {
             return _sender->meta_query(request, response);
         }

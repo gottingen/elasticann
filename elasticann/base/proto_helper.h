@@ -6,8 +6,7 @@
 #define ELASTICANN_COMMON_PROTO_HELPER_H_
 
 #include "turbo/format/format.h"
-#include "eaproto/meta/meta.interface.pb.h"
-#include "eaproto/exec/plan.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "rocksdb/db.h"
 #include "rocksdb/utilities/memory_util.h"
 #include "rapidjson/rapidjson.h"
@@ -16,19 +15,6 @@
 #include "re2/re2.h"
 
 namespace fmt {
-    template<>
-    struct formatter<EA::proto::PrimitiveType> : public formatter<int> {
-        auto format(const EA::proto::PrimitiveType& a, format_context& ctx) const {
-            return formatter<int>::format(static_cast<int>(a), ctx);
-        }
-    };
-
-    template<>
-    struct formatter<EA::proto::IndexType> : public formatter<int> {
-        auto format(const EA::proto::IndexType& a, format_context& ctx) const {
-            return formatter<int>::format(static_cast<int>(a), ctx);
-        }
-    };
 
     template<>
     struct formatter<rocksdb::Status::Code> : public formatter<int> {
@@ -38,8 +24,8 @@ namespace fmt {
     };
 
     template<>
-    struct formatter<EA::proto::OpType> : public formatter<int> {
-        auto format(const EA::proto::OpType& a, format_context& ctx) const {
+    struct formatter<EA::servlet::OpType> : public formatter<int> {
+        auto format(const EA::servlet::OpType& a, format_context& ctx) const {
             return formatter<int>::format(static_cast<int>(a), ctx);
         }
     };
@@ -59,25 +45,12 @@ namespace fmt {
     };
 
     template<>
-    struct formatter<::EA::proto::RaftControlOp> : public formatter<int> {
-        auto format(const ::EA::proto::RaftControlOp& a, format_context& ctx) const {
+    struct formatter<::EA::servlet::RaftControlOp> : public formatter<int> {
+        auto format(const ::EA::servlet::RaftControlOp& a, format_context& ctx) const {
             return formatter<int>::format(static_cast<int>(a), ctx);
         }
     };
 
-    template<>
-    struct formatter<::EA::proto::ExprNodeType> : public formatter<int> {
-        auto format(const ::EA::proto::ExprNodeType& a, format_context& ctx) const {
-            return formatter<int>::format(static_cast<int>(a), ctx);
-        }
-    };
-
-    template<>
-    struct formatter<::EA::proto::PlanNodeType> : public formatter<int> {
-        auto format(const ::EA::proto::PlanNodeType& a, format_context& ctx) const {
-            return formatter<int>::format(static_cast<int>(a), ctx);
-        }
-    };
 
     template<>
     struct formatter<::re2::RE2::ErrorCode> : public formatter<int> {

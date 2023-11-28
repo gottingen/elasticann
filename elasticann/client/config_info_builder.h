@@ -17,7 +17,7 @@
 #ifndef ELASTICANN_CLIENT_CONFIG_INFO_BUILDER_H_
 #define ELASTICANN_CLIENT_CONFIG_INFO_BUILDER_H_
 
-#include "eaproto/meta/meta.struct.pb.h"
+#include "elasticann/proto/servlet/servlet.struct.pb.h"
 #include "turbo/base/status.h"
 
 namespace EA::client {
@@ -28,10 +28,10 @@ namespace EA::client {
 
         ~ConfigInfoBuilder() = default;
 
-        explicit ConfigInfoBuilder(EA::proto::ConfigInfo *info);
+        explicit ConfigInfoBuilder(EA::servlet::ConfigInfo *info);
 
 
-        void set_info(EA::proto::ConfigInfo *info);
+        void set_info(EA::servlet::ConfigInfo *info);
 
         ///
         /// \param json_str
@@ -49,8 +49,8 @@ namespace EA::client {
         /// \param version
         /// \param type
         /// \return
-        turbo::Status build_from_file(const std::string &name, const std::string &file, const EA::proto::Version &version,
-                                      const EA::proto::ConfigType &type = EA::proto::CF_JSON);
+        turbo::Status build_from_file(const std::string &name, const std::string &file, const EA::servlet::Version &version,
+                                      const EA::servlet::ConfigType &type = EA::servlet::CF_JSON);
 
         ///
         /// \param name
@@ -58,7 +58,7 @@ namespace EA::client {
         /// \param version
         /// \param type
         /// \return
-        turbo::Status build_from_file(const std::string &name, const std::string &file, const EA::proto::Version &version,
+        turbo::Status build_from_file(const std::string &name, const std::string &file, const EA::servlet::Version &version,
                                       const std::string &type = "json");
 
         ///
@@ -68,7 +68,7 @@ namespace EA::client {
         /// \param type
         /// \return
         turbo::Status build_from_file(const std::string &name, const std::string &file, const std::string &version,
-                                      const EA::proto::ConfigType &type = EA::proto::CF_JSON);
+                                      const EA::servlet::ConfigType &type = EA::servlet::CF_JSON);
 
         ///
         /// \param name
@@ -85,15 +85,15 @@ namespace EA::client {
         /// \param version
         /// \param type
         /// \return
-        turbo::Status build_from_content(const std::string &name, const std::string &content, const EA::proto::Version &version,
-                                         const EA::proto::ConfigType &type = EA::proto::CF_JSON);
+        turbo::Status build_from_content(const std::string &name, const std::string &content, const EA::servlet::Version &version,
+                                         const EA::servlet::ConfigType &type = EA::servlet::CF_JSON);
         ///
         /// \param name
         /// \param content
         /// \param version
         /// \param type
         /// \return
-        turbo::Status build_from_content(const std::string &name, const std::string &content, const EA::proto::Version &version,
+        turbo::Status build_from_content(const std::string &name, const std::string &content, const EA::servlet::Version &version,
                                          const std::string &type = "json");
         ///
         /// \param name
@@ -102,7 +102,7 @@ namespace EA::client {
         /// \param type
         /// \return
         turbo::Status build_from_content(const std::string &name, const std::string &content, const std::string &version,
-                                         const EA::proto::ConfigType &type = EA::proto::CF_JSON);
+                                         const EA::servlet::ConfigType &type = EA::servlet::CF_JSON);
         ///
         /// \param name
         /// \param content
@@ -114,7 +114,7 @@ namespace EA::client {
                            const std::string &type = "json");
 
     private:
-        EA::proto::ConfigInfo *_info{nullptr};
+        EA::servlet::ConfigInfo *_info{nullptr};
     };
 }  // namespace client
 

@@ -149,9 +149,9 @@ int main(int argc, char** argv) {
         entry->type = braft::ENTRY_TYPE_DATA;
         entry->id = braft::LogId(4, 1);
         //construct data
-        EA::proto::RaftControlResponse response;
+        EA::servlet::RaftControlResponse response;
         response.set_region_id(10);
-        response.set_errcode(EA::proto::SUCCESS);
+        response.set_errcode(EA::servlet::SUCCESS);
         response.set_leader("10.0.0.1:8010");
         butil::IOBuf data;
         butil::IOBufAsZeroCopyOutputStream wrapper_write(&data);
@@ -235,8 +235,8 @@ int main(int argc, char** argv) {
         entry->type = braft::ENTRY_TYPE_DATA;
         entry->id = braft::LogId(7, 2);
         //construct data
-        EA::proto::RaftControlResponse response;
-        response.set_errcode(EA::proto::SUCCESS);
+        EA::servlet::RaftControlResponse response;
+        response.set_errcode(EA::servlet::SUCCESS);
         response.set_region_id(10);
         response.set_leader("20.0.0.1:8010");
         butil::IOBuf data;
@@ -274,8 +274,8 @@ int main(int argc, char** argv) {
         entry->type = braft::ENTRY_TYPE_DATA;
         entry->id = braft::LogId(8, 2);
         //construct data
-        EA::proto::RaftControlResponse response;
-        response.set_errcode(EA::proto::SUCCESS);
+        EA::servlet::RaftControlResponse response;
+        response.set_errcode(EA::servlet::SUCCESS);
         response.set_region_id(10);
         response.set_leader("30.0.0.1:8010");
         butil::IOBuf data;
@@ -313,8 +313,8 @@ int main(int argc, char** argv) {
         entry->type = braft::ENTRY_TYPE_DATA;
         entry->id = braft::LogId(9, 3);
         //construct data
-        EA::proto::RaftControlResponse response;
-        response.set_errcode(EA::proto::SUCCESS);
+        EA::servlet::RaftControlResponse response;
+        response.set_errcode(EA::servlet::SUCCESS);
         response.set_region_id(10);
         response.set_leader("30.0.0.1:8010");
         butil::IOBuf data;
@@ -352,8 +352,8 @@ int main(int argc, char** argv) {
             braft::LogEntry* entry = new braft::LogEntry();
             entry->type = braft::ENTRY_TYPE_DATA;
             entry->id = braft::LogId(10+i, 4);
-            EA::proto::RaftControlResponse response;
-            response.set_errcode(EA::proto::SUCCESS);
+            EA::servlet::RaftControlResponse response;
+            response.set_errcode(EA::servlet::SUCCESS);
             response.set_region_id(10);
             response.set_leader("30.0.0.1:8010");
             butil::IOBuf data;
@@ -371,7 +371,7 @@ int main(int argc, char** argv) {
             std::cout << "rocksdb append entries fail" << std::endl;
         }
         for (int i = 0; i < 10; ++i) {
-            EA::proto::RaftControlResponse response;
+            EA::servlet::RaftControlResponse response;
             std::cout << "first log index: " << raft_log->first_log_index() << std::endl;
             std::cout << "last log index: " << raft_log->last_log_index() << std::endl;
             braft::LogEntry* read_entry = raft_log->get_entry(10 +i );

@@ -219,7 +219,7 @@ include_directories(${ROCKSDB_INCLUDE_DIR})
 
 #message(STATUS "ssl:" ${OPENSSL_SSL_LIBRARY})
 #message(STATUS "crypto:" ${OPENSSL_CRYPTO_LIBRARY})
-find_package(eaproto REQUIRED)
+#find_package(eaproto REQUIRED)
 SET(DEP_INC
         ${CMAKE_CURRENT_BINARY_DIR}/proto
 

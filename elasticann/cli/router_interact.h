@@ -24,7 +24,7 @@
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
 #include "elasticann/cli/option_context.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 
 namespace EA::cli {
 
@@ -39,7 +39,7 @@ namespace EA::cli {
         turbo::Status send_request(const std::string &service_name,
                                    const Request &request,
                                    Response &response) {
-            const ::google::protobuf::ServiceDescriptor *service_desc = proto::RouterService::descriptor();
+            const ::google::protobuf::ServiceDescriptor *service_desc = EA::servlet::RouterService::descriptor();
             const ::google::protobuf::MethodDescriptor *method =
                     service_desc->FindMethodByName(service_name);
             auto verbose =  OptionContext::get_instance()->verbose;
@@ -75,7 +75,7 @@ namespace EA::cli {
                     continue;
                 }
 
-                if (response.errcode() != proto::SUCCESS) {
+                if (response.errcode() != EA::servlet::SUCCESS) {
                     TLOG_WARN_IF(verbose, "send meta server fail, log_id:{}, response:{}", cntl.log_id(),
                               response.ShortDebugString());
                     //return turbo::UnavailableError("send meta server fail, log_id:{}, response:{}", cntl.log_id(),

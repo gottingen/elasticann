@@ -20,7 +20,7 @@
 #include "turbo/base/status.h"
 #include "turbo/base/result_status.h"
 #include <string>
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/module/module_version.h"
 
 namespace EA::client {
@@ -28,18 +28,18 @@ namespace EA::client {
     ///
     /// \param type
     /// \return
-    std::string config_type_to_string(EA::proto::ConfigType type);
+    std::string config_type_to_string(EA::servlet::ConfigType type);
 
     ///
     /// \param str
     /// \return
-    turbo::ResultStatus<EA::proto::ConfigType> string_to_config_type(const std::string &str);
+    turbo::ResultStatus<EA::servlet::ConfigType> string_to_config_type(const std::string &str);
 
     ///
     /// \param str
     /// \param v
     /// \return
-    turbo::Status string_to_version(const std::string &str, EA::proto::Version*v);
+    turbo::Status string_to_version(const std::string &str, EA::servlet::Version*v);
 
     ///
     /// \param str
@@ -50,7 +50,7 @@ namespace EA::client {
     ///
     /// \param v
     /// \return
-    std::string version_to_string(const EA::proto::Version &v);
+    std::string version_to_string(const EA::servlet::Version &v);
 
     ///
     /// \param v

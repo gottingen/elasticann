@@ -16,16 +16,14 @@
 
 #include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/rpc/meta_server_interact.h"
-#include "elasticann/rpc/store_interact.h"
 #include "elasticann/meta_server/meta_util.h"
-#include "elasticann/meta_server/region_manager.h"
 
 namespace EA {
 
     void MetaServerClosure::Run() {
         if (!status().ok()) {
             if (response) {
-                response->set_errcode(proto::NOT_LEADER);
+                response->set_errcode(EA::servlet::NOT_LEADER);
                 response->set_leader(butil::endpoint2str(common_state_machine->get_leader()).c_str());
             }
             TLOG_ERROR("meta server closure fail, error_code:{}, error_mas:{}",
@@ -37,28 +35,13 @@ namespace EA {
             remote_side = butil::endpoint2str(cntl->remote_side()).c_str();
         }
 
-        if (response != nullptr && response->op_type() != proto::OP_GEN_ID_FOR_AUTO_INCREMENT) {
+        if (response != nullptr && response->op_type() != EA::servlet::OP_GEN_ID_FOR_AUTO_INCREMENT) {
             TLOG_INFO("request:{}, response:{}, raft_time_cost:[{}], total_time_cost:[{}], remote_side:[{}]",
                       request,
                       response->ShortDebugString(),
                       raft_time_cost,
                       total_time_cost,
                       remote_side);
-        }
-        if (response != nullptr && response->op_type() == proto::OP_CREATE_TABLE) {
-            if (!whether_level_table && create_table_ret == 0) {
-                std::string table_name = create_table_schema_pb.table_name();
-                if (init_regions->size() <= FLAGS_pre_split_threashold) {
-                    if (TableManager::get_instance()->do_create_table_sync_req(
-                            create_table_schema_pb, init_regions, has_auto_increment, start_region_id, response) != 0) {
-                        TLOG_ERROR("fail to create table : {}", table_name);
-                    } else {
-                        TLOG_INFO("create table:{} completely", table_name);
-                    }
-                } else {
-                    TLOG_INFO("create table:{} async completely", table_name);
-                }
-            }
         }
         if (done != nullptr) {
             done->Run();
@@ -69,7 +52,7 @@ namespace EA {
     void TsoClosure::Run() {
         if (!status().ok()) {
             if (response) {
-                response->set_errcode(proto::NOT_LEADER);
+                response->set_errcode(EA::servlet::NOT_LEADER);
                 response->set_leader(butil::endpoint2str(common_state_machine->get_leader()).c_str());
             }
             TLOG_ERROR("meta server closure fail, error_code:{}, error_mas:{}",
@@ -104,13 +87,13 @@ namespace EA {
     }
 
     void BaseStateMachine::process(google::protobuf::RpcController *controller,
-                                     const proto::MetaManagerRequest *request,
-                                     proto::MetaManagerResponse *response,
+                                     const EA::servlet::MetaManagerRequest *request,
+                                     EA::servlet::MetaManagerResponse *response,
                                      google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         if (!_is_leader) {
             if (response) {
-                response->set_errcode(proto::NOT_LEADER);
+                response->set_errcode(EA::servlet::NOT_LEADER);
                 response->set_errmsg("not leader");
                 response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
             }
@@ -267,8 +250,8 @@ namespace EA {
             TLOG_ERROR("meta server interact init fail when set peer");
             return -1;
         }
-        proto::RaftControlRequest request;
-        request.set_op_type(proto::SetPeer);
+        EA::servlet::RaftControlRequest request;
+        request.set_op_type(EA::servlet::SetPeer);
         request.set_region_id(_dummy_region_id);
         std::set<std::string> peers_in_server;
         std::vector<braft::PeerId> peers;
@@ -285,7 +268,7 @@ namespace EA {
         if (!remove_peer) {
             request.add_new_peers(change_peer);
         }
-        proto::RaftControlResponse response;
+        EA::servlet::RaftControlResponse response;
         int ret = meta_server_interact.send_request("raft_control", request, response);
         if (ret != 0) {
             TLOG_WARN("set peer when meta server migrate fail, request:{}, response:{}",

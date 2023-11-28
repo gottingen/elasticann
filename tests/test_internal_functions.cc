@@ -24,9 +24,9 @@
 #include <ctime>
 #include "elasticann/expr/internal_functions.h"
 #include "elasticann/expr/fn_manager.h"
-#include "eaproto/meta/expr.pb.h"
+#include "elasticann/proto/servlet/expr.pb.h"
 #include "elasticann/sqlparser/parser.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 
 
 namespace EA {

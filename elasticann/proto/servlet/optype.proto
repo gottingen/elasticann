@@ -1,0 +1,106 @@
+// Copyright 2023 The Turbo Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+syntax="proto2";
+package EA.servlet;
+
+
+enum OpType {
+    // for store
+    OP_NONE                                 = 0;
+
+    // for meta
+    OP_ADD_INSTANCE                         = 3;
+    OP_DROP_INSTANCE                        = 6;
+    OP_UPDATE_INSTANCE                      = 7;
+    OP_CREATE_USER                          = 9;
+    OP_ADD_PRIVILEGE                        = 10;
+    OP_DROP_USER                            = 11;
+    OP_DROP_PRIVILEGE                       = 12;
+    OP_CREATE_NAMESPACE                     = 13;
+    OP_DROP_NAMESPACE                       = 14;
+    OP_MODIFY_NAMESPACE                     = 15;
+    OP_GEN_ID_FOR_AUTO_INCREMENT            = 16;
+    OP_UPDATE_FOR_AUTO_INCREMENT            = 17;
+    OP_SET_INSTANCE_MIGRATE                 = 18;
+    OP_ADD_ID_FOR_AUTO_INCREMENT            = 19;
+    OP_DROP_ID_FOR_AUTO_INCREMENT           = 20;
+    OP_SET_INSTANCE_STATUS                  = 21;
+    OP_MODIFY_RESOURCE_TAG                  = 22;
+    OP_GEN_TSO                              = 23;
+    OP_RESET_TSO                            = 24;
+    OP_UPDATE_TSO                           = 25;
+    OP_QUERY_TSO_INFO                       = 26;
+    OP_UPDATE_INSTANCE_PARAM                = 27;
+    OP_UPDATE_MAIN_LOGICAL_ROOM             = 28;
+
+    OP_CREATE_ZONE                          = 29;
+    OP_DROP_ZONE                            = 30;
+    OP_MODIFY_ZONE                          = 31;
+    OP_CREATE_SERVLET                       = 32;
+    OP_DROP_SERVLET                         = 33;
+    OP_MODIFY_SERVLET                       = 34;
+    OP_ADD_SERVLET_INSTANCE                 = 35;
+    OP_RENEW_SERVLET_INSTANCE               = 36;
+    OP_DROP_SERVLET_INSTANCE                = 37;
+
+    // file op
+    OP_CREATE_CONFIG                       = 38;
+    OP_REMOVE_CONFIG                       = 39;
+    OP_CREATE_PLUGIN                       = 40;
+    OP_UPLOAD_PLUGIN                       = 41;
+    OP_REMOVE_PLUGIN                       = 42;
+    OP_REMOVE_TOMBSTONE_PLUGIN             = 43;
+    OP_RESTORE_TOMBSTONE_PLUGIN            = 44;
+    OP_CREATE_DICT                         = 45;
+    OP_UPLOAD_DICT                         = 46;
+    OP_REMOVE_DICT                         = 47;
+    OP_REMOVE_TOMBSTONE_DICT               = 48;
+    OP_RESTORE_TOMBSTONE_DICT              = 49;
+};
+
+enum QueryOpType {
+  QUERY_USER_PRIVILEGE                          = 4;
+  QUERY_NAMESPACE                               = 5;
+  QUERY_INSTANCE_FLATTEN                        = 6;
+  QUERY_PRIVILEGE_FLATTEN                       = 7;
+  QUERY_INSTANCE_PARAM                          = 11;
+
+  QUERY_ZONE                                    = 12;
+  QUERY_SERVLET                                 = 13;
+  QUERY_SERVLET_PRIVILEGE_FLATTEN               = 14;
+  QUERY_SERVLET_INSTANCE                        = 15;
+  QUERY_SERVLET_INSTANCE_FETCH                  = 16;
+  
+  /// for ops
+  QUERY_GET_CONFIG                       = 17;
+  QUERY_LIST_CONFIG_VERSION              = 18;
+  QUERY_LIST_CONFIG                      = 19;
+  /// for plugin
+  QUERY_DOWNLOAD_PLUGIN                  = 20;
+  QUERY_PLUGIN_INFO                      = 21;
+  QUERY_LIST_PLUGIN_VERSION              = 22;
+  QUERY_LIST_PLUGIN                      = 23;
+  QUERY_TOMBSTONE_PLUGIN_INFO            = 24;
+  QUERY_TOMBSTONE_LIST_PLUGIN_VERSION    = 25;
+  QUERY_TOMBSTONE_LIST_PLUGIN            = 26;
+
+  QUERY_DOWNLOAD_DICT                   = 27;
+  QUERY_INFO_DICT                       = 28;
+  QUERY_LIST_DICT_VERSION               = 29;
+  QUERY_LIST_DICT                       = 30;
+  QUERY_TOMBSTONE_DICT_INFO             = 31;
+  QUERY_TOMBSTONE_LIST_DICT_VERSION     = 32;
+  QUERY_TOMBSTONE_LIST_DICT             = 33;
+};

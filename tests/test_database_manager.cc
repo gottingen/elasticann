@@ -56,15 +56,15 @@ protected:
 // add_logic add_physical add_instance
 DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     //测试点：增加命名空间“FengChao”
-    EA::proto::MetaManagerRequest request_add_namespace_fc;
-    request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_fc;
+    request_add_namespace_fc.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
     request_add_namespace_fc.mutable_namespace_info()->set_quota(1024 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
 
     //测试点：增加命名空间Feed
-    EA::proto::MetaManagerRequest request_add_namespace_feed;
-    request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_feed;
+    request_add_namespace_feed.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_add_namespace_feed.mutable_namespace_info()->set_quota(2014 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
@@ -106,8 +106,8 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, namespace_id);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_fc;
-    request_add_database_fc.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_fc;
+    request_add_database_fc.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_fc.mutable_database_info()->set_database("FC_Word");
     request_add_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_add_database_fc.mutable_database_info()->set_quota(10 * 1024);
@@ -118,8 +118,8 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     _database_manager->create_database(request_add_database_fc, NULL);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_feed;
-    request_add_database_feed.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_feed;
+    request_add_database_feed.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_feed.mutable_database_info()->set_database("FC_Word");
     request_add_database_feed.mutable_database_info()->set_namespace_name("Feed");
     request_add_database_feed.mutable_database_info()->set_quota(8 * 1024);
@@ -187,8 +187,8 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：修改database的quota
-    EA::proto::MetaManagerRequest request_modify_database_fc;
-    request_modify_database_fc.set_op_type(EA::proto::OP_MODIFY_DATABASE);
+    EA::servlet::MetaManagerRequest request_modify_database_fc;
+    request_modify_database_fc.set_op_type(EA::servlet::OP_MODIFY_DATABASE);
     request_modify_database_fc.mutable_database_info()->set_database("FC_Word");
     request_modify_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_modify_database_fc.mutable_database_info()->set_quota(50 * 1024);
@@ -266,9 +266,9 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, _database_manager->_table_ids[2].size());
 
     //test_point: query_database_manager
-    EA::proto::QueryRequest query_request;
-    EA::proto::QueryResponse response;
-    query_request.set_op_type(EA::proto::QUERY_DATABASE);
+    EA::servlet::QueryRequest query_request;
+    EA::servlet::QueryResponse response;
+    query_request.set_op_type(EA::servlet::QUERY_DATABASE);
     _query_database_manager->get_database_info(&query_request, &response);
     TLOG_WARN("database info: {}", response.DebugString().c_str());
 
@@ -285,8 +285,8 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
     database_id = _database_manager->get_database_id(std::string("Feed") + "\001" + "FC_Word");
     DOCTEST_REQUIRE_EQ(database_id, 3);
 
-    EA::proto::MetaManagerRequest request_drop_database;
-    request_drop_database.set_op_type(EA::proto::OP_DROP_DATABASE);
+    EA::servlet::MetaManagerRequest request_drop_database;
+    request_drop_database.set_op_type(EA::servlet::OP_DROP_DATABASE);
     request_drop_database.mutable_database_info()->set_database("FC_Word");
     request_drop_database.mutable_database_info()->set_namespace_name("Feed");
     _database_manager->drop_database(request_drop_database, NULL);
@@ -347,8 +347,8 @@ DOCTEST_TEST_CASE_FIXTURE(DatabaseManagerTest, "test_create_drop_modify") {
         TLOG_WARN("database_id:{}, name:{}", db_id.second, db_id.first.c_str());
     }
 
-    EA::proto::MetaManagerRequest request_drop_namespace;
-    request_drop_namespace.set_op_type(EA::proto::OP_DROP_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_drop_namespace;
+    request_drop_namespace.set_op_type(EA::servlet::OP_DROP_NAMESPACE);
     request_drop_namespace.mutable_namespace_info()->set_namespace_name("FengChao");
     _namespace_manager->drop_namespace(request_drop_namespace, NULL);
 

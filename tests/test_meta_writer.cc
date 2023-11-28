@@ -44,7 +44,7 @@ protected:
 
 DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
     int64_t region_id = 11;
-    EA::proto::RegionInfo region_info;
+    EA::servlet::RegionInfo region_info;
     region_info.set_region_id(region_id);
     region_info.set_table_name("namespace.db.table");
     region_info.set_table_id(1);
@@ -56,7 +56,7 @@ DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
     auto ret = _writer->init_meta_info(region_info);
     DOCTEST_REQUIRE_EQ(ret, 0);
     
-    std::vector<EA::proto::RegionInfo> region_infos;
+    std::vector<EA::servlet::RegionInfo> region_infos;
     ret = _writer->parse_region_infos(region_infos);
     DOCTEST_REQUIRE_EQ(1, region_infos.size());
     TLOG_WARN("region_info: {}", region_infos[0].ShortDebugString().c_str());
@@ -145,8 +145,8 @@ DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
    
     rocksdb::WriteBatch batch; 
     for (auto& log_index : log_indexs) {
-        EA::proto::StoreReq txn;
-        txn.set_op_type(EA::proto::OP_PREPARE);
+        EA::servlet::StoreReq txn;
+        txn.set_op_type(EA::servlet::OP_PREPARE);
         txn.set_region_id(region_id);
         txn.set_region_version(log_index.second);
         batch.Put(_writer->get_handle(), 
@@ -161,7 +161,7 @@ DOCTEST_TEST_CASE_FIXTURE(MetaWriterTest, "test_encode") {
     DOCTEST_REQUIRE_EQ(ret, 0);
     DOCTEST_REQUIRE_EQ(prepared_txn_infos.size(), 2);
     for (auto& txn_info : prepared_txn_infos) {
-        EA::proto::StoreReq txn;
+        EA::servlet::StoreReq txn;
         if (!txn.ParseFromString(txn_info.second)) {
             DOCTEST_REQUIRE_EQ(1, 0);
         }

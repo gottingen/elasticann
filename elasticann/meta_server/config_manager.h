@@ -18,7 +18,7 @@
 #define ELASTICANN_META_CONFIG_MANAGER_H_
 
 #include "turbo/container/flat_hash_map.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/container/flat_hash_map.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "turbo/module/module_version.h"
@@ -46,18 +46,18 @@ namespace EA {
         /// \param response
         /// \param done
         void process_schema_info(google::protobuf::RpcController *controller,
-                                                const proto::MetaManagerRequest *request,
-                                                proto::MetaManagerResponse *response,
+                                                const EA::servlet::MetaManagerRequest *request,
+                                                EA::servlet::MetaManagerResponse *response,
                                                 google::protobuf::Closure *done);
         ///
         /// \param request
         /// \param done
-        void create_config(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done);
+        void create_config(const ::EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \param request
         /// \param done
-        void remove_config(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done);
+        void remove_config(const ::EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \return
@@ -86,12 +86,12 @@ namespace EA {
         ///
         /// \param request
         /// \param done
-        void remove_config_all(const ::EA::proto::MetaManagerRequest &request, braft::Closure *done);
+        void remove_config_all(const ::EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
     private:
         MetaStateMachine *_meta_state_machine;
         bthread_mutex_t _config_mutex;
-        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::ConfigInfo>> _configs;
+        turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::servlet::ConfigInfo>> _configs;
 
     };
 

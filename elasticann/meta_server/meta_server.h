@@ -17,7 +17,7 @@
 #pragma once
 
 #include <braft/raft.h>
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/base/bthread.h"
 
@@ -28,7 +28,7 @@ namespace EA {
 
     class TSOStateMachine;
 
-    class MetaServer : public proto::MetaService {
+    class MetaServer : public EA::servlet::MetaService {
     public:
         ~MetaServer() override;
 
@@ -41,54 +41,29 @@ namespace EA {
 
         //schema control method
         void meta_manager(google::protobuf::RpcController *controller,
-                                  const proto::MetaManagerRequest *request,
-                                  proto::MetaManagerResponse *response,
+                                  const EA::servlet::MetaManagerRequest *request,
+                                  EA::servlet::MetaManagerResponse *response,
                                   google::protobuf::Closure *done) override;
 
         void meta_query(google::protobuf::RpcController *controller,
-                           const proto::QueryRequest *request,
-                           proto::QueryResponse *response,
+                           const EA::servlet::QueryRequest *request,
+                           EA::servlet::QueryResponse *response,
                            google::protobuf::Closure *done) override;
 
         //raft control method
         void raft_control(google::protobuf::RpcController *controller,
-                                  const proto::RaftControlRequest *request,
-                                  proto::RaftControlResponse *response,
+                                  const EA::servlet::RaftControlRequest *request,
+                                  EA::servlet::RaftControlResponse *response,
                                   google::protobuf::Closure *done) override;
 
-        void store_heartbeat(google::protobuf::RpcController *controller,
-                                     const proto::StoreHeartBeatRequest *request,
-                                     proto::StoreHeartBeatResponse *response,
-                                     google::protobuf::Closure *done) override;
-
-        void baikal_heartbeat(google::protobuf::RpcController *controller,
-                                      const proto::BaikalHeartBeatRequest *request,
-                                      proto::BaikalHeartBeatResponse *response,
-                                      google::protobuf::Closure *done) override;
-
-        void baikal_other_heartbeat(google::protobuf::RpcController *controller,
-                                            const proto::BaikalOtherHeartBeatRequest *request,
-                                            proto::BaikalOtherHeartBeatResponse *response,
-                                            google::protobuf::Closure *done) override;
-
-        void console_heartbeat(google::protobuf::RpcController *controller,
-                                       const proto::ConsoleHeartBeatRequest *request,
-                                       proto::ConsoleHeartBeatResponse *response,
-                                       google::protobuf::Closure *done) override;
 
         void tso_service(google::protobuf::RpcController *controller,
-                                 const proto::TsoRequest *request,
-                                 proto::TsoResponse *response,
+                                 const EA::servlet::TsoRequest *request,
+                                 EA::servlet::TsoResponse *response,
                                  google::protobuf::Closure *done) override;
 
-        void migrate(google::protobuf::RpcController *controller,
-                             const proto::MigrateRequest * /*request*/,
-                             proto::MigrateResponse *response,
-                             google::protobuf::Closure *done) override;
 
         void flush_memtable_thread();
-
-        void apply_region_thread();
 
         void shutdown_raft();
 
@@ -97,26 +72,13 @@ namespace EA {
         void close();
 
     private:
-        MetaServerInteract *meta_proxy(const std::string &meta_bns) {
-            std::lock_guard<bthread::Mutex> guard(_meta_interact_mutex);
-            if (_meta_interact_map.count(meta_bns) == 1) {
-                return _meta_interact_map[meta_bns];
-            } else {
-                _meta_interact_map[meta_bns] = new MetaServerInteract;
-                _meta_interact_map[meta_bns]->init_internal(meta_bns);
-                return _meta_interact_map[meta_bns];
-            }
-        }
-
         MetaServer() {}
 
         bthread::Mutex _meta_interact_mutex;
-        std::map<std::string, MetaServerInteract *> _meta_interact_map;
         MetaStateMachine *_meta_state_machine = nullptr;
         AutoIncrStateMachine *_auto_incr_state_machine = nullptr;
         TSOStateMachine *_tso_state_machine = nullptr;
         Bthread _flush_bth;
-        Bthread _apply_region_bth;
         bool _init_success = false;
         bool _shutdown = false;
     }; //class

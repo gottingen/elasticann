@@ -44,11 +44,6 @@ namespace EA {
     DECLARE_bool(need_verify_ddl_permission);
     DECLARE_int32(histogram_split_threshold_percent);
     DECLARE_int32(limit_slow_sql_size);
-#ifdef BAIKALDB_REVISION
-    DECLARE_string(db_version);
-#else
-    DECLARE_string(db_version);
-#endif
     DECLARE_bool(like_predicate_use_re2);
     DECLARE_bool(transfor_hll_raw_to_sparse);
 

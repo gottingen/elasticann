@@ -53,15 +53,15 @@ protected:
 // add_logic add_physical add_instance
 DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     //测试点：增加命名空间“FengChao”
-    EA::proto::MetaManagerRequest request_add_namespace_fc;
-    request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_fc;
+    request_add_namespace_fc.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
     request_add_namespace_fc.mutable_namespace_info()->set_quota(1024 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
 
     //测试点：增加命名空间Feed
-    EA::proto::MetaManagerRequest request_add_namespace_feed;
-    request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_feed;
+    request_add_namespace_feed.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_add_namespace_feed.mutable_namespace_info()->set_quota(2014 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
@@ -94,8 +94,8 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：修改namespace quota
-    EA::proto::MetaManagerRequest request_modify_namespace_feed;
-    request_modify_namespace_feed.set_op_type(EA::proto::OP_MODIFY_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_modify_namespace_feed;
+    request_modify_namespace_feed.set_op_type(EA::servlet::OP_MODIFY_NAMESPACE);
     request_modify_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_modify_namespace_feed.mutable_namespace_info()->set_quota(2048 * 1024);
     _namespace_manager->modify_namespace(request_modify_namespace_feed, NULL);
@@ -125,9 +125,9 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
         TLOG_WARN("NameSpacePb:{}", ns_mem.second.ShortDebugString().c_str());
     }
     //test_point: query_namespace_manager
-    EA::proto::QueryRequest query_request;
-    EA::proto::QueryResponse response;
-    query_request.set_op_type(EA::proto::QUERY_NAMESPACE);
+    EA::servlet::QueryRequest query_request;
+    EA::servlet::QueryResponse response;
+    query_request.set_op_type(EA::servlet::QUERY_NAMESPACE);
     query_request.set_namespace_name("Feed");
     _query_namespace_manager->get_namespace_info(&query_request, &response);
     TLOG_WARN("response: {}", response.DebugString().c_str());
@@ -158,8 +158,8 @@ DOCTEST_TEST_CASE_FIXTURE(NamespaceManagerTest, "test_create_drop_modify") {
     namespace_id = _namespace_manager->get_namespace_id("Feed");
     DOCTEST_REQUIRE_EQ(2, namespace_id);
 
-    EA::proto::MetaManagerRequest request_drop_namespace;
-    request_drop_namespace.set_op_type(EA::proto::OP_DROP_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_drop_namespace;
+    request_drop_namespace.set_op_type(EA::servlet::OP_DROP_NAMESPACE);
     request_drop_namespace.mutable_namespace_info()->set_namespace_name("FengChao");
     _namespace_manager->drop_namespace(request_drop_namespace, NULL);
     DOCTEST_REQUIRE_EQ(2, _namespace_manager->_max_namespace_id);

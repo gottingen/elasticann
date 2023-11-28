@@ -17,9 +17,8 @@
 #pragma once
 
 #include <braft/raft.h>
-#include "elasticann/raft/raft_control.h"
-#include "eaproto/meta/meta.interface.pb.h"
-#include "eaproto/db/store.interface.pb.h"
+#include "elasticann/meta_server/raft_control.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/base/bthread.h"
 #include "elasticann/base/time_cast.h"
 
@@ -32,15 +31,12 @@ namespace EA {
         brpc::Controller *cntl;
         BaseStateMachine *common_state_machine;
         google::protobuf::Closure *done;
-        proto::MetaManagerResponse *response;
+        EA::servlet::MetaManagerResponse *response;
         std::string request;
         int64_t raft_time_cost;
         int64_t total_time_cost;
         TimeCost time_cost;
 
-        proto::SchemaInfo create_table_schema_pb;
-        bool whether_level_table;
-        std::shared_ptr<std::vector<proto::InitRegion>> init_regions;
         bool has_auto_increment = false;
         int64_t start_region_id;
         int create_table_ret = -1;
@@ -56,7 +52,7 @@ namespace EA {
         brpc::Controller *cntl;
         BaseStateMachine *common_state_machine;
         google::protobuf::Closure *done;
-        proto::TsoResponse *response;
+        EA::servlet::TsoResponse *response;
         int64_t raft_time_cost;
         int64_t total_time_cost;
         TimeCost time_cost;
@@ -93,13 +89,13 @@ namespace EA {
         virtual int init(const std::vector<braft::PeerId> &peers);
 
         virtual void raft_control(google::protobuf::RpcController *controller,
-                                  const proto::RaftControlRequest *request,
-                                  proto::RaftControlResponse *response,
+                                  const EA::servlet::RaftControlRequest *request,
+                                  EA::servlet::RaftControlResponse *response,
                                   google::protobuf::Closure *done) {
             brpc::ClosureGuard done_guard(done);
             if (!is_leader() && !request->force()) {
                 TLOG_INFO("node is not leader when raft control, region_id: {}", request->region_id());
-                response->set_errcode(proto::NOT_LEADER);
+                response->set_errcode(EA::servlet::NOT_LEADER);
                 response->set_region_id(request->region_id());
                 response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
                 response->set_errmsg("not leader");
@@ -109,8 +105,8 @@ namespace EA {
         }
 
         virtual void process(google::protobuf::RpcController *controller,
-                             const proto::MetaManagerRequest *request,
-                             proto::MetaManagerResponse *response,
+                             const EA::servlet::MetaManagerRequest *request,
+                             EA::servlet::MetaManagerResponse *response,
                              google::protobuf::Closure *done);
 
         virtual void start_check_migrate();

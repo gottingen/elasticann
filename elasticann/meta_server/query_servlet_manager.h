@@ -28,7 +28,7 @@ namespace EA {
             return &instance;
         }
 
-        void get_servlet_info(const proto::QueryRequest *request, proto::QueryResponse *response);
+        void get_servlet_info(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
     private:
         QueryServletManager() {}

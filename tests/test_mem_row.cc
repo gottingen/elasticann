@@ -21,16 +21,16 @@
 int main(int argc, char *argv[]) {
     EA::MemRowDescriptor *desc = new EA::MemRowDescriptor;
 
-    std::vector<EA::proto::TupleDescriptor> tuple_desc;
+    std::vector<EA::servlet::TupleDescriptor> tuple_desc;
     for (int idx = 0; idx < 10; idx++) {
-        EA::proto::TupleDescriptor tuple;
+        EA::servlet::TupleDescriptor tuple;
         tuple.set_tuple_id(idx);
         tuple.set_table_id(idx);
 
         for (int jdx = 1; jdx <= 8; ++jdx) {
-            EA::proto::SlotDescriptor *slot = tuple.add_slots();
+            EA::servlet::SlotDescriptor *slot = tuple.add_slots();
             slot->set_slot_id(jdx);
-            slot->set_slot_type(EA::proto::UINT16);
+            slot->set_slot_type(EA::servlet::UINT16);
             slot->set_tuple_id(idx);
         }
         tuple_desc.push_back(tuple);

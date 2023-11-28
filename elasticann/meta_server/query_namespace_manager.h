@@ -29,7 +29,7 @@ namespace EA {
         }
 
         //查询类接口，与写入类接口并发访问
-        void get_namespace_info(const proto::QueryRequest *request, proto::QueryResponse *response);
+        void get_namespace_info(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
     private:
         QueryNamespaceManager() {}

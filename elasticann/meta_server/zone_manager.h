@@ -20,7 +20,7 @@
 #include <set>
 #include <mutex>
 #include "elasticann/meta_server/meta_constants.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "bthread/mutex.h"
 #include "braft/raft.h"
 
@@ -45,7 +45,7 @@ namespace EA {
         ///        dbname = namespace_name + "\001" + zone_info.zone();
         /// \param request
         /// \param done
-        void create_zone(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void create_zone(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief remove zone call by schema manager,
@@ -54,7 +54,7 @@ namespace EA {
         ///
         /// \param request
         /// \param done
-        void drop_zone(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void drop_zone(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief modify zone call by schema manager,
@@ -63,7 +63,7 @@ namespace EA {
         ///
         /// \param request
         /// \param done
-        void modify_zone(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void modify_zone(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief load zone info by a pb serialized string,
@@ -114,7 +114,7 @@ namespace EA {
         /// \param zone_id
         /// \param zone_info
         /// \return -1 db not exists
-        int get_zone_info(const int64_t &zone_id, proto::ZoneInfo &zone_info);
+        int get_zone_info(const int64_t &zone_id, EA::servlet::ZoneInfo &zone_info);
 
         ///
         /// \brief get servlets in zone.
@@ -126,7 +126,7 @@ namespace EA {
         ZoneManager();
         void erase_zone_info(const std::string &zone_name);
 
-        void set_zone_info(const proto::ZoneInfo &zone_info);
+        void set_zone_info(const EA::servlet::ZoneInfo &zone_info);
 
         std::string construct_zone_key(int64_t zone_id);
 
@@ -138,7 +138,7 @@ namespace EA {
         int64_t _max_zone_id{0};
         //! databae name --> databasse id，name: namespace\001zone
         std::unordered_map<std::string, int64_t> _zone_id_map;
-        std::unordered_map<int64_t, proto::ZoneInfo> _zone_info_map;
+        std::unordered_map<int64_t, EA::servlet::ZoneInfo> _zone_info_map;
         std::unordered_map<int64_t, std::set<int64_t>> _servlet_ids;
     };
 
@@ -156,7 +156,7 @@ namespace EA {
         return _max_zone_id;
     }
 
-    inline void ZoneManager::set_zone_info(const proto::ZoneInfo &zone_info) {
+    inline void ZoneManager::set_zone_info(const EA::servlet::ZoneInfo &zone_info) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
         std::string zone_name = zone_info.namespace_name()
                                     + "\001"
@@ -192,7 +192,7 @@ namespace EA {
         }
         return 0;
     }
-    inline int ZoneManager::get_zone_info(const int64_t &zone_id, proto::ZoneInfo &zone_info) {
+    inline int ZoneManager::get_zone_info(const int64_t &zone_id, EA::servlet::ZoneInfo &zone_info) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
         if (_zone_info_map.find(zone_id) == _zone_info_map.end()) {
             return -1;

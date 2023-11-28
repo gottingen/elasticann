@@ -20,28 +20,28 @@
 #include "elasticann/meta_server/namespace_manager.h"
 
 namespace EA {
-    void ServletManager::create_servlet(const proto::MetaManagerRequest &request, braft::Closure *done) {
+    void ServletManager::create_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         // check legal
-        auto &servlet_info = const_cast<proto::ServletInfo &>(request.servlet_info());
+        auto &servlet_info = const_cast<EA::servlet::ServletInfo &>(request.servlet_info());
         std::string namespace_name = servlet_info.namespace_name();
         std::string zone_name = namespace_name + "\001" + servlet_info.zone();
         std::string servlet_name = zone_name + "\001" + servlet_info.servlet_name();
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
             TLOG_WARN("request namespace:{} not exist", namespace_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         int64_t zone_id = ZoneManager::get_instance()->get_zone_id(zone_name);
         if (zone_id == 0) {
             TLOG_WARN("request zone:{} not exist", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "zone not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "zone not exist");
             return;
         }
 
         if (_servlet_id_map.find(servlet_name) != _servlet_id_map.end()) {
             TLOG_WARN("request zone:{} already exist", servlet_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "servlet already exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "servlet already exist");
             return;
         }
 
@@ -54,7 +54,7 @@ namespace EA {
         servlet_info.set_zone_id(zone_id);
         servlet_info.set_namespace_id(namespace_id);
 
-        proto::NameSpaceInfo namespace_info;
+        EA::servlet::NameSpaceInfo namespace_info;
         if (NamespaceManager::get_instance()->get_namespace_info(namespace_id, namespace_info) == 0) {
             if (!servlet_info.has_resource_tag() && namespace_info.resource_tag() != "") {
                 servlet_info.set_resource_tag(namespace_info.resource_tag());
@@ -65,7 +65,7 @@ namespace EA {
         std::string servlet_value;
         if (!servlet_info.SerializeToString(&servlet_value)) {
             TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
-            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         rocksdb_keys.push_back(construct_servlet_key(tmp_servlet_id));
@@ -79,18 +79,18 @@ namespace EA {
 
         int ret = MetaRocksdb::get_instance()->put_meta_info(rocksdb_keys, rocksdb_values);
         if (ret < 0) {
-            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INTERNAL_ERROR, "write db fail");
             return;
         }
         // update memory info
         set_servlet_info(servlet_info);
         set_max_servlet_id(tmp_servlet_id);
         ZoneManager::get_instance()->add_servlet_id(namespace_id, tmp_servlet_id);
-        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
         TLOG_INFO("create zone success, request:{}", request.ShortDebugString());
     }
 
-    void ServletManager::drop_servlet(const proto::MetaManagerRequest &request, braft::Closure *done) {
+    void ServletManager::drop_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         // check
         auto &servlet_info = request.servlet_info();
         std::string namespace_name = servlet_info.namespace_name();
@@ -99,18 +99,18 @@ namespace EA {
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
             TLOG_WARN("request namespace: {} not exist", namespace_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         int64_t zone_id = ZoneManager::get_instance()->get_zone_id(zone_name);
         if (zone_id == 0) {
             TLOG_WARN("request zone:{} not exist", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         if (_servlet_id_map.find(zone_name) == _servlet_id_map.end()) {
             TLOG_WARN("request servlet: {} not exist", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "zone not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "zone not exist");
             return;
         }
 
@@ -121,18 +121,18 @@ namespace EA {
                 std::vector<std::string>{construct_servlet_key(zone_id)});
         if (ret < 0) {
             TLOG_WARN("drop zone: {} to rocksdb fail", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INTERNAL_ERROR, "write db fail");
             return;
         }
         // update zone memory info
         erase_servlet_info(servlet_name);
         // update namespace memory info
         ZoneManager::get_instance()->delete_servlet_id(zone_id, servlet_id);
-        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
         TLOG_INFO("drop zone success, request:{}", request.ShortDebugString());
     }
 
-    void ServletManager::modify_servlet(const proto::MetaManagerRequest &request, braft::Closure *done) {
+    void ServletManager::modify_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         auto &servlet_info = request.servlet_info();
         std::string namespace_name = servlet_info.namespace_name();
         std::string zone_name = namespace_name + "\001" + servlet_info.zone();
@@ -140,24 +140,24 @@ namespace EA {
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
             TLOG_WARN("request namespace:{} not exist", namespace_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
         int64_t zone_id = ZoneManager::get_instance()->get_zone_id(zone_name);
         if (zone_id == 0) {
             TLOG_WARN("request zone:{} not exist", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "namespace not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace not exist");
             return;
         }
 
         if (_servlet_id_map.find(servlet_name) == _servlet_id_map.end()) {
             TLOG_WARN("request zone:{} not exist", zone_name);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "zone not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "zone not exist");
             return;
         }
         int64_t servlet_id = _servlet_id_map[servlet_name];
 
-        proto::ServletInfo tmp_servlet_info = _servlet_info_map[zone_id];
+        EA::servlet::ServletInfo tmp_servlet_info = _servlet_info_map[zone_id];
         tmp_servlet_info.set_version(tmp_servlet_info.version() + 1);
 
         if (servlet_info.has_resource_tag()) {
@@ -167,22 +167,22 @@ namespace EA {
         std::string servlet_value;
         if (!tmp_servlet_info.SerializeToString(&servlet_value)) {
             TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
-            IF_DONE_SET_RESPONSE(done, proto::PARSE_TO_PB_FAIL, "serializeToArray fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
         }
         int ret = MetaRocksdb::get_instance()->put_meta_info(construct_servlet_key(servlet_id), servlet_value);
         if (ret < 0) {
-            IF_DONE_SET_RESPONSE(done, proto::INTERNAL_ERROR, "write db fail");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INTERNAL_ERROR, "write db fail");
             return;
         }
         // update zone values in memory
         set_servlet_info(tmp_servlet_info);
-        IF_DONE_SET_RESPONSE(done, proto::SUCCESS, "success");
+        IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
         TLOG_INFO("modify zone success, request:{}", request.ShortDebugString());
     }
 
     int ServletManager::load_servlet_snapshot(const std::string &value) {
-        proto::ServletInfo servlet_pb;
+        EA::servlet::ServletInfo servlet_pb;
         if (!servlet_pb.ParseFromString(value)) {
             TLOG_ERROR("parse from pb fail when load zone snapshot, key:{}", value);
             return -1;

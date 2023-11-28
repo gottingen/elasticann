@@ -17,7 +17,7 @@
 #define ELASTICANN_CLI_SHOW_HELP_H_
 
 #include "turbo/base/status.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/format/table.h"
 #include "elasticann/cli/proto_help.h"
 
@@ -27,36 +27,33 @@ namespace EA::cli {
         ~ShowHelper();
 
         static turbo::Table
-        show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+        show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                       const std::string &msg);
         static turbo::Table
-        show_response(EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+        show_response(EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                       const std::string &msg);
 
-        static turbo::Table show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt,
+        static turbo::Table show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::OpType qt,
                                           const std::string &msg);
-        static turbo::Table show_response(EA::proto::ErrCode code, EA::proto::OpType qt,
+        static turbo::Table show_response(EA::servlet::ErrCode code, EA::servlet::OpType qt,
                                           const std::string &msg);
 
-        static turbo::Table rpc_error_status(const turbo::Status &s, EA::proto::OpType qt);
+        static turbo::Table rpc_error_status(const turbo::Status &s, EA::servlet::OpType qt);
 
-        static turbo::Table rpc_error_status(const turbo::Status &s, EA::proto::QueryOpType qt);
+        static turbo::Table rpc_error_status(const turbo::Status &s, EA::servlet::QueryOpType qt);
 
-        static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req);
+        static turbo::Table pre_send_error(const turbo::Status &s, const EA::servlet::MetaManagerRequest &req);
 
-        static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::OpsServiceRequest &req);
 
-        static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::QueryRequest &req);
-
-        static turbo::Table pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req);
+        static turbo::Table pre_send_error(const turbo::Status &s, const EA::servlet::QueryRequest &req);
 
     private:
         static turbo::Table
-        show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts,
+        show_response_impl(const std::string_view &server, EA::servlet::ErrCode code, int qt, const std::string &qts,
                            const std::string &msg);
 
         static turbo::Table
-        show_response_impl(EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg);
+        show_response_impl(EA::servlet::ErrCode code, int qt, const std::string &qts, const std::string &msg);
 
         static turbo::Table rpc_error_status_impl(const turbo::Status &s, int qt, const std::string &qts);
 
@@ -73,34 +70,34 @@ namespace EA::cli {
     /// inlines
     ///
     inline turbo::Table
-    ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+    ShowHelper::show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                               const std::string &msg) {
         return show_response_impl(server, code, static_cast<int>(qt), get_op_string(qt), msg);
     }
 
     inline turbo::Table
-    ShowHelper::show_response(EA::proto::ErrCode code, EA::proto::OpType qt,
+    ShowHelper::show_response(EA::servlet::ErrCode code, EA::servlet::OpType qt,
                               const std::string &msg) {
         return show_response_impl(code, static_cast<int>(qt), get_op_string(qt), msg);
     }
 
     inline turbo::Table
-    ShowHelper::show_response(EA::proto::ErrCode code, EA::proto::QueryOpType qt,
+    ShowHelper::show_response(EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                               const std::string &msg) {
         return show_response_impl(code, static_cast<int>(qt), get_op_string(qt), msg);
     }
 
     inline turbo::Table
-    ShowHelper::show_response(const std::string_view &server, EA::proto::ErrCode code, EA::proto::OpType qt,
+    ShowHelper::show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::OpType qt,
                               const std::string &msg) {
         return show_response_impl(server, code, static_cast<int>(qt), get_op_string(qt), msg);
     }
 
-    inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::proto::OpType qt) {
+    inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::servlet::OpType qt) {
         return rpc_error_status_impl(s, static_cast<int>(qt), get_op_string(qt));
     }
 
-    inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::proto::QueryOpType qt) {
+    inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::servlet::QueryOpType qt) {
         return rpc_error_status_impl(s, static_cast<int>(qt), get_op_string(qt));
     }
 

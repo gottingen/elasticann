@@ -16,7 +16,7 @@
 #ifndef ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
 #define ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
 
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 
 namespace EA {
 
@@ -32,18 +32,18 @@ namespace EA {
         ///
         /// \param request
         /// \param response
-        void get_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
+        void get_config(const ::EA::servlet::QueryRequest *request, ::EA::servlet::QueryResponse *response);
 
         ///
         /// \param request
         /// \param response
-        void list_config(const ::EA::proto::QueryRequest *request, ::EA::proto::QueryResponse *response);
+        void list_config(const ::EA::servlet::QueryRequest *request, ::EA::servlet::QueryResponse *response);
 
         ///
         /// \param request
         /// \param response
-        void list_config_version(const ::EA::proto::QueryRequest *request,
-                                 ::EA::proto::QueryResponse *response);
+        void list_config_version(const ::EA::servlet::QueryRequest *request,
+                                 ::EA::servlet::QueryResponse *response);
     };
 }  // namespace EA
 

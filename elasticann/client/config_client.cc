@@ -55,7 +55,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         rs = ConfigCache::get_instance()->get_config(config_name, mv, config_pb);
         if (rs.ok()) {
             content = config_pb.content();
@@ -80,7 +80,7 @@ namespace EA::client {
     turbo::Status ConfigClient::get_config(const std::string &config_name, std::string &content, std::string *version,
                                            std::string *type) {
         turbo::ModuleVersion mv;
-        EA::proto::ConfigInfo config_pb;
+        EA::servlet::ConfigInfo config_pb;
         auto rs = ConfigCache::get_instance()->get_config(config_name, config_pb);
         if (rs.ok()) {
             content = config_pb.content();
@@ -199,7 +199,7 @@ namespace EA::client {
             }
             TLOG_INFO("new round watch size:{}", watches.size());
             for(auto &it : watches) {
-                EA::proto::ConfigInfo info;
+                EA::servlet::ConfigInfo info;
                 turbo::ModuleVersion current_version = it.second.notice_version;
                 auto rs = MetaClient::get_instance()->get_config_latest(it.first, info);
                 if(!rs.ok()) {

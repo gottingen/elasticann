@@ -18,7 +18,7 @@
 
 #include <unordered_map>
 #include <bthread/mutex.h>
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/meta_constants.h"
 
@@ -45,39 +45,33 @@ namespace EA {
         /// \param response
         /// \param done
         void process_user_privilege(google::protobuf::RpcController *controller,
-                                    const proto::MetaManagerRequest *request,
-                                    proto::MetaManagerResponse *response,
+                                    const EA::servlet::MetaManagerRequest *request,
+                                    EA::servlet::MetaManagerResponse *response,
                                     google::protobuf::Closure *done);
 
         ///
         /// \brief create a user
         /// \param request
         /// \param done
-        void create_user(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void create_user(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief remove user privilege for namespace db and table
         /// \param request
         /// \param done
-        void drop_user(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void drop_user(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief add privilege for user, user should be created
         /// \param request
         /// \param done
-        void add_privilege(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void add_privilege(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief drop privilege for user, user should be created
         /// \param request
         /// \param done
-        void drop_privilege(const proto::MetaManagerRequest &request, braft::Closure *done);
-
-        ///
-        /// \param request
-        /// \param response
-        void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
-                                      proto::BaikalHeartBeatResponse *response);
+        void drop_privilege(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \return
@@ -102,75 +96,52 @@ namespace EA {
         }
 
         ///
-        /// \param privilege_database
-        /// \param mem_privilege
-        void insert_database_privilege(const proto::PrivilegeDatabase &privilege_database,
-                                       proto::UserPrivilege &mem_privilege);
-
-        ///
-        /// \param privilege_table
-        /// \param mem_privilege
-        void insert_table_privilege(const proto::PrivilegeTable &privilege_table,
-                                    proto::UserPrivilege &mem_privilege);
-
-        ///
         /// \param privilege_zone
         /// \param mem_privilege
-        void insert_zone_privilege(const proto::PrivilegeZone &privilege_zone,
-                                       proto::UserPrivilege &mem_privilege);
+        void insert_zone_privilege(const EA::servlet::PrivilegeZone &privilege_zone,
+                                       EA::servlet::UserPrivilege &mem_privilege);
 
         ///
         /// \param privilege_servlet
         /// \param mem_privilege
-        void insert_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
-                                   proto::UserPrivilege &mem_privilege);
+        void insert_servlet_privilege(const EA::servlet::PrivilegeServlet &privilege_servlet,
+                                   EA::servlet::UserPrivilege &mem_privilege);
 
         ///
         /// \param bns
         /// \param mem_privilege
-        void insert_bns(const std::string &bns, proto::UserPrivilege &mem_privilege);
+        void insert_bns(const std::string &bns, EA::servlet::UserPrivilege &mem_privilege);
 
         ///
         /// \param ip
         /// \param mem_privilege
-        void insert_ip(const std::string &ip, proto::UserPrivilege &mem_privilege);
+        void insert_ip(const std::string &ip, EA::servlet::UserPrivilege &mem_privilege);
 
-        ///
-        /// \param privilege_database
-        /// \param mem_privilege
-        void delete_database_privilege(const proto::PrivilegeDatabase &privilege_database,
-                                       proto::UserPrivilege &mem_privilege);
-
-        ///
-        /// \param privilege_table
-        /// \param mem_privilege
-        void delete_table_privilege(const proto::PrivilegeTable &privilege_table,
-                                    proto::UserPrivilege &mem_privilege);
         ///
         /// \param privilege_zone
         /// \param mem_privilege
-        void delete_zone_privilege(const proto::PrivilegeZone &privilege_zone,
-                                       proto::UserPrivilege &mem_privilege);
+        void delete_zone_privilege(const EA::servlet::PrivilegeZone &privilege_zone,
+                                       EA::servlet::UserPrivilege &mem_privilege);
         ///
         /// \param privilege_servlet
         /// \param mem_privilege
-        void delete_servlet_privilege(const proto::PrivilegeServlet &privilege_servlet,
-                                    proto::UserPrivilege &mem_privilege);
+        void delete_servlet_privilege(const EA::servlet::PrivilegeServlet &privilege_servlet,
+                                    EA::servlet::UserPrivilege &mem_privilege);
 
         ///
         /// \param bns
         /// \param mem_privilege
-        void delete_bns(const std::string &bns, proto::UserPrivilege &mem_privilege);
+        void delete_bns(const std::string &bns, EA::servlet::UserPrivilege &mem_privilege);
 
         ///
         /// \param ip
         /// \param mem_privilege
-        void delete_ip(const std::string &ip, proto::UserPrivilege &mem_privilege);
+        void delete_ip(const std::string &ip, EA::servlet::UserPrivilege &mem_privilege);
 
         //username和privilege对应关系
         //std::mutex                                         _user_mutex;
         bthread_mutex_t _user_mutex;
-        std::unordered_map<std::string, proto::UserPrivilege> _user_privilege;
+        std::unordered_map<std::string, EA::servlet::UserPrivilege> _user_privilege;
 
         MetaStateMachine *_meta_state_machine;
     };//class

@@ -19,15 +19,11 @@
 #include "rocksdb/filter_policy.h"
 #include "rocksdb/statistics.h"
 #include <iostream>
-//#include "elasticann/common/common.h"
-//#include "elasticann/common/mut_table_key.h"
-//#include "elasticann/common/table_key.h"
 #include "elasticann/engine/my_listener.h"
-#include "elasticann/raft/raft_log_compaction_filter.h"
-#include "elasticann/engine/split_compaction_filter.h"
 #include "elasticann/engine/transaction_db_bthread_mutex.h"
 #include "turbo/strings/numbers.h"
 #include "elasticann/base/bthread.h"
+#include "elasticann/base/key_encoder.h"
 
 
 namespace EA {
@@ -168,7 +164,6 @@ namespace EA {
         _data_cf_option.memtable_whole_key_filtering = true;
         _data_cf_option.OptimizeLevelStyleCompaction();
         _data_cf_option.compaction_pri = static_cast<rocksdb::CompactionPri>(FLAGS_rocks_data_compaction_pri);
-        _data_cf_option.compaction_filter = SplitCompactionFilter::get_instance();
         if (FLAGS_rocks_use_sst_partitioner_fixed_prefix) {
             // 按region_id拆分
             _data_cf_option.sst_partitioner_factory = rocksdb::NewSstPartitionerFixedPrefixFactory(sizeof(int64_t));

@@ -16,7 +16,7 @@
 #define ELASTICANN_CLI_USER_CMD_H_
 
 #include "turbo/flags/flags.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/format/table.h"
 #include "turbo/base/status.h"
 #include <string>
@@ -37,10 +37,6 @@ namespace EA::cli {
         std::vector<std::string> user_ws;
         std::vector<std::string> user_rz;
         std::vector<std::string> user_wz;
-        std::vector<std::string> user_rt;
-        std::vector<std::string> user_wt;
-        std::vector<std::string> user_rd;
-        std::vector<std::string> user_wd;
         bool force;
         bool is_db{false};
         bool show_pwd{false};
@@ -69,28 +65,28 @@ namespace EA::cli {
     void run_user_info_cmd();
 
     [[nodiscard]] turbo::Status
-    make_user_create(EA::proto::MetaManagerRequest *req);
+    make_user_create(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_remove(EA::proto::MetaManagerRequest *req);
+    make_user_remove(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_add_privilege(EA::proto::MetaManagerRequest *req);
+    make_user_add_privilege(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_remove_privilege(EA::proto::MetaManagerRequest *req);
+    make_user_remove_privilege(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_list(EA::proto::QueryRequest *req);
+    make_user_list(EA::servlet::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_flat(EA::proto::QueryRequest *req);
+    make_user_flat(EA::servlet::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_user_info(EA::proto::QueryRequest *req);
+    make_user_info(EA::servlet::QueryRequest *req);
 
-    turbo::Table show_meta_query_user_response(const EA::proto::QueryResponse &res);
-    turbo::Table show_meta_query_user_flat_response(const EA::proto::QueryResponse &res);
+    turbo::Table show_meta_query_user_response(const EA::servlet::QueryResponse &res);
+    turbo::Table show_meta_query_user_flat_response(const EA::servlet::QueryResponse &res);
 
 }  // namespace EA::cli
 

@@ -17,7 +17,7 @@
 #define ELASTICANN_CLIENT_BASE_MESSAGE_SENDER_H_
 
 #include "turbo/base/status.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 
 namespace EA::client {
 
@@ -30,28 +30,28 @@ namespace EA::client {
         /// \param response
         /// \param retry_times
         /// \return
-        virtual turbo::Status meta_manager(const EA::proto::MetaManagerRequest &request,
-                                                                     EA::proto::MetaManagerResponse &response, int retry_times) = 0;
+        virtual turbo::Status meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                                                     EA::servlet::MetaManagerResponse &response, int retry_times) = 0;
         ///
         /// \param request
         /// \param response
         /// \return
-        virtual turbo::Status meta_manager(const EA::proto::MetaManagerRequest &request,
-                                           EA::proto::MetaManagerResponse &response) = 0;
+        virtual turbo::Status meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                           EA::servlet::MetaManagerResponse &response) = 0;
 
         ///
         /// \param request
         /// \param response
         /// \param retry_times
         /// \return
-        virtual turbo::Status meta_query(const EA::proto::QueryRequest &request,
-                                                    EA::proto::QueryResponse &response, int retry_times) = 0;
+        virtual turbo::Status meta_query(const EA::servlet::QueryRequest &request,
+                                                    EA::servlet::QueryResponse &response, int retry_times) = 0;
         ///
         /// \param request
         /// \param response
         /// \return
-        virtual turbo::Status meta_query(const EA::proto::QueryRequest &request,
-                                         EA::proto::QueryResponse &response) = 0;
+        virtual turbo::Status meta_query(const EA::servlet::QueryRequest &request,
+                                         EA::servlet::QueryResponse &response) = 0;
     };
 }  // namespace EA::client
 

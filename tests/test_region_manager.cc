@@ -61,15 +61,15 @@ protected:
 // add_logic add_physical add_instance
 DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     //测试点：增加命名空间"FengChao"
-    EA::proto::MetaManagerRequest request_add_namespace_fc;
-    request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_fc;
+    request_add_namespace_fc.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
     request_add_namespace_fc.mutable_namespace_info()->set_quota(1024 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
 
     //测试点：增加命名空间Feed
-    EA::proto::MetaManagerRequest request_add_namespace_feed;
-    request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_feed;
+    request_add_namespace_feed.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_add_namespace_feed.mutable_namespace_info()->set_quota(2014 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
@@ -111,8 +111,8 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, namespace_id);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_fc;
-    request_add_database_fc.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_fc;
+    request_add_database_fc.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_fc.mutable_database_info()->set_database("FC_Word");
     request_add_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_add_database_fc.mutable_database_info()->set_quota(10 * 1024);
@@ -124,8 +124,8 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     _database_manager->create_database(request_add_database_fc, NULL);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_feed;
-    request_add_database_feed.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_feed;
+    request_add_database_feed.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_feed.mutable_database_info()->set_database("FC_Word");
     request_add_database_feed.mutable_database_info()->set_namespace_name("Feed");
     request_add_database_feed.mutable_database_info()->set_quota(8 * 1024);
@@ -193,31 +193,31 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：创建table
-    EA::proto::MetaManagerRequest request_create_table_fc;
-    request_create_table_fc.set_op_type(EA::proto::OP_CREATE_TABLE);
+    EA::servlet::MetaManagerRequest request_create_table_fc;
+    request_create_table_fc.set_op_type(EA::servlet::OP_CREATE_TABLE);
     request_create_table_fc.mutable_table_info()->set_table_name("userinfo");
     request_create_table_fc.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc.mutable_table_info()->set_namespace_name("FengChao");
     request_create_table_fc.mutable_table_info()->add_init_store("127.0.0.1:8010");
-    EA::proto::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
+    EA::servlet::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("userid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("username");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("type");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("user_type");
-    field->set_mysql_type(EA::proto::STRING);
-    EA::proto::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
+    field->set_mysql_type(EA::servlet::STRING);
+    EA::servlet::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
-    index->set_index_type(EA::proto::I_PRIMARY);
+    index->set_index_type(EA::servlet::I_PRIMARY);
     index->add_field_names("userid");
     index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("union_index");
-    index->set_index_type(EA::proto::I_KEY);
+    index->set_index_type(EA::servlet::I_KEY);
     index->add_field_names("username");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc, 1, NULL);
@@ -309,8 +309,8 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：创建层次表
-    EA::proto::MetaManagerRequest request_create_table_fc_level;
-    request_create_table_fc_level.set_op_type(EA::proto::OP_CREATE_TABLE);
+    EA::servlet::MetaManagerRequest request_create_table_fc_level;
+    request_create_table_fc_level.set_op_type(EA::servlet::OP_CREATE_TABLE);
     request_create_table_fc_level.mutable_table_info()->set_table_name("planinfo");
     request_create_table_fc_level.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc_level.mutable_table_info()->set_namespace_name("FengChao");
@@ -318,24 +318,24 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     request_create_table_fc_level.mutable_table_info()->set_upper_table_name("userinfo");
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("userid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("planid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("planname");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("type");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     index = request_create_table_fc_level.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
-    index->set_index_type(EA::proto::I_PRIMARY);
+    index->set_index_type(EA::servlet::I_PRIMARY);
     index->add_field_names("userid");
     index->add_field_names("planid");
     index = request_create_table_fc_level.mutable_table_info()->add_indexs();
     index->set_index_name("union_index");
-    index->set_index_type(EA::proto::I_KEY);
+    index->set_index_type(EA::servlet::I_KEY);
     index->add_field_names("planname");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc_level, 2, NULL);
@@ -431,8 +431,8 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     }
 
     //add region
-    EA::proto::MetaManagerRequest request_update_region_feed;
-    request_update_region_feed.set_op_type(EA::proto::OP_UPDATE_REGION);
+    EA::servlet::MetaManagerRequest request_update_region_feed;
+    request_update_region_feed.set_op_type(EA::servlet::OP_UPDATE_REGION);
     auto region_info = request_update_region_feed.add_region_infos();
     region_info->set_region_id(1);
     region_info->set_table_id(1);
@@ -445,7 +445,7 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     region_info->add_peers("127.0.0.1:8011");
     region_info->add_peers("127.0.0.1:8012");
     region_info->set_leader("127.0.0.1:8010");
-    region_info->set_status(EA::proto::IDLE);
+    region_info->set_status(EA::servlet::IDLE);
     region_info->set_used_size(1024);
     region_info->set_log_index(1);
     _region_manager->update_region(request_update_region_feed, 3, NULL);
@@ -507,8 +507,8 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     //    TLOG_WARN("region_id: {}", region_info.first, region_info.second->ShortDebugString().c_str());
     //}
     //split_region
-    EA::proto::MetaManagerRequest split_region_request;
-    split_region_request.set_op_type(EA::proto::OP_SPLIT_REGION);
+    EA::servlet::MetaManagerRequest split_region_request;
+    split_region_request.set_op_type(EA::servlet::OP_SPLIT_REGION);
     split_region_request.mutable_region_split()->set_region_id(1);
     _region_manager->split_region(split_region_request, NULL);
     DOCTEST_REQUIRE_EQ(2, _region_manager->get_max_region_id());
@@ -516,8 +516,8 @@ DOCTEST_TEST_CASE_FIXTURE(TestManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, _region_manager->get_max_region_id());
 
     //drop_region
-    EA::proto::MetaManagerRequest drop_region_request;
-    drop_region_request.set_op_type(EA::proto::OP_DROP_REGION);
+    EA::servlet::MetaManagerRequest drop_region_request;
+    drop_region_request.set_op_type(EA::servlet::OP_DROP_REGION);
     drop_region_request.add_drop_region_ids(1);
     _region_manager->drop_region(drop_region_request, 5, NULL);
     DOCTEST_REQUIRE_EQ(0, _region_manager->_region_info_map.size());

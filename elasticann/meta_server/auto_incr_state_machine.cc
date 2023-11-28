@@ -37,12 +37,12 @@ namespace EA {
                 ((MetaServerClosure *) done)->raft_time_cost = ((MetaServerClosure *) done)->time_cost.get_time();
             }
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
-            proto::MetaManagerRequest request;
+            EA::servlet::MetaManagerRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
                 TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
                     if (((MetaServerClosure *) done)->response) {
-                        ((MetaServerClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
+                        ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::PARSE_FROM_PB_FAIL);
                         ((MetaServerClosure *) done)->response->set_errmsg("parse from protobuf fail");
                     }
                     braft::run_closure_in_bthread(done_guard.release());
@@ -54,27 +54,27 @@ namespace EA {
             }
             TLOG_DEBUG("on apply, term:{}, index:{}, request op_type:{}",
                        iter.term(), iter.index(),
-                       proto::OpType_Name(request.op_type()).c_str());
+                       EA::servlet::OpType_Name(request.op_type()).c_str());
             switch (request.op_type()) {
-                case proto::OP_ADD_ID_FOR_AUTO_INCREMENT: {
+                case EA::servlet::OP_ADD_ID_FOR_AUTO_INCREMENT: {
                     add_table_id(request, done);
                     break;
                 }
-                case proto::OP_DROP_ID_FOR_AUTO_INCREMENT: {
+                case EA::servlet::OP_DROP_ID_FOR_AUTO_INCREMENT: {
                     drop_table_id(request, done);
                     break;
                 }
-                case proto::OP_GEN_ID_FOR_AUTO_INCREMENT: {
+                case EA::servlet::OP_GEN_ID_FOR_AUTO_INCREMENT: {
                     gen_id(request, done);
                     break;
                 }
-                case proto::OP_UPDATE_FOR_AUTO_INCREMENT: {
+                case EA::servlet::OP_UPDATE_FOR_AUTO_INCREMENT: {
                     update(request, done);
                     break;
                 }
                 default: {
                     TLOG_ERROR("unsupport request type, type:{}", request.op_type());
-                    IF_DONE_SET_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
+                    IF_DONE_SET_RESPONSE(done, EA::servlet::UNKNOWN_REQ_TYPE, "unsupport request type");
                 }
             }
             if (done) {
@@ -83,19 +83,19 @@ namespace EA {
         }
     }
 
-    void AutoIncrStateMachine::add_table_id(const proto::MetaManagerRequest &request,
+    void AutoIncrStateMachine::add_table_id(const EA::servlet::MetaManagerRequest &request,
                                             braft::Closure *done) {
         auto &increment_info = request.auto_increment();
         int64_t table_id = increment_info.table_id();
         uint64_t start_id = increment_info.start_id();
         if (_auto_increment_map.find(table_id) != _auto_increment_map.end()) {
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table id has exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table id has exist");
             TLOG_ERROR("table_id: {} has exist when add table id for auto increment", table_id);
             return;
         }
         _auto_increment_map[table_id] = start_id;
         if (done && ((MetaServerClosure *) done)->response) {
-            ((MetaServerClosure *) done)->response->set_errcode(proto::SUCCESS);
+            ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_start_id(start_id);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
@@ -104,18 +104,18 @@ namespace EA {
                   request.ShortDebugString().c_str());
     }
 
-    void AutoIncrStateMachine::drop_table_id(const proto::MetaManagerRequest &request,
+    void AutoIncrStateMachine::drop_table_id(const EA::servlet::MetaManagerRequest &request,
                                              braft::Closure *done) {
         auto &increment_info = request.auto_increment();
         int64_t table_id = increment_info.table_id();
         if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table id not exist");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table id not exist");
             TLOG_WARN("table_id: {} not exist when drop table id for auto increment", table_id);
             return;
         }
         _auto_increment_map.erase(table_id);
         if (done && ((MetaServerClosure *) done)->response) {
-            ((MetaServerClosure *) done)->response->set_errcode(proto::SUCCESS);
+            ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
@@ -123,13 +123,13 @@ namespace EA {
                   request.ShortDebugString());
     }
 
-    void AutoIncrStateMachine::gen_id(const proto::MetaManagerRequest &request,
+    void AutoIncrStateMachine::gen_id(const EA::servlet::MetaManagerRequest &request,
                                       braft::Closure *done) {
         auto &increment_info = request.auto_increment();
         int64_t table_id = increment_info.table_id();
         if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
             TLOG_WARN("table id:{} has no auto_increment field", table_id);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table has no auto increment");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table has no auto increment");
             return;
         }
         uint64_t old_start_id = _auto_increment_map[table_id];
@@ -138,7 +138,7 @@ namespace EA {
         }
         _auto_increment_map[table_id] = old_start_id + increment_info.count();
         if (done && ((MetaServerClosure *) done)->response) {
-            ((MetaServerClosure *) done)->response->set_errcode(proto::SUCCESS);
+            ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_start_id(old_start_id);
             ((MetaServerClosure *) done)->response->set_end_id(_auto_increment_map[table_id]);
@@ -148,24 +148,24 @@ namespace EA {
                    request.ShortDebugString());
     }
 
-    void AutoIncrStateMachine::update(const proto::MetaManagerRequest &request,
+    void AutoIncrStateMachine::update(const EA::servlet::MetaManagerRequest &request,
                                       braft::Closure *done) {
         auto &increment_info = request.auto_increment();
         int64_t table_id = increment_info.table_id();
         if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
             TLOG_WARN("table id:{} has no auto_increment field", table_id);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "table has no auto increment");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table has no auto increment");
             return;
         }
         if (!increment_info.has_start_id() && !increment_info.has_increment_id()) {
             TLOG_WARN("star_id or increment_id all not exist, table_id:{}", table_id);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR,
                                  "star_id or increment_id all not exist");
             return;
         }
         if (increment_info.has_start_id() && increment_info.has_increment_id()) {
             TLOG_WARN("star_id and increment_id all exist, table_id:{}", table_id);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR,
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR,
                                  "star_id and increment_id all exist");
             return;
         }
@@ -175,7 +175,7 @@ namespace EA {
             && old_start_id > increment_info.start_id() + 1
             && (!increment_info.has_force() || increment_info.force() == false)) {
             TLOG_WARN("request not illegal, max_id not support back, table_id:{}", table_id);
-            IF_DONE_SET_RESPONSE(done, proto::INPUT_PARAM_ERROR, "not support rollback");
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "not support rollback");
             return;
         }
         if (increment_info.has_start_id()) {
@@ -184,7 +184,7 @@ namespace EA {
             _auto_increment_map[table_id] += increment_info.increment_id();
         }
         if (done && ((MetaServerClosure *) done)->response) {
-            ((MetaServerClosure *) done)->response->set_errcode(proto::SUCCESS);
+            ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_start_id(_auto_increment_map[table_id]);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");

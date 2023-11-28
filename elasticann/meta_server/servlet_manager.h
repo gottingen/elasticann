@@ -20,7 +20,7 @@
 #include <set>
 #include <mutex>
 #include "elasticann/meta_server/meta_constants.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "bthread/mutex.h"
 #include "braft/raft.h"
 
@@ -45,7 +45,7 @@ namespace EA {
         ///        servlet name  = namespace_name + "\001" + servlet_info.zone()+ "\001" + servlet_info.servlet_name();
         /// \param request
         /// \param done
-        void create_servlet(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void create_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief remove servlet call by schema manager,
@@ -54,7 +54,7 @@ namespace EA {
         ///
         /// \param request
         /// \param done
-        void drop_servlet(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void drop_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief modify servlet call by schema manager,
@@ -63,7 +63,7 @@ namespace EA {
         ///
         /// \param request
         /// \param done
-        void modify_servlet(const proto::MetaManagerRequest &request, braft::Closure *done);
+        void modify_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
         /// \brief load servlet info by a pb serialized string,
@@ -99,13 +99,13 @@ namespace EA {
         /// \param servlet_id
         /// \param servlet_info
         /// \return -1 db not exists
-        int get_servlet_info(const int64_t &servlet_id, proto::ServletInfo &servlet_info);
+        int get_servlet_info(const int64_t &servlet_id, EA::servlet::ServletInfo &servlet_info);
 
     private:
         ServletManager();
         void erase_servlet_info(const std::string &servlet_name);
 
-        void set_servlet_info(const proto::ServletInfo &servlet_info);
+        void set_servlet_info(const EA::servlet::ServletInfo &servlet_info);
 
         std::string construct_servlet_key(int64_t servlet_id);
 
@@ -117,7 +117,7 @@ namespace EA {
         int64_t _max_servlet_id{0};
         //! servlet name --> servlet id，name: namespace\001zone\001servlet
         std::unordered_map<std::string, int64_t> _servlet_id_map;
-        std::unordered_map<int64_t, proto::ServletInfo> _servlet_info_map;
+        std::unordered_map<int64_t, EA::servlet::ServletInfo> _servlet_info_map;
     };
 
     ///
@@ -134,7 +134,7 @@ namespace EA {
         return _max_servlet_id;
     }
 
-    inline void ServletManager::set_servlet_info(const proto::ServletInfo &servlet_info) {
+    inline void ServletManager::set_servlet_info(const EA::servlet::ServletInfo &servlet_info) {
         BAIDU_SCOPED_LOCK(_servlet_mutex);
         std::string servlet_name = servlet_info.namespace_name()
                                     + "\001"
@@ -159,7 +159,7 @@ namespace EA {
         }
         return 0;
     }
-    inline int ServletManager::get_servlet_info(const int64_t &servlet_id, proto::ServletInfo &servlet_info) {
+    inline int ServletManager::get_servlet_info(const int64_t &servlet_id, EA::servlet::ServletInfo &servlet_info) {
         BAIDU_SCOPED_LOCK(_servlet_mutex);
         if (_servlet_info_map.find(servlet_id) == _servlet_info_map.end()) {
             return -1;

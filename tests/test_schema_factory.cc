@@ -23,7 +23,7 @@
 
 int main(int argc, char *argv[]) {
     auto val_encoder = EA::SchemaFactory::get_instance();
-    EA::proto::SchemaInfo info;
+    EA::servlet::SchemaInfo info;
     info.set_namespace_name("test_namespace");
     info.set_database("test_database");
     info.set_table_name("test_table_name");
@@ -38,24 +38,24 @@ int main(int argc, char *argv[]) {
     }
 
     for (int idx = 1; idx < col_cnt; idx++) {
-        EA::proto::FieldInfo *field_string = info.add_fields();
+        EA::servlet::FieldInfo *field_string = info.add_fields();
         field_string->set_field_name("column" + std::to_string(idx));
         field_string->set_field_id(idx);
         if (idx % 5 == 0) {
-            field_string->set_mysql_type(EA::proto::INT32);
+            field_string->set_mysql_type(EA::servlet::INT32);
         } else if (idx % 5 == 1) {
-            field_string->set_mysql_type(EA::proto::UINT32);
+            field_string->set_mysql_type(EA::servlet::UINT32);
         } else if (idx % 5 == 2) {
-            field_string->set_mysql_type(EA::proto::INT64);
+            field_string->set_mysql_type(EA::servlet::INT64);
         } else if (idx % 5 == 3) {
-            field_string->set_mysql_type(EA::proto::UINT64);
+            field_string->set_mysql_type(EA::servlet::UINT64);
         } else if (idx % 5 == 4) {
-            field_string->set_mysql_type(EA::proto::STRING);
+            field_string->set_mysql_type(EA::servlet::STRING);
         }
     }
 
-    EA::proto::IndexInfo *index_pk = info.add_indexs();
-    index_pk->set_index_type(EA::proto::I_PRIMARY);
+    EA::servlet::IndexInfo *index_pk = info.add_indexs();
+    index_pk->set_index_type(EA::servlet::I_PRIMARY);
     index_pk->set_index_name("pk_index");
     index_pk->add_field_ids(1);
     index_pk->set_index_id(1);

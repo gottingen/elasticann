@@ -18,8 +18,8 @@
 #include "elasticann/base/tlog.h"
 
 namespace EA {
-    void QueryNamespaceManager::get_namespace_info(const proto::QueryRequest *request,
-                                                   proto::QueryResponse *response) {
+    void QueryNamespaceManager::get_namespace_info(const EA::servlet::QueryRequest *request,
+                                                   EA::servlet::QueryResponse *response) {
         NamespaceManager *manager = NamespaceManager::get_instance();
         BAIDU_SCOPED_LOCK(manager->_namespace_mutex);
         if (!request->has_namespace_name()) {
@@ -32,7 +32,7 @@ namespace EA {
                 int64_t id = manager->_namespace_id_map[namespace_name];
                 *(response->add_namespace_infos()) = manager->_namespace_info_map[id];
             } else {
-                response->set_errcode(proto::INPUT_PARAM_ERROR);
+                response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
                 response->set_errmsg("namespace not exist");
                 TLOG_ERROR("namespace: {}  not exist", namespace_name.c_str());
             }

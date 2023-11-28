@@ -18,8 +18,8 @@
 #include "elasticann/base/tlog.h"
 
 namespace EA {
-    void QueryZoneManager::get_zone_info(const proto::QueryRequest *request,
-                                                 proto::QueryResponse *response) {
+    void QueryZoneManager::get_zone_info(const EA::servlet::QueryRequest *request,
+                                                 EA::servlet::QueryResponse *response) {
         ZoneManager *manager = ZoneManager::get_instance();
         BAIDU_SCOPED_LOCK(manager->_zone_mutex);
         if (!request->has_zone()) {
@@ -34,7 +34,7 @@ namespace EA {
                 *(response->add_zone_infos()) = manager->_zone_info_map[id];
             } else {
                 response->set_errmsg("zone not exist");
-                response->set_errcode(proto::INPUT_PARAM_ERROR);
+                response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
                 TLOG_ERROR("namespace: {} zone: {} not exist", namespace_name, zone);
             }
         }

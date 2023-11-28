@@ -14,7 +14,6 @@
 //
 #include "elasticann/cli/config_cmd.h"
 #include "elasticann/cli/option_context.h"
-#include "eaproto/router/router.interface.pb.h"
 #include "turbo/format/print.h"
 #include "elasticann/cli/show_help.h"
 #include "elasticann/cli/router_interact.h"
@@ -104,10 +103,10 @@ namespace EA::cli {
     }
 
     void ConfigCmd::run_config_create_cmd() {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
         ScopeShower ss;
-        request.set_op_type(EA::proto::OP_CREATE_CONFIG);
+        request.set_op_type(EA::servlet::OP_CREATE_CONFIG);
         auto opt = ConfigOptionContext::get_instance();
         auto config_info = request.mutable_config_info();
         EA::client::ConfigInfoBuilder builder(config_info);
@@ -134,11 +133,11 @@ namespace EA::cli {
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(response.errcode(), response.op_type(),
                                                response.errmsg());
-        ss.add_table("result", std::move(table), response.errcode() == EA::proto::SUCCESS);
+        ss.add_table("result", std::move(table), response.errcode() == EA::servlet::SUCCESS);
     }
 
     void ConfigCmd::run_config_dump_cmd() {
-        EA::proto::ConfigInfo request;
+        EA::servlet::ConfigInfo request;
 
         ScopeShower ss;
         auto opt = ConfigOptionContext::get_instance();
@@ -189,7 +188,7 @@ namespace EA::cli {
     }
 
     void ConfigCmd::run_config_test_cmd() {
-        EA::proto::ConfigInfo request;
+        EA::servlet::ConfigInfo request;
         ScopeShower ss;
         if (ConfigOptionContext::get_instance()->config_file.empty()) {
             ss.add_table("prepare", "no input file", false);
@@ -235,8 +234,8 @@ namespace EA::cli {
             run_config_version_list_cmd();
             return;
         }
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
 
         ScopeShower ss;
         auto rs = make_config_list(&request);
@@ -245,16 +244,16 @@ namespace EA::cli {
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table("result", std::move(table), response.errcode() == EA::proto::SUCCESS);
-        if (response.errcode() == EA::proto::SUCCESS) {
+        ss.add_table("result", std::move(table), response.errcode() == EA::servlet::SUCCESS);
+        if (response.errcode() == EA::servlet::SUCCESS) {
             table = show_query_ops_config_list_response(response);
             ss.add_table("summary", std::move(table), true);
         }
     }
 
     void ConfigCmd::run_config_version_list_cmd() {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
 
         ScopeShower ss;
         auto rs = make_config_list_version(&request);
@@ -263,16 +262,16 @@ namespace EA::cli {
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
         auto table = ShowHelper::show_response(response.errcode(), request.op_type(),
                                                response.errmsg());
-        ss.add_table("result", std::move(table), response.errcode() == EA::proto::SUCCESS);
-        if (response.errcode() == EA::proto::SUCCESS) {
+        ss.add_table("result", std::move(table), response.errcode() == EA::servlet::SUCCESS);
+        if (response.errcode() == EA::servlet::SUCCESS) {
             table = show_query_ops_config_list_version_response(response);
             ss.add_table("summary", std::move(table), true);
         }
     }
 
     void ConfigCmd::run_config_get_cmd() {
-        EA::proto::QueryRequest request;
-        EA::proto::QueryResponse response;
+        EA::servlet::QueryRequest request;
+        EA::servlet::QueryResponse response;
 
         ScopeShower ss("get config info");
         auto rs = make_config_get(&request);
@@ -283,7 +282,7 @@ namespace EA::cli {
         auto table = ShowHelper::show_response(response.errcode(), request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table), true);
-        if (response.errcode() != EA::proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             return;
         }
         turbo::Status save_status;
@@ -294,7 +293,7 @@ namespace EA::cli {
         ss.add_table("summary", std::move(table), true);
     }
 
-    turbo::Status ConfigCmd::save_config_to_file(const std::string &path, const EA::proto::QueryResponse &res) {
+    turbo::Status ConfigCmd::save_config_to_file(const std::string &path, const EA::servlet::QueryResponse &res) {
         turbo::SequentialWriteFile file;
         auto s = file.open(path, true);
         if (!s.ok()) {
@@ -309,8 +308,8 @@ namespace EA::cli {
     }
 
     void ConfigCmd::run_config_remove_cmd() {
-        EA::proto::MetaManagerRequest request;
-        EA::proto::MetaManagerResponse response;
+        EA::servlet::MetaManagerRequest request;
+        EA::servlet::MetaManagerResponse response;
 
         ScopeShower ss;
         auto rs = make_config_remove(&request);
@@ -323,10 +322,10 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    ConfigCmd::make_example_config_dump(EA::proto::ConfigInfo *req) {
+    ConfigCmd::make_example_config_dump(EA::servlet::ConfigInfo *req) {
         req->set_name("example");
         req->set_time(static_cast<int>(turbo::ToTimeT(turbo::Now())));
-        req->set_type(EA::proto::CF_JSON);
+        req->set_type(EA::servlet::CF_JSON);
         auto v = req->mutable_version();
         v->set_major(1);
         v->set_minor(2);
@@ -344,22 +343,22 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    ConfigCmd::make_config_list(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_LIST_CONFIG);
+    ConfigCmd::make_config_list(EA::servlet::QueryRequest *req) {
+        req->set_op_type(EA::servlet::QUERY_LIST_CONFIG);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    ConfigCmd::make_config_list_version(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_LIST_CONFIG_VERSION);
+    ConfigCmd::make_config_list_version(EA::servlet::QueryRequest *req) {
+        req->set_op_type(EA::servlet::QUERY_LIST_CONFIG_VERSION);
         auto opt = ConfigOptionContext::get_instance();
         req->set_config_name(opt->config_name);
         return turbo::OkStatus();
     }
 
     [[nodiscard]] turbo::Status
-    ConfigCmd::make_config_get(EA::proto::QueryRequest *req) {
-        req->set_op_type(EA::proto::QUERY_GET_CONFIG);
+    ConfigCmd::make_config_get(EA::servlet::QueryRequest *req) {
+        req->set_op_type(EA::servlet::QUERY_GET_CONFIG);
         auto opt = ConfigOptionContext::get_instance();
         req->set_config_name(opt->config_name);
         if (!opt->config_version.empty()) {
@@ -370,8 +369,8 @@ namespace EA::cli {
     }
 
     [[nodiscard]] turbo::Status
-    ConfigCmd::make_config_remove(EA::proto::MetaManagerRequest *req) {
-        req->set_op_type(EA::proto::OP_REMOVE_CONFIG);
+    ConfigCmd::make_config_remove(EA::servlet::MetaManagerRequest *req) {
+        req->set_op_type(EA::servlet::OP_REMOVE_CONFIG);
         auto rc = req->mutable_config_info();
         auto opt = ConfigOptionContext::get_instance();
         rc->set_name(opt->config_name);
@@ -382,7 +381,7 @@ namespace EA::cli {
         return turbo::OkStatus();
     }
 
-    turbo::Table ConfigCmd::show_query_ops_config_list_response(const EA::proto::QueryResponse &res) {
+    turbo::Table ConfigCmd::show_query_ops_config_list_response(const EA::servlet::QueryResponse &res) {
         turbo::Table result;
         auto &config_list = res.config_infos();
         result.add_row(turbo::Table::Row_t{"config size", turbo::Format(config_list.size())});
@@ -401,7 +400,7 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table ConfigCmd::show_query_ops_config_list_version_response(const EA::proto::QueryResponse &res) {
+    turbo::Table ConfigCmd::show_query_ops_config_list_version_response(const EA::servlet::QueryResponse &res) {
         turbo::Table result;
         auto &config_versions = res.config_infos();
         result.add_row(turbo::Table::Row_t{"version size", turbo::Format(config_versions.size())});
@@ -423,7 +422,7 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table ConfigCmd::show_query_ops_config_get_response(const EA::proto::QueryResponse &res,
+    turbo::Table ConfigCmd::show_query_ops_config_get_response(const EA::servlet::QueryResponse &res,
                                                                const turbo::Status &save_status) {
         turbo::Table result_table;
         auto config = res.config_infos(0);

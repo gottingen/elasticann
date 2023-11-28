@@ -24,7 +24,7 @@
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
 #include "elasticann/cli/option_context.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/client/base_message_sender.h"
 
 namespace EA::client {
@@ -94,30 +94,30 @@ namespace EA::client {
         /// \param response
         /// \param retry_times
         /// \return
-        turbo::Status meta_manager(const EA::proto::MetaManagerRequest &request,
-                                   EA::proto::MetaManagerResponse &response, int retry_time) override;
+        turbo::Status meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                   EA::servlet::MetaManagerResponse &response, int retry_time) override;
 
         ///
         /// \param request
         /// \param response
         /// \return
-        turbo::Status meta_manager(const EA::proto::MetaManagerRequest &request,
-                                   EA::proto::MetaManagerResponse &response) override;
+        turbo::Status meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                   EA::servlet::MetaManagerResponse &response) override;
 
         ///
         /// \param request
         /// \param response
         /// \param retry_times
         /// \return
-        turbo::Status meta_query(const EA::proto::QueryRequest &request,
-                                 EA::proto::QueryResponse &response, int retry_time) override;
+        turbo::Status meta_query(const EA::servlet::QueryRequest &request,
+                                 EA::servlet::QueryResponse &response, int retry_time) override;
 
         ///
         /// \param request
         /// \param response
         /// \return
-        turbo::Status meta_query(const EA::proto::QueryRequest &request,
-                                 EA::proto::QueryResponse &response) override;
+        turbo::Status meta_query(const EA::servlet::QueryRequest &request,
+                                 EA::servlet::QueryResponse &response) override;
 
     private:
         std::mutex _server_mutex;
@@ -133,7 +133,7 @@ namespace EA::client {
     turbo::Status RouterSender::send_request(const std::string &service_name,
                                              const Request &request,
                                              Response &response, int retry_times) {
-        const ::google::protobuf::ServiceDescriptor *service_desc = proto::RouterService::descriptor();
+        const ::google::protobuf::ServiceDescriptor *service_desc = EA::servlet::RouterService::descriptor();
         const ::google::protobuf::MethodDescriptor *method =
                 service_desc->FindMethodByName(service_name);
         if (method == nullptr) {
@@ -170,7 +170,7 @@ namespace EA::client {
             }
             return turbo::OkStatus();
             /*
-            if (response.errcode() != proto::SUCCESS) {
+            if (response.errcode() != EA::servlet::SUCCESS) {
                 TLOG_WARN_IF(_verbose, "send meta server fail, log_id:{}, response:{}", cntl.log_id(),
                              response.ShortDebugString());
                 //return turbo::UnavailableError("send meta server fail, log_id:{}, response:{}", cntl.log_id(),

@@ -73,6 +73,41 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/copts)
 
 include(carbin_module)
 
+
+include(carbin_cc_proto)
+#file(GLOB PROTO_FILES "${PROJECT_SOURCE_DIR}/elasticann/proto/*.proto")
+set(PROTO_FILES
+        elasticann/proto/servlet/error_code.proto
+        elasticann/proto/servlet/optype.proto
+        elasticann/proto/servlet/version.proto
+        elasticann/proto/servlet/config.struct.proto
+        elasticann/proto/servlet/servlet.interface.proto
+        elasticann/proto/servlet/servlet.struct.proto
+        elasticann/proto/servlet/tso.struct.proto
+        elasticann/proto/servlet/unique_id.proto
+        elasticann/proto/servlet/user.struct.proto
+        elasticann/proto/servlet/raft.proto
+)
+
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/output/include/elasticann/proto/)
+set(PROTOC_FLAGS ${PROTOC_FLAGS} -I${PROTOBUF_INCLUDE_DIR} -I${PROJECT_SOURCE_DIR})
+
+carbin_cc_proto(PROTO_HDRS PROTO_SRCS ${PROJECT_BINARY_DIR}
+        ${PROJECT_BINARY_DIR}/output/include
+        ${PROJECT_SOURCE_DIR}
+        "${PROTO_FILES}")
+
+carbin_cc_library(
+        NAMESPACE elasticann
+        NAME proto
+        SOURCES ${PROTO_SRCS}
+        COPTS ${CARBIN_DEFAULT_COPTS}
+        DEPS
+        ${CARBIN_DYLINK}
+        PUBLIC
+)
+
+
 add_subdirectory(elasticann)
 
 if (CARBIN_BUILD_TEST)

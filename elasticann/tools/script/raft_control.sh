@@ -19,14 +19,23 @@ curl -d '{
 echo -e "\n" 
 
 
+echo -e "AddPeer\n"
+curl -d '{
+    "op_type" : "SetPeer",
+    "region_id" : 0,
+    "old_peers" : ["127.0.0.1:8011"],
+    "new_peers" : ["127.0.0.1:8010", "127.0.0.1:8011"]
+}' http://127.0.0.1:8010/MetaService/raft_control
+echo -e "\n"
+
 #只有在系统奔溃的情况下可用，正常情况下不起作用
 echo -e "Force set peer\n"
 curl -d '{
     "op_type" : "SetPeer",
     "region_id" : 0,
-    "new_peers" : ["127.0.0.1:8110"],
+    "new_peers" : ["127.0.0.1:8011"],
     "force" : true
-}' http://127.0.0.1:8110/MetaService/raft_control
+}' http://127.0.0.1:8011/MetaService/raft_control
 
 echo -e  "transferLeader,只能发送到leader机器上\n"
 curl -d '{

@@ -17,221 +17,21 @@
 #include "elasticann/meta_server/meta_state_machine.h"
 #include <braft/util.h>
 #include <braft/storage.h>
-#include "elasticann/base/concurrency.h"
 #include "elasticann/base/scope_exit.h"
-#include "elasticann/meta_server/cluster_manager.h"
 #include "elasticann/meta_server/privilege_manager.h"
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/config_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
-#include "elasticann/meta_server/database_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
 #include "elasticann/meta_server/servlet_manager.h"
-#include "elasticann/meta_server/table_manager.h"
-#include "elasticann/meta_server/region_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/engine/rocks_wrapper.h"
-#include "elasticann/meta_server/query_cluster_manager.h"
 #include "elasticann/meta_server/query_privilege_manager.h"
-#include "elasticann/meta_server/query_table_manager.h"
-#include "elasticann/meta_server/query_region_manager.h"
 #include "elasticann/engine/sst_file_writer.h"
-#include "elasticann/raft/parse_path.h"
+#include "elasticann/meta_server/parse_path.h"
 
 namespace EA {
 
-    void MetaStateMachine::store_heartbeat(google::protobuf::RpcController *controller,
-                                           const proto::StoreHeartBeatRequest *request,
-                                           proto::StoreHeartBeatResponse *response,
-                                           google::protobuf::Closure *done) {
-        TimeCost time_cost;
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        if (!_is_leader.load()) {
-            TLOG_WARN("NOT LEADER, logid:{}", log_id);
-            response->set_errcode(proto::NOT_LEADER);
-            response->set_errmsg("not leader");
-            response->set_leader(_node.leader_id().to_string());
-            return;
-        }
-        response->set_errcode(proto::SUCCESS);
-        response->set_errmsg("success");
-        TimeCost step_time_cost;
-        //判断instance是否是新增，同时更新instance的容量信息
-        ClusterManager::get_instance()->process_instance_heartbeat_for_store(request->instance_info());
-        ClusterManager::get_instance()->process_instance_param_heartbeat_for_store(request, response);
-        int64_t instance_time = step_time_cost.get_time();
-        step_time_cost.reset();
-
-        //半个小时上报一次peer信息，做peer的负载均衡
-        ClusterManager::get_instance()->process_peer_heartbeat_for_store(request, response);
-        int64_t peer_balance_time = step_time_cost.get_time();
-        step_time_cost.reset();
-
-        //table是否有新增、更新和删除
-        SchemaManager::get_instance()->process_schema_heartbeat_for_store(request, response);
-        int64_t schema_time = step_time_cost.get_time();
-        step_time_cost.reset();
-
-        //peer信息半小时上报一次，判断peer所在的table是否存在以及自身是否是过期的peer
-        SchemaManager::get_instance()->process_peer_heartbeat_for_store(request, response, log_id);
-        int64_t peer_time = step_time_cost.get_time();
-        step_time_cost.reset();
-
-        //更新leader状态信息，leader的负载均衡.是否是新增region、分裂或者peer变更region。是否需要add_peer
-        //or remove_peer
-        SchemaManager::get_instance()->process_leader_heartbeat_for_store(request, response, log_id);
-        int64_t leader_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        _store_heart_beat << time_cost.get_time();
-        TLOG_DEBUG("store_heart_beat req[{}]", request->DebugString());
-        TLOG_DEBUG("store_heart_beat resp[{}]", response->DebugString());
-
-        TLOG_INFO("store:{} heart beat, time_cost: {}, "
-                  "instance_time: {}, peer_balance_time: {}, schema_time: {},"
-                  " peer_time: {}, leader_time: {}, log_id: {}",
-                  request->instance_info().address(),
-                  time_cost.get_time(),
-                  instance_time, peer_balance_time, schema_time, peer_time, leader_time, log_id);
-    }
-
-    void MetaStateMachine::baikal_heartbeat(google::protobuf::RpcController *controller,
-                                            const proto::BaikalHeartBeatRequest *request,
-                                            proto::BaikalHeartBeatResponse *response,
-                                            google::protobuf::Closure *done) {
-        TimeCost time_cost;
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        if (!_is_leader.load()) {
-            TLOG_WARN("NOT LEADER, logid:{}", log_id);
-            response->set_errcode(proto::NOT_LEADER);
-            response->set_errmsg("not leader");
-            response->set_leader(_node.leader_id().to_string());
-            return;
-        }
-        TLOG_DEBUG("EA request[{}]", request->ShortDebugString());
-        TimeCost step_time_cost;
-        ON_SCOPE_EXIT([]() {
-            Concurrency::get_instance()->baikal_heartbeat_concurrency.decrease_broadcast();
-        });
-        int ret = Concurrency::get_instance()->baikal_heartbeat_concurrency.increase_timed_wait(10 * 1000 * 1000LL);
-        if (ret != 0) {
-            TLOG_ERROR("EA:{} time_cost: {}, log_id: {}",
-                     butil::endpoint2str(cntl->remote_side()).c_str(),
-                     time_cost.get_time(),
-                     log_id);
-            response->set_errcode(proto::DISABLE_WRITE_TIMEOUT);
-            response->set_errmsg("wait timeout");
-            return;
-        }
-        response->set_errcode(proto::SUCCESS);
-        response->set_errmsg("success");
-        int64_t wait_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        DatabaseManager::get_instance()->process_baikal_heartbeat(request, response);
-        ClusterManager::get_instance()->process_baikal_heartbeat(request, response);
-        int64_t cluster_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        PrivilegeManager::get_instance()->process_baikal_heartbeat(request, response);
-        int64_t privilege_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        SchemaManager::get_instance()->process_baikal_heartbeat(request, response, log_id);
-        int64_t schema_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        int64_t ddl_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        _baikal_heart_beat << time_cost.get_time();
-        TLOG_INFO("EA:{} heart beat, wait_time:{}, time_cost: {}, cluster_time: {}, "
-                  "privilege_time: {}, schema_time: {}, ddl_time: {}, log_id: {}",
-                  butil::endpoint2str(cntl->remote_side()).c_str(),
-                  wait_time, time_cost.get_time(),
-                  cluster_time, privilege_time, schema_time, ddl_time,
-                  log_id);
-    }
-
-    void MetaStateMachine::baikal_other_heartbeat(google::protobuf::RpcController *controller,
-                                                  const proto::BaikalOtherHeartBeatRequest *request,
-                                                  proto::BaikalOtherHeartBeatResponse *response,
-                                                  google::protobuf::Closure *done) {
-        TimeCost time_cost;
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        if (!_is_leader.load()) {
-            TLOG_WARN("NOT LEADER, logid:{}", log_id);
-            response->set_errcode(proto::NOT_LEADER);
-            response->set_errmsg("not leader");
-            response->set_leader(_node.leader_id().to_string());
-            return;
-        }
-        TimeCost step_time_cost;
-        Concurrency::get_instance()->baikal_other_heartbeat_concurrency.increase_wait();
-        ON_SCOPE_EXIT([]() {
-            Concurrency::get_instance()->baikal_other_heartbeat_concurrency.decrease_broadcast();
-        });
-        int64_t wait_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        response->set_errcode(proto::SUCCESS);
-        response->set_errmsg("success");
-        TableManager::get_instance()->check_update_statistics(request, response);
-        ClusterManager::get_instance()->process_instance_param_heartbeat_for_baikal(request, response);
-        int64_t schema_time = step_time_cost.get_time();
-
-
-        TLOG_INFO("baikaldb:{} heart beat, wait time: {}, update_cost: {}, log_id: {}",
-                  butil::endpoint2str(cntl->remote_side()).c_str(),
-                  wait_time, schema_time, log_id);
-    }
-
-    void MetaStateMachine::console_heartbeat(google::protobuf::RpcController *controller,
-                                             const proto::ConsoleHeartBeatRequest *request,
-                                             proto::ConsoleHeartBeatResponse *response,
-                                             google::protobuf::Closure *done) {
-        TimeCost time_cost;
-        brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
-                static_cast<brpc::Controller *>(controller);
-        uint64_t log_id = 0;
-        if (cntl->has_log_id()) {
-            log_id = cntl->log_id();
-        }
-        if (!_is_leader.load()) {
-            TLOG_WARN("NOT LEADER, logid:{}", log_id);
-            response->set_errcode(proto::NOT_LEADER);
-            response->set_errmsg("not leader");
-            response->set_leader(_node.leader_id().to_string());
-            return;
-        }
-        response->set_errcode(proto::SUCCESS);
-        response->set_errmsg("success");
-        TimeCost step_time_cost;
-        QueryClusterManager::get_instance()->process_console_heartbeat(request, response);
-        int64_t cluster_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        QueryPrivilegeManager::get_instance()->process_console_heartbeat(request, response);
-        int64_t privilege_time = step_time_cost.get_time();
-        step_time_cost.reset();
-        QueryTableManager::get_instance()->process_console_heartbeat(request, response, log_id);
-        TLOG_INFO("EA:{} heart beat, time_cost: {}, "
-                  "cluster_time: {}, privilege_time: {}, table_time: {}"
-                  "log_id: {}",
-                  butil::endpoint2str(cntl->remote_side()).c_str(),
-                  time_cost.get_time(), cluster_time, privilege_time, step_time_cost.get_time(), log_id);
-    }
 
     void MetaStateMachine::on_apply(braft::Iterator &iter) {
         for (; iter.valid(); iter.next()) {
@@ -241,12 +41,12 @@ namespace EA {
                 ((MetaServerClosure *) done)->raft_time_cost = ((MetaServerClosure *) done)->time_cost.get_time();
             }
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
-            proto::MetaManagerRequest request;
+            EA::servlet::MetaManagerRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
                 TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
                     if (((MetaServerClosure *) done)->response) {
-                        ((MetaServerClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
+                        ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::PARSE_FROM_PB_FAIL);
                         ((MetaServerClosure *) done)->response->set_errmsg("parse from protobuf fail");
                     }
                     braft::run_closure_in_bthread(done_guard.release());
@@ -258,227 +58,71 @@ namespace EA {
             }
             TLOG_INFO("on apply, term:{}, index:{}, request op_type:{}",
                       iter.term(), iter.index(),
-                      proto::OpType_Name(request.op_type()));
+                      EA::servlet::OpType_Name(request.op_type()));
             switch (request.op_type()) {
-                case proto::OP_ADD_LOGICAL: {
-                    ClusterManager::get_instance()->add_logical(request, done);
-                    break;
-                }
-                case proto::OP_ADD_PHYSICAL: {
-                    ClusterManager::get_instance()->add_physical(request, done);
-                    break;
-                }
-                case proto::OP_ADD_INSTANCE: {
-                    ClusterManager::get_instance()->add_instance(request, done);
-                    break;
-                }
-                case proto::OP_DROP_PHYSICAL: {
-                    ClusterManager::get_instance()->drop_physical(request, done);
-                    break;
-                }
-                case proto::OP_DROP_LOGICAL: {
-                    ClusterManager::get_instance()->drop_logical(request, done);
-                    break;
-                }
-                case proto::OP_DROP_INSTANCE: {
-                    ClusterManager::get_instance()->drop_instance(request, done);
-                    break;
-                }
-                case proto::OP_UPDATE_INSTANCE: {
-                    ClusterManager::get_instance()->update_instance(request, done);
-                    break;
-                }
-                case proto::OP_UPDATE_INSTANCE_PARAM: {
-                    ClusterManager::get_instance()->update_instance_param(request, done);
-                    break;
-                }
-                case proto::OP_MOVE_PHYSICAL: {
-                    ClusterManager::get_instance()->move_physical(request, done);
-                    break;
-                }
-                case proto::OP_CREATE_USER: {
+                case EA::servlet::OP_CREATE_USER: {
                     PrivilegeManager::get_instance()->create_user(request, done);
                     break;
                 }
-                case proto::OP_DROP_USER: {
+                case EA::servlet::OP_DROP_USER: {
                     PrivilegeManager::get_instance()->drop_user(request, done);
                     break;
                 }
-                case proto::OP_ADD_PRIVILEGE: {
+                case EA::servlet::OP_ADD_PRIVILEGE: {
                     PrivilegeManager::get_instance()->add_privilege(request, done);
                     break;
                 }
-                case proto::OP_DROP_PRIVILEGE: {
+                case EA::servlet::OP_DROP_PRIVILEGE: {
                     PrivilegeManager::get_instance()->drop_privilege(request, done);
                     break;
                 }
-                case proto::OP_CREATE_NAMESPACE: {
+                case EA::servlet::OP_CREATE_NAMESPACE: {
                     NamespaceManager::get_instance()->create_namespace(request, done);
                     break;
                 }
-                case proto::OP_DROP_NAMESPACE: {
+                case EA::servlet::OP_DROP_NAMESPACE: {
                     NamespaceManager::get_instance()->drop_namespace(request, done);
                     break;
                 }
-                case proto::OP_MODIFY_NAMESPACE: {
+                case EA::servlet::OP_MODIFY_NAMESPACE: {
                     NamespaceManager::get_instance()->modify_namespace(request, done);
                     break;
                 }
-                case proto::OP_CREATE_DATABASE: {
-                    DatabaseManager::get_instance()->create_database(request, done);
-                    break;
-                }
-                case proto::OP_DROP_DATABASE: {
-                    DatabaseManager::get_instance()->drop_database(request, done);
-                    break;
-                }
-                case proto::OP_MODIFY_DATABASE: {
-                    DatabaseManager::get_instance()->modify_database(request, done);
-                    break;
-                }
-                case proto::OP_CREATE_ZONE: {
+                case EA::servlet::OP_CREATE_ZONE: {
                     ZoneManager::get_instance()->create_zone(request, done);
                     break;
                 }
-                case proto::OP_DROP_ZONE: {
+                case EA::servlet::OP_DROP_ZONE: {
                     ZoneManager::get_instance()->drop_zone(request, done);
                     break;
                 }
-                case proto::OP_MODIFY_ZONE: {
+                case EA::servlet::OP_MODIFY_ZONE: {
                     ZoneManager::get_instance()->modify_zone(request, done);
                     break;
                 }
-                case proto::OP_CREATE_SERVLET: {
+                case EA::servlet::OP_CREATE_SERVLET: {
                     ServletManager::get_instance()->create_servlet(request, done);
                     break;
                 }
-                case proto::OP_DROP_SERVLET: {
+                case EA::servlet::OP_DROP_SERVLET: {
                     ServletManager::get_instance()->drop_servlet(request, done);
                     break;
                 }
-                case proto::OP_MODIFY_SERVLET: {
+                case EA::servlet::OP_MODIFY_SERVLET: {
                     ServletManager::get_instance()->modify_servlet(request, done);
                     break;
                 }
-                case proto::OP_CREATE_CONFIG: {
+                case EA::servlet::OP_CREATE_CONFIG: {
                     ConfigManager::get_instance()->create_config(request, done);
                     break;
                 }
-                case proto::OP_REMOVE_CONFIG: {
+                case EA::servlet::OP_REMOVE_CONFIG: {
                     ConfigManager::get_instance()->remove_config(request, done);
-                    break;
-                }
-                case proto::OP_CREATE_TABLE: {
-                    TableManager::get_instance()->create_table(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DROP_TABLE: {
-                    TableManager::get_instance()->drop_table(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DROP_TABLE_TOMBSTONE: {
-                    TableManager::get_instance()->drop_table_tombstone(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_RESTORE_TABLE: {
-                    TableManager::get_instance()->restore_table(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_RENAME_TABLE: {
-                    TableManager::get_instance()->rename_table(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_ADD_FIELD: {
-                    TableManager::get_instance()->add_field(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DROP_FIELD: {
-                    TableManager::get_instance()->drop_field(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_RENAME_FIELD: {
-                    TableManager::get_instance()->rename_field(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_MODIFY_FIELD: {
-                    TableManager::get_instance()->modify_field(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_DISTS: {
-                    TableManager::get_instance()->update_dists(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_TTL_DURATION: {
-                    TableManager::get_instance()->update_ttl_duration(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_BYTE_SIZE: {
-                    TableManager::get_instance()->update_byte_size(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_MAIN_LOGICAL_ROOM: {
-                    TableManager::get_instance()->set_main_logical_room(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_SCHEMA_CONF: {
-                    TableManager::get_instance()->update_schema_conf(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_TABLE_COMMENT: {
-                    TableManager::get_instance()->update_table_comment(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DROP_REGION: {
-                    RegionManager::get_instance()->drop_region(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_REGION: {
-                    RegionManager::get_instance()->update_region(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_SPLIT_REGION: {
-                    RegionManager::get_instance()->split_region(request, done);
-                    break;
-                }
-                case proto::OP_MODIFY_RESOURCE_TAG: {
-                    TableManager::get_instance()->update_resource_tag(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_ADD_INDEX: {
-                    TableManager::get_instance()->add_index(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DROP_INDEX: {
-                    TableManager::get_instance()->drop_index(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_UPDATE_INDEX_STATUS: {
-                    TableManager::get_instance()->update_index_status(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DELETE_DDLWORK: {
-                    TableManager::get_instance()->delete_ddlwork(request, done);
-                    break;
-                }
-                case proto::OP_UPDATE_STATISTICS: {
-                    TableManager::get_instance()->update_statistics(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_ADD_LEARNER: {
-                    TableManager::get_instance()->add_learner(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_DROP_LEARNER: {
-                    TableManager::get_instance()->drop_learner(request, iter.index(), done);
-                    break;
-                }
-                case proto::OP_REMOVE_GLOBAL_INDEX_DATA: {
-                    TableManager::get_instance()->remove_global_index_data(request, iter.index(), done);
                     break;
                 }
                 default: {
                     TLOG_ERROR("unsupport request type, type:{}", request.op_type());
-                    IF_DONE_SET_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
+                    IF_DONE_SET_RESPONSE(done, EA::servlet::UNKNOWN_REQ_TYPE, "unsupport request type");
                 }
             }
             _applied_index = iter.index();
@@ -490,12 +134,10 @@ namespace EA {
 
     void MetaStateMachine::on_snapshot_save(braft::SnapshotWriter *writer, braft::Closure *done) {
         TLOG_WARN("start on snapshot save");
-        TLOG_WARN("max_namespace_id: {}, max_database_id: {},"
-                   " max_table_id:{}, max_region_id:{} when on snapshot save",
+        TLOG_WARN("max_namespace_id: {}, max_zone_id: {},"
+                   " when on snapshot save",
                    NamespaceManager::get_instance()->get_max_namespace_id(),
-                   DatabaseManager::get_instance()->get_max_database_id(),
-                   TableManager::get_instance()->get_max_table_id(),
-                   RegionManager::get_instance()->get_max_region_id());
+                   ZoneManager::get_instance()->get_max_zone_id());
         //创建snapshot
         rocksdb::ReadOptions read_options;
         read_options.prefix_same_as_start = false;
@@ -605,14 +247,7 @@ namespace EA {
                     return -1;
 
                 }
-                //恢复内存状态
-                int ret = 0;
-                ret = ClusterManager::get_instance()->load_snapshot();
-                if (ret != 0) {
-                    TLOG_ERROR("ClusterManager load snapshot fail");
-                    return -1;
-                }
-                ret = PrivilegeManager::get_instance()->load_snapshot();
+                auto ret = PrivilegeManager::get_instance()->load_snapshot();
                 if (ret != 0) {
                     TLOG_ERROR("PrivilegeManager load snapshot fail");
                     return -1;
@@ -636,47 +271,9 @@ namespace EA {
 
     void MetaStateMachine::on_leader_start() {
         TLOG_WARN("leader start at new term");
-        ClusterManager::get_instance()->reset_instance_status();
-        RegionManager::get_instance()->reset_region_status();
         _leader_start_timestmap = butil::gettimeofday_us();
-        if (!_healthy_check_start) {
-            std::function<void()> fun = [this]() {
-                healthy_check_function();
-            };
-            _bth.run(fun);
-            _healthy_check_start = true;
-        } else {
-            TLOG_ERROR("store check thread has already started");
-        }
         BaseStateMachine::on_leader_start();
-        TableManager::get_instance()->on_leader_start();
         _is_leader.store(true);
-    }
-
-    void MetaStateMachine::healthy_check_function() {
-        TLOG_WARN("start healthy check function");
-        static int64_t count = 0;
-        int64_t sleep_time_count =
-                FLAGS_healthy_check_interval_times * FLAGS_store_heart_beat_interval_us / 1000; //ms为单位
-        while (_node.is_leader()) {
-            int time = 0;
-            while (time < sleep_time_count) {
-                if (!_node.is_leader()) {
-                    return;
-                }
-                bthread_usleep(1000);
-                ++time;
-            }
-            TLOG_WARN("start healthy check(region and store), count: {}", count);
-            ++count;
-            //store的相关信息目前存在cluster中
-            ClusterManager::get_instance()->store_healthy_check_function();
-            //region多久没上报心跳了
-            RegionManager::get_instance()->region_healthy_check_function();
-            //gc删除很久的表
-            TableManager::get_instance()->drop_table_tombstone_gc_check();
-        }
-        return;
     }
 
     void MetaStateMachine::on_leader_stop() {
@@ -689,19 +286,8 @@ namespace EA {
             _healthy_check_start = false;
             TLOG_WARN("healthy check bthread join");
         }
-        RegionManager::get_instance()->clear_region_peer_state_map();
-        RegionManager::get_instance()->clear_region_learner_peer_state_map();
         TLOG_WARN("leader stop");
         BaseStateMachine::on_leader_stop();
-        TableManager::get_instance()->on_leader_stop();
-        QueryTableManager::get_instance()->clean_cache();
     }
 
-// 只有store需要peer load balance才会上报所有的peer信息
-// 同时meta才会更新内存中的_instance_regions_map, _instance_regions_count_map
-    bool MetaStateMachine::whether_can_decide() {
-        return _node.is_leader() &&
-               ((butil::gettimeofday_us() - _leader_start_timestmap) >
-                2LL * FLAGS_balance_periodicity * FLAGS_store_heart_beat_interval_us);
-    }
 }  // namespace EA

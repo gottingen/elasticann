@@ -16,7 +16,7 @@
 #define ELASTICANN_CLI_SERVLET_CMD_H_
 
 #include "turbo/flags/flags.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/format/table.h"
 #include "turbo/base/status.h"
 #include <string>
@@ -54,21 +54,21 @@ namespace EA::cli {
     void run_servlet_info_cmd();
 
     [[nodiscard]] turbo::Status
-    make_servlet_create(EA::proto::MetaManagerRequest *req);
+    make_servlet_create(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_servlet_remove(EA::proto::MetaManagerRequest *req);
+    make_servlet_remove(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_servlet_modify(EA::proto::MetaManagerRequest *req);
+    make_servlet_modify(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_servlet_list(EA::proto::QueryRequest *req);
+    make_servlet_list(EA::servlet::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_servlet_info(EA::proto::QueryRequest *req);
+    make_servlet_info(EA::servlet::QueryRequest *req);
 
-    turbo::Table show_meta_query_servlet_response(const EA::proto::QueryResponse &res);
+    turbo::Table show_meta_query_servlet_response(const EA::servlet::QueryResponse &res);
 
 }  // namespace EA::cli
 

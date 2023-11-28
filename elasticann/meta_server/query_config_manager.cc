@@ -17,11 +17,11 @@
 
 namespace EA {
 
-    void QueryConfigManager::get_config(const ::EA::proto::QueryRequest *request,
-                                        ::EA::proto::QueryResponse *response) {
+    void QueryConfigManager::get_config(const ::EA::servlet::QueryRequest *request,
+                                        ::EA::servlet::QueryResponse *response) {
         if (!request->has_config_name()) {
             response->set_errmsg("config name not set");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
             return;
         }
         BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
@@ -30,7 +30,7 @@ namespace EA {
         auto it = configs.find(name);
         if (it == configs.end() || it->second.empty()) {
             response->set_errmsg("config not exist");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
             return;
         }
         turbo::ModuleVersion version;
@@ -41,7 +41,7 @@ namespace EA {
             auto cit = it->second.rbegin();
             *(response->add_config_infos()) = cit->second;
             response->set_errmsg("success");
-            response->set_errcode(proto::SUCCESS);
+            response->set_errcode(EA::servlet::SUCCESS);
             return;
         }
         auto &request_version = request->config_version();
@@ -51,34 +51,34 @@ namespace EA {
         if (cit == it->second.end()) {
             /// not exists
             response->set_errmsg("config not exist");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
             return;
         }
 
         *(response->add_config_infos()) = cit->second;
         response->set_errmsg("success");
-        response->set_errcode(proto::SUCCESS);
+        response->set_errcode(EA::servlet::SUCCESS);
     }
 
-    void QueryConfigManager::list_config(const ::EA::proto::QueryRequest *request,
-                                         ::EA::proto::QueryResponse *response) {
+    void QueryConfigManager::list_config(const ::EA::servlet::QueryRequest *request,
+                                         ::EA::servlet::QueryResponse *response) {
         BAIDU_SCOPED_LOCK( ConfigManager::get_instance()->_config_mutex);
         auto configs = ConfigManager::get_instance()->_configs;
         response->mutable_config_infos()->Reserve(configs.size());
-        proto::ConfigInfo config;
+        EA::servlet::ConfigInfo config;
         for (auto it = configs.begin(); it != configs.end(); ++it) {
             config.set_name(it->first);
             *(response->add_config_infos()) = config;
         }
         response->set_errmsg("success");
-        response->set_errcode(proto::SUCCESS);
+        response->set_errcode(EA::servlet::SUCCESS);
     }
 
-    void QueryConfigManager::list_config_version(const ::EA::proto::QueryRequest *request,
-                                                 ::EA::proto::QueryResponse *response) {
+    void QueryConfigManager::list_config_version(const ::EA::servlet::QueryRequest *request,
+                                                 ::EA::servlet::QueryResponse *response) {
         if (!request->has_config_name()) {
             response->set_errmsg("config name not set");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
             return;
         }
         auto &name = request->config_name();
@@ -87,7 +87,7 @@ namespace EA {
         auto it = configs.find(name);
         if (it == configs.end()) {
             response->set_errmsg("config not exist");
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
             return;
         }
         response->mutable_config_infos()->Reserve(it->second.size());
@@ -95,7 +95,7 @@ namespace EA {
             *(response->add_config_infos()) = vit->second;
         }
         response->set_errmsg("success");
-        response->set_errcode(proto::SUCCESS);
+        response->set_errcode(EA::servlet::SUCCESS);
     }
 
 }  // namespace EA

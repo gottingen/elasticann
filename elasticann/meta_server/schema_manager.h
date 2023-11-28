@@ -16,11 +16,10 @@
 
 #pragma once
 
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 
 namespace EA {
-    typedef std::shared_ptr<proto::RegionInfo> SmartRegionInfo;
 
     class SchemaManager {
     public:
@@ -32,27 +31,11 @@ namespace EA {
         ~SchemaManager() {}
 
         void process_schema_info(google::protobuf::RpcController *controller,
-                                 const proto::MetaManagerRequest *request,
-                                 proto::MetaManagerResponse *response,
+                                 const EA::servlet::MetaManagerRequest *request,
+                                 EA::servlet::MetaManagerResponse *response,
                                  google::protobuf::Closure *done);
 
-        void process_schema_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
-                                                proto::StoreHeartBeatResponse *response);
-
-        void process_peer_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
-                                              proto::StoreHeartBeatResponse *response,
-                                              uint64_t log_id);
-
-        void process_leader_heartbeat_for_store(const proto::StoreHeartBeatRequest *request,
-                                                proto::StoreHeartBeatResponse *response,
-                                                uint64_t log_id);
-
-        void process_baikal_heartbeat(const proto::BaikalHeartBeatRequest *request,
-                                      proto::BaikalHeartBeatResponse *response,
-                                      uint64_t log_id);
-
-        //为权限操作类接口提供输入参数检查和id获取功能
-        int check_and_get_for_privilege(proto::UserPrivilege &user_privilege);
+        int check_and_get_for_privilege(EA::servlet::UserPrivilege &user_privilege);
 
         int load_snapshot();
 
@@ -67,29 +50,18 @@ namespace EA {
     private:
         SchemaManager() {}
 
-        int pre_process_for_create_table(const proto::MetaManagerRequest *request,
-                                         proto::MetaManagerResponse *response,
+        int pre_process_for_merge_region(const EA::servlet::MetaManagerRequest *request,
+                                         EA::servlet::MetaManagerResponse *response,
                                          uint64_t log_id);
 
-        int pre_process_for_merge_region(const proto::MetaManagerRequest *request,
-                                         proto::MetaManagerResponse *response,
-                                         uint64_t log_id);
-
-        int pre_process_for_split_region(const proto::MetaManagerRequest *request,
-                                         proto::MetaManagerResponse *response,
-                                         uint64_t log_id);
 
         int load_max_id_snapshot(const std::string &max_id_prefix,
                                  const std::string &key,
                                  const std::string &value);
 
-        int whether_dists_legal(proto::MetaManagerRequest *request,
-                                proto::MetaManagerResponse *response,
-                                std::string &candidate_logical_room,
-                                uint64_t log_id);
 
-        int whether_main_logical_room_legal(proto::MetaManagerRequest *request,
-                                            proto::MetaManagerResponse *response,
+        int whether_main_logical_room_legal(EA::servlet::MetaManagerRequest *request,
+                                            EA::servlet::MetaManagerResponse *response,
                                             uint64_t log_id);
 
         MetaStateMachine *_meta_state_machine;

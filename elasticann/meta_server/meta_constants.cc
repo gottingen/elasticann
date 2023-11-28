@@ -53,5 +53,5 @@ namespace EA {
 
     const int MetaConstants::MetaMachineRegion = 0;
     const int MetaConstants::AutoIDMachineRegion = 1;
-    const int MetaConstants::TsoMachineRegion = 1;
+    const int MetaConstants::TsoMachineRegion = 2;
 }  // namespace EA

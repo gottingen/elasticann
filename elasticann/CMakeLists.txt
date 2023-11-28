@@ -16,7 +16,6 @@
 
 file(COPY ${PROJECT_SOURCE_DIR}/conf DESTINATION ${PROJECT_BINARY_DIR})
 file(GLOB ENGINE engine/*.cc)
-file(GLOB RAFT raft/*.cc)
 file(GLOB BASE base/*.cc)
 file(GLOB RPC rpc/*.cc)
 
@@ -56,7 +55,7 @@ carbin_cc_library(
         COPTS
         ${USER_CXX_FLAGS}
         DEPS
-        eaproto::eaproto_STATIC
+        elasticann::proto
         elasticann::flags
         ${CARBIN_DEPS_LINK}
 )
@@ -71,7 +70,7 @@ carbin_cc_library(
         COPTS
         ${USER_CXX_FLAGS}
         DEPS
-        eaproto::eaproto_STATIC
+        elasticann::proto
         elasticann::common
         elasticann::flags
         ${CARBIN_DEPS_LINK}
@@ -88,9 +87,10 @@ carbin_cc_binary(
         COPTS
         ${USER_CXX_FLAGS}
         DEPS
-        eaproto::eaproto_STATIC
+        elasticann::proto
         elasticann::common
         elasticann::flags
+        elasticann::client
         ${CARBIN_DEPS_LINK}
 )
 
@@ -109,7 +109,7 @@ carbin_cc_binary(
         elasticann::common
         elasticann::flags
         elasticann::file_server
-        eaproto::eaproto_STATIC
+        elasticann::proto
         PUBLIC
 )
 ]]
@@ -125,6 +125,6 @@ carbin_cc_binary(
         DEPS
         ${CARBIN_DEPS_LINK}
         elasticann::client
-        eaproto::eaproto_STATIC
+        elasticann::proto
         PUBLIC
 )

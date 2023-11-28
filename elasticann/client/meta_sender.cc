@@ -21,58 +21,49 @@
 
 namespace EA::client {
 
-    turbo::Status MetaSender::init(const std::string &raft_group, const std::string & raft_nodes) {
-        _meta_raft_group = raft_group;
-        _meta_nodes      = raft_nodes;
-        if (braft::rtb::update_configuration(_meta_raft_group, _meta_nodes) != 0) {
-            TLOG_ERROR_IF(_verbose, "Fail to register meta configuration {} of group {}", _meta_nodes, _meta_raft_group);
-            return turbo::UnavailableError("Fail to register meta configuration {} of group {}", _meta_nodes, _meta_raft_group);
-        }
+
+    turbo::Status MetaSender::init(const std::string & raft_nodes) {
         _master_leader_address.ip = butil::IP_ANY;
-        auto rs = select_leader();
-        if(!rs.ok()) {
-            return rs;
+        std::vector<std::string> peers = turbo::StrSplit(raft_nodes, turbo::ByAnyChar(",;\t\n "));
+        for (auto &peer : peers) {
+            butil::EndPoint end_point;
+            if(butil::str2endpoint(peer.c_str(), &end_point) != 0) {
+                return turbo::InvalidArgumentError("invalid address {}", peer);
+            }
+            _servlet_nodes.push_back(end_point);
         }
-        _is_inited = true;
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaSender::select_leader() {
-        braft::PeerId leader;
-        if (braft::rtb::select_leader(_meta_raft_group, &leader) != 0) {
-            butil::Status st = braft::rtb::refresh_leader(_meta_raft_group, _request_timeout);
-            if (!st.ok()) {
-                // Not sure about the leader, sleep for a while and the ask again.
-                TLOG_ERROR_IF(_verbose,"Fail to refresh_leader code:{}, msg:{}", st.error_code(), st.error_cstr());
-                return turbo::UnavailableError("Fail to refresh_leader code:{}, msg:{}", st.error_code(), st.error_cstr());
-            }
-        }
-        set_leader_address(leader.addr);
-        return turbo::OkStatus();
+
+    std::string MetaSender::get_leader() const {
+        TLOG_INFO_IF(_verbose, "get master address:{}", butil::endpoint2str(_master_leader_address).c_str());
+        return butil::endpoint2str(_master_leader_address).c_str();
     }
 
     void MetaSender::set_leader_address(const butil::EndPoint &addr) {
         std::unique_lock<std::mutex> lock(_master_leader_mutex);
+        TLOG_INFO_IF(_verbose, "set master address:{}", butil::endpoint2str(_master_leader_address).c_str());
         _master_leader_address = addr;
     }
 
-    turbo::Status MetaSender::meta_manager(const EA::proto::MetaManagerRequest &request,
-                                                  EA::proto::MetaManagerResponse &response, int retry_times) {
+    turbo::Status MetaSender::meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                           EA::servlet::MetaManagerResponse &response, int retry_times) {
         return send_request("meta_manager", request, response, retry_times);
     }
 
-    turbo::Status MetaSender::meta_manager(const EA::proto::MetaManagerRequest &request,
-                                           EA::proto::MetaManagerResponse &response) {
+    turbo::Status MetaSender::meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                           EA::servlet::MetaManagerResponse &response) {
         return send_request("meta_manager", request, response, _retry_times);
     }
 
-    turbo::Status MetaSender::meta_query(const EA::proto::QueryRequest &request,
-                                                EA::proto::QueryResponse &response, int retry_times) {
+    turbo::Status MetaSender::meta_query(const EA::servlet::QueryRequest &request,
+                                         EA::servlet::QueryResponse &response, int retry_times) {
         return send_request("meta_query", request, response, retry_times);
     }
 
-    turbo::Status MetaSender::meta_query(const EA::proto::QueryRequest &request,
-                                         EA::proto::QueryResponse &response) {
+    turbo::Status MetaSender::meta_query(const EA::servlet::QueryRequest &request,
+                                         EA::servlet::QueryResponse &response) {
         return send_request("meta_query", request, response, _retry_times);
     }
 

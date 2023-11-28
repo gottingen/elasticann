@@ -70,15 +70,15 @@ protected:
 // add_logic add_physical add_instance
 DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     //测试点：增加命名空间"FengChao"
-    EA::proto::MetaManagerRequest request_add_namespace_fc;
-    request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_fc;
+    request_add_namespace_fc.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
     request_add_namespace_fc.mutable_namespace_info()->set_quota(1024 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
 
     //测试点：增加命名空间Feed
-    EA::proto::MetaManagerRequest request_add_namespace_feed;
-    request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_feed;
+    request_add_namespace_feed.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_add_namespace_feed.mutable_namespace_info()->set_quota(2014 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
@@ -120,8 +120,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, namespace_id);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_fc;
-    request_add_database_fc.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_fc;
+    request_add_database_fc.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_fc.mutable_database_info()->set_database("FC_Word");
     request_add_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_add_database_fc.mutable_database_info()->set_quota(10 * 1024);
@@ -133,8 +133,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     _database_manager->create_database(request_add_database_fc, NULL);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_feed;
-    request_add_database_feed.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_feed;
+    request_add_database_feed.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_feed.mutable_database_info()->set_database("FC_Word");
     request_add_database_feed.mutable_database_info()->set_namespace_name("Feed");
     request_add_database_feed.mutable_database_info()->set_quota(8 * 1024);
@@ -202,31 +202,31 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：创建table
-    EA::proto::MetaManagerRequest request_create_table_fc;
-    request_create_table_fc.set_op_type(EA::proto::OP_CREATE_TABLE);
+    EA::servlet::MetaManagerRequest request_create_table_fc;
+    request_create_table_fc.set_op_type(EA::servlet::OP_CREATE_TABLE);
     request_create_table_fc.mutable_table_info()->set_table_name("userinfo");
     request_create_table_fc.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc.mutable_table_info()->set_namespace_name("FengChao");
     request_create_table_fc.mutable_table_info()->add_init_store("127.0.0.1:8010");
-    EA::proto::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
+    EA::servlet::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("userid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("username");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("type");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("user_type");
-    field->set_mysql_type(EA::proto::STRING);
-    EA::proto::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
+    field->set_mysql_type(EA::servlet::STRING);
+    EA::servlet::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
-    index->set_index_type(EA::proto::I_PRIMARY);
+    index->set_index_type(EA::servlet::I_PRIMARY);
     index->add_field_names("userid");
     index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("union_index");
-    index->set_index_type(EA::proto::I_KEY);
+    index->set_index_type(EA::servlet::I_KEY);
     index->add_field_names("username");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc, 1, NULL);
@@ -318,8 +318,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：创建层次表
-    EA::proto::MetaManagerRequest request_create_table_fc_level;
-    request_create_table_fc_level.set_op_type(EA::proto::OP_CREATE_TABLE);
+    EA::servlet::MetaManagerRequest request_create_table_fc_level;
+    request_create_table_fc_level.set_op_type(EA::servlet::OP_CREATE_TABLE);
     request_create_table_fc_level.mutable_table_info()->set_table_name("planinfo");
     request_create_table_fc_level.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc_level.mutable_table_info()->set_namespace_name("FengChao");
@@ -327,24 +327,24 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     request_create_table_fc_level.mutable_table_info()->set_upper_table_name("userinfo");
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("userid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("planid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("planname");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("type");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     index = request_create_table_fc_level.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
-    index->set_index_type(EA::proto::I_PRIMARY);
+    index->set_index_type(EA::servlet::I_PRIMARY);
     index->add_field_names("userid");
     index->add_field_names("planid");
     index = request_create_table_fc_level.mutable_table_info()->add_indexs();
     index->set_index_name("union_index");
-    index->set_index_type(EA::proto::I_KEY);
+    index->set_index_type(EA::servlet::I_KEY);
     index->add_field_names("planname");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc_level, 2, NULL);
@@ -439,9 +439,9 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
         }
     }
     //test_point: test_query_table
-    EA::proto::QueryRequest query_request;
-    EA::proto::QueryResponse response;
-    query_request.set_op_type(EA::proto::QUERY_SCHEMA);
+    EA::servlet::QueryRequest query_request;
+    EA::servlet::QueryResponse response;
+    query_request.set_op_type(EA::servlet::QUERY_SCHEMA);
     _query_table_manager->get_schema_info(&query_request, &response);
     TLOG_WARN("table info: {}", response.DebugString().c_str());
     DOCTEST_REQUIRE_EQ(2, response.schema_infos_size());
@@ -470,8 +470,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     TLOG_WARN("table info: {}", response.DebugString().c_str());
 
     //测试点：修改表名
-    EA::proto::MetaManagerRequest rename_table_request;
-    rename_table_request.set_op_type(EA::proto::OP_RENAME_TABLE);
+    EA::servlet::MetaManagerRequest rename_table_request;
+    rename_table_request.set_op_type(EA::servlet::OP_RENAME_TABLE);
     rename_table_request.mutable_table_info()->set_table_name("userinfo");
     rename_table_request.mutable_table_info()->set_new_table_name("new_userinfo");
     rename_table_request.mutable_table_info()->set_database("FC_Word");
@@ -520,8 +520,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     // 测试点: update_byte_size
-    EA::proto::MetaManagerRequest update_byte_size_request;
-    update_byte_size_request.set_op_type(EA::proto::OP_UPDATE_BYTE_SIZE);
+    EA::servlet::MetaManagerRequest update_byte_size_request;
+    update_byte_size_request.set_op_type(EA::servlet::OP_UPDATE_BYTE_SIZE);
     update_byte_size_request.mutable_table_info()->set_table_name("new_userinfo");
     update_byte_size_request.mutable_table_info()->set_database("FC_Word");
     update_byte_size_request.mutable_table_info()->set_namespace_name("FengChao");
@@ -570,11 +570,11 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：add_field
-    EA::proto::MetaManagerRequest add_field_request;
-    add_field_request.set_op_type(EA::proto::OP_ADD_FIELD);
+    EA::servlet::MetaManagerRequest add_field_request;
+    add_field_request.set_op_type(EA::servlet::OP_ADD_FIELD);
     field = add_field_request.mutable_table_info()->add_fields();
     field->set_field_name("isdel");
-    field->set_mysql_type(EA::proto::BOOL);
+    field->set_mysql_type(EA::servlet::BOOL);
     add_field_request.mutable_table_info()->set_table_name("new_userinfo");
     add_field_request.mutable_table_info()->set_database("FC_Word");
     add_field_request.mutable_table_info()->set_namespace_name("FengChao");
@@ -622,8 +622,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     //drop_field
-    EA::proto::MetaManagerRequest drop_field_request;
-    drop_field_request.set_op_type(EA::proto::OP_DROP_FIELD);
+    EA::servlet::MetaManagerRequest drop_field_request;
+    drop_field_request.set_op_type(EA::servlet::OP_DROP_FIELD);
     field = drop_field_request.mutable_table_info()->add_fields();
     field->set_field_name("user_type");
     drop_field_request.mutable_table_info()->set_table_name("new_userinfo");
@@ -673,8 +673,8 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     //rename_field
-    EA::proto::MetaManagerRequest rename_field_request;
-    rename_field_request.set_op_type(EA::proto::OP_RENAME_FIELD);
+    EA::servlet::MetaManagerRequest rename_field_request;
+    rename_field_request.set_op_type(EA::servlet::OP_RENAME_FIELD);
     field = rename_field_request.mutable_table_info()->add_fields();
     field->set_field_name("username");
     field->set_new_field_name("new_username");
@@ -772,21 +772,21 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(0, query_region_ids.size());
 
     //测试点：删除存在表的database失败
-    EA::proto::MetaManagerRequest request_drop_database;
-    request_drop_database.set_op_type(EA::proto::OP_DROP_DATABASE);
+    EA::servlet::MetaManagerRequest request_drop_database;
+    request_drop_database.set_op_type(EA::servlet::OP_DROP_DATABASE);
     request_drop_database.mutable_database_info()->set_database("FC_Word");
     request_drop_database.mutable_database_info()->set_namespace_name("FengChao");
     _database_manager->drop_database(request_drop_database, NULL);
 
     //测试点：删除存在database的namespace失败
-    EA::proto::MetaManagerRequest request_drop_namespace;
-    request_drop_namespace.set_op_type(EA::proto::OP_DROP_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_drop_namespace;
+    request_drop_namespace.set_op_type(EA::servlet::OP_DROP_NAMESPACE);
     request_drop_namespace.mutable_namespace_info()->set_namespace_name("FengChao");
     _namespace_manager->drop_namespace(request_drop_namespace, NULL);
 
     //测试点：删除层级表，应该更新最顶层表信息
-    EA::proto::MetaManagerRequest request_drop_level_table_fc;
-    request_drop_level_table_fc.set_op_type(EA::proto::OP_DROP_TABLE);
+    EA::servlet::MetaManagerRequest request_drop_level_table_fc;
+    request_drop_level_table_fc.set_op_type(EA::servlet::OP_DROP_TABLE);
     request_drop_level_table_fc.mutable_table_info()->set_table_name("planinfo");
     request_drop_level_table_fc.mutable_table_info()->set_database("FC_Word");
     request_drop_level_table_fc.mutable_table_info()->set_namespace_name("FengChao");
@@ -847,12 +847,12 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     // 测试点: update_charset
-    EA::proto::MetaManagerRequest update_charset_request;
-    update_charset_request.set_op_type(EA::proto::OP_UPDATE_CHARSET);
+    EA::servlet::MetaManagerRequest update_charset_request;
+    update_charset_request.set_op_type(EA::servlet::OP_UPDATE_CHARSET);
     update_charset_request.mutable_table_info()->set_table_name("new_userinfo");
     update_charset_request.mutable_table_info()->set_database("FC_Word");
     update_charset_request.mutable_table_info()->set_namespace_name("FengChao");
-    update_charset_request.mutable_table_info()->set_charset(EA::proto::GBK);
+    update_charset_request.mutable_table_info()->set_charset(EA::servlet::GBK);
     _table_manager->update_charset(update_charset_request, 9, NULL);
     DOCTEST_REQUIRE_EQ(9, _table_manager->_table_info_map[1].schema_pb.version());
     for (auto &table_id: _table_manager->_table_id_map) {
@@ -897,27 +897,27 @@ DOCTEST_TEST_CASE_FIXTURE(TableManagerTest, "test_create_drop_modify") {
     }
 
     //测试点:删除非层次表
-    request_drop_level_table_fc.set_op_type(EA::proto::OP_DROP_TABLE);
+    request_drop_level_table_fc.set_op_type(EA::servlet::OP_DROP_TABLE);
     request_drop_level_table_fc.mutable_table_info()->set_table_name("new_userinfo");
     request_drop_level_table_fc.mutable_table_info()->set_database("FC_Word");
     request_drop_level_table_fc.mutable_table_info()->set_namespace_name("FengChao");
     _table_manager->drop_table(request_drop_level_table_fc, 10, NULL);
     //测试点：删除database
-    request_drop_database.set_op_type(EA::proto::OP_DROP_DATABASE);
+    request_drop_database.set_op_type(EA::servlet::OP_DROP_DATABASE);
     request_drop_database.mutable_database_info()->set_database("FC_Word");
     request_drop_database.mutable_database_info()->set_namespace_name("FengChao");
     _database_manager->drop_database(request_drop_database, NULL);
     _schema_manager->load_snapshot();
 
     //测试点：删除database
-    request_drop_database.set_op_type(EA::proto::OP_DROP_DATABASE);
+    request_drop_database.set_op_type(EA::servlet::OP_DROP_DATABASE);
     request_drop_database.mutable_database_info()->set_database("FC_Segment");
     request_drop_database.mutable_database_info()->set_namespace_name("FengChao");
     _database_manager->drop_database(request_drop_database, NULL);
     _schema_manager->load_snapshot();
 
     //测试点：删除namespace
-    request_drop_namespace.set_op_type(EA::proto::OP_DROP_NAMESPACE);
+    request_drop_namespace.set_op_type(EA::servlet::OP_DROP_NAMESPACE);
     request_drop_namespace.mutable_namespace_info()->set_namespace_name("FengChao");
     _namespace_manager->drop_namespace(request_drop_namespace, NULL);
     _schema_manager->load_snapshot();

@@ -69,23 +69,23 @@ namespace EA::client {
         return *this;
     }
 
-    turbo::Status RouterSender::meta_manager(const EA::proto::MetaManagerRequest &request,
-                                             EA::proto::MetaManagerResponse &response, int retry_times) {
+    turbo::Status RouterSender::meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                             EA::servlet::MetaManagerResponse &response, int retry_times) {
         return send_request("meta_manager", request, response, retry_times);
     }
 
-    turbo::Status RouterSender::meta_manager(const EA::proto::MetaManagerRequest &request,
-                                             EA::proto::MetaManagerResponse &response) {
+    turbo::Status RouterSender::meta_manager(const EA::servlet::MetaManagerRequest &request,
+                                             EA::servlet::MetaManagerResponse &response) {
         return send_request("meta_manager", request, response, _retry_times);
     }
 
-    turbo::Status RouterSender::meta_query(const EA::proto::QueryRequest &request,
-                                           EA::proto::QueryResponse &response, int retry_times) {
+    turbo::Status RouterSender::meta_query(const EA::servlet::QueryRequest &request,
+                                           EA::servlet::QueryResponse &response, int retry_times) {
         return send_request("meta_query", request, response, retry_times);
     }
 
-    turbo::Status RouterSender::meta_query(const EA::proto::QueryRequest &request,
-                                           EA::proto::QueryResponse &response) {
+    turbo::Status RouterSender::meta_query(const EA::servlet::QueryRequest &request,
+                                           EA::servlet::QueryResponse &response) {
         return send_request("meta_query", request, response, _retry_times);
     }
 

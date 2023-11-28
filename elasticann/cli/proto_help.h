@@ -17,29 +17,23 @@
 #ifndef ELASTICANN_CLI_PROTO_HELP_H_
 #define ELASTICANN_CLI_PROTO_HELP_H_
 
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/base/result_status.h"
 
 namespace EA::cli {
 
-    std::string config_type_to_string(EA::proto::ConfigType type);
+    std::string config_type_to_string(EA::servlet::ConfigType type);
 
-    turbo::ResultStatus<EA::proto::ConfigType> string_to_config_type(const std::string &str);
+    turbo::ResultStatus<EA::servlet::ConfigType> string_to_config_type(const std::string &str);
 
-    std::string platform_to_string(EA::proto::Platform type);
+    std::string get_op_string(EA::servlet::OpType type);
 
-    turbo::ResultStatus<EA::proto::Platform> string_to_platform(const std::string &str);
+    std::string get_op_string(EA::servlet::QueryOpType type);
 
-    std::string get_op_string(EA::proto::OpType type);
+    turbo::Status string_to_version(const std::string &str, EA::servlet::Version*v);
 
-    std::string get_op_string(EA::proto::QueryOpType type);
+    std::string version_to_string(const EA::servlet::Version &v);
 
-    turbo::Status string_to_version(const std::string &str, EA::proto::Version*v);
-
-    std::string version_to_string(const EA::proto::Version &v);
-
-    std::string make_plugin_filename(const std::string &name, const EA::proto::Version &version,
-                                     EA::proto::Platform platform);
 
 }  // namespace EA::cli
 

@@ -67,21 +67,21 @@ namespace EA {
         return 0;
     }
 
-    void TSOStateMachine::gen_tso(const proto::TsoRequest *request, proto::TsoResponse *response) {
+    void TSOStateMachine::gen_tso(const EA::servlet::TsoRequest *request, EA::servlet::TsoResponse *response) {
         int64_t count = request->count();
         response->set_op_type(request->op_type());
         if (count == 0) {
-            response->set_errcode(proto::INPUT_PARAM_ERROR);
+            response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
             response->set_errmsg("tso count should be positive");
             return;
         }
         if (!_is_healty) {
             TLOG_ERROR("TSO has wrong status, retry later");
-            response->set_errcode(proto::RETRY_LATER);
+            response->set_errcode(EA::servlet::RETRY_LATER);
             response->set_errmsg("timestamp not ok, retry later");
             return;
         }
-        proto::TsoTimestamp current;
+        EA::servlet::TsoTimestamp current;
         bool need_retry = false;
         for (size_t i = 0; i < 50; i++) {
             {
@@ -109,7 +109,7 @@ namespace EA {
             }
         }
         if (need_retry) {
-            response->set_errcode(proto::EXEC_FAIL);
+            response->set_errcode(EA::servlet::EXEC_FAIL);
             response->set_errmsg("gen tso failed");
             TLOG_ERROR("gen tso failed");
             return;
@@ -118,16 +118,16 @@ namespace EA {
         auto timestamp = response->mutable_start_timestamp();
         timestamp->CopyFrom(current);
         response->set_count(count);
-        response->set_errcode(proto::SUCCESS);
+        response->set_errcode(EA::servlet::SUCCESS);
     }
 
     void TSOStateMachine::process(google::protobuf::RpcController *controller,
-                                  const proto::TsoRequest *request,
-                                  proto::TsoResponse *response,
+                                  const EA::servlet::TsoRequest *request,
+                                  EA::servlet::TsoResponse *response,
                                   google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
-        if (request->op_type() == proto::OP_QUERY_TSO_INFO) {
-            response->set_errcode(proto::SUCCESS);
+        if (request->op_type() == EA::servlet::OP_QUERY_TSO_INFO) {
+            response->set_errcode(EA::servlet::SUCCESS);
             response->set_errmsg("success");
             response->set_op_type(request->op_type());
             response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
@@ -145,7 +145,7 @@ namespace EA {
         const auto &remote_side_tmp = butil::endpoint2str(cntl->remote_side());
         const char *remote_side = remote_side_tmp.c_str();
         if (!_is_leader) {
-            response->set_errcode(proto::NOT_LEADER);
+            response->set_errcode(EA::servlet::NOT_LEADER);
             response->set_errmsg("not leader");
             response->set_op_type(request->op_type());
             response->set_leader(butil::endpoint2str(_node.leader_id().addr).c_str());
@@ -154,7 +154,7 @@ namespace EA {
             return;
         }
         // 获取时间戳在raft外执行
-        if (request->op_type() == proto::OP_GEN_TSO) {
+        if (request->op_type() == EA::servlet::OP_GEN_TSO) {
             gen_tso(request, response);
             return;
         }
@@ -183,12 +183,12 @@ namespace EA {
                 ((TsoClosure *) done)->raft_time_cost = ((TsoClosure *) done)->time_cost.get_time();
             }
             butil::IOBufAsZeroCopyInputStream wrapper(iter.data());
-            proto::TsoRequest request;
+            EA::servlet::TsoRequest request;
             if (!request.ParseFromZeroCopyStream(&wrapper)) {
                 TLOG_ERROR("parse from protobuf fail when on_apply");
                 if (done) {
                     if (((TsoClosure *) done)->response) {
-                        ((TsoClosure *) done)->response->set_errcode(proto::PARSE_FROM_PB_FAIL);
+                        ((TsoClosure *) done)->response->set_errcode(EA::servlet::PARSE_FROM_PB_FAIL);
                         ((TsoClosure *) done)->response->set_errmsg("parse from protobuf fail");
                     }
                     braft::run_closure_in_bthread(done_guard.release());
@@ -199,17 +199,17 @@ namespace EA {
                 ((TsoClosure *) done)->response->set_op_type(request.op_type());
             }
             switch (request.op_type()) {
-                case proto::OP_RESET_TSO: {
+                case EA::servlet::OP_RESET_TSO: {
                     reset_tso(request, done);
                     break;
                 }
-                case proto::OP_UPDATE_TSO: {
+                case EA::servlet::OP_UPDATE_TSO: {
                     update_tso(request, done);
                     break;
                 }
                 default: {
                     TLOG_ERROR("unsupport request type, type:{}", request.op_type());
-                    IF_DONE_SET_RESPONSE(done, proto::UNSUPPORT_REQ_TYPE, "unsupport request type");
+                    IF_DONE_SET_RESPONSE(done, EA::servlet::UNKNOWN_REQ_TYPE, "unsupport request type");
                 }
             }
             if (done) {
@@ -218,11 +218,11 @@ namespace EA {
         }
     }
 
-    void TSOStateMachine::reset_tso(const proto::TsoRequest &request,
+    void TSOStateMachine::reset_tso(const EA::servlet::TsoRequest &request,
                                     braft::Closure *done) {
         if (request.has_current_timestamp() && request.has_save_physical()) {
             int64_t physical = request.save_physical();
-            proto::TsoTimestamp current = request.current_timestamp();
+            EA::servlet::TsoTimestamp current = request.current_timestamp();
             if (physical < _tso_obj.last_save_physical
                 || current.physical() < _tso_obj.current_timestamp.physical()) {
                 if (!request.force()) {
@@ -231,8 +231,8 @@ namespace EA {
                                _tso_obj.current_timestamp.physical(),
                                current.logical(), _tso_obj.current_timestamp.logical());
                     if (done && ((TsoClosure *) done)->response) {
-                        proto::TsoResponse *response = ((TsoClosure *) done)->response;
-                        response->set_errcode(proto::INTERNAL_ERROR);
+                        EA::servlet::TsoResponse *response = ((TsoClosure *) done)->response;
+                        response->set_errcode(EA::servlet::INTERNAL_ERROR);
                         response->set_errmsg("time can't fallback");
                         auto timestamp = response->mutable_start_timestamp();
                         timestamp->CopyFrom(_tso_obj.current_timestamp);
@@ -250,20 +250,20 @@ namespace EA {
                 _tso_obj.current_timestamp.CopyFrom(current);
             }
             if (done && ((TsoClosure *) done)->response) {
-                proto::TsoResponse *response = ((TsoClosure *) done)->response;
+                EA::servlet::TsoResponse *response = ((TsoClosure *) done)->response;
                 response->set_save_physical(physical);
                 auto timestamp = response->mutable_start_timestamp();
                 timestamp->CopyFrom(current);
-                response->set_errcode(proto::SUCCESS);
+                response->set_errcode(EA::servlet::SUCCESS);
                 response->set_errmsg("SUCCESS");
             }
         }
     }
 
-    void TSOStateMachine::update_tso(const proto::TsoRequest &request,
+    void TSOStateMachine::update_tso(const EA::servlet::TsoRequest &request,
                                      braft::Closure *done) {
         int64_t physical = request.save_physical();
-        proto::TsoTimestamp current = request.current_timestamp();
+        EA::servlet::TsoTimestamp current = request.current_timestamp();
         // 不能回退
         if (physical < _tso_obj.last_save_physical
             || current.physical() < _tso_obj.current_timestamp.physical()) {
@@ -271,8 +271,8 @@ namespace EA {
                        physical, _tso_obj.last_save_physical, current.physical(), _tso_obj.current_timestamp.physical(),
                        current.logical(), _tso_obj.current_timestamp.logical());
             if (done && ((TsoClosure *) done)->response) {
-                proto::TsoResponse *response = ((TsoClosure *) done)->response;
-                response->set_errcode(proto::INTERNAL_ERROR);
+                EA::servlet::TsoResponse *response = ((TsoClosure *) done)->response;
+                response->set_errcode(EA::servlet::INTERNAL_ERROR);
                 response->set_errmsg("time can't fallback");
             }
             return;
@@ -284,17 +284,17 @@ namespace EA {
         }
 
         if (done && ((TsoClosure *) done)->response) {
-            proto::TsoResponse *response = ((TsoClosure *) done)->response;
-            response->set_errcode(proto::SUCCESS);
+            EA::servlet::TsoResponse *response = ((TsoClosure *) done)->response;
+            response->set_errcode(EA::servlet::SUCCESS);
             response->set_errmsg("SUCCESS");
         }
     }
 
 
-    int TSOStateMachine::sync_timestamp(const proto::TsoTimestamp &current_timestamp, int64_t save_physical) {
-        proto::TsoRequest request;
-        proto::TsoResponse response;
-        request.set_op_type(proto::OP_UPDATE_TSO);
+    int TSOStateMachine::sync_timestamp(const EA::servlet::TsoTimestamp &current_timestamp, int64_t save_physical) {
+        EA::servlet::TsoRequest request;
+        EA::servlet::TsoResponse response;
+        request.set_op_type(EA::servlet::OP_UPDATE_TSO);
         auto timestamp = request.mutable_current_timestamp();
         timestamp->CopyFrom(current_timestamp);
         request.set_save_physical(save_physical);
@@ -315,7 +315,7 @@ namespace EA {
         task.done = c;
         _node.apply(task);
         sync_cond.wait();
-        if (response.errcode() != proto::SUCCESS) {
+        if (response.errcode() != EA::servlet::SUCCESS) {
             TLOG_ERROR("sync timestamp failed, request:{} response:{}",
                      request.ShortDebugString().c_str(), response.ShortDebugString().c_str());
             return -1;
@@ -354,7 +354,7 @@ namespace EA {
         if (save - next <= tso::update_timestamp_guard_ms) {
             save = next + tso::save_interval_ms;
         }
-        proto::TsoTimestamp tp;
+        EA::servlet::TsoTimestamp tp;
         tp.set_physical(next);
         tp.set_logical(0);
         sync_timestamp(tp, save);
@@ -364,7 +364,7 @@ namespace EA {
         start_check_bns();
         TLOG_WARN("tso leader start");
         int64_t now = tso::clock_realtime_ms();
-        proto::TsoTimestamp current;
+        EA::servlet::TsoTimestamp current;
         current.set_physical(now);
         current.set_logical(0);
         int64_t last_save = _tso_obj.last_save_physical;

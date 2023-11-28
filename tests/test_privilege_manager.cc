@@ -65,15 +65,15 @@ protected:
 // add_logic add_physical add_instance
 DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     //测试点：增加命名空间"FengChao"
-    EA::proto::MetaManagerRequest request_add_namespace_fc;
-    request_add_namespace_fc.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_fc;
+    request_add_namespace_fc.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_fc.mutable_namespace_info()->set_namespace_name("FengChao");
     request_add_namespace_fc.mutable_namespace_info()->set_quota(1024 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_fc, NULL);
 
     //测试点：增加命名空间Feed
-    EA::proto::MetaManagerRequest request_add_namespace_feed;
-    request_add_namespace_feed.set_op_type(EA::proto::OP_CREATE_NAMESPACE);
+    EA::servlet::MetaManagerRequest request_add_namespace_feed;
+    request_add_namespace_feed.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
     request_add_namespace_feed.mutable_namespace_info()->set_namespace_name("Feed");
     request_add_namespace_feed.mutable_namespace_info()->set_quota(2014 * 1024);
     _namespace_manager->create_namespace(request_add_namespace_feed, NULL);
@@ -115,8 +115,8 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     DOCTEST_REQUIRE_EQ(2, namespace_id);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_fc;
-    request_add_database_fc.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_fc;
+    request_add_database_fc.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_fc.mutable_database_info()->set_database("FC_Word");
     request_add_database_fc.mutable_database_info()->set_namespace_name("FengChao");
     request_add_database_fc.mutable_database_info()->set_quota(10 * 1024);
@@ -128,8 +128,8 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     _database_manager->create_database(request_add_database_fc, NULL);
 
     //测试点：创建database
-    EA::proto::MetaManagerRequest request_add_database_feed;
-    request_add_database_feed.set_op_type(EA::proto::OP_CREATE_DATABASE);
+    EA::servlet::MetaManagerRequest request_add_database_feed;
+    request_add_database_feed.set_op_type(EA::servlet::OP_CREATE_DATABASE);
     request_add_database_feed.mutable_database_info()->set_database("FC_Word");
     request_add_database_feed.mutable_database_info()->set_namespace_name("Feed");
     request_add_database_feed.mutable_database_info()->set_quota(8 * 1024);
@@ -197,31 +197,31 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：创建table
-    EA::proto::MetaManagerRequest request_create_table_fc;
-    request_create_table_fc.set_op_type(EA::proto::OP_CREATE_TABLE);
+    EA::servlet::MetaManagerRequest request_create_table_fc;
+    request_create_table_fc.set_op_type(EA::servlet::OP_CREATE_TABLE);
     request_create_table_fc.mutable_table_info()->set_table_name("userinfo");
     request_create_table_fc.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc.mutable_table_info()->set_namespace_name("FengChao");
     request_create_table_fc.mutable_table_info()->add_init_store("127.0.0.1:8010");
-    EA::proto::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
+    EA::servlet::FieldInfo *field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("userid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("username");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("type");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc.mutable_table_info()->add_fields();
     field->set_field_name("user_type");
-    field->set_mysql_type(EA::proto::STRING);
-    EA::proto::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
+    field->set_mysql_type(EA::servlet::STRING);
+    EA::servlet::IndexInfo *index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
-    index->set_index_type(EA::proto::I_PRIMARY);
+    index->set_index_type(EA::servlet::I_PRIMARY);
     index->add_field_names("userid");
     index = request_create_table_fc.mutable_table_info()->add_indexs();
     index->set_index_name("union_index");
-    index->set_index_type(EA::proto::I_KEY);
+    index->set_index_type(EA::servlet::I_KEY);
     index->add_field_names("username");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc, 1, NULL);
@@ -313,8 +313,8 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：创建层次表
-    EA::proto::MetaManagerRequest request_create_table_fc_level;
-    request_create_table_fc_level.set_op_type(EA::proto::OP_CREATE_TABLE);
+    EA::servlet::MetaManagerRequest request_create_table_fc_level;
+    request_create_table_fc_level.set_op_type(EA::servlet::OP_CREATE_TABLE);
     request_create_table_fc_level.mutable_table_info()->set_table_name("planinfo");
     request_create_table_fc_level.mutable_table_info()->set_database("FC_Word");
     request_create_table_fc_level.mutable_table_info()->set_namespace_name("FengChao");
@@ -322,24 +322,24 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     request_create_table_fc_level.mutable_table_info()->set_upper_table_name("userinfo");
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("userid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("planid");
-    field->set_mysql_type(EA::proto::INT64);
+    field->set_mysql_type(EA::servlet::INT64);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("planname");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     field = request_create_table_fc_level.mutable_table_info()->add_fields();
     field->set_field_name("type");
-    field->set_mysql_type(EA::proto::STRING);
+    field->set_mysql_type(EA::servlet::STRING);
     index = request_create_table_fc_level.mutable_table_info()->add_indexs();
     index->set_index_name("primary");
-    index->set_index_type(EA::proto::I_PRIMARY);
+    index->set_index_type(EA::servlet::I_PRIMARY);
     index->add_field_names("userid");
     index->add_field_names("planid");
     index = request_create_table_fc_level.mutable_table_info()->add_indexs();
     index->set_index_name("union_index");
-    index->set_index_type(EA::proto::I_KEY);
+    index->set_index_type(EA::servlet::I_KEY);
     index->add_field_names("planname");
     index->add_field_names("type");
     _table_manager->create_table(request_create_table_fc_level, 2, NULL);
@@ -435,18 +435,18 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     }
 
     //测试点：新增用户
-    EA::proto::MetaManagerRequest create_user_request;
-    create_user_request.set_op_type(EA::proto::OP_CREATE_USER);
+    EA::servlet::MetaManagerRequest create_user_request;
+    create_user_request.set_op_type(EA::servlet::OP_CREATE_USER);
     create_user_request.mutable_user_privilege()->set_username("thunder");
     create_user_request.mutable_user_privilege()->set_namespace_name("FengChao");
     create_user_request.mutable_user_privilege()->set_password("jeeI0o");
     auto table_privilege = create_user_request.mutable_user_privilege()->add_privilege_table();
     table_privilege->set_database("FC_Word");
     table_privilege->set_table_name("userinfo");
-    table_privilege->set_table_rw(EA::proto::WRITE);
+    table_privilege->set_table_rw(EA::servlet::WRITE);
     auto database_priviliege = create_user_request.mutable_user_privilege()->add_privilege_database();
     database_priviliege->set_database("FC_Segment");
-    database_priviliege->set_database_rw(EA::proto::READ);
+    database_priviliege->set_database_rw(EA::servlet::READ);
     _privilege_manager->create_user(create_user_request, NULL);
     DOCTEST_REQUIRE_EQ(1, _privilege_manager->_user_privilege.size());
     for (auto &user: _privilege_manager->_user_privilege) {
@@ -460,9 +460,9 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     //test_point: test_query_priviege
-    EA::proto::QueryRequest query_request;
-    EA::proto::QueryResponse response;
-    query_request.set_op_type(EA::proto::QUERY_USERPRIVILEG);
+    EA::servlet::QueryRequest query_request;
+    EA::servlet::QueryResponse response;
+    query_request.set_op_type(EA::servlet::QUERY_USERPRIVILEG);
     _query_privilege_manager->get_user_info(&query_request, &response);
     TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
@@ -472,7 +472,7 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
     response.clear_user_privilege();
-    query_request.set_op_type(EA::proto::QUERY_PRIVILEGE_FLATTEN);
+    query_request.set_op_type(EA::servlet::QUERY_PRIVILEGE_FLATTEN);
     _query_privilege_manager->get_flatten_privilege(&query_request, &response);
     TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
@@ -482,19 +482,19 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     TLOG_WARN("privilege info: {}", response.DebugString().c_str());
 
     //为用户添加权限
-    EA::proto::MetaManagerRequest add_privilege_request;
-    add_privilege_request.set_op_type(EA::proto::OP_ADD_PRIVILEGE);
+    EA::servlet::MetaManagerRequest add_privilege_request;
+    add_privilege_request.set_op_type(EA::servlet::OP_ADD_PRIVILEGE);
     add_privilege_request.mutable_user_privilege()->set_username("thunder");
     add_privilege_request.mutable_user_privilege()->set_namespace_name("FengChao");
     table_privilege = add_privilege_request.mutable_user_privilege()->add_privilege_table();
     table_privilege->set_database("FC_Word");
     table_privilege->set_table_name("planinfo");
-    table_privilege->set_table_rw(EA::proto::WRITE);
+    table_privilege->set_table_rw(EA::servlet::WRITE);
 
     //权限升级，读变成写
     database_priviliege = add_privilege_request.mutable_user_privilege()->add_privilege_database();
     database_priviliege->set_database("FC_Segment");
-    database_priviliege->set_database_rw(EA::proto::WRITE);
+    database_priviliege->set_database_rw(EA::servlet::WRITE);
 
     add_privilege_request.mutable_user_privilege()->add_bns("bns");
     add_privilege_request.mutable_user_privilege()->add_bns("smartbns");
@@ -514,18 +514,18 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
     }
 
     //为用户删除权限
-    EA::proto::MetaManagerRequest drop_privilege_request;
-    drop_privilege_request.set_op_type(EA::proto::OP_DROP_PRIVILEGE);
+    EA::servlet::MetaManagerRequest drop_privilege_request;
+    drop_privilege_request.set_op_type(EA::servlet::OP_DROP_PRIVILEGE);
     drop_privilege_request.mutable_user_privilege()->set_username("thunder");
     drop_privilege_request.mutable_user_privilege()->set_namespace_name("FengChao");
     table_privilege = drop_privilege_request.mutable_user_privilege()->add_privilege_table();
     table_privilege->set_database("FC_Word");
     table_privilege->set_table_name("planinfo");
-    table_privilege->set_table_rw(EA::proto::WRITE);
+    table_privilege->set_table_rw(EA::servlet::WRITE);
     //权限降级，写变成读
     database_priviliege = drop_privilege_request.mutable_user_privilege()->add_privilege_database();
     database_priviliege->set_database("FC_Segment");
-    database_priviliege->set_database_rw(EA::proto::READ);
+    database_priviliege->set_database_rw(EA::servlet::READ);
     drop_privilege_request.mutable_user_privilege()->add_bns("bns");
     drop_privilege_request.mutable_user_privilege()->add_ip("127.0.0.2");
     _privilege_manager->drop_privilege(drop_privilege_request, NULL);
@@ -541,8 +541,8 @@ DOCTEST_TEST_CASE_FIXTURE(PrivilegeManagerTest, "test_create_drop_modify") {
                    user.first.c_str(), user.second.ShortDebugString().c_str());
     }
     //删除用户
-    EA::proto::MetaManagerRequest drop_user_request;
-    drop_user_request.set_op_type(EA::proto::OP_DROP_USER);
+    EA::servlet::MetaManagerRequest drop_user_request;
+    drop_user_request.set_op_type(EA::servlet::OP_DROP_USER);
     drop_user_request.mutable_user_privilege()->set_username("thunder");
     drop_user_request.mutable_user_privilege()->set_namespace_name("FengChao");
     _privilege_manager->drop_user(drop_user_request, NULL);

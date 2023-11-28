@@ -16,7 +16,7 @@
 #define ELASTICANN_CLI_ZONE_CMD_H_
 
 #include "turbo/flags/flags.h"
-#include "eaproto/router/router.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "turbo/format/table.h"
 #include "turbo/base/status.h"
 #include <string>
@@ -53,21 +53,21 @@ namespace EA::cli {
     void run_zone_info_cmd();
 
     [[nodiscard]] turbo::Status
-    make_zone_create(EA::proto::MetaManagerRequest *req);
+    make_zone_create(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_zone_remove(EA::proto::MetaManagerRequest *req);
+    make_zone_remove(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_zone_modify(EA::proto::MetaManagerRequest *req);
+    make_zone_modify(EA::servlet::MetaManagerRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_zone_list(EA::proto::QueryRequest *req);
+    make_zone_list(EA::servlet::QueryRequest *req);
 
     [[nodiscard]] turbo::Status
-    make_zone_info(EA::proto::QueryRequest *req);
+    make_zone_info(EA::servlet::QueryRequest *req);
 
-    turbo::Table show_meta_query_zone_response(const EA::proto::QueryResponse &res);
+    turbo::Table show_meta_query_zone_response(const EA::servlet::QueryResponse &res);
 
 }  // namespace EA::cli
 

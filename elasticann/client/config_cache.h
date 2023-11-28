@@ -21,7 +21,7 @@
 #include <mutex>
 #include "turbo/base/status.h"
 #include "turbo/module/module_version.h"
-#include "eaproto/meta/meta.struct.pb.h"
+#include "elasticann/proto/servlet/servlet.struct.pb.h"
 #include "elasticann/base/bthread.h"
 
 namespace EA::client {
@@ -41,7 +41,7 @@ namespace EA::client {
         ///
         /// \param config
         /// \return
-        turbo::Status add_config(const EA::proto::ConfigInfo &config);
+        turbo::Status add_config(const EA::servlet::ConfigInfo &config);
 
         ///
         /// \brief get extract
@@ -50,14 +50,14 @@ namespace EA::client {
         /// \param config
         /// \return
         turbo::Status
-        get_config(const std::string &name, const turbo::ModuleVersion &version, EA::proto::ConfigInfo &config);
+        get_config(const std::string &name, const turbo::ModuleVersion &version, EA::servlet::ConfigInfo &config);
 
         ///
         /// \brief get latest version of config
         /// \param name
         /// \param config
         /// \return
-        turbo::Status get_config(const std::string &name, EA::proto::ConfigInfo &config);
+        turbo::Status get_config(const std::string &name, EA::servlet::ConfigInfo &config);
 
         ///
         /// \param name
@@ -102,26 +102,26 @@ namespace EA::client {
         /// \param dir
         /// \param config
         /// \return
-        turbo::Status write_config_file(const std::string &dir, const EA::proto::ConfigInfo &config);
+        turbo::Status write_config_file(const std::string &dir, const EA::servlet::ConfigInfo &config);
 
         ///
         /// \param dir
         /// \param config
         /// \return
-        turbo::Status remove_config_file(const std::string &dir, const EA::proto::ConfigInfo &config);
+        turbo::Status remove_config_file(const std::string &dir, const EA::servlet::ConfigInfo &config);
 
         ///
         /// \param dir
         /// \param config
         /// \return
-        std::string make_cache_file_path(const std::string &dir, const EA::proto::ConfigInfo &config);
+        std::string make_cache_file_path(const std::string &dir, const EA::servlet::ConfigInfo &config);
 
         ///
         /// \param config
-        void do_add_config(const EA::proto::ConfigInfo &config);
+        void do_add_config(const EA::servlet::ConfigInfo &config);
 
     private:
-        typedef turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::proto::ConfigInfo>> CacheType;
+        typedef turbo::flat_hash_map<std::string, std::map<turbo::ModuleVersion, EA::servlet::ConfigInfo>> CacheType;
         std::mutex _cache_mutex;
         CacheType _cache_map;
         std::string _cache_dir;

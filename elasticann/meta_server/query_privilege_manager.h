@@ -28,22 +28,16 @@ namespace EA {
 
         ~QueryPrivilegeManager() {}
 
-        void get_user_info(const proto::QueryRequest *request,
-                           proto::QueryResponse *response);
+        void get_user_info(const EA::servlet::QueryRequest *request,
+                           EA::servlet::QueryResponse *response);
 
-        void get_flatten_privilege(const proto::QueryRequest *request, proto::QueryResponse *response);
+        void get_flatten_servlet_privilege(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
-        void get_flatten_servlet_privilege(const proto::QueryRequest *request, proto::QueryResponse *response);
-
-        void process_console_heartbeat(const proto::ConsoleHeartBeatRequest *request,
-                                       proto::ConsoleHeartBeatResponse *response);
 
     private:
         QueryPrivilegeManager() {}
 
-        void construct_query_response_for_privilege(const proto::UserPrivilege &user_privilege,
-                                                    std::map<std::string, std::multimap<std::string, proto::QueryUserPrivilege>> &namespace_privileges);
-        void construct_query_response_for_servlet_privilege(const proto::UserPrivilege &user_privilege,
-                                                    std::map<std::string, std::multimap<std::string, proto::QueryUserServletPrivilege>> &namespace_privileges);
+        void construct_query_response_for_servlet_privilege(const EA::servlet::UserPrivilege &user_privilege,
+                                                    std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserServletPrivilege>> &namespace_privileges);
     };
 }  // namespace EA

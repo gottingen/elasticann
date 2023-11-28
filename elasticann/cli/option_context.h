@@ -30,7 +30,7 @@ namespace EA::cli {
         // for global
         std::string router_server;
         std::string meta_server;
-        std::string meta_group;
+        std::string meta_leader;
         std::string load_balancer;
         int32_t  timeout_ms{2000};
         int32_t  connect_timeout_ms{100};

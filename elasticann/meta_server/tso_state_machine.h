@@ -42,7 +42,7 @@ namespace EA {
     };
 
     struct TsoObj {
-        proto::TsoTimestamp current_timestamp;
+        EA::servlet::TsoTimestamp current_timestamp;
         int64_t last_save_physical;
     };
 
@@ -65,19 +65,19 @@ namespace EA {
         virtual void on_apply(braft::Iterator &iter);
 
         void process(google::protobuf::RpcController *controller,
-                     const proto::TsoRequest *request,
-                     proto::TsoResponse *response,
+                     const EA::servlet::TsoRequest *request,
+                     EA::servlet::TsoResponse *response,
                      google::protobuf::Closure *done);
 
-        void gen_tso(const proto::TsoRequest *request, proto::TsoResponse *response);
+        void gen_tso(const EA::servlet::TsoRequest *request, EA::servlet::TsoResponse *response);
 
-        void reset_tso(const proto::TsoRequest &request, braft::Closure *done);
+        void reset_tso(const EA::servlet::TsoRequest &request, braft::Closure *done);
 
-        void update_tso(const proto::TsoRequest &request, braft::Closure *done);
+        void update_tso(const EA::servlet::TsoRequest &request, braft::Closure *done);
 
         int load_tso(const std::string &tso_file);
 
-        int sync_timestamp(const proto::TsoTimestamp &current_timestamp, int64_t save_physical);
+        int sync_timestamp(const EA::servlet::TsoTimestamp &current_timestamp, int64_t save_physical);
 
         void update_timestamp();
 

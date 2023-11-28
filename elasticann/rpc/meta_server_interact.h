@@ -21,7 +21,7 @@
 #include <brpc/server.h>
 #include <brpc/controller.h>
 #include <google/protobuf/descriptor.h>
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/flags/meta.h"
 #include "elasticann/base/tlog.h"
 
@@ -65,7 +65,7 @@ namespace EA {
         int send_request(const std::string &service_name,
                          const Request &request,
                          Response &response) {
-            const ::google::protobuf::ServiceDescriptor *service_desc = proto::MetaService::descriptor();
+            const ::google::protobuf::ServiceDescriptor *service_desc = EA::servlet::MetaService::descriptor();
             const ::google::protobuf::MethodDescriptor *method =
                     service_desc->FindMethodByName(service_name);
             if (method == nullptr) {
@@ -100,7 +100,7 @@ namespace EA {
                     short_channel.CallMethod(method, &cntl, &request, &response, nullptr);
                 } else {
                     _bns_channel.CallMethod(method, &cntl, &request, &response, nullptr);
-                    if (!cntl.Failed() && response.errcode() == proto::SUCCESS) {
+                    if (!cntl.Failed() && response.errcode() == EA::servlet::SUCCESS) {
                         _set_leader_address(cntl.remote_side());
                         TLOG_INFO("connect with meta server success by bns name, leader:{}",
                                   butil::endpoint2str(cntl.remote_side()).c_str());
@@ -116,13 +116,13 @@ namespace EA {
                     ++retry_time;
                     continue;
                 }
-                if (response.errcode() == proto::HAVE_NOT_INIT) {
+                if (response.errcode() == EA::servlet::HAVE_NOT_INIT) {
                     TLOG_WARN("connect with server fail. HAVE_NOT_INIT  log_id:{}", cntl.log_id());
                     _set_leader_address(butil::EndPoint());
                     ++retry_time;
                     continue;
                 }
-                if (response.errcode() == proto::NOT_LEADER) {
+                if (response.errcode() == EA::servlet::NOT_LEADER) {
                     TLOG_WARN("connect with meta server:{} fail. not leader, redirect to :{}, log_id:{}",
                               butil::endpoint2str(cntl.remote_side()).c_str(),
                               response.leader(), cntl.log_id());
@@ -132,7 +132,7 @@ namespace EA {
                     ++retry_time;
                     continue;
                 }
-                if (response.errcode() != proto::SUCCESS) {
+                if (response.errcode() != EA::servlet::SUCCESS) {
                     TLOG_WARN("send meta server fail, log_id:{}, response:{}", cntl.log_id(),
                               response.ShortDebugString());
                     return -1;

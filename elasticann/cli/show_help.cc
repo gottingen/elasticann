@@ -19,6 +19,7 @@
 #include "turbo/times/civil_time.h"
 #include "elasticann/cli/option_context.h"
 #include "turbo/times/time.h"
+#include "elasticann/client/meta_sender.h"
 
 namespace EA::cli {
     using Row_t = turbo::Table::Row_t;
@@ -30,7 +31,7 @@ namespace EA::cli {
         std::cout << result_table << std::endl;
     }
 
-    turbo::Table ShowHelper::show_response_impl(const std::string_view &server, EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
+    turbo::Table ShowHelper::show_response_impl(const std::string_view &server, EA::servlet::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
         turbo::Table response_result;
         std::string server_role;
         std::string server_addr;
@@ -39,11 +40,11 @@ namespace EA::cli {
             server_role = "router";
             server_addr = opt->router_server;
         } else {
-            server_role = "meta";
-            server_addr = opt->meta_server;
+            server_role = "meta leader";
+            server_addr = opt->meta_leader;
         }
         response_result.add_row(Row_t{"status", server_role, "op code", "op string", "error code", "error message"});
-        if (code != EA::proto::SUCCESS) {
+        if (code != EA::servlet::SUCCESS) {
             response_result.add_row(
                     Row_t{"fail", server_addr, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
         } else {
@@ -53,7 +54,7 @@ namespace EA::cli {
         auto last = response_result.size() - 1;
         response_result[last][0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold});
 
-        if (code == EA::proto::SUCCESS) {
+        if (code == EA::servlet::SUCCESS) {
             response_result[last][1].format().font_color(turbo::Color::yellow);
         } else {
             response_result[last][1].format().font_color(turbo::Color::red);
@@ -61,7 +62,7 @@ namespace EA::cli {
         return response_result;
     }
 
-    turbo::Table ShowHelper::show_response_impl(EA::proto::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
+    turbo::Table ShowHelper::show_response_impl(EA::servlet::ErrCode code, int qt, const std::string &qts, const std::string &msg) {
         turbo::Table response_result;
         std::string server_role;
         std::string server_addr;
@@ -70,11 +71,11 @@ namespace EA::cli {
             server_role = "router";
             server_addr = opt->router_server;
         } else {
-            server_role = "meta";
-            server_addr = opt->meta_server;
+            server_role = "meta leader";
+            server_addr = EA::client::MetaSender::get_instance()->get_leader();
         }
         response_result.add_row(Row_t{"status", server_role, "op code", "op string", "error code", "error message"});
-        if (code != EA::proto::SUCCESS) {
+        if (code != EA::servlet::SUCCESS) {
             response_result.add_row(
                     Row_t{"fail", server_addr, turbo::Format(qt),qts,turbo::Format("{}", static_cast<int>(code)), msg});
         } else {
@@ -84,7 +85,7 @@ namespace EA::cli {
         auto last = response_result.size() - 1;
         response_result[last][0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold});
 
-        if (code == EA::proto::SUCCESS) {
+        if (code == EA::servlet::SUCCESS) {
             response_result[last][1].format().font_color(turbo::Color::yellow);
         } else {
             response_result[last][1].format().font_color(turbo::Color::red);
@@ -121,7 +122,7 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::MetaManagerRequest &req) {
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::servlet::MetaManagerRequest &req) {
         turbo::Table result;
         result.add_row(Row_t{"status", "op code", "op string", "error message"});
         result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
@@ -152,7 +153,7 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::QueryRequest &req) {
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::servlet::QueryRequest &req) {
         turbo::Table result;
         result.add_row(Row_t{"status", "op code", "op string", "error message"});
         result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
@@ -185,73 +186,6 @@ namespace EA::cli {
         return result;
     }
 
-    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::OpsServiceRequest &req) {
-        turbo::Table result;
-        result.add_row(Row_t{"status", "op code", "op string", "error message"});
-        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
-                turbo::FontAlign::center);
-        if (!req.has_op_type()) {
-            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
-            auto last = result.size() - 1;
-            result[last].format().font_color(turbo::Color::red).font_style(
-                    {turbo::FontStyle::bold}).font_align(
-                    turbo::FontAlign::center);
-        } else if (!s.ok()) {
-            result.add_row(
-                    Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())),
-                          get_op_string(req.op_type()),
-                          s.message()});
-            auto last = result.size() - 1;
-            result[last][0].format().font_color(turbo::Color::red).font_style(
-                    {turbo::FontStyle::bold}).font_align(
-                    turbo::FontAlign::center);
-        } else {
-            result.add_row(
-                    Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())),
-                          get_op_string(req.op_type()),
-                          s.message()});
-            auto last = result.size() - 1;
-            result[last][0].format().font_color(turbo::Color::green).font_style(
-                    {turbo::FontStyle::bold}).font_align(
-                    turbo::FontAlign::center);
-        }
-        return result;
-
-    }
-
-    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::proto::QueryOpsServiceRequest &req) {
-        turbo::Table result;
-        result.add_row(Row_t{"status", "op code", "op string", "error message"});
-        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
-                turbo::FontAlign::center);
-        if (!req.has_op_type()) {
-            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
-            auto last = result.size() - 1;
-            result[last].format().font_color(turbo::Color::red).font_style(
-                    {turbo::FontStyle::bold}).font_align(
-                    turbo::FontAlign::center);
-        } else if (!s.ok()) {
-            result.add_row(
-                    Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())),
-                          get_op_string(req.op_type()),
-                          s.message()});
-            auto last = result.size() - 1;
-            result[last][0].format().font_color(turbo::Color::red).font_style(
-                    {turbo::FontStyle::bold}).font_align(
-                    turbo::FontAlign::center);
-        } else {
-            result.add_row(
-                    Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())),
-                          get_op_string(req.op_type()),
-                          s.message()});
-            auto last = result.size() - 1;
-            result[last][0].format().font_color(turbo::Color::green).font_style(
-                    {turbo::FontStyle::bold}).font_align(
-                    turbo::FontAlign::center);
-        }
-        return result;
-
-    }
     ScopeShower::ScopeShower() {
         result_table.add_row({"phase","status"});
         result_table[0].format().font_color(turbo::Color::blue);

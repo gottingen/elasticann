@@ -25,9 +25,9 @@
 #include <ctime>
 #include "elasticann/common/expr_value.h"
 #include "elasticann/expr/fn_manager.h"
-#include "eaproto/meta/expr.pb.h"
+#include "elasticann/proto/servlet/expr.pb.h"
 #include "elasticann/sqlparser/parser.h"
-#include "eaproto/meta/meta.interface.pb.h"
+#include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/common/cmsketch.h"
 #include "elasticann/common/histogram.h"
 #include "elasticann/common/tuple_record.h"
@@ -88,13 +88,13 @@ DOCTEST_TEST_CASE("common cmsketch") {
         EA::CMsketchColumn column(FLAGS_test_depth,FLAGS_test_width,1);
         for (int i = 0; i < size; i++) {
             EA::ExprValue value;
-            value.type = EA::proto::INT32;
+            value.type = EA::servlet::INT32;
             value._u.int32_val = i;
             column.set_value(value.hash(), 1);
         }
 
         EA::ExprValue value_o;
-        value_o.type = EA::proto::INT32;
+        value_o.type = EA::servlet::INT32;
         value_o._u.int32_val = FLAGS_test_value;
         int cnt = column.get_value(value_o.hash());
         TLOG_WARN("0 size:{}, depth:{}, width:{}, get_value:{}, cnt:{}", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
@@ -127,13 +127,13 @@ DOCTEST_TEST_CASE("common cmsketch") {
     //     EA::CMsketchColumn column(FLAGS_test_depth,FLAGS_test_width,1);
     //     for (int i = 0; i < size; i++) {
     //         EA::ExprValue value;
-    //         value.type = EA::proto::INT32;
+    //         value.type = EA::servlet::INT32;
     //         value._u.int32_val = i;
     //         column.set_value1(value.hash(), 1);
     //     }
 
     //     EA::ExprValue value_o;
-    //     value_o.type = EA::proto::INT32;
+    //     value_o.type = EA::servlet::INT32;
     //     value_o._u.int32_val = FLAGS_test_value;
     //     int cnt = column.get_value1(value_o.hash());
     //     TLOG_WARN("1 size:{}, depth:{}, width:{}, get_value:{}, cnt:{}", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
@@ -143,22 +143,22 @@ DOCTEST_TEST_CASE("common cmsketch") {
     //     EA::CMsketchColumn column(FLAGS_test_depth,FLAGS_test_width,1);
     //     for (int i = 0; i < size; i++) {
     //         EA::ExprValue value;
-    //         value.type = EA::proto::INT32;
+    //         value.type = EA::servlet::INT32;
     //         value._u.int32_val = i;
     //         column.set_value2(value.hash(), 1);
     //     }
 
     //     EA::ExprValue value_o;
-    //     value_o.type = EA::proto::INT32;
+    //     value_o.type = EA::servlet::INT32;
     //     value_o._u.int32_val = FLAGS_test_value;
     //     int cnt = column.get_value2(value_o.hash());
     //     TLOG_WARN("2 size:{}, depth:{}, width:{}, get_value:{}, cnt:{}", size,column.get_depth(), column.get_width(), value_o._u.int32_val, cnt);
     // }
 
     {
-        EA::Histogram h(EA::proto::INT32, 1, 2, 0);
+        EA::Histogram h(EA::servlet::INT32, 1, 2, 0);
         EA::ExprValue value;
-        value.type = EA::proto::INT32;
+        value.type = EA::servlet::INT32;
         value._u.int32_val = 1;
         EA::TEST_insert_value(value, false, h.get_bucket_mapping());
         value._u.int32_val = 1;
@@ -203,9 +203,9 @@ DOCTEST_TEST_CASE("common cmsketch") {
 
     }
     {
-        EA::Histogram h(EA::proto::INT64, 1, 2, 0);
+        EA::Histogram h(EA::servlet::INT64, 1, 2, 0);
         EA::ExprValue value;
-        value.type = EA::proto::INT64;
+        value.type = EA::servlet::INT64;
         value._u.int64_val = 100;
         EA::TEST_insert_value(value, false, h.get_bucket_mapping());
         value._u.int64_val = 100;
@@ -254,9 +254,9 @@ DOCTEST_TEST_CASE("common cmsketch") {
         DOCTEST_CHECK_EQ(ret, 1);
     }
     {
-        EA::Histogram h(EA::proto::UINT32, 1, 2, 0);
+        EA::Histogram h(EA::servlet::UINT32, 1, 2, 0);
         EA::ExprValue value;
-        value.type = EA::proto::UINT32;
+        value.type = EA::servlet::UINT32;
         value._u.uint32_val = 1;
         EA::TEST_insert_value(value, false, h.get_bucket_mapping());
         value._u.uint32_val = 1;
@@ -302,9 +302,9 @@ DOCTEST_TEST_CASE("common cmsketch") {
 
     }
     {
-        EA::Histogram h(EA::proto::UINT64, 1, 2, 0);
+        EA::Histogram h(EA::servlet::UINT64, 1, 2, 0);
         EA::ExprValue value;
-        value.type = EA::proto::UINT64;
+        value.type = EA::servlet::UINT64;
         value._u.uint64_val = 100;
         EA::TEST_insert_value(value, false, h.get_bucket_mapping());
         value._u.uint64_val = 100;
@@ -353,9 +353,9 @@ DOCTEST_TEST_CASE("common cmsketch") {
         DOCTEST_CHECK_EQ(ret, 1);
     }
     {
-        EA::Histogram h(EA::proto::STRING, 1, 2, 0);
+        EA::Histogram h(EA::servlet::STRING, 1, 2, 0);
         EA::ExprValue value;
-        value.type = EA::proto::STRING;
+        value.type = EA::servlet::STRING;
         value.str_val = "a";
         EA::TEST_insert_value(value, false, h.get_bucket_mapping());
         value.str_val = "a";
@@ -396,9 +396,9 @@ DOCTEST_TEST_CASE("common cmsketch") {
     }
 
     {
-        EA::Histogram h(EA::proto::INT32, 1, 2, 0);
+        EA::Histogram h(EA::servlet::INT32, 1, 2, 0);
         EA::ExprValue value;
-        value.type = EA::proto::INT32;
+        value.type = EA::servlet::INT32;
         for (int i = 1; i < 101; i++ ) {
             value._u.int32_val = i;
             EA::TEST_insert_value(value, false, h.get_bucket_mapping());
@@ -414,7 +414,7 @@ DOCTEST_TEST_CASE("common cmsketch") {
 
         EA::ExprValue lower_value;
         EA::ExprValue upper_value;
-        upper_value.type = EA::proto::INT32;
+        upper_value.type = EA::servlet::INT32;
         upper_value._u.int32_val = 0;
         int ret = h.get_count(lower_value, upper_value);
         DOCTEST_CHECK_EQ(ret, -2);
@@ -423,9 +423,9 @@ DOCTEST_TEST_CASE("common cmsketch") {
         double diff = r - 100.0 / 201;
         DOCTEST_CHECK_EQ(true, diff < 1e-6);
 
-        lower_value.type = EA::proto::INT32;
+        lower_value.type = EA::servlet::INT32;
         lower_value._u.int32_val = 400;
-        upper_value.type = EA::proto::NULL_TYPE;
+        upper_value.type = EA::servlet::NULL_TYPE;
         ret = h.get_count(lower_value, upper_value);
         DOCTEST_CHECK_EQ(ret, -2);
         r = h.get_histogram_ratio_dummy(lower_value, upper_value, 201);
