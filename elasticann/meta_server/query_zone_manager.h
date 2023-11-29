@@ -18,7 +18,7 @@
 
 #include "elasticann/meta_server/zone_manager.h"
 
-namespace EA {
+namespace EA::servlet {
     class QueryZoneManager {
     public:
         ~QueryZoneManager() {}
@@ -33,4 +33,4 @@ namespace EA {
     private:
         QueryZoneManager() {}
     }; //class
-} // namespace EA
+} // namespace EA::servlet

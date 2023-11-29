@@ -24,7 +24,7 @@
 #include "braft/raft.h"
 #include "bthread/mutex.h"
 
-namespace EA {
+namespace EA::servlet {
     class NamespaceManager {
     public:
         friend class QueryNamespaceManager;
@@ -65,6 +65,8 @@ namespace EA {
         /// \return
         int load_namespace_snapshot(const std::string &value);
 
+        ///
+        /// \param max_namespace_id
         void set_max_namespace_id(int64_t max_namespace_id);
 
         ///
@@ -74,28 +76,16 @@ namespace EA {
         int64_t get_max_namespace_id();
 
         ///
-        /// \brief add a database under a namespace
+        /// \brief add a zone under a namespace
         /// \param namespace_id
-        /// \param database_id
-        void add_database_id(int64_t namespace_id, int64_t database_id);
+        /// \param zone_id
+        void add_zone_id(int64_t namespace_id, int64_t zone_id);
 
         ///
-        /// \brief remove a database under a namespace
+        /// \brief remove a zone under a namespace
         /// \param namespace_id
-        /// \param database_id
-        void delete_database_id(int64_t namespace_id, int64_t database_id);
-
-        ///
-        /// \brief add a database under a namespace
-        /// \param namespace_id
-        /// \param database_id
-        void add_zone_id(int64_t namespace_id, int64_t database_id);
-
-        ///
-        /// \brief remove a database under a namespace
-        /// \param namespace_id
-        /// \param database_id
-        void delete_zone_id(int64_t namespace_id, int64_t database_id);
+        /// \param zone_id
+        void delete_zone_id(int64_t namespace_id, int64_t zone_id);
 
         ///
         /// \brief get namespace id by namespace name, and the name
@@ -150,7 +140,6 @@ namespace EA {
         std::unordered_map<std::string, int64_t> _namespace_id_map;
         // namespace层级，id与info的映射关系
         std::unordered_map<int64_t, EA::servlet::NameSpaceInfo> _namespace_info_map;
-        std::unordered_map<int64_t, std::set<int64_t>> _database_ids; //only in memory, not in rocksdb
         std::unordered_map<int64_t, std::set<int64_t>> _zone_ids; //only in memory, not in rocksdb
     };
 
@@ -179,21 +168,9 @@ namespace EA {
         int64_t namespace_id = _namespace_id_map[namespace_name];
         _namespace_id_map.erase(namespace_name);
         _namespace_info_map.erase(namespace_id);
-        _database_ids.erase(namespace_id);
         _zone_ids.erase(namespace_id);
     }
 
-    inline void NamespaceManager::add_database_id(int64_t namespace_id, int64_t database_id) {
-        BAIDU_SCOPED_LOCK(_namespace_mutex);
-        _database_ids[namespace_id].insert(database_id);
-    }
-
-    inline void NamespaceManager::delete_database_id(int64_t namespace_id, int64_t database_id) {
-        BAIDU_SCOPED_LOCK(_namespace_mutex);
-        if (_database_ids.find(namespace_id) != _database_ids.end()) {
-            _database_ids[namespace_id].erase(database_id);
-        }
-    }
 
     inline void NamespaceManager::add_zone_id(int64_t namespace_id, int64_t zone_id) {
         BAIDU_SCOPED_LOCK(_namespace_mutex);
@@ -235,7 +212,6 @@ namespace EA {
     inline void NamespaceManager::clear() {
         _namespace_id_map.clear();
         _namespace_info_map.clear();
-        _database_ids.clear();
         _zone_ids.clear();
     }
     inline NamespaceManager::NamespaceManager() : _max_namespace_id(0) {
@@ -256,4 +232,4 @@ namespace EA {
         return max_namespace_id_key;
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

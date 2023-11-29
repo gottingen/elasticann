@@ -18,7 +18,7 @@
 #include "turbo/strings/str_trim.h"
 
 
-namespace EA {
+namespace EA::servlet {
     void QueryPrivilegeManager::get_user_info(const EA::servlet::QueryRequest *request,
                                               EA::servlet::QueryResponse *response) {
         PrivilegeManager *manager = PrivilegeManager::get_instance();
@@ -48,7 +48,7 @@ namespace EA {
         turbo::Trim(&user_name);
         std::string namespace_name = request->namespace_name();
         turbo::Trim(&namespace_name);
-        std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserServletPrivilege>> namespace_privileges;
+        std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserPrivilege>> namespace_privileges;
         if (user_name.size() == 0 && namespace_name.size() == 0) {
             for (auto &privilege_info: manager->_user_privilege) {
                 construct_query_response_for_servlet_privilege(privilege_info.second, namespace_privileges);
@@ -68,7 +68,7 @@ namespace EA {
         }
         for (auto &namespace_privilege: namespace_privileges) {
             for (auto &user_privilege: namespace_privilege.second) {
-                EA::servlet::QueryUserServletPrivilege *privilege_info = response->add_flatten_servlet_privileges();
+                EA::servlet::QueryUserPrivilege *privilege_info = response->add_flatten_privileges();
                 *privilege_info = user_privilege.second;
             }
         }
@@ -76,35 +76,35 @@ namespace EA {
 
 
     void QueryPrivilegeManager::construct_query_response_for_servlet_privilege(const EA::servlet::UserPrivilege &user_privilege,
-                                                                       std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserServletPrivilege>> &namespace_privileges) {
+                                                                       std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserPrivilege>> &namespace_privileges) {
         std::string namespace_name = user_privilege.namespace_name();
         std::string username = user_privilege.username();
         for (auto &privilege_zone: user_privilege.privilege_zone()) {
-            EA::servlet::QueryUserServletPrivilege flatten_privilege;
+            EA::servlet::QueryUserPrivilege flatten_privilege;
             flatten_privilege.set_username(username);
             flatten_privilege.set_namespace_name(namespace_name);
             flatten_privilege.set_servlet_rw(privilege_zone.zone_rw());
             flatten_privilege.set_privilege(privilege_zone.zone() + ".*");
-            std::multimap<std::string, EA::servlet::QueryUserServletPrivilege> user_privilege_map;
+            std::multimap<std::string, EA::servlet::QueryUserPrivilege> user_privilege_map;
             if (namespace_privileges.find(namespace_name) != namespace_privileges.end()) {
                 user_privilege_map = namespace_privileges[namespace_name];
             }
-            user_privilege_map.insert(std::pair<std::string, EA::servlet::QueryUserServletPrivilege>(username, flatten_privilege));
+            user_privilege_map.insert(std::pair<std::string, EA::servlet::QueryUserPrivilege>(username, flatten_privilege));
             namespace_privileges[namespace_name] = user_privilege_map;
         }
         for (auto &privilege_servlet: user_privilege.privilege_servlet()) {
-            EA::servlet::QueryUserServletPrivilege flatten_privilege;
+            EA::servlet::QueryUserPrivilege flatten_privilege;
             flatten_privilege.set_username(username);
             flatten_privilege.set_namespace_name(namespace_name);
             flatten_privilege.set_servlet_rw(privilege_servlet.servlet_rw());
             flatten_privilege.set_privilege(privilege_servlet.zone() + "." + privilege_servlet.servlet_name());
-            std::multimap<std::string, EA::servlet::QueryUserServletPrivilege> user_privilege_map;
+            std::multimap<std::string, EA::servlet::QueryUserPrivilege> user_privilege_map;
             if (namespace_privileges.find(namespace_name) != namespace_privileges.end()) {
                 user_privilege_map = namespace_privileges[namespace_name];
             }
-            user_privilege_map.insert(std::pair<std::string, EA::servlet::QueryUserServletPrivilege>(username, flatten_privilege));
+            user_privilege_map.insert(std::pair<std::string, EA::servlet::QueryUserPrivilege>(username, flatten_privilege));
             namespace_privileges[namespace_name] = user_privilege_map;
         }
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

@@ -17,7 +17,7 @@
 #include "elasticann/meta_server/query_zone_manager.h"
 #include "elasticann/base/tlog.h"
 
-namespace EA {
+namespace EA::servlet {
     void QueryZoneManager::get_zone_info(const EA::servlet::QueryRequest *request,
                                                  EA::servlet::QueryResponse *response) {
         ZoneManager *manager = ZoneManager::get_instance();
@@ -40,4 +40,4 @@ namespace EA {
         }
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

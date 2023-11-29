@@ -1,4 +1,3 @@
-
 // Copyright 2023 The Elastic-AI Authors.
 // part of Elastic AI Search
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+//
+// Created by jeff on 23-11-29.
+//
+#include "elasticann/cli/instance_cmd.h"
 
-#ifndef ELASTICANN_FLAGS_ROUTER_H_
-#define ELASTICANN_FLAGS_ROUTER_H_
+namespace EA::cli {
 
-#include "gflags/gflags_declare.h"
-
-namespace EA {
-    /// for router
-    DECLARE_string(router_listen);
-}  // namespace EA
-
-#endif  // ELASTICANN_FLAGS_ROUTER_H_
+}  // namespace EA::cli

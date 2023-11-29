@@ -16,7 +16,7 @@
 #include "turbo/strings/str_split.h"
 #include "butil/file_util.h"
 
-namespace EA {
+namespace EA::servlet {
     int64_t parse_snapshot_index_from_path(const std::string &snapshot_path, bool use_dirname) {
         butil::FilePath path(snapshot_path);
         std::string tmp_path;
@@ -36,4 +36,4 @@ namespace EA {
         return snapshot_index;
     }
 
-}
+}  // namespace EA::servlet

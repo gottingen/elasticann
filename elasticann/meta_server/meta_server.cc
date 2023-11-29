@@ -24,13 +24,14 @@
 #include "elasticann/meta_server/query_config_manager.h"
 #include "elasticann/meta_server/query_privilege_manager.h"
 #include "elasticann/meta_server/query_namespace_manager.h"
+#include "elasticann/meta_server/query_instance_manager.h"
 #include "elasticann/meta_server/query_zone_manager.h"
 #include "elasticann/meta_server/query_servlet_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/base/key_encoder.h"
 
-namespace EA {
+namespace EA::servlet {
 
     MetaServer::~MetaServer() {}
 
@@ -224,8 +225,16 @@ namespace EA {
                 break;
             }
 
-            case EA::servlet::QUERY_SERVLET_PRIVILEGE_FLATTEN: {
+            case EA::servlet::QUERY_PRIVILEGE_FLATTEN: {
                 QueryPrivilegeManager::get_instance()->get_flatten_servlet_privilege(request, response);
+                break;
+            }
+            case EA::servlet::QUERY_INSTANCE: {
+                QueryInstanceManager::get_instance()->query_instance(request, response);
+                break;
+            }
+            case EA::servlet::QUERY_INSTANCE_FLATTEN: {
+                QueryInstanceManager::get_instance()->query_instance_flatten(request, response);
                 break;
             }
 
@@ -306,4 +315,4 @@ namespace EA {
         TLOG_INFO("MetaServer flush joined");
     }
 
-}  // namespace Ea
+}  // namespace EA::servlet

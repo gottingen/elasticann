@@ -38,7 +38,6 @@ namespace EA::cli {
         std::vector<std::string> user_rz;
         std::vector<std::string> user_wz;
         bool force;
-        bool is_db{false};
         bool show_pwd{false};
     };
 

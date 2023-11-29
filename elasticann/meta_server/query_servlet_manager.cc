@@ -17,7 +17,7 @@
 #include "elasticann/meta_server/query_servlet_manager.h"
 #include "elasticann/base/tlog.h"
 
-namespace EA {
+namespace EA::servlet {
     void QueryServletManager::get_servlet_info(const EA::servlet::QueryRequest *request,
                                                  EA::servlet::QueryResponse *response) {
         ServletManager *manager = ServletManager::get_instance();
@@ -41,4 +41,4 @@ namespace EA {
         }
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

@@ -21,51 +21,7 @@
 #include "turbo/strings/str_split.h"
 #include "elasticann/meta_server/base_state_machine.h"
 
-namespace EA {
-    struct IdcInfo {
-        std::string resource_tag;
-        std::string logical_room;
-        std::string physical_room;
-
-        IdcInfo() = default;
-
-        IdcInfo(const std::string &resource, const std::string &logical, const std::string &physical)
-                : resource_tag(resource), logical_room(logical), physical_room(physical) {};
-
-        IdcInfo(std::string_view str) {
-            std::vector<std::string> split_vec = turbo::StrSplit(str, ':', turbo::SkipEmpty());
-            if (split_vec.size() >= 1) {
-                resource_tag = split_vec[0];
-            }
-            if (split_vec.size() >= 2) {
-                logical_room = split_vec[1];
-            }
-            if (split_vec.size() == 3) {
-                physical_room = split_vec[2];
-            }
-        }
-
-        [[nodiscard]] std::string to_string() const {
-            return resource_tag + ":" + logical_room + ":" + physical_room;
-        }
-
-        [[nodiscard]] std::string logical_room_level() const {
-            return resource_tag + ":" + logical_room + ":";
-        }
-
-        [[nodiscard]] std::string resource_tag_level() const {
-            return resource_tag + "::";
-        }
-
-        bool match(const IdcInfo &other) const {
-            if ((!resource_tag.empty() && !other.resource_tag.empty() && resource_tag != other.resource_tag)
-                || (!logical_room.empty() && !other.logical_room.empty() && logical_room != other.logical_room)
-                || (!physical_room.empty() && !other.physical_room.empty() && physical_room != other.physical_room)) {
-                return false;
-            }
-            return true;
-        }
-    };
+namespace EA::servlet {
 
 #define ERROR_SET_RESPONSE(response, errcode, err_message, op_type, log_id) \
     do {\
@@ -115,5 +71,5 @@ namespace EA {
         }\
     } while (0);
 
-}//namespace EA
+}//namespace EA::servlet
 

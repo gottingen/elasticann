@@ -21,7 +21,7 @@
 #include <time.h>
 #include "elasticann/meta_server/meta_constants.h"
 
-namespace EA {
+namespace EA::servlet {
 
     class TSOStateMachine;
 
@@ -46,7 +46,7 @@ namespace EA {
         int64_t last_save_physical;
     };
 
-    class TSOStateMachine : public EA::BaseStateMachine {
+    class TSOStateMachine : public EA::servlet::BaseStateMachine {
     public:
         TSOStateMachine(const braft::PeerId &peerId) :
                 BaseStateMachine(MetaConstants::TsoMachineRegion, "tso_raft", "/tso", peerId) {
@@ -103,4 +103,4 @@ namespace EA {
         bool _is_healty = true;
     };
 
-}  // namespace EA
+}  // namespace EA::servlet

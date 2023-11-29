@@ -22,7 +22,7 @@
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/meta_constants.h"
 
-namespace EA {
+namespace EA::servlet {
     class PrivilegeManager {
     public:
         friend class QueryPrivilegeManager;
@@ -138,11 +138,9 @@ namespace EA {
         /// \param mem_privilege
         void delete_ip(const std::string &ip, EA::servlet::UserPrivilege &mem_privilege);
 
-        //username和privilege对应关系
-        //std::mutex                                         _user_mutex;
         bthread_mutex_t _user_mutex;
         std::unordered_map<std::string, EA::servlet::UserPrivilege> _user_privilege;
 
         MetaStateMachine *_meta_state_machine;
     };//class
-}  // namespace EA
+}  // namespace EA::servlet

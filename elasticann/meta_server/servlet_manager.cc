@@ -19,7 +19,7 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/meta_server/namespace_manager.h"
 
-namespace EA {
+namespace EA::servlet {
     void ServletManager::create_servlet(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         // check legal
         auto &servlet_info = const_cast<EA::servlet::ServletInfo &>(request.servlet_info());
@@ -194,4 +194,4 @@ namespace EA {
                 servlet_pb.zone_id(), servlet_pb.servlet_id());
         return 0;
     }
-}  //  namespace EA
+}  //  namespace EA::servlet

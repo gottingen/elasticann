@@ -28,6 +28,8 @@ namespace EA::cli {
 
     std::string get_op_string(EA::servlet::OpType type);
 
+    std::string get_op_string(EA::servlet::RaftControlOp type);
+
     std::string get_op_string(EA::servlet::QueryOpType type);
 
     turbo::Status string_to_version(const std::string &str, EA::servlet::Version*v);

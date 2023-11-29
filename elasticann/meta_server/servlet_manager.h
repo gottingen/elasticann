@@ -24,7 +24,7 @@
 #include "bthread/mutex.h"
 #include "braft/raft.h"
 
-namespace EA {
+namespace EA::servlet {
     class ServletManager {
     public:
         friend class QueryServletManager;
@@ -101,14 +101,36 @@ namespace EA {
         /// \return -1 db not exists
         int get_servlet_info(const int64_t &servlet_id, EA::servlet::ServletInfo &servlet_info);
 
+        ///
+        /// \param namespace_name
+        /// \param zone_name
+        /// \param servlet_name
+        /// \return
+        static std::string make_servlet_key(const std::string &namespace_name, const std::string & zone_name, const std::string &servlet_name);
+        ///
+        /// \param zone_key
+        /// \param servlet_name
+        /// \return
+        static std::string make_servlet_key(const std::string &zone_key,const std::string &servlet_name);
+
     private:
         ServletManager();
+
+        ///
+        /// \param servlet_name
         void erase_servlet_info(const std::string &servlet_name);
 
+        ///
+        /// \param servlet_info
         void set_servlet_info(const EA::servlet::ServletInfo &servlet_info);
 
+        ///
+        /// \param servlet_id
+        /// \return
         std::string construct_servlet_key(int64_t servlet_id);
 
+        ///
+        /// \return
         std::string construct_max_servlet_id_key();
 
     private:
@@ -136,11 +158,7 @@ namespace EA {
 
     inline void ServletManager::set_servlet_info(const EA::servlet::ServletInfo &servlet_info) {
         BAIDU_SCOPED_LOCK(_servlet_mutex);
-        std::string servlet_name = servlet_info.namespace_name()
-                                    + "\001"
-                                    + servlet_info.zone()
-                                    + "\001"
-                                    + servlet_info.servlet_name();
+        std::string servlet_name = make_servlet_key(servlet_info.namespace_name(), servlet_info.zone(), servlet_info.servlet_name());
         _servlet_id_map[servlet_name] = servlet_info.servlet_id();
         _servlet_info_map[servlet_info.servlet_id()] = servlet_info;
     }
@@ -190,5 +208,13 @@ namespace EA {
                                           + MetaConstants::MAX_SERVLET_ID_KEY;
         return max_servlet_id_key;
     }
-}  // namespace EA
+
+    inline std::string ServletManager::make_servlet_key(const std::string &namespace_name, const std::string & zone_name, const std::string &servlet_name) {
+        return namespace_name + "\001" + zone_name + "\001" + servlet_name;
+    }
+
+    inline std::string ServletManager::make_servlet_key(const std::string &zone_key,const std::string &servlet_name) {
+        return zone_key + "\001" + servlet_name;
+    }
+}  // namespace EA::servlet
 

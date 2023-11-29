@@ -22,24 +22,14 @@
 #include "elasticann/flags/meta.h"
 #include "elasticann/meta_server/meta_constants.h"
 
-namespace EA {
+namespace EA::servlet {
     class MetaStateMachine : public BaseStateMachine {
     public:
         MetaStateMachine(const braft::PeerId &peerId) :
-                BaseStateMachine(MetaConstants::MetaMachineRegion, FLAGS_meta_raft_group, "/meta_server", peerId),
-                _bth(&BTHREAD_ATTR_SMALL),
-                _healthy_check_start(false),
-                _baikal_heart_beat("baikal_heart_beat"),
-                _store_heart_beat("store_heart_beat") {
-            bthread_mutex_init(&_param_mutex, nullptr);
+                BaseStateMachine(MetaConstants::MetaMachineRegion, FLAGS_meta_raft_group, "/meta_server", peerId) {
         }
 
-        ~MetaStateMachine() override {
-            bthread_mutex_destroy(&_param_mutex);
-        }
-
-
-        void healthy_check_function();
+        ~MetaStateMachine() override = default;
 
         // state machine method
         void on_apply(braft::Iterator &iter) override;
@@ -54,95 +44,13 @@ namespace EA {
 
         int64_t applied_index() { return _applied_index; }
 
-        void set_global_load_balance(bool open) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            _global_load_balance = open;
-            _resource_load_balance.clear();
-        }
-
-        void set_load_balance(const std::string &resource_tag, bool open) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            _resource_load_balance[resource_tag] = open;
-        }
-
-        bool get_load_balance(const std::string &resource_tag) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            if (_resource_load_balance.find(resource_tag) != _resource_load_balance.end()) {
-                return _resource_load_balance[resource_tag];
-            }
-            return _global_load_balance;
-        }
-
-        void set_global_migrate(bool open) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            _global_migrate = open;
-            _resource_migrate.clear();
-        }
-
-        void set_migrate(const std::string &resource_tag, bool open) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            _resource_migrate[resource_tag] = open;
-        }
-
-        bool get_migrate(const std::string &resource_tag) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            if (_resource_migrate.find(resource_tag) != _resource_migrate.end()) {
-                return _resource_migrate[resource_tag];
-            }
-            return _global_migrate;
-        }
-
-        void set_global_network_segment_balance(bool open) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            _global_network_balance = open;
-            _resource_network_balance.clear();
-        }
-
-        void set_network_segment_balance(const std::string &resource_tag, bool open) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            _resource_network_balance[resource_tag] = open;
-        }
-
-        bool get_network_segment_balance(const std::string &resource_tag) {
-            BAIDU_SCOPED_LOCK(_param_mutex);
-            if (_resource_network_balance.find(resource_tag) != _resource_network_balance.end()) {
-                return _resource_network_balance[resource_tag];
-            }
-            return _global_network_balance;
-        }
-
-        void set_unsafe_decision(bool open) {
-            _unsafe_decision = open;
-        }
-
-        bool get_unsafe_decision() {
-            return _unsafe_decision;
-        }
-
     private:
         void save_snapshot(braft::Closure *done,
                            rocksdb::Iterator *iter,
                            braft::SnapshotWriter *writer);
 
-        int64_t _leader_start_timestmap;
-        Bthread _bth;
-        bool _healthy_check_start;
-
-        bthread_mutex_t _param_mutex;
-        bool _global_load_balance = true;
-        std::map<std::string, bool> _resource_load_balance;
-
-        bool _global_migrate = true;
-        std::map<std::string, bool> _resource_migrate;
-
-        bool _global_network_balance = true;
-        std::map<std::string, bool> _resource_network_balance;
-
-        bool _unsafe_decision = false;
         int64_t _applied_index = 0;
-        bvar::LatencyRecorder _baikal_heart_beat;
-        bvar::LatencyRecorder _store_heart_beat;
     };
 
-}  // namespace EA
+}  // namespace EA::servlet
 

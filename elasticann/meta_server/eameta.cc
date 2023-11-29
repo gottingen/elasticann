@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
         peers.push_back(peer);
     }
 
-    EA::MetaServer *meta_server = EA::MetaServer::get_instance();
+    auto *meta_server = EA::servlet::MetaServer::get_instance();
     auto *router_server = EA::servlet::RouterServiceImpl::get_instance();
     auto rs = router_server->init(EA::FLAGS_meta_server_bns);
     if(!rs.ok()) {

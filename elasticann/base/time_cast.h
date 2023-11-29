@@ -39,6 +39,10 @@ namespace EA {
             return butil::gettimeofday_us() - _start;
         }
 
+        int64_t get_time_s() const {
+            return (butil::gettimeofday_us() - _start)/1000000;
+        }
+
     private:
         int64_t _start;
     };

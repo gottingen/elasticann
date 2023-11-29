@@ -18,29 +18,22 @@
 
 #include <string>
 
-namespace EA {
+namespace EA::servlet {
 
     struct MetaConstants {
-        static const std::string CLUSTER_IDENTIFY;
-        static const std::string LOGICAL_CLUSTER_IDENTIFY;
-        static const std::string LOGICAL_KEY;
-        static const std::string PHYSICAL_CLUSTER_IDENTIFY;
-        static const std::string INSTANCE_CLUSTER_IDENTIFY;
-        static const std::string INSTANCE_PARAM_CLUSTER_IDENTIFY;
-
-        static const std::string PRIVILEGE_IDENTIFY;
 
         static const std::string SCHEMA_IDENTIFY;
         static const std::string MAX_ID_SCHEMA_IDENTIFY;
         static const std::string NAMESPACE_SCHEMA_IDENTIFY;
-        static const std::string DATABASE_SCHEMA_IDENTIFY;
         static const std::string ZONE_SCHEMA_IDENTIFY;
         static const std::string SERVLET_SCHEMA_IDENTIFY;
-        static const std::string TABLE_SCHEMA_IDENTIFY;
-        static const std::string REGION_SCHEMA_IDENTIFY;
-        static const std::string DDLWORK_IDENTIFY;
-        static const std::string STATISTICS_IDENTIFY;
-        static const std::string INDEX_DDLWORK_REGION_IDENTIFY;
+
+        static const std::string PRIVILEGE_IDENTIFY;
+
+        static const std::string DISCOVERY_IDENTIFY;
+        static const std::string DISCOVERY_MAX_ID_IDENTIFY;
+        static const std::string DISCOVERY_INSTANCE_IDENTIFY;
+        static const std::string INSTANCE_PARAM_CLUSTER_IDENTIFY;
 
         static const std::string CONFIG_IDENTIFY;
 
@@ -48,11 +41,9 @@ namespace EA {
 
         /// for schema
         static const std::string MAX_NAMESPACE_ID_KEY;
-        static const std::string MAX_DATABASE_ID_KEY;
         static const std::string MAX_ZONE_ID_KEY;
         static const std::string MAX_SERVLET_ID_KEY;
-        static const std::string MAX_TABLE_ID_KEY;
-        static const std::string MAX_REGION_ID_KEY;
+        static const std::string MAX_INSTANCE_ID_KEY;
 
         static const int MetaMachineRegion;
         static const int AutoIDMachineRegion;
@@ -79,6 +70,6 @@ namespace EA {
 
     } // namespace tso
 
-}  // namespace EA
+}  // namespace EA::servlet
 
 #endif  // ELASTICANN_META_SERVER_META_CONSTANTS_H_

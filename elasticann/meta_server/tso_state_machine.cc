@@ -27,7 +27,7 @@
 #include <braft/storage.h>
 #include "elasticann/flags/meta.h"
 
-namespace EA {
+namespace EA::servlet {
 
     int TsoTimer::init(TSOStateMachine *node, int timeout_ms) {
         int ret = RepeatedTimerTask::init(timeout_ms);
@@ -461,4 +461,4 @@ namespace EA {
         return 0;
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

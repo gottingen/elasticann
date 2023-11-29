@@ -18,7 +18,7 @@
 
 #include "elasticann/meta_server/servlet_manager.h"
 
-namespace EA {
+namespace EA::servlet {
     class QueryServletManager {
     public:
         ~QueryServletManager() {}
@@ -33,4 +33,4 @@ namespace EA {
     private:
         QueryServletManager() {}
     }; //class
-} // namespace EA
+} // namespace EA::servlet

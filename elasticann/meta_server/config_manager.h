@@ -26,7 +26,7 @@
 #include <braft/raft.h>
 #include <bthread/mutex.h>
 
-namespace EA {
+namespace EA::servlet {
 
     class ConfigManager {
     public:
@@ -110,5 +110,5 @@ namespace EA {
     inline void ConfigManager::set_meta_state_machine(MetaStateMachine *machine) {
         _meta_state_machine = machine;
     }
-}  // namespace EA
+}  // namespace EA::servlet
 #endif  // ELASTICANN_META_CONFIG_MANAGER_H_

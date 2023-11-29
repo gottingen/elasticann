@@ -18,10 +18,8 @@
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/meta_server/meta_util.h"
 
-namespace EA {
-    void NamespaceManager::create_namespace(
-            const EA::servlet::MetaManagerRequest &request,
-            braft::Closure *done) {
+namespace EA::servlet {
+    void NamespaceManager::create_namespace(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         auto &namespace_info = const_cast<EA::servlet::NameSpaceInfo &>(request.namespace_info());
         std::string namespace_name = namespace_info.namespace_name();
         if (_namespace_id_map.find(namespace_name) != _namespace_id_map.end()) {
@@ -73,20 +71,13 @@ namespace EA {
             return;
         }
 
-        //判断namespace下是否存在database，存在则不能删除namespace
         int64_t namespace_id = _namespace_id_map[namespace_name];
-        if (!_database_ids[namespace_id].empty()) {
-            TLOG_WARN("request namespace:{} has database", namespace_name);
-            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace has table");
-            return;
-        }
         if (!_zone_ids[namespace_id].empty()) {
             TLOG_WARN("request namespace:{} has zone", namespace_name);
             IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "namespace has servlet");
             return;
         }
 
-        //持久化删除数据
         std::string namespace_key = construct_namespace_key(namespace_id);
 
         int ret = MetaRocksdb::get_instance()->delete_meta_info(std::vector<std::string>{namespace_key});
@@ -95,7 +86,6 @@ namespace EA {
             return;
         }
 
-        //更新内存值
         erase_namespace_info(namespace_name);
         IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
         TLOG_INFO("drop namespace success, request:{}", request.ShortDebugString());
@@ -160,4 +150,4 @@ namespace EA {
         return 0;
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

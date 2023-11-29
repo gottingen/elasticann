@@ -17,7 +17,7 @@
 #include "elasticann/meta_server/query_namespace_manager.h"
 #include "elasticann/base/tlog.h"
 
-namespace EA {
+namespace EA::servlet {
     void QueryNamespaceManager::get_namespace_info(const EA::servlet::QueryRequest *request,
                                                    EA::servlet::QueryResponse *response) {
         NamespaceManager *manager = NamespaceManager::get_instance();
@@ -39,4 +39,4 @@ namespace EA {
         }
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

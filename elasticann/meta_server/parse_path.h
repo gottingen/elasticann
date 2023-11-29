@@ -22,6 +22,6 @@
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/meta_constants.h"
 
-namespace EA {
+namespace EA::servlet {
     int64_t parse_snapshot_index_from_path(const std::string &snapshot_path, bool use_dirname);
-}  // namespace EA
+}  // namespace EA::servlet

@@ -22,7 +22,7 @@
 #include "elasticann/base/bthread.h"
 #include "elasticann/base/time_cast.h"
 
-namespace EA {
+namespace EA::servlet {
     class BaseStateMachine;
 
     struct MetaServerClosure : public braft::Closure {
@@ -36,10 +36,6 @@ namespace EA {
         int64_t raft_time_cost;
         int64_t total_time_cost;
         TimeCost time_cost;
-
-        bool has_auto_increment = false;
-        int64_t start_region_id;
-        int create_table_ret = -1;
     };
 
     struct TsoClosure : public braft::Closure {
@@ -175,5 +171,5 @@ namespace EA {
         bool _have_data = false;
     };
 
-}  // namespace EA
+}  // namespace EA::servlet
 

@@ -43,8 +43,8 @@ namespace EA::client {
 
     void MetaSender::set_leader_address(const butil::EndPoint &addr) {
         std::unique_lock<std::mutex> lock(_master_leader_mutex);
-        TLOG_INFO_IF(_verbose, "set master address:{}", butil::endpoint2str(_master_leader_address).c_str());
         _master_leader_address = addr;
+        TLOG_INFO_IF(_verbose, "set master address:{}", butil::endpoint2str(_master_leader_address).c_str());
     }
 
     turbo::Status MetaSender::meta_manager(const EA::servlet::MetaManagerRequest &request,

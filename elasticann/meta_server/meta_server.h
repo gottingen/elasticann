@@ -21,7 +21,7 @@
 #include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/base/bthread.h"
 
-namespace EA {
+namespace EA::servlet {
     class MetaStateMachine;
 
     class AutoIncrStateMachine;
@@ -83,4 +83,4 @@ namespace EA {
         bool _shutdown = false;
     }; //class
 
-}  // namespace EA
+}  // namespace EA::servlet

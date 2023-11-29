@@ -19,7 +19,7 @@
 #include "elasticann/proto/servlet/servlet.interface.pb.h"
 #include "elasticann/meta_server/meta_state_machine.h"
 
-namespace EA {
+namespace EA::servlet {
 
     class SchemaManager {
     public:
@@ -30,41 +30,42 @@ namespace EA {
 
         ~SchemaManager() {}
 
+        ///
+        /// \param controller
+        /// \param request
+        /// \param response
+        /// \param done
         void process_schema_info(google::protobuf::RpcController *controller,
                                  const EA::servlet::MetaManagerRequest *request,
                                  EA::servlet::MetaManagerResponse *response,
                                  google::protobuf::Closure *done);
 
+        ///
+        /// \param user_privilege
+        /// \return
         int check_and_get_for_privilege(EA::servlet::UserPrivilege &user_privilege);
+
+        ///
+        /// \param instance
+        /// \return
+        int check_and_get_for_instance(EA::servlet::ServletInstance &instance);
 
         int load_snapshot();
 
+        ///
+        /// \param meta_state_machine
         void set_meta_state_machine(MetaStateMachine *meta_state_machine) {
             _meta_state_machine = meta_state_machine;
         }
 
-        bool get_unsafe_decision() {
-            return _meta_state_machine->get_unsafe_decision();
-        }
-
     private:
-        SchemaManager() {}
-
-        int pre_process_for_merge_region(const EA::servlet::MetaManagerRequest *request,
-                                         EA::servlet::MetaManagerResponse *response,
-                                         uint64_t log_id);
-
+        SchemaManager() = default;
 
         int load_max_id_snapshot(const std::string &max_id_prefix,
                                  const std::string &key,
                                  const std::string &value);
 
-
-        int whether_main_logical_room_legal(EA::servlet::MetaManagerRequest *request,
-                                            EA::servlet::MetaManagerResponse *response,
-                                            uint64_t log_id);
-
         MetaStateMachine *_meta_state_machine;
     }; //class
 
-}  // namespace EA
+}  // namespace EA::servlet

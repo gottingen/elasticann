@@ -18,7 +18,7 @@
 #include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/meta_server/meta_util.h"
 
-namespace EA {
+namespace EA::servlet {
 
     void MetaServerClosure::Run() {
         if (!status().ok()) {
@@ -277,4 +277,4 @@ namespace EA {
         return ret;
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

@@ -22,7 +22,7 @@
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 
-namespace EA {
+namespace EA::servlet {
 
     void PrivilegeManager::process_user_privilege(google::protobuf::RpcController *controller,
                                                   const EA::servlet::MetaManagerRequest *request,
@@ -408,4 +408,4 @@ namespace EA {
         }
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

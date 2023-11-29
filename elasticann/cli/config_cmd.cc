@@ -391,7 +391,15 @@ namespace EA::cli {
         last = result.size() - 1;
         result[last].format().font_color(turbo::Color::green);
         int i = 0;
+        std::vector<EA::servlet::ConfigInfo> sorted_list;
         for (auto &ns: config_list) {
+            sorted_list.push_back(ns);
+        }
+        auto less_fun = [](const EA::servlet::ConfigInfo & lhs, const EA::servlet::ConfigInfo &rhs) -> bool{
+            return std::less()(lhs.name(), rhs.name());
+        };
+        std::sort(sorted_list.begin(), sorted_list.end(),less_fun);
+        for (auto &ns: sorted_list) {
             result.add_row(turbo::Table::Row_t{turbo::Format(i++), ns.name()});
             last = result.size() - 1;
             result[last].format().font_color(turbo::Color::yellow);

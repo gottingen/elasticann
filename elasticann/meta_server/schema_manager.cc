@@ -17,19 +17,15 @@
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
 #include "elasticann/meta_server/servlet_manager.h"
+#include "elasticann/meta_server/instance_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/base/scope_exit.h"
 #include "elasticann/base/key_encoder.h"
 
-namespace EA {
+namespace EA::servlet {
 
-    /*
-     *  该方法除了service层调用之外，schema自身也需要调用
-     *  自身调用是response为NULL
-     *  目前自身调用的操作为：OP_UPDATE_REGION OP_DROP_REGION
-     */
     void SchemaManager::process_schema_info(google::protobuf::RpcController *controller,
                                             const EA::servlet::MetaManagerRequest *request,
                                             EA::servlet::MetaManagerResponse *response,
@@ -67,50 +63,43 @@ namespace EA {
                     ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
                                        "no namespace_info", request->op_type(), log_id);
                     return;
-                }
-                // if (request->op_type() == EA::servlet::OP_MODIFY_NAMESPACE
-                //         && !request->namespace_info().has_quota()) {
-                //     ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
-                //             "no namespace_quota", request->op_type(), log_id);
-                //     return;
-                // }
-                _meta_state_machine->process(controller, request, response, done_guard.release());
-                return;
-            }
 
-            case EA::servlet::OP_CREATE_ZONE:
-            case EA::servlet::OP_MODIFY_ZONE:
-            case EA::servlet::OP_DROP_ZONE: {
-                if (!request->has_zone_info()) {
-                    ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
-                                       "no database_info", request->op_type(), log_id);
-                    return;
                 }
-                // if (request->op_type() == EA::servlet::OP_MODIFY_DATABASE
-                //         && !request->database_info().has_quota()) {
-                //     ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
-                //             "no databasepace quota", request->op_type(), log_id);
-                //     return;
-                // }
                 _meta_state_machine->process(controller, request, response, done_guard.release());
                 return;
-            }
-            case EA::servlet::OP_CREATE_SERVLET:
-            case EA::servlet::OP_MODIFY_SERVLET:
-            case EA::servlet::OP_DROP_SERVLET: {
-                if (!request->has_servlet_info()) {
-                    ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
-                                       "no servlet info", request->op_type(), log_id);
+                case EA::servlet::OP_CREATE_ZONE:
+                case EA::servlet::OP_MODIFY_ZONE:
+                case EA::servlet::OP_DROP_ZONE: {
+                    if (!request->has_zone_info()) {
+                        ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
+                                           "no zone_info", request->op_type(), log_id);
+                        return;
+                    }
+                    _meta_state_machine->process(controller, request, response, done_guard.release());
                     return;
                 }
-                // if (request->op_type() == EA::servlet::OP_MODIFY_DATABASE
-                //         && !request->database_info().has_quota()) {
-                //     ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
-                //             "no databasepace quota", request->op_type(), log_id);
-                //     return;
-                // }
-                _meta_state_machine->process(controller, request, response, done_guard.release());
-                return;
+                case EA::servlet::OP_CREATE_SERVLET:
+                case EA::servlet::OP_MODIFY_SERVLET:
+                case EA::servlet::OP_DROP_SERVLET: {
+                    if (!request->has_servlet_info()) {
+                        ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
+                                           "no servlet info", request->op_type(), log_id);
+                        return;
+                    }
+                    _meta_state_machine->process(controller, request, response, done_guard.release());
+                    return;
+                }
+                case EA::servlet::OP_ADD_INSTANCE:
+                case EA::servlet::OP_DROP_INSTANCE:
+                case EA::servlet::OP_UPDATE_INSTANCE:{
+                    if (!request->has_namespace_info() ||
+                            !request->has_zone_info() ||
+                            !request->has_servlet_info()) {
+                        ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
+                                           "no required namespace zone or servlet info", request->op_type(), log_id);
+                        return;
+                    }
+                }
             }
 
             default:
@@ -126,26 +115,14 @@ namespace EA {
         int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
         if (namespace_id == 0) {
             TLOG_ERROR("namespace not exist, namespace:{}, request：{}",
-                     namespace_name,
-                     user_privilege.ShortDebugString());
+                       namespace_name,
+                       user_privilege.ShortDebugString());
             return -1;
         }
         user_privilege.set_namespace_id(namespace_id);
 
         for (auto &pri_zone: *user_privilege.mutable_privilege_zone()) {
-            std::string base_name = namespace_name + "\001" + pri_zone.zone();
-            int64_t zone_id = ZoneManager::get_instance()->get_zone_id(base_name);
-            if (zone_id == 0) {
-                TLOG_ERROR("database:{} not exist, namespace:{}, request：{}",
-                           base_name, namespace_name,
-                           user_privilege.ShortDebugString());
-                return -1;
-            }
-            pri_zone.set_zone_id(zone_id);
-        }
-        for (auto &pri_servlet: *user_privilege.mutable_privilege_servlet()) {
-            std::string base_name = namespace_name + "\001" + pri_servlet.zone();
-            std::string table_name = base_name + "\001" + pri_servlet.servlet_name();
+            std::string base_name = ZoneManager::make_zone_key(namespace_name, pri_zone.zone());
             int64_t zone_id = ZoneManager::get_instance()->get_zone_id(base_name);
             if (zone_id == 0) {
                 TLOG_ERROR("zone:{} not exist, namespace:{}, request：{}",
@@ -153,10 +130,22 @@ namespace EA {
                            user_privilege.ShortDebugString());
                 return -1;
             }
-            int64_t servlet_id = ServletManager::get_instance()->get_servlet_id(table_name);
+            pri_zone.set_zone_id(zone_id);
+        }
+        for (auto &pri_servlet: *user_privilege.mutable_privilege_servlet()) {
+            std::string base_name = ZoneManager::make_zone_key(namespace_name, pri_servlet.zone());
+            std::string servlet_name = ServletManager::make_servlet_key(base_name, pri_servlet.servlet_name());
+            int64_t zone_id = ZoneManager::get_instance()->get_zone_id(base_name);
+            if (zone_id == 0) {
+                TLOG_ERROR("zone:{} not exist, namespace:{}, request：{}",
+                           base_name, namespace_name,
+                           user_privilege.ShortDebugString());
+                return -1;
+            }
+            int64_t servlet_id = ServletManager::get_instance()->get_servlet_id(servlet_name);
             if (servlet_id == 0) {
-                TLOG_ERROR("table_name:{} not exist, database:{} namespace:{}, request：{}",
-                           table_name, base_name,
+                TLOG_ERROR("table_name:{} not exist, zone:{} namespace:{}, request：{}",
+                           servlet_name, base_name,
                            namespace_name, user_privilege.ShortDebugString());
                 return -1;
             }
@@ -189,37 +178,65 @@ namespace EA {
         std::string servlet_prefix = MetaConstants::SCHEMA_IDENTIFY;
         servlet_prefix += MetaConstants::SERVLET_SCHEMA_IDENTIFY;
 
-        std::string statistics_prefix = MetaConstants::SCHEMA_IDENTIFY;
-        statistics_prefix += MetaConstants::STATISTICS_IDENTIFY;
-
+        std::string instance_prefix = MetaConstants::DISCOVERY_IDENTIFY;
+        instance_prefix += MetaConstants::DISCOVERY_INSTANCE_IDENTIFY;
 
         for (; iter->Valid(); iter->Next()) {
             int ret = 0;
-           if (iter->key().starts_with(zone_prefix)) {
+            if (iter->key().starts_with(zone_prefix)) {
                 ret = ZoneManager::get_instance()->load_zone_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(servlet_prefix)) {
                 ret = ServletManager::get_instance()->load_servlet_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(namespace_prefix)) {
                 ret = NamespaceManager::get_instance()->load_namespace_snapshot(iter->value().ToString());
+            } else if (iter->key().starts_with(instance_prefix)) {
+                ret = InstanceManager::get_instance()->load_instance_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(max_id_prefix)) {
                 ret = load_max_id_snapshot(max_id_prefix, iter->key().ToString(), iter->value().ToString());
             } else {
-                TLOG_ERROR("unsupport schema info when load snapshot, key:{}", iter->key().data());
+                TLOG_ERROR("unknown schema info when load snapshot, key:{}", iter->key().data());
             }
             if (ret != 0) {
                 TLOG_ERROR("load snapshot fail, key:{}, value:{}",
-                         iter->key().data(),
-                         iter->value().data());
+                           iter->key().data(),
+                           iter->value().data());
                 return -1;
             }
         }
         return 0;
     }
 
+    int SchemaManager::check_and_get_for_instance(EA::servlet::ServletInstance &instance) {
+        std::string namespace_name = instance.namespace_name();
+        int64_t namespace_id = NamespaceManager::get_instance()->get_namespace_id(namespace_name);
+        if (namespace_id == 0) {
+            TLOG_ERROR("namespace not exist, namespace:{}, request：{}",
+                       namespace_name,
+                       instance.ShortDebugString());
+            return -1;
+        }
+        instance.set_namespace_id(namespace_id);
 
-    int SchemaManager::pre_process_for_merge_region(const EA::servlet::MetaManagerRequest *request,
-                                                    EA::servlet::MetaManagerResponse *response,
-                                                    uint64_t log_id) {
+        std::string base_name = ZoneManager::make_zone_key(namespace_name, instance.zone_name());
+        int64_t zone_id = ZoneManager::get_instance()->get_zone_id(base_name);
+        if (zone_id == 0) {
+            TLOG_ERROR("zone:{} not exist, namespace:{}, request：{}",
+                       base_name, namespace_name,
+                       instance.ShortDebugString());
+            return -1;
+        }
+        instance.set_zone_id(zone_id);
+
+        std::string servlet_name = ServletManager::make_servlet_key(base_name, instance.servlet_name());
+        int64_t servlet_id = ServletManager::get_instance()->get_servlet_id(servlet_name);
+        if (servlet_id == 0) {
+            TLOG_ERROR("servlet:{} not exist, zone:{} namespace:{}, request：{}",
+                       servlet_name, base_name,
+                       namespace_name, instance.ShortDebugString());
+            return -1;
+        }
+        instance.set_zone_id(zone_id);
+        instance.set_servlet_id(servlet_id);
 
         return 0;
     }
@@ -248,11 +265,4 @@ namespace EA {
         return 0;
     }
 
-
-    int SchemaManager::whether_main_logical_room_legal(EA::servlet::MetaManagerRequest *request,
-                                                       EA::servlet::MetaManagerResponse *response,
-                                                       uint64_t log_id) {
-
-        return 0;
-    }
-}  // namespace EA
+}  // namespace EA::servlet

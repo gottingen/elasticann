@@ -85,7 +85,6 @@ namespace EA::cli {
         lns->callback([]() { run_user_list_cmd(); });
 
         auto fu = ns->add_subcommand("flat", " flat get all user info");
-        fu->add_flag("-d,--db", opt->is_db, "servlet or not");
         fu->callback([]() { run_user_flat_cmd(); });
 
         auto idb = ns->add_subcommand("info", " get user info");
@@ -155,7 +154,8 @@ namespace EA::cli {
     }
 
     void run_user_remove_privilege_cmd() {
-        turbo::Println(turbo::color::green, "start to remove user privilege: {}", UserOptionContext::get_instance()->user_name);
+        turbo::Println(turbo::color::green, "start to remove user privilege: {}",
+                       UserOptionContext::get_instance()->user_name);
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         ScopeShower ss;
@@ -163,7 +163,8 @@ namespace EA::cli {
         PREPARE_ERROR_RETURN_OR_OK(ss, rs, request);
         rs = RouterInteract::get_instance()->send_request("meta_manager", request, response);
         RPC_ERROR_RETURN_OR_OK(ss, rs, request);
-        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(), request.op_type(),
+        auto table = ShowHelper::show_response(OptionContext::get_instance()->router_server, response.errcode(),
+                                               request.op_type(),
                                                response.errmsg());
         ss.add_table("result", std::move(table));
     }
@@ -232,32 +233,34 @@ namespace EA::cli {
 
         auto &users = res.user_privilege();
         turbo::Table summary;
-        summary.add_row({"namespace", "user", "version",  "passwd", "allow access ip", "zone", "servlet"});
+        summary.add_row({"namespace", "user", "version", "passwd", "allow access ip", "zone", "servlet"});
         for (auto &user: users) {
             std::string passwd = "******";
             turbo::Table ip_table;
-            for (auto ip : user.ip()) {
+            for (auto ip: user.ip()) {
                 ip_table.add_row({ip});
             }
             turbo::Table zone_table;
-            for (auto zp : user.privilege_zone()) {
-                zone_table.add_row({turbo::Format("{}:{} {}", zp.zone(), EA::servlet::RW_Name(zp.zone_rw()), zp.force())});
+            for (auto zp: user.privilege_zone()) {
+                zone_table.add_row(
+                        {turbo::Format("{}:{} {}", zp.zone(), EA::servlet::RW_Name(zp.zone_rw()), zp.force())});
             }
 
             turbo::Table servlet_table;
-            for (auto sp : user.privilege_servlet()) {
-                servlet_table.add_row({turbo::Format("{}.{}:{} {}", sp.zone(), sp.servlet_name(), EA::servlet::RW_Name(sp.servlet_rw()), sp.force())});
+            for (auto sp: user.privilege_servlet()) {
+                servlet_table.add_row({turbo::Format("{}.{}:{} {}", sp.zone(), sp.servlet_name(),
+                                                     EA::servlet::RW_Name(sp.servlet_rw()), sp.force())});
             }
 
-            if(UserOptionContext::get_instance()->show_pwd) {
+            if (UserOptionContext::get_instance()->show_pwd) {
                 passwd = user.password();
             }
             summary.add_row(
-                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version()),passwd,
+                    turbo::Table::Row_t{user.namespace_name(), user.username(), turbo::Format(user.version()), passwd,
                                         ip_table,
                                         zone_table,
                                         servlet_table
-                                        });
+                    });
             auto last = summary.size() - 1;
             summary[last].format().font_color(turbo::Color::green);
         }
@@ -266,27 +269,15 @@ namespace EA::cli {
 
     turbo::Table show_meta_query_user_flat_response(const EA::servlet::QueryResponse &res) {
         turbo::Table summary;
-        if (!UserOptionContext::get_instance()->is_db) {
-            auto &users = res.flatten_servlet_privileges();
+        auto &users = res.flatten_privileges();
 
-            summary.add_row({"namespace", "user", "privilege", "servlet_rw", "password"});
-            for (auto &user: users) {
-                summary.add_row(
-                        turbo::Table::Row_t{user.namespace_name(), user.username(), user.privilege(),
-                                            EA::servlet::RW_Name(user.servlet_rw()), "******"});
-                auto last = summary.size() - 1;
-                summary[last].format().font_color(turbo::Color::green);
-            }
-        } else {
-            auto &users = res.flatten_privileges();
-            summary.add_row({"namespace", "user", "privilege", "table_rw", "password"});
-            for (auto &user: users) {
-                summary.add_row(
-                        turbo::Table::Row_t{user.namespace_name(), user.username(), user.privilege(),
-                                            EA::servlet::RW_Name(user.table_rw()), "******"});
-                auto last = summary.size() - 1;
-                summary[last].format().font_color(turbo::Color::green);
-            }
+        summary.add_row({"namespace", "user", "privilege", "servlet_rw", "password"});
+        for (auto &user: users) {
+            summary.add_row(
+                    turbo::Table::Row_t{user.namespace_name(), user.username(), user.privilege(),
+                                        EA::servlet::RW_Name(user.servlet_rw()), "******"});
+            auto last = summary.size() - 1;
+            summary[last].format().font_color(turbo::Color::green);
         }
 
         return summary;
@@ -485,11 +476,7 @@ namespace EA::cli {
     }
 
     turbo::Status make_user_flat(EA::servlet::QueryRequest *req) {
-        if (!UserOptionContext::get_instance()->is_db) {
-            req->set_op_type(EA::servlet::QUERY_SERVLET_PRIVILEGE_FLATTEN);
-        } else {
             req->set_op_type(EA::servlet::QUERY_PRIVILEGE_FLATTEN);
-        }
 
         return turbo::OkStatus();
     }

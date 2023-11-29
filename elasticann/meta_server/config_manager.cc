@@ -18,7 +18,7 @@
 #include "elasticann/meta_server/meta_constants.h"
 #include "elasticann/base/scope_exit.h"
 
-namespace EA {
+namespace EA::servlet {
 
     turbo::ModuleVersion ConfigManager::kDefaultVersion(0,0,1);
 
@@ -200,7 +200,7 @@ namespace EA {
     int ConfigManager::load_config_snapshot(const std::string &value) {
         EA::servlet::ConfigInfo config_pb;
         if (!config_pb.ParseFromString(value)) {
-            TLOG_ERROR("parse from pb fail when load database snapshot, key:{}", value);
+            TLOG_ERROR("parse from pb fail when load config snapshot, key:{}", value);
             return -1;
         }
         ///TLOG_INFO("load config:{}", config_pb.name());
@@ -218,4 +218,4 @@ namespace EA {
         return MetaConstants::CONFIG_IDENTIFY + name + version.to_string();
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

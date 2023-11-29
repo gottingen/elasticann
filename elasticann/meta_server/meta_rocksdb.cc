@@ -19,7 +19,7 @@
 #include "elasticann/flags/meta.h"
 #include "elasticann/base/tlog.h"
 
-namespace EA {
+namespace EA::servlet {
 
     int MetaRocksdb::init() {
         _rocksdb = RocksWrapper::get_instance();
@@ -117,4 +117,4 @@ namespace EA {
         }
         return 0;
     }
-}  // namespace EA
+}  // namespace EA::servlet

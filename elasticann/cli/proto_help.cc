@@ -63,6 +63,10 @@ namespace EA::cli {
         return EA::servlet::OpType_Name(type);
     }
 
+    std::string get_op_string(EA::servlet::RaftControlOp type) {
+        return EA::servlet::RaftControlOp_Name(type);
+    }
+
     std::string get_op_string(EA::servlet::QueryOpType type) {
         return EA::servlet::QueryOpType_Name(type);
     }

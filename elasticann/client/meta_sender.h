@@ -27,7 +27,7 @@
 
 namespace EA::client {
 
-    class MetaSender : public BaseMessageSender{
+    class MetaSender : public BaseMessageSender {
     public:
         static const int kRetryTimes = 5;
 
@@ -57,7 +57,8 @@ namespace EA::client {
         ///
         /// \param raft_nodes
         /// \return
-        turbo::Status init(const std::string & raft_nodes);
+        turbo::Status init(const std::string &raft_nodes);
+
         ///
         /// \param verbose
         /// \return
@@ -87,6 +88,7 @@ namespace EA::client {
         /// \brief return leader address
         /// \return
         std::string get_leader() const;
+
         ///
         /// \param request
         /// \param response
@@ -94,6 +96,7 @@ namespace EA::client {
         /// \return
         turbo::Status meta_manager(const EA::servlet::MetaManagerRequest &request,
                                    EA::servlet::MetaManagerResponse &response, int retry_time) override;
+
         ///
         /// \param request
         /// \param response
@@ -108,6 +111,7 @@ namespace EA::client {
         /// \return
         turbo::Status meta_query(const EA::servlet::QueryRequest &request,
                                  EA::servlet::QueryResponse &response, int retry_time) override;
+
         ///
         /// \param request
         /// \param response
@@ -125,8 +129,8 @@ namespace EA::client {
         /// \return
         template<typename Request, typename Response>
         turbo::Status send_request(const std::string &service_name,
-                         const Request &request,
-                         Response &response, int retry_times);
+                                   const Request &request,
+                                   Response &response, int retry_times);
 
     private:
 
@@ -135,23 +139,23 @@ namespace EA::client {
         void set_leader_address(const butil::EndPoint &addr);
 
     private:
-        std::string      _meta_raft_group;
-        std::string      _meta_nodes;
-        std::vector<butil::EndPoint>  _servlet_nodes;
-        int32_t          _request_timeout = 30000;
-        int32_t          _connect_timeout = 5000;
-        bool             _is_inited{false};
-        std::mutex       _master_leader_mutex;
-        butil::EndPoint  _master_leader_address;
-        int              _between_meta_connect_error_ms{1000};
-        int              _retry_times{kRetryTimes};
-        bool             _verbose{false};
+        std::string _meta_raft_group;
+        std::string _meta_nodes;
+        std::vector<butil::EndPoint> _servlet_nodes;
+        int32_t _request_timeout = 30000;
+        int32_t _connect_timeout = 5000;
+        bool _is_inited{false};
+        std::mutex _master_leader_mutex;
+        butil::EndPoint _master_leader_address;
+        int _between_meta_connect_error_ms{1000};
+        int _retry_times{kRetryTimes};
+        bool _verbose{false};
     };
 
     template<typename Request, typename Response>
     inline turbo::Status MetaSender::send_request(const std::string &service_name,
-                     const Request &request,
-                     Response &response, int retry_times) {
+                                                  const Request &request,
+                                                  Response &response, int retry_times) {
         const ::google::protobuf::ServiceDescriptor *service_desc = EA::servlet::MetaService::descriptor();
         const ::google::protobuf::MethodDescriptor *method =
                 service_desc->FindMethodByName(service_name);
@@ -182,7 +186,8 @@ namespace EA::client {
                 auto seed = butil::fast_rand() % _servlet_nodes.size();
                 leader_address = _servlet_nodes[seed];
             }
-            TLOG_INFO_IF(_verbose&!is_select_leader, "master address:{}", butil::endpoint2str(_master_leader_address).c_str());
+            TLOG_INFO_IF(_verbose & !is_select_leader, "master address:{}",
+                         butil::endpoint2str(_master_leader_address).c_str());
             if (short_channel.Init(leader_address, &channel_opt) != 0) {
                 TLOG_ERROR_IF(_verbose, "connect with meta server fail. channel Init fail, leader_addr:{}",
                               butil::endpoint2str(leader_address).c_str());
@@ -192,10 +197,11 @@ namespace EA::client {
             }
             short_channel.CallMethod(method, &cntl, &request, &response, nullptr);
 
-            TLOG_INFO_IF(_verbose,"meta_req[{}], meta_resp[{}]", request.ShortDebugString(), response.ShortDebugString());
+            TLOG_INFO_IF(_verbose, "meta_req[{}], meta_resp[{}]", request.ShortDebugString(),
+                         response.ShortDebugString());
             if (cntl.Failed()) {
                 TLOG_WARN_IF(_verbose, "connect with server fail. send request fail, error:{}, log_id:{}",
-                          cntl.ErrorText(), cntl.log_id());
+                             cntl.ErrorText(), cntl.log_id());
                 set_leader_address(butil::EndPoint());
                 ++retry_time;
                 continue;
@@ -208,8 +214,8 @@ namespace EA::client {
             }
             if (response.errcode() == EA::servlet::NOT_LEADER) {
                 TLOG_WARN_IF(_verbose, "connect with meta server:{} fail. not leader, redirect to :{}, log_id:{}",
-                          butil::endpoint2str(cntl.remote_side()).c_str(),
-                          response.leader(), cntl.log_id());
+                             butil::endpoint2str(cntl.remote_side()).c_str(),
+                             response.leader(), cntl.log_id());
                 butil::EndPoint leader_addr;
                 butil::str2endpoint(response.leader().c_str(), &leader_addr);
                 set_leader_address(leader_addr);
@@ -218,7 +224,9 @@ namespace EA::client {
                 continue;
             }
             /// success, The node being tried happens to be leader
-            if(_master_leader_address.ip == butil::IP_ANY) {
+            if (_master_leader_address.ip == butil::IP_ANY && leader_address.ip != butil::IP_ANY) {
+                TLOG_INFO_IF(_verbose, "set leader ip:{}, log_id:{}",
+                            butil::endpoint2str(leader_address).c_str(),cntl.log_id());
                 set_leader_address(leader_address);
             }
             return turbo::OkStatus();

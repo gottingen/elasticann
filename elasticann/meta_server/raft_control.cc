@@ -35,10 +35,10 @@ namespace EA {
                   _done(done),
                   _node(node) {}
 
-        virtual ~RaftControlDone() {}
+        ~RaftControlDone() override {}
 
-        virtual void Run() {
-            brpc::Controller *cntl = static_cast<brpc::Controller *>(_controller);
+        void Run() override{
+            auto cntl = static_cast<brpc::Controller *>(_controller);
             uint64_t log_id = 0;
             if (cntl->has_log_id()) {
                 log_id = cntl->log_id();
@@ -92,7 +92,7 @@ namespace EA {
                              EA::servlet::RaftControlResponse *response,
                              google::protobuf::Closure *done,
                              braft::Node *node) {
-        brpc::Controller *cntl = static_cast<brpc::Controller *>(controller);
+        auto cntl = static_cast<brpc::Controller *>(controller);
         uint64_t log_id = 0;
         if (cntl->has_log_id()) {
             log_id = cntl->log_id();
@@ -137,6 +137,36 @@ namespace EA {
                 }
                 return;
             }
+            case EA::servlet::ListPeer: {
+                butil::EndPoint leader_addr = node->leader_id().addr;
+                if (leader_addr != butil::EndPoint()) {
+                    response->set_leader(butil::endpoint2str(leader_addr).c_str());
+                    std::vector<braft::PeerId> peers;
+                    auto s = node->list_peers(&peers);
+                    if(!s.ok()) {
+                        TLOG_ERROR("node:{} {} list peers fail, log_id:{}",
+                                   node->node_id().group_id.c_str(),
+                                   node->node_id().peer_id.to_string().c_str(),
+                                   log_id);
+                        response->set_errcode(EA::servlet::INTERNAL_ERROR);
+                        response->set_errmsg("list peers fail");
+                        return;
+                    }
+                    for(auto &peer : peers) {
+                        response->add_peers(butil::endpoint2str(peer.addr).c_str());
+                    }
+                    response->set_errcode(EA::servlet::SUCCESS);
+                    return;
+                } else {
+                    TLOG_ERROR("node:{} {} get leader fail, log_id:{}",
+                               node->node_id().group_id.c_str(),
+                               node->node_id().peer_id.to_string().c_str(),
+                               log_id);
+                    response->set_errcode(EA::servlet::INTERNAL_ERROR);
+                    response->set_errmsg("get leader fail");
+                }
+                return;
+            }
             case EA::servlet::ResetVoteTime : {
                 node->reset_election_timeout_ms(request->election_time());
                 response->set_errcode(EA::servlet::SUCCESS);
@@ -156,14 +186,14 @@ namespace EA {
                    EA::servlet::RaftControlResponse *response,
                    google::protobuf::Closure *done,
                    braft::Node *node) {
-        brpc::Controller *cntl =
+        auto cntl =
                 static_cast<brpc::Controller *>(controller);
         brpc::ClosureGuard done_guard(done);
         uint64_t log_id = 0;
         if (cntl->has_log_id()) {
             log_id = cntl->log_id();
         }
-        bool is_force = request->has_force() ? request->force() : false;
+        bool is_force = request->has_force() && request->force();
         std::vector<braft::PeerId> old_peers;
         std::vector<braft::PeerId> new_peers;
         for (int i = 0; i < request->old_peers_size(); i++) {
@@ -253,7 +283,7 @@ namespace EA {
         // add peer
         if (new_peers.size() == old_peers.size() + 1) {
             if (0 == _diff_peers(old_peers, new_peers, &peer)) {
-                RaftControlDone *set_peer_done =
+                auto set_peer_done =
                         new RaftControlDone(cntl, request, response, done_guard.release(), node);
                 node->add_peer(peer, set_peer_done);
             } else {
@@ -289,7 +319,7 @@ namespace EA {
                     }
                 }
                 if (self_faulty || (!self_faulty && !other_faulty)) {
-                    RaftControlDone *set_peer_done =
+                    auto  set_peer_done =
                             new RaftControlDone(cntl, request, response, done_guard.release(), node);
                     node->remove_peer(peer, set_peer_done);
                 } else {
@@ -326,7 +356,7 @@ namespace EA {
                        google::protobuf::Closure *done,
                        braft::Node *node) {
         brpc::ClosureGuard done_guard(done);
-        brpc::Controller *cntl =
+        auto cntl =
                 static_cast<brpc::Controller *>(controller);
         uint64_t log_id = 0;
         if (cntl->has_log_id()) {
@@ -348,6 +378,20 @@ namespace EA {
                        node->node_id().peer_id.to_string().c_str(),
                        log_id);
             return;
+        }
+        std::vector<braft::PeerId> peers;
+        auto s = node->list_peers(&peers);
+        if(!s.ok()) {
+            TLOG_ERROR("node:{} {} list peers fail, log_id:{}",
+                       node->node_id().group_id.c_str(),
+                       node->node_id().peer_id.to_string().c_str(),
+                       log_id);
+            response->set_errcode(EA::servlet::INTERNAL_ERROR);
+            response->set_errmsg("list peers fail");
+            return;
+        }
+        for(auto &peer : peers) {
+            response->add_peers(butil::endpoint2str(peer.addr).c_str());
         }
         response->set_errcode(EA::servlet::SUCCESS);
         response->set_leader(request->new_leader());

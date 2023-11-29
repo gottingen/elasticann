@@ -24,7 +24,7 @@
 #include "bthread/mutex.h"
 #include "braft/raft.h"
 
-namespace EA {
+namespace EA::servlet {
     class ZoneManager {
     public:
         friend class QueryZoneManager;
@@ -37,6 +37,7 @@ namespace EA {
             static ZoneManager instance;
             return &instance;
         }
+
     public:
 
         ///
@@ -122,8 +123,16 @@ namespace EA {
         /// \param servlet_ids
         /// \return
         int get_servlet_ids(const int64_t &zone_id, std::set<int64_t> &servlet_ids);
+
+        ///
+        /// \param namespace_name
+        /// \param zone_name
+        /// \return
+        static std::string make_zone_key(const std::string &namespace_name, const std::string &zone_name);
+
     private:
         ZoneManager();
+
         void erase_zone_info(const std::string &zone_name);
 
         void set_zone_info(const EA::servlet::ZoneInfo &zone_info);
@@ -136,7 +145,7 @@ namespace EA {
         //! std::mutex                                          _zone_mutex;
         bthread_mutex_t _zone_mutex;
         int64_t _max_zone_id{0};
-        //! databae name --> databasse id，name: namespace\001zone
+        //! zone name --> zone id，name: namespace\001zone
         std::unordered_map<std::string, int64_t> _zone_id_map;
         std::unordered_map<int64_t, EA::servlet::ZoneInfo> _zone_info_map;
         std::unordered_map<int64_t, std::set<int64_t>> _servlet_ids;
@@ -158,9 +167,7 @@ namespace EA {
 
     inline void ZoneManager::set_zone_info(const EA::servlet::ZoneInfo &zone_info) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
-        std::string zone_name = zone_info.namespace_name()
-                                    + "\001"
-                                    + zone_info.zone();
+        std::string zone_name = make_zone_key(zone_info.namespace_name(),zone_info.zone());
         _zone_id_map[zone_name] = zone_info.zone_id();
         _zone_info_map[zone_info.zone_id()] = zone_info;
     }
@@ -192,6 +199,7 @@ namespace EA {
         }
         return 0;
     }
+
     inline int ZoneManager::get_zone_info(const int64_t &zone_id, EA::servlet::ZoneInfo &zone_info) {
         BAIDU_SCOPED_LOCK(_zone_mutex);
         if (_zone_info_map.find(zone_id) == _zone_info_map.end()) {
@@ -222,16 +230,20 @@ namespace EA {
 
     inline std::string ZoneManager::construct_zone_key(int64_t zone_id) {
         std::string zone_key = MetaConstants::SCHEMA_IDENTIFY
-                                   + MetaConstants::ZONE_SCHEMA_IDENTIFY;
+                               + MetaConstants::ZONE_SCHEMA_IDENTIFY;
         zone_key.append((char *) &zone_id, sizeof(int64_t));
         return zone_key;
     }
 
     inline std::string ZoneManager::construct_max_zone_id_key() {
         std::string max_zone_id_key = MetaConstants::SCHEMA_IDENTIFY
-                                          + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
-                                          + MetaConstants::MAX_ZONE_ID_KEY;
+                                      + MetaConstants::MAX_ID_SCHEMA_IDENTIFY
+                                      + MetaConstants::MAX_ZONE_ID_KEY;
         return max_zone_id_key;
     }
-}  // namespace EA
+
+    inline std::string ZoneManager::make_zone_key(const std::string &namespace_name, const std::string &zone_name) {
+        return namespace_name + "\001" + zone_name;
+    }
+}  // namespace EA::servlet
 

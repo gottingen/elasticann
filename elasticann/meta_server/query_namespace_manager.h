@@ -18,7 +18,7 @@
 
 #include "elasticann/meta_server/namespace_manager.h"
 
-namespace EA {
+namespace EA::servlet {
     class QueryNamespaceManager {
     public:
         ~QueryNamespaceManager() {}
@@ -28,10 +28,9 @@ namespace EA {
             return &instance;
         }
 
-        //查询类接口，与写入类接口并发访问
         void get_namespace_info(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
     private:
         QueryNamespaceManager() {}
     };
-} // namespace EA
+} // namespace EA::servlet

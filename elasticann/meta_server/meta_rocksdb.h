@@ -18,7 +18,7 @@
 
 #include "elasticann/engine/rocks_wrapper.h"
 
-namespace EA {
+namespace EA::servlet {
     class MetaRocksdb {
     public:
         virtual ~MetaRocksdb() {}
@@ -50,4 +50,4 @@ namespace EA {
         rocksdb::ColumnFamilyHandle *_handle = nullptr;
     }; //class
 
-}  // namespace EA
+}  // namespace EA::servlet

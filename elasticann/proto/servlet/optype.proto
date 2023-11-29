@@ -58,19 +58,10 @@ enum OpType {
     // file op
     OP_CREATE_CONFIG                       = 38;
     OP_REMOVE_CONFIG                       = 39;
-    OP_CREATE_PLUGIN                       = 40;
-    OP_UPLOAD_PLUGIN                       = 41;
-    OP_REMOVE_PLUGIN                       = 42;
-    OP_REMOVE_TOMBSTONE_PLUGIN             = 43;
-    OP_RESTORE_TOMBSTONE_PLUGIN            = 44;
-    OP_CREATE_DICT                         = 45;
-    OP_UPLOAD_DICT                         = 46;
-    OP_REMOVE_DICT                         = 47;
-    OP_REMOVE_TOMBSTONE_DICT               = 48;
-    OP_RESTORE_TOMBSTONE_DICT              = 49;
 };
 
 enum QueryOpType {
+  QUERY_INSTANCE                                = 3;
   QUERY_USER_PRIVILEGE                          = 4;
   QUERY_NAMESPACE                               = 5;
   QUERY_INSTANCE_FLATTEN                        = 6;
@@ -79,7 +70,6 @@ enum QueryOpType {
 
   QUERY_ZONE                                    = 12;
   QUERY_SERVLET                                 = 13;
-  QUERY_SERVLET_PRIVILEGE_FLATTEN               = 14;
   QUERY_SERVLET_INSTANCE                        = 15;
   QUERY_SERVLET_INSTANCE_FETCH                  = 16;
   
@@ -87,20 +77,4 @@ enum QueryOpType {
   QUERY_GET_CONFIG                       = 17;
   QUERY_LIST_CONFIG_VERSION              = 18;
   QUERY_LIST_CONFIG                      = 19;
-  /// for plugin
-  QUERY_DOWNLOAD_PLUGIN                  = 20;
-  QUERY_PLUGIN_INFO                      = 21;
-  QUERY_LIST_PLUGIN_VERSION              = 22;
-  QUERY_LIST_PLUGIN                      = 23;
-  QUERY_TOMBSTONE_PLUGIN_INFO            = 24;
-  QUERY_TOMBSTONE_LIST_PLUGIN_VERSION    = 25;
-  QUERY_TOMBSTONE_LIST_PLUGIN            = 26;
-
-  QUERY_DOWNLOAD_DICT                   = 27;
-  QUERY_INFO_DICT                       = 28;
-  QUERY_LIST_DICT_VERSION               = 29;
-  QUERY_LIST_DICT                       = 30;
-  QUERY_TOMBSTONE_DICT_INFO             = 31;
-  QUERY_TOMBSTONE_LIST_DICT_VERSION     = 32;
-  QUERY_TOMBSTONE_LIST_DICT             = 33;
 };

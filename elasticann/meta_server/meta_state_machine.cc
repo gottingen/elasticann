@@ -23,6 +23,7 @@
 #include "elasticann/meta_server/config_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
+#include "elasticann/meta_server/instance_manager.h"
 #include "elasticann/meta_server/servlet_manager.h"
 #include "elasticann/meta_server/meta_util.h"
 #include "elasticann/engine/rocks_wrapper.h"
@@ -30,7 +31,7 @@
 #include "elasticann/engine/sst_file_writer.h"
 #include "elasticann/meta_server/parse_path.h"
 
-namespace EA {
+namespace EA::servlet {
 
 
     void MetaStateMachine::on_apply(braft::Iterator &iter) {
@@ -120,9 +121,21 @@ namespace EA {
                     ConfigManager::get_instance()->remove_config(request, done);
                     break;
                 }
+                case EA::servlet::OP_ADD_INSTANCE: {
+                    InstanceManager::get_instance()->add_instance(request, done);
+                    break;
+                }
+                case EA::servlet::OP_DROP_INSTANCE: {
+                    InstanceManager::get_instance()->drop_instance(request, done);
+                    break;
+                }
+                case EA::servlet::OP_UPDATE_INSTANCE: {
+                    InstanceManager::get_instance()->update_instance(request, done);
+                    break;
+                }
                 default: {
-                    TLOG_ERROR("unsupport request type, type:{}", request.op_type());
-                    IF_DONE_SET_RESPONSE(done, EA::servlet::UNKNOWN_REQ_TYPE, "unsupport request type");
+                    TLOG_ERROR("unknown request type, type:{}", request.op_type());
+                    IF_DONE_SET_RESPONSE(done, EA::servlet::UNKNOWN_REQ_TYPE, "unknown request type");
                 }
             }
             _applied_index = iter.index();
@@ -201,7 +214,7 @@ namespace EA {
     int MetaStateMachine::on_snapshot_load(braft::SnapshotReader *reader) {
         TLOG_WARN("start on snapshot load");
         //先删除数据
-        std::string remove_start_key(MetaConstants::CLUSTER_IDENTIFY);
+        std::string remove_start_key(MetaConstants::SCHEMA_IDENTIFY);
         rocksdb::WriteOptions options;
         auto status = RocksWrapper::get_instance()->remove_range(options,
                                                                  RocksWrapper::get_instance()->get_meta_info_handle(),
@@ -220,7 +233,7 @@ namespace EA {
         rocksdb::ReadOptions read_options;
         std::unique_ptr<rocksdb::Iterator> iter(RocksWrapper::get_instance()->new_iterator(read_options,
                                                                                            RocksWrapper::get_instance()->get_meta_info_handle()));
-        iter->Seek(MetaConstants::CLUSTER_IDENTIFY);
+        iter->Seek(MetaConstants::SCHEMA_IDENTIFY);
         for (; iter->Valid(); iter->Next()) {
             TLOG_WARN("iter key:{}, iter value:{} when on snapshot load",
                        iter->key().ToString(), iter->value().ToString());
@@ -271,23 +284,14 @@ namespace EA {
 
     void MetaStateMachine::on_leader_start() {
         TLOG_WARN("leader start at new term");
-        _leader_start_timestmap = butil::gettimeofday_us();
         BaseStateMachine::on_leader_start();
         _is_leader.store(true);
     }
 
     void MetaStateMachine::on_leader_stop() {
         _is_leader.store(false);
-        set_global_load_balance(true);
-        set_global_migrate(true);
-        _unsafe_decision = false;
-        if (_healthy_check_start) {
-            _bth.join();
-            _healthy_check_start = false;
-            TLOG_WARN("healthy check bthread join");
-        }
         TLOG_WARN("leader stop");
         BaseStateMachine::on_leader_stop();
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "elasticann/flags/router.h"
-#include "gflags/gflags.h"
+//
+// Created by jeff on 23-11-29.
+//
 
-namespace EA {
-    /// for router
-    DEFINE_string(router_listen, "0.0.0.0:8888", "router default ip port");
-}
+#ifndef ELASTICANN_CLI_INSTANCE_CMD_H_
+#define ELASTICANN_CLI_INSTANCE_CMD_H_
+
+namespace EA::cli {
+
+}  // namespace EA::cli
+
+#endif  // ELASTICANN_CLI_INSTANCE_CMD_H_

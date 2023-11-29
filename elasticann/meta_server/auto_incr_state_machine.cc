@@ -28,7 +28,7 @@
 #include "turbo/strings/numbers.h"
 #include "elasticann/base/bthread.h"
 
-namespace EA {
+namespace EA::servlet {
     void AutoIncrStateMachine::on_apply(braft::Iterator &iter) {
         for (; iter.valid(); iter.next()) {
             braft::Closure *done = iter.done();
@@ -57,11 +57,11 @@ namespace EA {
                        EA::servlet::OpType_Name(request.op_type()).c_str());
             switch (request.op_type()) {
                 case EA::servlet::OP_ADD_ID_FOR_AUTO_INCREMENT: {
-                    add_table_id(request, done);
+                    add_servlet_id(request, done);
                     break;
                 }
                 case EA::servlet::OP_DROP_ID_FOR_AUTO_INCREMENT: {
-                    drop_table_id(request, done);
+                    drop_servlet_id(request, done);
                     break;
                 }
                 case EA::servlet::OP_GEN_ID_FOR_AUTO_INCREMENT: {
@@ -83,65 +83,65 @@ namespace EA {
         }
     }
 
-    void AutoIncrStateMachine::add_table_id(const EA::servlet::MetaManagerRequest &request,
+    void AutoIncrStateMachine::add_servlet_id(const EA::servlet::MetaManagerRequest &request,
                                             braft::Closure *done) {
         auto &increment_info = request.auto_increment();
-        int64_t table_id = increment_info.table_id();
+        int64_t servlet_id = increment_info.servlet_id();
         uint64_t start_id = increment_info.start_id();
-        if (_auto_increment_map.find(table_id) != _auto_increment_map.end()) {
-            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table id has exist");
-            TLOG_ERROR("table_id: {} has exist when add table id for auto increment", table_id);
+        if (_auto_increment_map.find(servlet_id) != _auto_increment_map.end()) {
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "servlet id has exist");
+            TLOG_ERROR("servlet_id: {} has exist when add servlet id for auto increment", servlet_id);
             return;
         }
-        _auto_increment_map[table_id] = start_id;
+        _auto_increment_map[servlet_id] = start_id;
         if (done && ((MetaServerClosure *) done)->response) {
             ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_start_id(start_id);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        TLOG_INFO("add table id for auto_increment success, request:{}",
+        TLOG_INFO("add servlet id for auto_increment success, request:{}",
                   request.ShortDebugString().c_str());
     }
 
-    void AutoIncrStateMachine::drop_table_id(const EA::servlet::MetaManagerRequest &request,
+    void AutoIncrStateMachine::drop_servlet_id(const EA::servlet::MetaManagerRequest &request,
                                              braft::Closure *done) {
         auto &increment_info = request.auto_increment();
-        int64_t table_id = increment_info.table_id();
-        if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
-            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table id not exist");
-            TLOG_WARN("table_id: {} not exist when drop table id for auto increment", table_id);
+        int64_t servlet_id = increment_info.servlet_id();
+        if (_auto_increment_map.find(servlet_id) == _auto_increment_map.end()) {
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "servlet id not exist");
+            TLOG_WARN("servlet id: {} not exist when drop servlet id for auto increment", servlet_id);
             return;
         }
-        _auto_increment_map.erase(table_id);
+        _auto_increment_map.erase(servlet_id);
         if (done && ((MetaServerClosure *) done)->response) {
             ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
-        TLOG_INFO("drop table id for auto_increment success, request:{}",
+        TLOG_INFO("drop servlet id for auto_increment success, request:{}",
                   request.ShortDebugString());
     }
 
     void AutoIncrStateMachine::gen_id(const EA::servlet::MetaManagerRequest &request,
                                       braft::Closure *done) {
         auto &increment_info = request.auto_increment();
-        int64_t table_id = increment_info.table_id();
-        if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
-            TLOG_WARN("table id:{} has no auto_increment field", table_id);
-            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table has no auto increment");
+        int64_t servlet_id = increment_info.servlet_id();
+        if (_auto_increment_map.find(servlet_id) == _auto_increment_map.end()) {
+            TLOG_WARN("servlet id:{} has no auto_increment field", servlet_id);
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "servlet has no auto increment");
             return;
         }
-        uint64_t old_start_id = _auto_increment_map[table_id];
+        uint64_t old_start_id = _auto_increment_map[servlet_id];
         if (increment_info.has_start_id() && old_start_id < increment_info.start_id() + 1) {
             old_start_id = increment_info.start_id() + 1;
         }
-        _auto_increment_map[table_id] = old_start_id + increment_info.count();
+        _auto_increment_map[servlet_id] = old_start_id + increment_info.count();
         if (done && ((MetaServerClosure *) done)->response) {
             ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
             ((MetaServerClosure *) done)->response->set_start_id(old_start_id);
-            ((MetaServerClosure *) done)->response->set_end_id(_auto_increment_map[table_id]);
+            ((MetaServerClosure *) done)->response->set_end_id(_auto_increment_map[servlet_id]);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
         TLOG_DEBUG("gen_id for auto_increment success, request:{}",
@@ -151,42 +151,42 @@ namespace EA {
     void AutoIncrStateMachine::update(const EA::servlet::MetaManagerRequest &request,
                                       braft::Closure *done) {
         auto &increment_info = request.auto_increment();
-        int64_t table_id = increment_info.table_id();
-        if (_auto_increment_map.find(table_id) == _auto_increment_map.end()) {
-            TLOG_WARN("table id:{} has no auto_increment field", table_id);
-            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "table has no auto increment");
+        int64_t servlet_id = increment_info.servlet_id();
+        if (_auto_increment_map.find(servlet_id) == _auto_increment_map.end()) {
+            TLOG_WARN("servlet id:{} has no auto_increment field", servlet_id);
+            IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "servlet has no auto increment");
             return;
         }
         if (!increment_info.has_start_id() && !increment_info.has_increment_id()) {
-            TLOG_WARN("star_id or increment_id all not exist, table_id:{}", table_id);
+            TLOG_WARN("star_id or increment_id all not exist, servlet_id:{}", servlet_id);
             IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR,
                                  "star_id or increment_id all not exist");
             return;
         }
         if (increment_info.has_start_id() && increment_info.has_increment_id()) {
-            TLOG_WARN("star_id and increment_id all exist, table_id:{}", table_id);
+            TLOG_WARN("star_id and increment_id all exist, servlet_id:{}", servlet_id);
             IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR,
                                  "star_id and increment_id all exist");
             return;
         }
-        uint64_t old_start_id = _auto_increment_map[table_id];
+        uint64_t old_start_id = _auto_increment_map[servlet_id];
         // backwards
         if (increment_info.has_start_id()
             && old_start_id > increment_info.start_id() + 1
             && (!increment_info.has_force() || increment_info.force() == false)) {
-            TLOG_WARN("request not illegal, max_id not support back, table_id:{}", table_id);
+            TLOG_WARN("request not illegal, max_id not support back, servlet_id:{}", servlet_id);
             IF_DONE_SET_RESPONSE(done, EA::servlet::INPUT_PARAM_ERROR, "not support rollback");
             return;
         }
         if (increment_info.has_start_id()) {
-            _auto_increment_map[table_id] = increment_info.start_id() + 1;
+            _auto_increment_map[servlet_id] = increment_info.start_id() + 1;
         } else {
-            _auto_increment_map[table_id] += increment_info.increment_id();
+            _auto_increment_map[servlet_id] += increment_info.increment_id();
         }
         if (done && ((MetaServerClosure *) done)->response) {
             ((MetaServerClosure *) done)->response->set_errcode(EA::servlet::SUCCESS);
             ((MetaServerClosure *) done)->response->set_op_type(request.op_type());
-            ((MetaServerClosure *) done)->response->set_start_id(_auto_increment_map[table_id]);
+            ((MetaServerClosure *) done)->response->set_start_id(_auto_increment_map[servlet_id]);
             ((MetaServerClosure *) done)->response->set_errmsg("SUCCESS");
         }
         TLOG_INFO("update start_id for auto_increment success, request:{}",
@@ -227,14 +227,14 @@ namespace EA {
         root.SetObject();
         rapidjson::Document::AllocatorType &alloc = root.GetAllocator();
         for (auto &max_id_pair: _auto_increment_map) {
-            std::string table_id_string = std::to_string(max_id_pair.first);
-            rapidjson::Value table_id_val(rapidjson::kStringType);
-            table_id_val.SetString(table_id_string.c_str(), table_id_string.size(), alloc);
+            std::string servlet_id_string = std::to_string(max_id_pair.first);
+            rapidjson::Value servlet_id_val(rapidjson::kStringType);
+            servlet_id_val.SetString(servlet_id_string.c_str(), servlet_id_string.size(), alloc);
 
             rapidjson::Value max_id_value(rapidjson::kNumberType);
             max_id_value.SetUint64(max_id_pair.second);
 
-            root.AddMember(table_id_val, max_id_value, alloc);
+            root.AddMember(servlet_id_val, max_id_value, alloc);
         }
         rapidjson::StringBuffer buffer;
         rapidjson::Writer<rapidjson::StringBuffer> json_writer(buffer);
@@ -282,11 +282,11 @@ namespace EA {
             return -1;
         }
         for (auto json_iter = root.MemberBegin(); json_iter != root.MemberEnd(); ++json_iter) {
-            int64_t table_id = turbo::Atoi<int64_t>(json_iter->name.GetString()).value();
+            int64_t servlet_id = turbo::Atoi<int64_t>(json_iter->name.GetString()).value();
             uint64_t max_id = json_iter->value.GetUint64();
-            TLOG_WARN("load auto increment, table_id:{}, max_id:{}", table_id, max_id);
-            _auto_increment_map[table_id] = max_id;
+            TLOG_WARN("load auto increment, servlet_id:{}, max_id:{}", servlet_id, max_id);
+            _auto_increment_map[servlet_id] = max_id;
         }
         return 0;
     }
-}  // namespace EA
+}  // namespace EA::servlet

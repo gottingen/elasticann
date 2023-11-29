@@ -15,7 +15,7 @@
 #include "elasticann/meta_server/query_config_manager.h"
 #include "elasticann/meta_server/config_manager.h"
 
-namespace EA {
+namespace EA::servlet {
 
     void QueryConfigManager::get_config(const ::EA::servlet::QueryRequest *request,
                                         ::EA::servlet::QueryResponse *response) {
@@ -98,4 +98,4 @@ namespace EA {
         response->set_errcode(EA::servlet::SUCCESS);
     }
 
-}  // namespace EA
+}  // namespace EA::servlet

@@ -38,14 +38,21 @@ namespace EA::cli {
         static turbo::Table show_response(EA::servlet::ErrCode code, EA::servlet::OpType qt,
                                           const std::string &msg);
 
+        static turbo::Table show_response(EA::servlet::ErrCode code, EA::servlet::RaftControlOp qt,
+                                          const std::string &msg);
+
         static turbo::Table rpc_error_status(const turbo::Status &s, EA::servlet::OpType qt);
 
         static turbo::Table rpc_error_status(const turbo::Status &s, EA::servlet::QueryOpType qt);
+
+        static turbo::Table rpc_error_status(const turbo::Status &s, EA::servlet::RaftControlOp qt);
 
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::servlet::MetaManagerRequest &req);
 
 
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::servlet::QueryRequest &req);
+
+        static turbo::Table pre_send_error(const turbo::Status &s, const EA::servlet::RaftControlRequest &req);
 
     private:
         static turbo::Table
@@ -82,6 +89,12 @@ namespace EA::cli {
     }
 
     inline turbo::Table
+    ShowHelper::show_response(EA::servlet::ErrCode code, EA::servlet::RaftControlOp qt,
+                              const std::string &msg) {
+        return show_response_impl(code, static_cast<int>(qt), get_op_string(qt), msg);
+    }
+
+    inline turbo::Table
     ShowHelper::show_response(EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                               const std::string &msg) {
         return show_response_impl(code, static_cast<int>(qt), get_op_string(qt), msg);
@@ -98,6 +111,10 @@ namespace EA::cli {
     }
 
     inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::servlet::QueryOpType qt) {
+        return rpc_error_status_impl(s, static_cast<int>(qt), get_op_string(qt));
+    }
+
+    inline turbo::Table ShowHelper::rpc_error_status(const turbo::Status &s, EA::servlet::RaftControlOp qt) {
         return rpc_error_status_impl(s, static_cast<int>(qt), get_op_string(qt));
     }
 

@@ -20,7 +20,7 @@
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/base/tlog.h"
 
-namespace EA {
+namespace EA::servlet {
     void ZoneManager::create_zone(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
         // check legal
         auto &zone_info = const_cast<EA::servlet::ZoneInfo &>(request.zone_info());
@@ -194,4 +194,4 @@ namespace EA {
                 zone_pb.zone_id());
         return 0;
     }
-}  //  namespace EA
+}  //  namespace EA::servlet

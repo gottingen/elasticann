@@ -18,7 +18,7 @@
 
 #include "elasticann/meta_server/privilege_manager.h"
 
-namespace EA {
+namespace EA::servlet {
     class QueryPrivilegeManager {
     public:
         static QueryPrivilegeManager *get_instance() {
@@ -38,6 +38,6 @@ namespace EA {
         QueryPrivilegeManager() {}
 
         void construct_query_response_for_servlet_privilege(const EA::servlet::UserPrivilege &user_privilege,
-                                                    std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserServletPrivilege>> &namespace_privileges);
+                                                    std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserPrivilege>> &namespace_privileges);
     };
-}  // namespace EA
+}  // namespace EA::servlet

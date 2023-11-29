@@ -186,6 +186,39 @@ namespace EA::cli {
         return result;
     }
 
+    turbo::Table ShowHelper::pre_send_error(const turbo::Status &s, const EA::servlet::RaftControlRequest &req) {
+        turbo::Table result;
+        result.add_row(Row_t{"status", "op code", "op string", "error message"});
+        result[0].format().font_color(turbo::Color::green).font_style({turbo::FontStyle::bold}).font_align(
+                turbo::FontAlign::center);
+        if (!req.has_op_type()) {
+            result.add_row(Row_t{"fail", "nil", "nil", "op_type field is required but not set not set"});
+            auto last = result.size() - 1;
+            result[last].format().font_color(turbo::Color::red).font_style(
+                    {turbo::FontStyle::bold}).font_align(
+                    turbo::FontAlign::center);
+        } else if (!s.ok()) {
+            result.add_row(
+                    Row_t{"fail", turbo::Format("{}", static_cast<int>(req.op_type())),
+                          get_op_string(req.op_type()),
+                          s.message()});
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::red).font_style(
+                    {turbo::FontStyle::bold}).font_align(
+                    turbo::FontAlign::center);
+        } else {
+            result.add_row(
+                    Row_t{"success", turbo::Format("{}", static_cast<int>(req.op_type())),
+                          get_op_string(req.op_type()),
+                          s.message()});
+            auto last = result.size() - 1;
+            result[last][0].format().font_color(turbo::Color::green).font_style(
+                    {turbo::FontStyle::bold}).font_align(
+                    turbo::FontAlign::center);
+        }
+        return result;
+    }
+
     ScopeShower::ScopeShower() {
         result_table.add_row({"phase","status"});
         result_table[0].format().font_color(turbo::Color::blue);

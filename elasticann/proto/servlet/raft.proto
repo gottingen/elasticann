@@ -27,6 +27,7 @@ enum RaftControlOp {
   ShutDown = 5;
   Vote = 6;
   ResetVoteTime = 7;
+  ListPeer = 8;
 };
 
 // operation request/response
@@ -46,6 +47,7 @@ message RaftControlResponse {
   required ErrCode errcode = 2;
   optional string leader = 3;
   optional string errmsg = 4;
+  repeated string peers  = 5;
 };
 
 enum RecoverOpt {

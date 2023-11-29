@@ -12,39 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+//
+// Created by jeff on 23-11-29.
+//
 
-#ifndef ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
-#define ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
+#ifndef ELASTICANN_META_SERVER_QUERY_INSTANCE_MANAGER_H_
+#define ELASTICANN_META_SERVER_QUERY_INSTANCE_MANAGER_H_
 
-#include "elasticann/proto/servlet/servlet.interface.pb.h"
+#include "elasticann/meta_server/instance_manager.h"
 
 namespace EA::servlet {
 
-    class QueryConfigManager {
+    class QueryInstanceManager {
     public:
-        ///
-        /// \return
-        static QueryConfigManager *get_instance() {
-            static QueryConfigManager ins;
+        static QueryInstanceManager *get_instance() {
+            static QueryInstanceManager ins;
             return &ins;
         }
 
-        ///
-        /// \param request
-        /// \param response
-        void get_config(const ::EA::servlet::QueryRequest *request, ::EA::servlet::QueryResponse *response);
+        ~QueryInstanceManager() = default;
 
         ///
         /// \param request
         /// \param response
-        void list_config(const ::EA::servlet::QueryRequest *request, ::EA::servlet::QueryResponse *response);
+        void query_instance(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
         ///
         /// \param request
         /// \param response
-        void list_config_version(const ::EA::servlet::QueryRequest *request,
-                                 ::EA::servlet::QueryResponse *response);
+        void query_instance_flatten(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
+
+    public:
+        static void instance_info_to_query(const EA::servlet::ServletInstance &sinstance, EA::servlet::QueryInstance &ins);
     };
 }  // namespace EA::servlet
 
-#endif  // ELASTICANN_META_QUERY_CONFIG_MANAGER_H_
+#endif  // ELASTICANN_META_SERVER_QUERY_INSTANCE_MANAGER_H_

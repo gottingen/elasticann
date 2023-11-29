@@ -19,8 +19,8 @@
 #include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/meta_server/meta_constants.h"
 
-namespace EA {
-    class AutoIncrStateMachine : public EA::BaseStateMachine {
+namespace EA::servlet {
+    class AutoIncrStateMachine : public EA::servlet::BaseStateMachine {
     public:
 
         explicit AutoIncrStateMachine(const braft::PeerId &peerId) :
@@ -32,25 +32,25 @@ namespace EA {
         void on_apply(braft::Iterator &iter) override;
 
         ///
-        /// \brief table inc id initialize
+        /// \brief servlet inc id initialize
         /// \param request [in]
         /// \param done [out]
-        void add_table_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
+        void add_servlet_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
-        /// \brief table inc id removing
+        /// \brief servlet inc id removing
         /// \param request [in]
         /// \param done [out]
-        void drop_table_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
+        void drop_servlet_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
-        /// \brief gen a table inc id by given count in request
+        /// \brief gen a servlet inc id by given count in request
         /// \param request [in]
         /// \param done [out]
         void gen_id(const EA::servlet::MetaManagerRequest &request, braft::Closure *done);
 
         ///
-        /// \brief reset a table inc by start_id or increment_id, if backwards,
+        /// \brief reset a servlet inc by start_id or increment_id, if backwards,
         ///        increment_info.force() should be enabled.
         /// \param request [in]
         /// \param done [out]
@@ -75,7 +75,7 @@ namespace EA {
                            braft::SnapshotWriter *writer,
                            std::string max_id_string);
         ///
-        /// \brief load json table_id --> max_id from json file
+        /// \brief load json servlet_id --> max_id from json file
         /// \param max_id_file
         /// \return
 
@@ -89,5 +89,5 @@ namespace EA {
         std::unordered_map<int64_t, uint64_t> _auto_increment_map;
     };
 
-} //namespace EA
+} //namespace EA::servlet
 
