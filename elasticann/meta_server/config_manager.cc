@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 #include "elasticann/meta_server/config_manager.h"
-#include "elasticann/meta_server/meta_util.h"
+#include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/meta_server/meta_constants.h"
 #include "elasticann/base/scope_exit.h"

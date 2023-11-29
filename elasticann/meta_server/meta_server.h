@@ -18,7 +18,6 @@
 
 #include <braft/raft.h>
 #include "elasticann/proto/servlet/servlet.interface.pb.h"
-#include "elasticann/rpc/meta_server_interact.h"
 #include "elasticann/base/bthread.h"
 
 namespace EA::servlet {

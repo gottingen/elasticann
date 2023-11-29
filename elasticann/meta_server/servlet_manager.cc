@@ -15,7 +15,7 @@
 
 #include "elasticann/meta_server/servlet_manager.h"
 #include "elasticann/meta_server/zone_manager.h"
-#include "elasticann/meta_server/meta_util.h"
+#include "elasticann/meta_server/base_state_machine.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/meta_server/namespace_manager.h"
 

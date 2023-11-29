@@ -27,7 +27,6 @@
 #include "elasticann/meta_server/query_instance_manager.h"
 #include "elasticann/meta_server/query_zone_manager.h"
 #include "elasticann/meta_server/query_servlet_manager.h"
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 #include "elasticann/base/key_encoder.h"
 
@@ -86,7 +85,6 @@ namespace EA::servlet {
         SchemaManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         ConfigManager::get_instance()->set_meta_state_machine(_meta_state_machine);
         PrivilegeManager::get_instance()->set_meta_state_machine(_meta_state_machine);
-        MetaServerInteract::get_instance()->init();
         _flush_bth.run([this]() { flush_memtable_thread(); });
         _init_success = true;
         return 0;

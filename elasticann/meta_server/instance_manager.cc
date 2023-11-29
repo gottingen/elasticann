@@ -15,7 +15,6 @@
 
 #include "elasticann/meta_server/instance_manager.h"
 #include "elasticann/meta_server/schema_manager.h"
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 
 namespace EA::servlet {

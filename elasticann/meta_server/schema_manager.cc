@@ -19,7 +19,6 @@
 #include "elasticann/meta_server/servlet_manager.h"
 #include "elasticann/meta_server/instance_manager.h"
 #include "elasticann/meta_server/namespace_manager.h"
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/base/scope_exit.h"
 #include "elasticann/base/key_encoder.h"

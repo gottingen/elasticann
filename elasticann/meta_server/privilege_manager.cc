@@ -19,7 +19,6 @@
 #include "elasticann/meta_server/meta_state_machine.h"
 #include "elasticann/meta_server/schema_manager.h"
 #include "elasticann/meta_server/meta_server.h"
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
 
 namespace EA::servlet {

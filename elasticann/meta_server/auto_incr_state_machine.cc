@@ -24,7 +24,6 @@
 #include "rapidjson/prettywriter.h" // for stringify JSON
 #include <braft/util.h>
 #include <braft/storage.h>
-#include "elasticann/meta_server/meta_util.h"
 #include "turbo/strings/numbers.h"
 #include "elasticann/base/bthread.h"
 

@@ -18,7 +18,6 @@
 #include <fstream>
 #include <brpc/server.h>
 #include <gflags/gflags.h>
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_server.h"
 #include "elasticann/meta_server/router_service.h"
 #include "elasticann/engine/rocks_wrapper.h"

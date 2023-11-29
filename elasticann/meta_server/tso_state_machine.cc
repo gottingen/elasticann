@@ -15,7 +15,6 @@
 
 
 #include "elasticann/meta_server/tso_state_machine.h"
-#include "elasticann/meta_server/meta_util.h"
 #include <fstream>
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/reader.h"
@@ -361,7 +360,6 @@ namespace EA::servlet {
     }
 
     void TSOStateMachine::on_leader_start() {
-        start_check_bns();
         TLOG_WARN("tso leader start");
         int64_t now = tso::clock_realtime_ms();
         EA::servlet::TsoTimestamp current;

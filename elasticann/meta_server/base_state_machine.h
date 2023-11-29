@@ -77,8 +77,7 @@ namespace EA::servlet {
                 _node(identify, peerId),
                 _is_leader(false),
                 _dummy_region_id(dummy_region_id),
-                _file_path(file_path),
-                _check_migrate(&BTHREAD_ATTR_SMALL) {}
+                _file_path(file_path) {}
 
         virtual ~BaseStateMachine() {}
 
@@ -104,10 +103,6 @@ namespace EA::servlet {
                              const EA::servlet::MetaManagerRequest *request,
                              EA::servlet::MetaManagerResponse *response,
                              google::protobuf::Closure *done);
-
-        virtual void start_check_migrate();
-
-        virtual void check_migrate();
 
         // state machine method
         virtual void on_apply(braft::Iterator &iter) = 0;
@@ -143,8 +138,6 @@ namespace EA::servlet {
             TLOG_INFO("raft node join completely");
         }
 
-        void start_check_bns();
-
         virtual bool is_leader() const {
             return _is_leader;
         }
@@ -157,19 +150,62 @@ namespace EA::servlet {
             _have_data = flag;
         }
 
-    private:
-        virtual int send_set_peer_request(bool remove_peer, const std::string &change_peer);
-
     protected:
         braft::Node _node;
         std::atomic<bool> _is_leader;
         int64_t _dummy_region_id;
         std::string _file_path;
     private:
-        Bthread _check_migrate;
-        bool _check_start = false;
         bool _have_data = false;
     };
+
+#define ERROR_SET_RESPONSE(response, errcode, err_message, op_type, log_id) \
+    do {\
+        TLOG_ERROR("request op_type:{}, {} ,log_id:{}",\
+                op_type, err_message, log_id);\
+        if (response != nullptr) {\
+            response->set_errcode(errcode);\
+            response->set_errmsg(err_message);\
+            response->set_op_type(op_type);\
+        }\
+    }while (0);
+
+#define ERROR_SET_RESPONSE_WARN(response, errcode, err_message, op_type, log_id) \
+    do {\
+        TLOG_WARN("request op_type:{}, {} ,log_id:{}",\
+                op_type, err_message, log_id);\
+        if (response != nullptr) {\
+            response->set_errcode(errcode);\
+            response->set_errmsg(err_message);\
+            response->set_op_type(op_type);\
+        }\
+    }while (0);
+
+#define IF_DONE_SET_RESPONSE(done, errcode, err_message) \
+    do {\
+        if (done && ((MetaServerClosure*)done)->response) {\
+            ((MetaServerClosure*)done)->response->set_errcode(errcode);\
+            ((MetaServerClosure*)done)->response->set_errmsg(err_message);\
+        }\
+    }while (0);
+
+#define SET_RESPONSE(response, errcode, err_message) \
+    do {\
+        if (response) {\
+            response->set_errcode(errcode);\
+            response->set_errmsg(err_message);\
+        }\
+    }while (0);
+
+#define RETURN_IF_NOT_INIT(init, response, log_id) \
+    do {\
+        if (!init) {\
+            TLOG_WARN("have not init, log_id:{}", log_id);\
+            response->set_errcode(EA::servlet::HAVE_NOT_INIT);\
+            response->set_errmsg("have not init");\
+            return;\
+        }\
+    } while (0);
 
 }  // namespace EA::servlet
 

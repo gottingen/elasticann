@@ -25,7 +25,6 @@
 #include "elasticann/meta_server/zone_manager.h"
 #include "elasticann/meta_server/instance_manager.h"
 #include "elasticann/meta_server/servlet_manager.h"
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/meta_server/query_privilege_manager.h"
 #include "elasticann/engine/sst_file_writer.h"

@@ -17,7 +17,6 @@
 file(COPY ${PROJECT_SOURCE_DIR}/conf DESTINATION ${PROJECT_BINARY_DIR})
 file(GLOB ENGINE engine/*.cc)
 file(GLOB BASE base/*.cc)
-file(GLOB RPC rpc/*.cc)
 
 set(EA_COMMON
         ${BASE}

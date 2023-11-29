@@ -16,7 +16,7 @@
 
 #include "elasticann/meta_server/namespace_manager.h"
 #include "elasticann/meta_server/meta_rocksdb.h"
-#include "elasticann/meta_server/meta_util.h"
+#include "elasticann/meta_server/base_state_machine.h"
 
 namespace EA::servlet {
     void NamespaceManager::create_namespace(const EA::servlet::MetaManagerRequest &request, braft::Closure *done) {
