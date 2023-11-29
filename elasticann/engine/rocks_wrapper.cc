@@ -29,10 +29,8 @@
 namespace EA {
 
     const std::string RocksWrapper::RAFT_LOG_CF = "raft_log";
-    const std::string RocksWrapper::BIN_LOG_CF = "bin_log_new";
     const std::string RocksWrapper::DATA_CF = "data";
-    const std::string RocksWrapper::METAINFO_CF = "meta_info";
-    const std::string RocksWrapper::SERVICE_CF = "service";
+    const std::string RocksWrapper::META_INFO_CF = "meta_info";
     std::atomic<int64_t> RocksWrapper::raft_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::data_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::mata_cf_remove_range_count = {0};
@@ -41,8 +39,7 @@ namespace EA {
     RocksWrapper::RocksWrapper() : _is_init(false), _txn_db(nullptr),
                                    _raft_cf_remove_range_count("raft_cf_remove_range_count"),
                                    _data_cf_remove_range_count("data_cf_remove_range_count"),
-                                   _mata_cf_remove_range_count("mata_cf_remove_range_count"),
-                                   _service_cf_remove_range_count("service_cf_remove_range_count"){
+                                   _mata_cf_remove_range_count("mata_cf_remove_range_count"){
     }
 
     int32_t RocksWrapper::init(const std::string &path) {
@@ -134,28 +131,6 @@ namespace EA {
         _log_cf_option.write_buffer_size = FLAGS_write_buffer_size;
         _log_cf_option.min_write_buffer_number_to_merge = FLAGS_min_write_buffer_number_to_merge;
 
-        _binlog_cf_option.prefix_extractor.reset(
-                rocksdb::NewFixedPrefixTransform(sizeof(int64_t)));
-        _binlog_cf_option.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
-        _binlog_cf_option.compression = rocksdb::kSnappyCompression;
-        _binlog_cf_option.compression_opts.enabled = true;
-        _binlog_cf_option.compaction_style = rocksdb::kCompactionStyleFIFO;
-        _binlog_cf_option.max_write_buffer_number_to_maintain = _binlog_cf_option.max_write_buffer_number;
-        rocksdb::CompactionOptionsFIFO fifo_option;
-        //如果观察到TTL无法让文件总数量少于配置的大小，RocksDB会暂时下降到基于大小的FIFO删除
-        //https://rocksdb.org.cn/doc/FIFO-compaction-style.html
-        fifo_option.max_table_files_size = FLAGS_rocks_binlog_max_files_size_gb * 1024 * 1024 * 1024LL;
-        fifo_option.allow_compaction = FLAGS_rocksdb_fifo_allow_compaction;
-        _binlog_cf_option.ttl = 0;
-        _binlog_cf_option.periodic_compaction_seconds = 0;
-        _binlog_cf_option.compaction_options_fifo = fifo_option;
-        _binlog_cf_option.write_buffer_size = FLAGS_write_buffer_size;
-        _binlog_cf_option.min_write_buffer_number_to_merge = FLAGS_min_write_buffer_number_to_merge;
-        _binlog_cf_option.level0_file_num_compaction_trigger = FLAGS_level0_file_num_compaction_trigger;
-        if (FLAGS_rocks_use_partitioned_index_filters) {
-            table_options.pin_l0_filter_and_index_blocks_in_cache = false;
-            _binlog_cf_option.ttl = FLAGS_rocks_binlog_ttl_days * 24 * 60 * 60;
-        }
         //todo
         // prefix length: regionid(8 Bytes) tableid(8 Bytes)
         _data_cf_option.prefix_extractor.reset(
@@ -203,8 +178,6 @@ namespace EA {
             _data_cf_option.bottommost_compression_opts.zstd_max_train_bytes = 1 << 18; // 256KB
         }
 
-        //todo
-        //prefix: 0x01-0xFF,分别用来存储不同的meta信息
         _meta_info_option.prefix_extractor.reset(
                 rocksdb::NewFixedPrefixTransform(1));
         _meta_info_option.OptimizeLevelStyleCompaction();
@@ -212,13 +185,6 @@ namespace EA {
         _meta_info_option.level_compaction_dynamic_level_bytes = FLAGS_rocks_data_dynamic_level_bytes;
         _meta_info_option.max_write_buffer_number_to_maintain = _meta_info_option.max_write_buffer_number;
 
-        //prefix: 0x01-0xFF,分别用来存储不同的meta信息
-        _service_option.prefix_extractor.reset(
-                rocksdb::NewFixedPrefixTransform(1));
-        _service_option.OptimizeLevelStyleCompaction();
-        _service_option.compaction_pri = rocksdb::kOldestSmallestSeqFirst;
-        _service_option.level_compaction_dynamic_level_bytes = FLAGS_rocks_data_dynamic_level_bytes;
-        _service_option.max_write_buffer_number_to_maintain = _service_option.max_write_buffer_number;
 
         _db_path = path;
         // List Column Family
@@ -232,16 +198,10 @@ namespace EA {
             for (auto &column_family_name: column_family_names) {
                 if (column_family_name == RAFT_LOG_CF) {
                     column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(RAFT_LOG_CF, _log_cf_option));
-                } else if (column_family_name == BIN_LOG_CF) {
-                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(BIN_LOG_CF, _binlog_cf_option));
-                } else if (column_family_name == "bin_log") {
-                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor("bin_log", _binlog_cf_option));
                 } else if (column_family_name == DATA_CF) {
                     column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(DATA_CF, _data_cf_option));
-                } else if (column_family_name == METAINFO_CF) {
-                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(METAINFO_CF, _meta_info_option));
-                } else if (column_family_name == SERVICE_CF) {
-                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(SERVICE_CF, _service_option));
+                } else if (column_family_name == META_INFO_CF) {
+                    column_family_desc.push_back(rocksdb::ColumnFamilyDescriptor(META_INFO_CF, _meta_info_option));
                 } else {
                     column_family_desc.push_back(
                             rocksdb::ColumnFamilyDescriptor(column_family_name,
@@ -331,40 +291,15 @@ namespace EA {
                 return -1;
             }
         }
-        if (0 == _column_families.count(METAINFO_CF)) {
+        if (0 == _column_families.count(META_INFO_CF)) {
             rocksdb::ColumnFamilyHandle *metainfo_handle;
-            s = _txn_db->CreateColumnFamily(_meta_info_option, METAINFO_CF, &metainfo_handle);
+            s = _txn_db->CreateColumnFamily(_meta_info_option, META_INFO_CF, &metainfo_handle);
             if (s.ok()) {
-                TLOG_INFO("create column family success, column family: {}", METAINFO_CF);
-                _column_families[METAINFO_CF] = metainfo_handle;
+                TLOG_INFO("create column family success, column family: {}", META_INFO_CF);
+                _column_families[META_INFO_CF] = metainfo_handle;
             } else {
                 TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
-                         METAINFO_CF, s.ToString());
-                return -1;
-            }
-        }
-        if (0 == _column_families.count(SERVICE_CF)) {
-            rocksdb::ColumnFamilyHandle *metainfo_handle;
-            s = _txn_db->CreateColumnFamily(_service_option, SERVICE_CF, &metainfo_handle);
-            if (s.ok()) {
-                TLOG_INFO("create column family success, column family: {}", SERVICE_CF);
-                _column_families[SERVICE_CF] = metainfo_handle;
-            } else {
-                TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
-                           SERVICE_CF, s.ToString());
-                return -1;
-            }
-        }
-        if (0 == _column_families.count(BIN_LOG_CF)) {
-            //create bin_log column_familiy
-            rocksdb::ColumnFamilyHandle *bin_log_handle;
-            s = _txn_db->CreateColumnFamily(_binlog_cf_option, BIN_LOG_CF, &bin_log_handle);
-            if (s.ok()) {
-                TLOG_INFO("create column family success, column family:{}", BIN_LOG_CF);
-                _column_families[BIN_LOG_CF] = bin_log_handle;
-            } else {
-                TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
-                         BIN_LOG_CF, s.ToString());
+                         META_INFO_CF, s.ToString());
                 return -1;
             }
         }
@@ -399,7 +334,6 @@ namespace EA {
         auto raft_cf = get_raft_log_handle();
         auto data_cf = get_data_handle();
         auto mata_cf = get_meta_info_handle();
-        auto service_cf = get_service_handle();
         if (raft_cf != nullptr && column_family->GetID() == raft_cf->GetID()) {
             _raft_cf_remove_range_count << 1;
             raft_cf_remove_range_count++;
@@ -409,9 +343,6 @@ namespace EA {
         } else if (mata_cf != nullptr && column_family->GetID() == mata_cf->GetID()) {
             _mata_cf_remove_range_count << 1;
             mata_cf_remove_range_count++;
-        } else if (service_cf != nullptr && column_family->GetID() == service_cf->GetID()) {
-            _service_cf_remove_range_count << 1;
-            service_cf_remove_range_count++;
         }
 
         if (delete_files_in_range && FLAGS_delete_files_in_range) {
@@ -426,43 +357,6 @@ namespace EA {
         rocksdb::WriteBatch batch;
         batch.DeleteRange(column_family, begin, end);
         return _txn_db->Write(options, opt, &batch);
-    }
-
-    int32_t RocksWrapper::get_binlog_value(int64_t ts, std::string &binlog_value) {
-        std::string key;
-        uint64_t ts_endian = KeyEncoder::to_endian_u64(
-                KeyEncoder::encode_i64(ts));
-        key.append((char *) &ts_endian, sizeof(uint64_t));
-
-        auto binlog_handle = get_bin_log_handle();
-        if (binlog_handle == nullptr) {
-            TLOG_WARN("no binlog handle: ts: {}", ts);
-            return -1;
-        }
-
-        rocksdb::ReadOptions option;
-        auto status = _txn_db->Get(option, binlog_handle, rocksdb::Slice(key), &binlog_value);
-        if (status.IsNotFound()) {
-            // 没有找到则从老的binlog cf中找
-            auto handle = _old_binlog_cf;
-            if (handle == nullptr) {
-                TLOG_ERROR("rocksdb has no old bin log cf, ts: {}", ts);
-                return -1;
-            }
-            std::string key_in_old_cf;
-            key_in_old_cf.append((char *) &ts, sizeof(uint64_t));
-            status = _txn_db->Get(option, handle, rocksdb::Slice(key_in_old_cf), &binlog_value);
-            if (!status.ok()) {
-                TLOG_ERROR("get binlog fail in old cf, err_msg: {}, ts: {}", status.ToString(), ts);
-                return -1;
-            }
-            TLOG_WARN("binlog get in old cf, ts: {}", ts);
-        } else if (!status.ok()) {
-            TLOG_WARN("get binlog fail, err_msg: {}, ts: {}", status.ToString(), ts);
-            return -1;
-        }
-
-        return 0;
     }
 
     int32_t RocksWrapper::delete_column_family(std::string cf_name) {
@@ -518,18 +412,6 @@ namespace EA {
         return _column_families[RAFT_LOG_CF];
     }
 
-    rocksdb::ColumnFamilyHandle *RocksWrapper::get_bin_log_handle() {
-        if (!_is_init) {
-            TLOG_ERROR("rocksdb has not been inited");
-            return nullptr;
-        }
-        if (0 == _column_families.count(BIN_LOG_CF)) {
-            TLOG_ERROR("rocksdb has no bin log cf");
-            return nullptr;
-        }
-        return _column_families[BIN_LOG_CF];
-    }
-
     rocksdb::ColumnFamilyHandle *RocksWrapper::get_data_handle() {
         if (!_is_init) {
             TLOG_ERROR("rocksdb has not been inited");
@@ -547,23 +429,11 @@ namespace EA {
             TLOG_ERROR("rocksdb has not been inited");
             return nullptr;
         }
-        if (0 == _column_families.count(METAINFO_CF)) {
+        if (0 == _column_families.count(META_INFO_CF)) {
             TLOG_ERROR("rocksdb has no meta info column family");
             return nullptr;
         }
-        return _column_families[METAINFO_CF];
-    }
-
-    rocksdb::ColumnFamilyHandle *RocksWrapper::get_service_handle() {
-        if (!_is_init) {
-            TLOG_ERROR("rocksdb has not been inited");
-            return nullptr;
-        }
-        if (0 == _column_families.count(SERVICE_CF)) {
-            TLOG_ERROR("rocksdb has no service column family");
-            return nullptr;
-        }
-        return _column_families[SERVICE_CF];
+        return _column_families[META_INFO_CF];
     }
 
     void RocksWrapper::begin_split_adjust_option() {

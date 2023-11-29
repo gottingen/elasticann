@@ -50,10 +50,8 @@ namespace EA {
     class RocksWrapper {
     public:
         static const std::string RAFT_LOG_CF;
-        static const std::string BIN_LOG_CF;
         static const std::string DATA_CF;
-        static const std::string METAINFO_CF;
-        static const std::string SERVICE_CF;
+        static const std::string META_INFO_CF;
         static std::atomic<int64_t> raft_cf_remove_range_count;
         static std::atomic<int64_t> data_cf_remove_range_count;
         static std::atomic<int64_t> mata_cf_remove_range_count;
@@ -129,8 +127,6 @@ namespace EA {
                                      const rocksdb::Slice &end,
                                      bool delete_files_in_range);
 
-        int32_t get_binlog_value(int64_t ts, std::string &binlog_value);
-
         rocksdb::Iterator *new_iterator(const rocksdb::ReadOptions &options,
                                         rocksdb::ColumnFamilyHandle *family) {
             return _txn_db->NewIterator(options, family);
@@ -151,13 +147,9 @@ namespace EA {
 
         rocksdb::ColumnFamilyHandle *get_raft_log_handle();
 
-        rocksdb::ColumnFamilyHandle *get_bin_log_handle();
-
         rocksdb::ColumnFamilyHandle *get_data_handle();
 
         rocksdb::ColumnFamilyHandle *get_meta_info_handle();
-
-        rocksdb::ColumnFamilyHandle *get_service_handle();
 
         rocksdb::TransactionDB *get_db() {
             return _txn_db;
@@ -183,7 +175,7 @@ namespace EA {
             return _txn_db->GetSnapshot();
         }
 
-        void relase_snapshot(const rocksdb::Snapshot *snapshot) {
+        void release_snapshot(const rocksdb::Snapshot *snapshot) {
             _txn_db->ReleaseSnapshot(snapshot);
         }
 
@@ -262,10 +254,6 @@ namespace EA {
             return 0;
         }
 
-        int64_t get_oldest_ts_in_binlog_cf() const {
-            return _oldest_ts_in_binlog_cf;
-        }
-
     private:
 
         RocksWrapper();
@@ -281,21 +269,17 @@ namespace EA {
         rocksdb::ColumnFamilyHandle *_old_binlog_cf = nullptr;
 
         rocksdb::ColumnFamilyOptions _log_cf_option;
-        rocksdb::ColumnFamilyOptions _binlog_cf_option;
         rocksdb::ColumnFamilyOptions _data_cf_option;
         rocksdb::ColumnFamilyOptions _meta_info_option;
-        rocksdb::ColumnFamilyOptions _service_option;
         uint64_t _flush_file_number = 0;
         bvar::Adder<int64_t> _raft_cf_remove_range_count;
         bvar::Adder<int64_t> _data_cf_remove_range_count;
         bvar::Adder<int64_t> _mata_cf_remove_range_count;
-        bvar::Adder<int64_t> _service_cf_remove_range_count;
 
         std::atomic<int32_t> _split_num;
         bthread::Mutex _options_mutex;
         std::unordered_map<std::string, std::string> _rocks_options;
         std::map<std::string, std::string> _defined_options;
-        int64_t _oldest_ts_in_binlog_cf = 0;
     };
 }  // namespace EA
 
