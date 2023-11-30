@@ -34,12 +34,11 @@ namespace EA {
     std::atomic<int64_t> RocksWrapper::raft_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::data_cf_remove_range_count = {0};
     std::atomic<int64_t> RocksWrapper::mata_cf_remove_range_count = {0};
-    std::atomic<int64_t> RocksWrapper::service_cf_remove_range_count = {0};
 
     RocksWrapper::RocksWrapper() : _is_init(false), _txn_db(nullptr),
                                    _raft_cf_remove_range_count("raft_cf_remove_range_count"),
                                    _data_cf_remove_range_count("data_cf_remove_range_count"),
-                                   _mata_cf_remove_range_count("mata_cf_remove_range_count"){
+                                   _mata_cf_remove_range_count("mata_cf_remove_range_count") {
     }
 
     int32_t RocksWrapper::init(const std::string &path) {
@@ -217,11 +216,7 @@ namespace EA {
             if (s.ok()) {
                 TLOG_INFO("reopen db:{} success", path);
                 for (auto &handle: handles) {
-                    if (handle->GetName() == "bin_log") {
-                        _old_binlog_cf = handle;
-                    } else {
-                        _column_families[handle->GetName()] = handle;
-                    }
+                    _column_families[handle->GetName()] = handle;
                     TLOG_INFO("open column family:{}", handle->GetName());
                 }
             } else {
@@ -238,33 +233,7 @@ namespace EA {
                 return -1;
             }
         }
-        if (_old_binlog_cf != nullptr) {
-            // 一个小时后删除old bin_log cf
-            Bthread bth;
-            bth.run([this]() {
-                bthread_usleep(3600 * 1000 * 1000LL);
-                // 暂时假删，避免出问题
-                TLOG_INFO("erase bin_log cf");
-                if (FLAGS_real_delete_old_binlog_cf) {
-                    auto handle = _old_binlog_cf;
-                    _old_binlog_cf = nullptr;
-                    // 避免删除时有并发，sleep 5分钟后真正删除
-                    bthread_usleep(300 * 1000 * 1000LL);
-                    auto res = _txn_db->DropColumnFamily(handle);
-                    if (!res.ok()) {
-                        TLOG_ERROR("drop old binlog column_family failed, err_message: {}", res.ToString());
-                    } else {
-                        res = _txn_db->DestroyColumnFamilyHandle(handle);
-                        if (!res.ok()) {
-                            TLOG_ERROR("destroy old binlog column_family failed, err_message:{}",
-                                     res.ToString());
-                        }
-                    }
-                } else {
-                    _old_binlog_cf = nullptr;
-                }
-            });
-        }
+
         if (0 == _column_families.count(RAFT_LOG_CF)) {
             //create raft_log column_familiy
             rocksdb::ColumnFamilyHandle *raft_log_handle;
@@ -274,7 +243,7 @@ namespace EA {
                 _column_families[RAFT_LOG_CF] = raft_log_handle;
             } else {
                 TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
-                         RAFT_LOG_CF, s.ToString());
+                           RAFT_LOG_CF, s.ToString());
                 return -1;
             }
         }
@@ -287,7 +256,7 @@ namespace EA {
                 _column_families[DATA_CF] = data_handle;
             } else {
                 TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
-                         DATA_CF, s.ToString());
+                           DATA_CF, s.ToString());
                 return -1;
             }
         }
@@ -299,7 +268,7 @@ namespace EA {
                 _column_families[META_INFO_CF] = metainfo_handle;
             } else {
                 TLOG_ERROR("create column family fail, column family:{}, err_message:{}",
-                         META_INFO_CF, s.ToString());
+                           META_INFO_CF, s.ToString());
                 return -1;
             }
         }
@@ -310,7 +279,7 @@ namespace EA {
     }
 
     void RocksWrapper::collect_rocks_options() {
-        // gflag -> option_name, 可以通过setOption动态改的参数
+        // gflag -> option_name
         _rocks_options["level0_file_num_compaction_trigger"] = "level0_file_num_compaction_trigger";
         _rocks_options["slowdown_write_sst_cnt"] = "level0_slowdown_writes_trigger";
         _rocks_options["stop_write_sst_cnt"] = "level0_stop_writes_trigger";
@@ -368,13 +337,13 @@ namespace EA {
         auto res = _txn_db->DropColumnFamily(cf_handler);
         if (!res.ok()) {
             TLOG_ERROR("drop column_family {} failed, err_message:{}",
-                     cf_name, res.ToString());
+                       cf_name, res.ToString());
             return -1;
         }
         res = _txn_db->DestroyColumnFamilyHandle(cf_handler);
         if (!res.ok()) {
             TLOG_ERROR("destroy column_family {} failed, err_message:{}",
-                     cf_name, res.ToString());
+                       cf_name, res.ToString());
             return -1;
         }
         _column_families.erase(cf_name);
@@ -393,7 +362,7 @@ namespace EA {
             _column_families[cf_name] = cf_handler;
         } else {
             TLOG_ERROR("create column family {} fail, err_message:{}",
-                     cf_name, s.ToString());
+                       cf_name, s.ToString());
             return -1;
         }
         _column_families[cf_name] = cf_handler;
@@ -436,136 +405,4 @@ namespace EA {
         return _column_families[META_INFO_CF];
     }
 
-    void RocksWrapper::begin_split_adjust_option() {
-        if (++_split_num > 1) {
-            return;
-        }
-        Bthread bth;
-        bth.run([this]() {
-            if (_txn_db == nullptr) {
-                return;
-            }
-            BAIDU_SCOPED_LOCK(_options_mutex);
-            uint64_t value;
-            std::unordered_map<std::string, std::string> new_options;
-            value = _log_cf_option.max_write_buffer_number * 2;
-            new_options["max_write_buffer_number"] = std::to_string(value);
-            rocksdb::Status s = _txn_db->SetOptions(get_raft_log_handle(), new_options);
-            if (!s.ok()) {
-                TLOG_WARN("begin_split_adjust_option raft_log_cf FAIL: {}", s.ToString());
-            }
-
-            value = _data_cf_option.soft_pending_compaction_bytes_limit * 2;
-            new_options["soft_pending_compaction_bytes_limit"] = std::to_string(value);
-            value = _data_cf_option.level0_slowdown_writes_trigger * 2;
-            new_options["level0_slowdown_writes_trigger"] = std::to_string(value);
-            value = _data_cf_option.max_write_buffer_number * 2;
-            new_options["max_write_buffer_number"] = std::to_string(value);
-            s = _txn_db->SetOptions(get_data_handle(), new_options);
-            if (!s.ok()) {
-                TLOG_WARN("begin_split_adjust_option data_cf FAIL: {}", s.ToString());
-            }
-        });
-    }
-
-    void RocksWrapper::stop_split_adjust_option() {
-        if (--_split_num > 0) {
-            return;
-        }
-        Bthread bth;
-        bth.run([this]() {
-            if (_txn_db == nullptr) {
-                return;
-            }
-            BAIDU_SCOPED_LOCK(_options_mutex);
-            uint64_t value;
-            std::unordered_map<std::string, std::string> new_options;
-            value = _log_cf_option.max_write_buffer_number;
-            new_options["max_write_buffer_number"] = std::to_string(value);
-            rocksdb::Status s = _txn_db->SetOptions(get_raft_log_handle(), new_options);
-            if (!s.ok()) {
-                TLOG_WARN("stop_split_adjust_option raft_log_cf FAIL: {}", s.ToString());
-            }
-
-            value = _data_cf_option.soft_pending_compaction_bytes_limit;
-            new_options["soft_pending_compaction_bytes_limit"] = std::to_string(value);
-            value = _data_cf_option.level0_slowdown_writes_trigger;
-            new_options["level0_slowdown_writes_trigger"] = std::to_string(value);
-            value = _data_cf_option.max_write_buffer_number;
-            new_options["max_write_buffer_number"] = std::to_string(value);
-            s = _txn_db->SetOptions(get_data_handle(), new_options);
-            if (!s.ok()) {
-                TLOG_WARN("stop_split_adjust_option data_cf FAIL: {}", s.ToString());
-            }
-        });
-    }
-
-    void RocksWrapper::adjust_option(std::map<std::string, std::string> new_options) {
-        bool options_changed = false;
-        std::unordered_map<std::string, std::string> cf_new_options;
-        std::unordered_map<std::string, std::string> db_new_options;
-        for (auto &pair: new_options) {
-            auto &flag = pair.first;
-            if (_rocks_options.find(flag) == _rocks_options.end()) {
-                // 不是rocksdb的gflag参数
-                continue;
-            }
-            auto &option_name = _rocks_options[flag];
-            if (_defined_options.find(flag) == _defined_options.end()
-                || _defined_options[flag] != pair.second) {
-                options_changed = true;
-                // 需要是SetDBOptions
-                if (flag == "rocks_max_background_compactions"
-                    || flag == "rocks_max_subcompactions"
-                    || flag == "max_background_jobs") {
-                    db_new_options[option_name] = pair.second;
-                    continue;
-                }
-                // 需要是SetOptions
-                if (flag == "rocks_hard_pending_compaction_g"
-                    || flag == "rocks_soft_pending_compaction_g") {
-                    int64_t value = turbo::Atoi<int64_t>(pair.second).value();
-                    cf_new_options[option_name] = std::to_string(value * 1073741824ull);
-                } else {
-                    cf_new_options[option_name] = pair.second;
-                }
-                if (flag == "max_write_buffer_number") {
-                    cf_new_options["max_write_buffer_number_to_maintain"] = pair.second;
-                }
-            }
-        }
-        if (!options_changed) {
-            return;
-        }
-        _defined_options = new_options;
-        Bthread bth;
-        bth.run([this, cf_new_options, db_new_options]() {
-            if (_txn_db == nullptr) {
-                return;
-            }
-            BAIDU_SCOPED_LOCK(_options_mutex);
-            if (!db_new_options.empty()) {
-                rocksdb::Status s = _txn_db->SetDBOptions(db_new_options);
-                if (!s.ok()) {
-                    TLOG_WARN("adjust_option data_cf FAIL: {}", s.ToString());
-                }
-            }
-            if (!cf_new_options.empty()) {
-                for (auto &kv: cf_new_options) {
-                    // 是否和split设置的有冲突
-                    if (kv.first == "soft_pending_compaction_bytes_limit") {
-                        _data_cf_option.soft_pending_compaction_bytes_limit = turbo::Atoi<uint64_t>(kv.second).value();
-                    } else if (kv.first == "level0_slowdown_writes_trigger") {
-                        _data_cf_option.level0_slowdown_writes_trigger =  turbo::Atoi<int>(kv.second).value();
-                    } else if (kv.first == "max_write_buffer_number") {
-                        _data_cf_option.max_write_buffer_number =  turbo::Atoi<int>(kv.second).value();
-                    }
-                }
-                rocksdb::Status s = _txn_db->SetOptions(get_data_handle(), cf_new_options);
-                if (!s.ok()) {
-                    TLOG_WARN("adjust_option data_cf FAIL: {}", s.ToString());
-                }
-            }
-        });
-    }
 }

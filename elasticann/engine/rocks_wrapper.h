@@ -34,19 +34,6 @@
 
 namespace EA {
 
-    enum KVMode {
-        KEY_ONLY,
-        VAL_ONLY,
-        KEY_VAL
-    };
-
-    enum GetMode {
-        GET_ONLY,
-        LOCK_ONLY,
-        GET_LOCK
-    };
-
-
     class RocksWrapper {
     public:
         static const std::string RAFT_LOG_CF;
@@ -55,7 +42,6 @@ namespace EA {
         static std::atomic<int64_t> raft_cf_remove_range_count;
         static std::atomic<int64_t> data_cf_remove_range_count;
         static std::atomic<int64_t> mata_cf_remove_range_count;
-        static std::atomic<int64_t> service_cf_remove_range_count;
 
         virtual ~RocksWrapper() {}
 
@@ -230,17 +216,7 @@ namespace EA {
             }
         }
 
-        uint64_t flush_file_number() {
-            return _flush_file_number;
-        }
-
-        void begin_split_adjust_option();
-
-        void stop_split_adjust_option();
-
         void collect_rocks_options();
-
-        void adjust_option(std::map<std::string, std::string> new_options);
 
         int get_rocks_statistic(uint64_t &level0_sst, uint64_t &pending_compaction_size) {
             rocksdb::ColumnFamilyMetaData cf_meta;
@@ -266,7 +242,6 @@ namespace EA {
         rocksdb::Cache *_cache;
 
         std::map<std::string, rocksdb::ColumnFamilyHandle *> _column_families;
-        rocksdb::ColumnFamilyHandle *_old_binlog_cf = nullptr;
 
         rocksdb::ColumnFamilyOptions _log_cf_option;
         rocksdb::ColumnFamilyOptions _data_cf_option;
@@ -283,17 +258,3 @@ namespace EA {
     };
 }  // namespace EA
 
-namespace fmt {
-    template<>
-    struct formatter<EA::GetMode> : public formatter<int> {
-        auto format(const EA::GetMode& a, format_context& ctx) const {
-            return formatter<int>::format(static_cast<int>(a), ctx);
-        }
-    };
-    template<>
-    struct formatter<EA::KVMode> : public formatter<int> {
-        auto format(const EA::KVMode& a, format_context& ctx) const {
-            return formatter<int>::format(static_cast<int>(a), ctx);
-        }
-    };
-}
