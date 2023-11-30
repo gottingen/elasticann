@@ -35,4 +35,3 @@ service RouterService {
   rpc meta_query(QueryRequest) returns (QueryResponse);
   rpc tso_service(TsoRequest) returns (TsoResponse);
 };
-

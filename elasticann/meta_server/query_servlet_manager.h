@@ -21,13 +21,16 @@
 namespace EA::servlet {
     class QueryServletManager {
     public:
-        ~QueryServletManager() {}
+        ~QueryServletManager()  = default;
 
         static QueryServletManager *get_instance() {
             static QueryServletManager instance;
             return &instance;
         }
 
+        ///
+        /// \param request
+        /// \param response
         void get_servlet_info(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
     private:

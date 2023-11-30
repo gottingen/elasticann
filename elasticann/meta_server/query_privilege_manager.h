@@ -26,18 +26,28 @@ namespace EA::servlet {
             return &instance;
         }
 
-        ~QueryPrivilegeManager() {}
+        ~QueryPrivilegeManager() = default;
 
+        ///
+        /// \param request
+        /// \param response
         void get_user_info(const EA::servlet::QueryRequest *request,
                            EA::servlet::QueryResponse *response);
 
-        void get_flatten_servlet_privilege(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
+        ///
+        /// \param request
+        /// \param response
+        void
+        get_flatten_servlet_privilege(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
 
     private:
         QueryPrivilegeManager() {}
 
-        void construct_query_response_for_servlet_privilege(const EA::servlet::UserPrivilege &user_privilege,
-                                                    std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserPrivilege>> &namespace_privileges);
+        ///
+        /// \param user_privilege
+        /// \param namespace_privileges
+        static void construct_query_response_for_servlet_privilege(const EA::servlet::UserPrivilege &user_privilege,
+                                                            std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserPrivilege>> &namespace_privileges);
     };
 }  // namespace EA::servlet

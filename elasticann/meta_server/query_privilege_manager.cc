@@ -49,16 +49,16 @@ namespace EA::servlet {
         std::string namespace_name = request->namespace_name();
         turbo::Trim(&namespace_name);
         std::map<std::string, std::multimap<std::string, EA::servlet::QueryUserPrivilege>> namespace_privileges;
-        if (user_name.size() == 0 && namespace_name.size() == 0) {
+        if (user_name.empty() && namespace_name.empty()) {
             for (auto &privilege_info: manager->_user_privilege) {
                 construct_query_response_for_servlet_privilege(privilege_info.second, namespace_privileges);
             }
         }
-        if (user_name.size() != 0
+        if (!user_name.empty()
             && manager->_user_privilege.find(user_name) != manager->_user_privilege.end()) {
             construct_query_response_for_servlet_privilege(manager->_user_privilege[user_name], namespace_privileges);
         }
-        if (namespace_name.size() != 0) {
+        if (!namespace_name.empty()) {
             for (auto &privilege_info: manager->_user_privilege) {
                 if (privilege_info.second.namespace_name() != namespace_name) {
                     continue;

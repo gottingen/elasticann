@@ -21,13 +21,16 @@
 namespace EA::servlet {
     class QueryNamespaceManager {
     public:
-        ~QueryNamespaceManager() {}
+        ~QueryNamespaceManager() = default;
 
         static QueryNamespaceManager *get_instance() {
             static QueryNamespaceManager instance;
             return &instance;
         }
 
+        ///
+        /// \param request
+        /// \param response
         void get_namespace_info(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
     private:

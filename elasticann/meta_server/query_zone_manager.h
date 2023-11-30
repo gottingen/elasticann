@@ -21,13 +21,16 @@
 namespace EA::servlet {
     class QueryZoneManager {
     public:
-        ~QueryZoneManager() {}
+        ~QueryZoneManager() = default;
 
         static QueryZoneManager *get_instance() {
             static QueryZoneManager instance;
             return &instance;
         }
 
+        ///
+        /// \param request
+        /// \param response
         void get_zone_info(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response);
 
     private:
