@@ -187,7 +187,7 @@ namespace EA::servlet {
             TLOG_ERROR("parse from pb fail when load zone snapshot, key:{}", value);
             return -1;
         }
-        TLOG_WARN("zone snapshot:{}", servlet_pb.ShortDebugString());
+        TLOG_WARN("servlet snapshot:{}", servlet_pb.ShortDebugString());
         set_servlet_info(servlet_pb);
         // update memory namespace values.
         ZoneManager::get_instance()->add_servlet_id(

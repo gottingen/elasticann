@@ -61,6 +61,12 @@ namespace EA::servlet {
         /// \return
         int load_instance_snapshot(const std::string &value);
 
+        void clear();
+
+        ///
+        /// \return
+        int load_snapshot();
+
     private:
         InstanceManager();
 
@@ -99,6 +105,14 @@ namespace EA::servlet {
                                    + MetaConstants::DISCOVERY_INSTANCE_IDENTIFY;
         instance_key.append(address);
         return instance_key;
+    }
+
+    inline void InstanceManager::clear() {
+        _instance_info.clear();
+        _removed_instance.clear();
+        _namespace_instance.clear();
+        _zone_instance.clear();
+        _servlet_instance.clear();
     }
 
 }  // namespace EA::servlet

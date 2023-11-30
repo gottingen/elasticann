@@ -18,9 +18,6 @@
 #include <fstream>
 #include <brpc/server.h>
 #include <gflags/gflags.h>
-#include "elasticann/raft/my_raft_log.h"
-#include "elasticann/common/common.h"
-#include "elasticann/meta_server/meta_util.h"
 #include "elasticann/meta_server/meta_server.h"
 #include "elasticann/engine/rocks_wrapper.h"
 #include "elasticann/base/memory_profile.h"
@@ -39,8 +36,6 @@ int main(int argc, char **argv) {
     }
     TLOG_INFO("log file load success");
 
-    // 注册自定义的raft log的存储方式
-    EA::register_myraft_extension();
 
     //add service
     brpc::Server server;

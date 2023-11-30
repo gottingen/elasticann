@@ -40,7 +40,7 @@ namespace EA::servlet {
 
     void QueryInstanceManager::query_instance_flatten(const EA::servlet::QueryRequest *request, EA::servlet::QueryResponse *response) {
         auto manager = InstanceManager::get_instance();
-        if(!request->has_namespace_name()) {
+        if(!request->has_namespace_name() || request->namespace_name().empty()) {
             BAIDU_SCOPED_LOCK(manager->_instance_mutex);
             for(auto &it : manager->_instance_info) {
                 EA::servlet::QueryInstance ins;
@@ -49,13 +49,14 @@ namespace EA::servlet {
             }
             response->set_errcode(EA::servlet::SUCCESS);
             response->set_errmsg("success");
+            return;
         }
-        if(!request->has_zone()) {
+        if(!request->has_zone() || request->zone().empty()) {
             BAIDU_SCOPED_LOCK(manager->_instance_mutex);
             auto it = manager->_namespace_instance.find(request->namespace_name());
             if(it == manager->_namespace_instance.end()) {
                 response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
-                auto msg = turbo::Format("no instance in namespace %s", request->namespace_name());
+                auto msg = turbo::Format("no instance in namespace {}", request->namespace_name());
                 response->set_errmsg(msg);
                 return;
             }
@@ -67,14 +68,15 @@ namespace EA::servlet {
             }
             response->set_errcode(EA::servlet::SUCCESS);
             response->set_errmsg("success");
+            return;
         }
-        if(!request->has_servlet()) {
+        if(!request->has_servlet() || request->servlet().empty()) {
             BAIDU_SCOPED_LOCK(manager->_instance_mutex);
             auto zone_key = ZoneManager::make_zone_key(request->namespace_name(), request->zone());
             auto it = manager->_zone_instance.find(zone_key);
             if(it == manager->_zone_instance.end()) {
                 response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
-                auto msg = turbo::Format("no instance in namespace %s", request->namespace_name());
+                auto msg = turbo::Format("no instance in namespace {}.{}", request->namespace_name(), request->zone());
                 response->set_errmsg(msg);
                 return;
             }
@@ -86,6 +88,7 @@ namespace EA::servlet {
             }
             response->set_errcode(EA::servlet::SUCCESS);
             response->set_errmsg("success");
+            return;
         }
 
         BAIDU_SCOPED_LOCK(manager->_instance_mutex);
@@ -93,7 +96,7 @@ namespace EA::servlet {
         auto it = manager->_servlet_instance.find(servlet_key);
         if(it == manager->_servlet_instance.end()) {
             response->set_errcode(EA::servlet::INPUT_PARAM_ERROR);
-            auto msg = turbo::Format("no instance in namespace %s", request->namespace_name());
+            auto msg = turbo::Format("no instance in {}.{}.{}", request->namespace_name(), request->zone(), request->servlet());
             response->set_errmsg(msg);
             return;
         }

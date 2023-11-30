@@ -21,6 +21,7 @@
 #include "elasticann/client/router_sender.h"
 #include "elasticann/client/meta_sender.h"
 #include "elasticann/cli/raft_cmd.h"
+#include "elasticann/cli/discovery.h"
 
 int main(int argc, char **argv) {
     turbo::App app{"elastic ann search client"};
@@ -42,11 +43,52 @@ int main(int argc, char **argv) {
         }
     });
 
+    auto func = []() {
+        turbo::Println(turbo::color::red, "eacli parse call back");
+        auto opt = EA::cli::OptionContext::get_instance();
+        if (opt->verbose) {
+            turbo::Println("cli verbose all operations");
+        }
+        EA::client::BaseMessageSender *sender{nullptr};
+        if (opt->router) {
+            auto rs = EA::client::RouterSender::get_instance()->init(opt->router_server);
+            if (!rs.ok()) {
+                turbo::Println(rs.message());
+                exit(0);
+            }
+            EA::client::RouterSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
+                    .set_interval_time(opt->time_between_meta_connect_error_ms)
+                    .set_retry_time(opt->max_retry)
+                    .set_verbose(opt->verbose);
+            sender = EA::client::RouterSender::get_instance();
+            TLOG_INFO_IF(opt->verbose, "init connect success to router server {}", opt->router_server);
+        } else {
+            EA::client::MetaSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
+                    .set_interval_time(opt->time_between_meta_connect_error_ms)
+                    .set_retry_time(opt->max_retry)
+                    .set_verbose(opt->verbose);
+            auto rs = EA::client::MetaSender::get_instance()->init(opt->meta_server);
+            if (!rs.ok()) {
+                turbo::Println("{}", rs.message());
+                exit(0);
+            }
+            sender = EA::client::MetaSender::get_instance();
+            TLOG_INFO_IF(opt->verbose, "init connect success to meta server:{}", opt->meta_server);
+        }
+        auto r = EA::client::MetaClient::get_instance()->init(sender);
+        if (!r.ok()) {
+            turbo::Println("set up meta server error:{}", r.message());
+            exit(0);
+        }
+    };
+    app.parse_complete_callback(func);
+
     // Call the setup functions for the subcommands.
     // They are kept alive by a shared pointer in the
     // lambda function
     EA::cli::setup_meta_cmd(app);
     EA::cli::RaftCmd::setup_raft_cmd(app);
+    EA::cli::DiscoveryCmd::setup_discovery_cmd(app);
     // More setup if needed, i.e., other subcommands etc.
 
     TURBO_FLAGS_PARSE(app, argc, argv);

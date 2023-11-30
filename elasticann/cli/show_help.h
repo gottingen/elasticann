@@ -29,12 +29,15 @@ namespace EA::cli {
         static turbo::Table
         show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                       const std::string &msg);
+
         static turbo::Table
         show_response(EA::servlet::ErrCode code, EA::servlet::QueryOpType qt,
                       const std::string &msg);
 
-        static turbo::Table show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::OpType qt,
-                                          const std::string &msg);
+        static turbo::Table
+        show_response(const std::string_view &server, EA::servlet::ErrCode code, EA::servlet::OpType qt,
+                      const std::string &msg);
+
         static turbo::Table show_response(EA::servlet::ErrCode code, EA::servlet::OpType qt,
                                           const std::string &msg);
 
@@ -54,6 +57,8 @@ namespace EA::cli {
 
         static turbo::Table pre_send_error(const turbo::Status &s, const EA::servlet::RaftControlRequest &req);
 
+        static std::string json_format(const std::string &json_str);
+
     private:
         static turbo::Table
         show_response_impl(const std::string_view &server, EA::servlet::ErrCode code, int qt, const std::string &qts,
@@ -64,6 +69,7 @@ namespace EA::cli {
 
         static turbo::Table rpc_error_status_impl(const turbo::Status &s, int qt, const std::string &qts);
 
+        static std::string get_level_str(int level);
     private:
         using Row_t = turbo::Table::Row_t;
         turbo::Table pre_send_result;

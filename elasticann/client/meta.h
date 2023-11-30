@@ -45,30 +45,6 @@ namespace EA::client {
         turbo::Status init(BaseMessageSender *sender);
 
         ///
-        /// \param path
-        /// \param message
-        /// \return
-        static turbo::Status load_proto_from_file(const std::string &path, google::protobuf::Message &message);
-
-        ///
-        /// \param path
-        /// \param message
-        /// \return
-        static turbo::Status dump_proto_to_file(const std::string &path, const google::protobuf::Message &message);
-
-        ///
-        /// \param content json format content
-        /// \param message
-        /// \return
-        static turbo::Status load_proto(const std::string &content, google::protobuf::Message &message);
-
-        ///
-        /// \param messages
-        /// \param content json format content
-        /// \return
-        static turbo::Status dump_proto(const google::protobuf::Message &message, std::string &content);
-
-        ///
         /// \param json_content
         /// \return
         static turbo::Status check_config(const std::string &json_content);

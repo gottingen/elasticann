@@ -141,6 +141,9 @@ namespace EA::servlet {
             || request->op_type() == EA::servlet::OP_CREATE_SERVLET
             || request->op_type() == EA::servlet::OP_DROP_SERVLET
             || request->op_type() == EA::servlet::OP_MODIFY_SERVLET
+            || request->op_type() == EA::servlet::OP_ADD_INSTANCE
+            || request->op_type() == EA::servlet::OP_DROP_INSTANCE
+            || request->op_type() == EA::servlet::OP_UPDATE_INSTANCE
             || request->op_type() == EA::servlet::OP_MODIFY_RESOURCE_TAG
             || request->op_type() == EA::servlet::OP_UPDATE_MAIN_LOGICAL_ROOM) {
             SchemaManager::get_instance()->process_schema_info(controller,

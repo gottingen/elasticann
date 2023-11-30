@@ -24,6 +24,7 @@
 #include "json2pb/pb_to_json.h"
 #include "json2pb/json_to_pb.h"
 #include "elasticann/client/meta.h"
+#include "elasticann/client/dumper.h"
 #include "elasticann/client/config_info_builder.h"
 #include "nlohmann/json.hpp"
 
@@ -168,7 +169,7 @@ namespace EA::cli {
         }
         std::string json;
         std::string err;
-        rs = EA::client::MetaClient::dump_proto(request, json);
+        rs = EA::client::Dumper::dump_proto(request, json);
         if (!rs.ok()) {
             ss.add_table("convert", rs.ToString(), false);
             return;

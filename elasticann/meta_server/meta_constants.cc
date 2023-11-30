@@ -39,7 +39,7 @@ namespace EA::servlet {
     /// for schema
     const std::string MetaConstants::MAX_NAMESPACE_ID_KEY = "max_namespace_id";
     const std::string MetaConstants::MAX_ZONE_ID_KEY = "max_zone_id";
-    const std::string MetaConstants::MAX_SERVLET_ID_KEY = "max_zone_id";
+    const std::string MetaConstants::MAX_SERVLET_ID_KEY = "max_servlet_id";
     const std::string MetaConstants::MAX_INSTANCE_ID_KEY = "max_instance_id";
 
     const int MetaConstants::MetaMachineRegion = 0;

@@ -43,45 +43,6 @@ namespace EA::cli {
         // Set the run function as callback to be called when this subcommand is issued.
         meta_sub->callback([meta_sub]() { run_meta_cmd(*meta_sub); });
         //meta_sub->require_subcommand();
-
-        auto func = []() {
-            auto opt = EA::cli::OptionContext::get_instance();
-            if (opt->verbose) {
-                turbo::Println("cli verbose all operations");
-            }
-            EA::client::BaseMessageSender *sender{nullptr};
-            if (opt->router) {
-                auto rs = EA::client::RouterSender::get_instance()->init(opt->router_server);
-                if (!rs.ok()) {
-                    turbo::Println(rs.message());
-                    exit(0);
-                }
-                EA::client::RouterSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
-                        .set_interval_time(opt->time_between_meta_connect_error_ms)
-                        .set_retry_time(opt->max_retry)
-                        .set_verbose(opt->verbose);
-                sender = EA::client::RouterSender::get_instance();
-                TLOG_INFO_IF(opt->verbose, "init connect success to router server {}", opt->router_server);
-            } else {
-                EA::client::MetaSender::get_instance()->set_connect_time_out(opt->connect_timeout_ms)
-                        .set_interval_time(opt->time_between_meta_connect_error_ms)
-                        .set_retry_time(opt->max_retry)
-                        .set_verbose(opt->verbose);
-                auto rs = EA::client::MetaSender::get_instance()->init(opt->meta_server);
-                if (!rs.ok()) {
-                    turbo::Println("{}", rs.message());
-                    exit(0);
-                }
-                sender = EA::client::MetaSender::get_instance();
-                TLOG_INFO_IF(opt->verbose, "init connect success to meta server:{}", opt->meta_server);
-            }
-            auto r = EA::client::MetaClient::get_instance()->init(sender);
-            if (!r.ok()) {
-                turbo::Println("set up meta server error:{}",r.message());
-                exit(0);
-            }
-        };
-        meta_sub->parse_complete_callback(func);
     }
 
     

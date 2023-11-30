@@ -18,7 +18,8 @@
 #include "json2pb/json_to_pb.h"
 #include "json2pb/pb_to_json.h"
 #include "elasticann/client/config_info_builder.h"
-
+#include "elasticann/client/loader.h"
+#include "elasticann/client/dumper.h"
 namespace EA::client {
 
     turbo::Status MetaClient::init(BaseMessageSender *sender) {
@@ -26,56 +27,7 @@ namespace EA::client {
         return turbo::OkStatus();
     }
 
-    turbo::Status MetaClient::load_proto_from_file(const std::string &path, google::protobuf::Message &message) {
-        turbo::SequentialReadFile file;
-        auto rs = file.open(path);
-        if (!rs.ok()) {
-            return rs;
-        }
-        std::string config_data;
-        auto rr = file.read(&config_data);
-        if (!rr.ok()) {
-            return rr.status();
-        }
-        return load_proto(config_data, message);
-    }
 
-    turbo::Status MetaClient::dump_proto_to_file(const std::string &path, const google::protobuf::Message &message) {
-        std::string content;
-        auto rs = dump_proto(message, content);
-        if (!rs.ok()) {
-            return rs;
-        }
-
-        turbo::SequentialWriteFile file;
-        rs = file.open(path, true);
-        if (!rs.ok()) {
-            return rs;
-        }
-        rs = file.write(content);
-        if (!rs.ok()) {
-            return rs;
-        }
-        file.close();
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::load_proto(const std::string &content, google::protobuf::Message &message) {
-        std::string err;
-        if (!json2pb::JsonToProtoMessage(content, &message, &err)) {
-            return turbo::InvalidArgumentError(err);
-        }
-        return turbo::OkStatus();
-    }
-
-    turbo::Status MetaClient::dump_proto(const google::protobuf::Message &message, std::string &content) {
-        std::string err;
-        content.clear();
-        if (!json2pb::ProtoMessageToJson(message, &content, &err)) {
-            return turbo::InvalidArgumentError(err);
-        }
-        return turbo::OkStatus();
-    }
 
     turbo::Status MetaClient::check_config(const std::string &json_content) {
         EA::servlet::ConfigInfo config_pb;
@@ -535,7 +487,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
-        auto rs = load_proto(json_str, *request.mutable_namespace_info());
+        auto rs = Loader::load_proto(json_str, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -550,7 +502,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_CREATE_NAMESPACE);
-        auto rs = load_proto_from_file(path, *request.mutable_namespace_info());
+        auto rs = Loader::load_proto_from_file(path, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -595,7 +547,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_MODIFY_NAMESPACE);
-        auto rs = load_proto(json_str, *request.mutable_namespace_info());
+        auto rs = Loader::load_proto(json_str, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -610,7 +562,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_MODIFY_NAMESPACE);
-        auto rs = load_proto_from_file(path, *request.mutable_namespace_info());
+        auto rs = Loader::load_proto_from_file(path, *request.mutable_namespace_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -658,7 +610,7 @@ namespace EA::client {
         }
         for (auto &ns: ns_proto_list) {
             std::string json_content;
-            auto r = dump_proto(ns, json_content);
+            auto r = Dumper::dump_proto(ns, json_content);
             if (!r.ok()) {
                 return r;
             }
@@ -718,7 +670,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        return dump_proto(ns_pb, json_str);
+        return Dumper::dump_proto(ns_pb, json_str);
     }
 
     turbo::Status
@@ -728,7 +680,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        return dump_proto_to_file(json_path, ns_pb);
+        return Dumper::dump_proto_to_file(json_path, ns_pb);
     }
 
 
@@ -761,7 +713,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_CREATE_ZONE);
-        auto rs = load_proto(json_str, *request.mutable_zone_info());
+        auto rs = Loader::load_proto(json_str, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -776,7 +728,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_CREATE_ZONE);
-        auto rs = load_proto_from_file(path, *request.mutable_zone_info());
+        auto rs = Loader::load_proto_from_file(path, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -820,7 +772,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_MODIFY_ZONE);
-        auto rs = load_proto(json_str, *request.mutable_zone_info());
+        auto rs = Loader::load_proto(json_str, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -835,7 +787,7 @@ namespace EA::client {
         EA::servlet::MetaManagerRequest request;
         EA::servlet::MetaManagerResponse response;
         request.set_op_type(EA::servlet::OP_MODIFY_ZONE);
-        auto rs = load_proto_from_file(path, *request.mutable_zone_info());
+        auto rs = Loader::load_proto_from_file(path, *request.mutable_zone_info());
         if (!rs.ok()) {
             return rs;
         }
@@ -911,7 +863,7 @@ namespace EA::client {
         }
         for (auto &zone: zone_proto_list) {
             std::string json_content;
-            auto r = dump_proto(zone, json_content);
+            auto r = Dumper::dump_proto(zone, json_content);
             if (!r.ok()) {
                 return r;
             }
@@ -929,7 +881,7 @@ namespace EA::client {
         }
         for (auto &zone: zone_proto_list) {
             std::string json_content;
-            auto r = dump_proto(zone, json_content);
+            auto r = Dumper::dump_proto(zone, json_content);
             if (!r.ok()) {
                 return r;
             }
@@ -1015,7 +967,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        return dump_proto(zone_pb, json_str);
+        return Dumper::dump_proto(zone_pb, json_str);
     }
 
     turbo::Status
@@ -1026,7 +978,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        return dump_proto_to_file(json_path, zone_pb);
+        return Dumper::dump_proto_to_file(json_path, zone_pb);
     }
 
     turbo::Status MetaClient::create_servlet(EA::servlet::ServletInfo &servlet_info, int *retry_time) {
@@ -1055,7 +1007,7 @@ namespace EA::client {
 
     turbo::Status MetaClient::create_servlet_by_json(const std::string &json_str, int *retry_time) {
         EA::servlet::ServletInfo servlet_pb;
-        auto rs = load_proto(json_str, servlet_pb);
+        auto rs = Loader::load_proto(json_str, servlet_pb);
         if (!rs.ok()) {
             return rs;
         }
@@ -1064,7 +1016,7 @@ namespace EA::client {
 
     turbo::Status MetaClient::create_servlet_by_file(const std::string &path, int *retry_time) {
         EA::servlet::ServletInfo servlet_pb;
-        auto rs = load_proto_from_file(path, servlet_pb);
+        auto rs = Loader::load_proto_from_file(path, servlet_pb);
         if (!rs.ok()) {
             return rs;
         }
@@ -1104,7 +1056,7 @@ namespace EA::client {
 
     turbo::Status MetaClient::modify_servlet_by_json(const std::string &json_str, int *retry_time) {
         EA::servlet::ServletInfo servlet_pb;
-        auto rs = load_proto(json_str, servlet_pb);
+        auto rs = Loader::load_proto(json_str, servlet_pb);
         if (!rs.ok()) {
             return rs;
         }
@@ -1113,7 +1065,7 @@ namespace EA::client {
 
     turbo::Status MetaClient::modify_servlet_by_file(const std::string &path, int *retry_time) {
         EA::servlet::ServletInfo servlet_pb;
-        auto rs = load_proto_from_file(path, servlet_pb);
+        auto rs = Loader::load_proto_from_file(path, servlet_pb);
         if (!rs.ok()) {
             return rs;
         }
@@ -1220,7 +1172,7 @@ namespace EA::client {
         }
         for (auto &servlet: servlet_proto_list) {
             std::string json_content;
-            auto r = dump_proto(servlet, json_content);
+            auto r = Dumper::dump_proto(servlet, json_content);
             if (!r.ok()) {
                 return r;
             }
@@ -1239,7 +1191,7 @@ namespace EA::client {
         for (auto &servlet: servlet_proto_list) {
             if (servlet.namespace_name() == ns) {
                 std::string json_content;
-                auto r = dump_proto(servlet, json_content);
+                auto r = Dumper::dump_proto(servlet, json_content);
                 if (!r.ok()) {
                     return r;
                 }
@@ -1259,7 +1211,7 @@ namespace EA::client {
         for (auto &servlet: servlet_proto_list) {
             if (servlet.namespace_name() == ns && servlet.zone() == zone) {
                 std::string json_content;
-                auto r = dump_proto(servlet, json_content);
+                auto r = Dumper::dump_proto(servlet, json_content);
                 if (!r.ok()) {
                     return r;
                 }
@@ -1368,7 +1320,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        return dump_proto(servlet_pb, json_str);
+        return Dumper::dump_proto(servlet_pb, json_str);
     }
 
     turbo::Status
@@ -1380,7 +1332,7 @@ namespace EA::client {
         if (!rs.ok()) {
             return rs;
         }
-        rs = dump_proto_to_file(json_path, servlet_pb);
+        rs = Dumper::dump_proto_to_file(json_path, servlet_pb);
         return rs;
 
     }

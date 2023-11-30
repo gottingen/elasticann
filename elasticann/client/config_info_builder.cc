@@ -15,8 +15,7 @@
 #include "elasticann/client/config_info_builder.h"
 #include "elasticann/client/utility.h"
 #include "turbo/files/sequential_read_file.h"
-#include "json2pb/json_to_pb.h"
-#include "json2pb/pb_to_json.h"
+#include "elasticann/client/loader.h"
 
 namespace EA::client {
 
@@ -31,9 +30,9 @@ namespace EA::client {
     }
 
     turbo::Status ConfigInfoBuilder::build_from_json(const std::string &json_str) {
-        std::string err;
-        if (!json2pb::JsonToProtoMessage(json_str, _info, &err)) {
-            return turbo::InvalidArgumentError(err);
+        auto rs = Loader::load_proto(json_str, *_info);
+        if (!rs.ok()) {
+            return rs;
         }
         /// check field
         if (!_info->has_name() || _info->name().empty()) {

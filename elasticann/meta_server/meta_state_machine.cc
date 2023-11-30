@@ -275,6 +275,11 @@ namespace EA::servlet {
                     TLOG_ERROR("ConfigManager load snapshot fail");
                     return -1;
                 }
+                ret = InstanceManager::get_instance()->load_snapshot();
+                if (ret != 0) {
+                    TLOG_ERROR("Instance load snapshot fail");
+                    return -1;
+                }
             }
         }
         set_have_data(true);

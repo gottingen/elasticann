@@ -208,7 +208,7 @@ namespace EA::servlet {
         std::vector<std::string> files;
         reader->list_files(&files);
         for (auto &file: files) {
-            TLOG_WARN("snapshot load file:%s", file.c_str());
+            TLOG_WARN("snapshot load file:{}", file.c_str());
             if (file == "/max_id.json") {
                 std::string max_id_file = reader->get_path() + "/max_id.json";
                 if (load_auto_increment(max_id_file) != 0) {

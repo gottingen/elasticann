@@ -76,7 +76,7 @@ message ServletInfo {
     optional string      conf                    = 15;
     repeated string      env                     = 16;
     optional string      comment                 = 17;
-    optional Version     conf_verson             = 18;
+    optional Version     conf_version             = 18;
 }
 
 message ServletInstance {
@@ -86,12 +86,12 @@ message ServletInstance {
     optional int64  zone_id         = 4;
     required string servlet_name    = 5;
     optional int64  servlet_id      = 6;
-    optional string address         = 8;
+    required string address         = 8;
     optional string color           = 9;
     optional string env             = 10;
     optional Status status          = 11;
     optional int64  version         = 12;
-    required int32  timestamp       = 13;
+    optional int32  timestamp       = 13;
     optional int32  weight          = 14;
     optional string user            = 15;
     optional int64  user_id         = 16;

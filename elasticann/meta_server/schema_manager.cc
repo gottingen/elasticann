@@ -90,14 +90,24 @@ namespace EA::servlet {
                 }
                 case EA::servlet::OP_ADD_INSTANCE:
                 case EA::servlet::OP_DROP_INSTANCE:
-                case EA::servlet::OP_UPDATE_INSTANCE:{
-                    if (!request->has_namespace_info() ||
-                            !request->has_zone_info() ||
-                            !request->has_servlet_info()) {
+                case EA::servlet::OP_UPDATE_INSTANCE: {
+                    if (!request->has_instance_info()) {
+                        ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
+                                           "no instance info", request->op_type(), log_id);
+                        return;
+                    }
+                    auto &instance = request->instance_info();
+                    if (!instance.has_namespace_name()
+                        || !instance.has_zone_name()
+                        || !instance.has_servlet_name()
+                        || !instance.has_address()
+                        || !instance.has_env()) {
                         ERROR_SET_RESPONSE(response, EA::servlet::INPUT_PARAM_ERROR,
                                            "no required namespace zone or servlet info", request->op_type(), log_id);
                         return;
                     }
+                    _meta_state_machine->process(controller, request, response, done_guard.release());
+                    return;
                 }
             }
 
@@ -155,7 +165,11 @@ namespace EA::servlet {
     }
 
     int SchemaManager::load_snapshot() {
+        TLOG_INFO("SchemaManager start load_snapshot");
         NamespaceManager::get_instance()->clear();
+        ZoneManager::get_instance()->clear();
+        ServletManager::get_instance()->clear();
+        InstanceManager::get_instance()->clear();
         //创建一个snapshot
         rocksdb::ReadOptions read_options;
         read_options.prefix_same_as_start = true;
@@ -177,8 +191,6 @@ namespace EA::servlet {
         std::string servlet_prefix = MetaConstants::SCHEMA_IDENTIFY;
         servlet_prefix += MetaConstants::SERVLET_SCHEMA_IDENTIFY;
 
-        std::string instance_prefix = MetaConstants::DISCOVERY_IDENTIFY;
-        instance_prefix += MetaConstants::DISCOVERY_INSTANCE_IDENTIFY;
 
         for (; iter->Valid(); iter->Next()) {
             int ret = 0;
@@ -188,8 +200,6 @@ namespace EA::servlet {
                 ret = ServletManager::get_instance()->load_servlet_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(namespace_prefix)) {
                 ret = NamespaceManager::get_instance()->load_namespace_snapshot(iter->value().ToString());
-            } else if (iter->key().starts_with(instance_prefix)) {
-                ret = InstanceManager::get_instance()->load_instance_snapshot(iter->value().ToString());
             } else if (iter->key().starts_with(max_id_prefix)) {
                 ret = load_max_id_snapshot(max_id_prefix, iter->key().ToString(), iter->value().ToString());
             } else {
@@ -202,6 +212,7 @@ namespace EA::servlet {
                 return -1;
             }
         }
+        TLOG_INFO("SchemaManager load_snapshot done...");
         return 0;
     }
 
@@ -258,7 +269,7 @@ namespace EA::servlet {
         }
         if (max_key == MetaConstants::MAX_SERVLET_ID_KEY) {
             ServletManager::get_instance()->set_max_servlet_id(*max_id);
-            TLOG_WARN("max_zone_id:{}", *max_id);
+            TLOG_WARN("max_servlet_id:{}", *max_id);
             return 0;
         }
         return 0;

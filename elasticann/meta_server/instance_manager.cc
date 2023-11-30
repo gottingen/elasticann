@@ -65,6 +65,7 @@ namespace EA::servlet {
             return;
         }
         // update values in memory
+        BAIDU_SCOPED_LOCK(_instance_mutex);
         set_instance_info(instance_info);
         IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
         TLOG_INFO("create instance success, request:{}", request.ShortDebugString());
@@ -116,11 +117,11 @@ namespace EA::servlet {
         if(instance_info.has_weight()) {
             tmp_instance_pb.set_weight(instance_info.weight());
         }
-
+        tmp_instance_pb.set_version(tmp_instance_pb.version() + 1);
         std::string instance_key = construct_instance_key(address);
 
         std::string instance_value;
-        if (!instance_info.SerializeToString(&instance_value)) {
+        if (!tmp_instance_pb.SerializeToString(&instance_value)) {
             TLOG_WARN("request serializeToArray fail, request:{}", request.ShortDebugString());
             IF_DONE_SET_RESPONSE(done, EA::servlet::PARSE_TO_PB_FAIL, "serializeToArray fail");
             return;
@@ -132,7 +133,8 @@ namespace EA::servlet {
             return;
         }
 
-        remove_instance_info(address);
+        BAIDU_SCOPED_LOCK(_instance_mutex);
+        set_instance_info(tmp_instance_pb);
         IF_DONE_SET_RESPONSE(done, EA::servlet::SUCCESS, "success");
         TLOG_INFO("drop instance success, request:{}", request.ShortDebugString());
     }
@@ -149,7 +151,6 @@ namespace EA::servlet {
     }
 
     void InstanceManager::set_instance_info(const EA::servlet::ServletInstance &instance_info) {
-        BAIDU_SCOPED_LOCK(_instance_mutex);
         _instance_info[instance_info.address()] = instance_info;
         _removed_instance.erase(instance_info.address());
         if(_namespace_instance.find(instance_info.namespace_name()) == _namespace_instance.end()) {
@@ -164,7 +165,7 @@ namespace EA::servlet {
         _zone_instance[zone_key].insert(instance_info.address());
 
         auto servlet_key = ServletManager::make_servlet_key(zone_key, instance_info.servlet_name());
-        if(_servlet_instance.find(servlet_key) != _servlet_instance.end()) {
+        if(_servlet_instance.find(servlet_key) == _servlet_instance.end()) {
             _servlet_instance[servlet_key] = turbo::flat_hash_set<std::string>();
         }
         _servlet_instance[servlet_key].insert(instance_info.address());
@@ -181,6 +182,27 @@ namespace EA::servlet {
         _servlet_instance.erase(servlet_key);
         _instance_info.erase(address);
 
+    }
+
+    int InstanceManager::load_snapshot() {
+        BAIDU_SCOPED_LOCK( InstanceManager::get_instance()->_instance_mutex);
+        TLOG_INFO("start to load instance snapshot");
+        clear();
+        std::string config_prefix = MetaConstants::DISCOVERY_IDENTIFY;
+        rocksdb::ReadOptions read_options;
+        read_options.prefix_same_as_start = true;
+        read_options.total_order_seek = false;
+        RocksWrapper *db = RocksWrapper::get_instance();
+        std::unique_ptr<rocksdb::Iterator> iter(
+                db->new_iterator(read_options, db->get_meta_info_handle()));
+        iter->Seek(config_prefix);
+        for (; iter->Valid(); iter->Next()) {
+            if(load_instance_snapshot(iter->value().ToString()) != 0) {
+                return -1;
+            }
+        }
+        TLOG_INFO("load config instance done");
+        return 0;
     }
 
 }  // namespace EA::servlet

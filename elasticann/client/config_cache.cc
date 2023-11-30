@@ -19,7 +19,8 @@
 #include "turbo/files/filesystem.h"
 #include "turbo/files/sequential_write_file.h"
 #include "turbo/files/sequential_read_file.h"
-#include "elasticann/client/meta.h"
+#include "elasticann/client/loader.h"
+#include "elasticann/client/dumper.h"
 
 namespace EA::client {
 
@@ -47,7 +48,7 @@ namespace EA::client {
             }
             auto file_path = dir_itr->path().string();
             EA::servlet::ConfigInfo info;
-            auto rs = MetaClient::load_proto_from_file(file_path, info);
+            auto rs = Loader::load_proto_from_file(file_path, info);
             if(!rs.ok()) {
                 return rs;
             }
@@ -239,7 +240,7 @@ namespace EA::client {
             return turbo::OkStatus();
         }
         auto file_path = make_cache_file_path(dir, config);
-        return EA::client::MetaClient::dump_proto_to_file(file_path, config);
+        return EA::client::Dumper::dump_proto_to_file(file_path, config);
     }
 
     turbo::Status ConfigCache::remove_config_file(const std::string &dir, const EA::servlet::ConfigInfo &config) {

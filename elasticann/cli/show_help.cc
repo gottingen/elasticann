@@ -284,4 +284,50 @@ namespace EA::cli {
         result_table[2][0].format().font_color(turbo::Color::yellow);
     }
 
+    std::string ShowHelper::json_format(const std::string &json_str) {
+        std::string result = "";
+        int level = 0;
+        for (std::string::size_type index = 0; index < json_str.size(); index++) {
+            char c = json_str[index];
+
+            if (level > 0 && '\n' == json_str[json_str.size() - 1]) {
+                result += get_level_str(level);
+            }
+
+            switch (c) {
+                case '{':
+                case '[':
+                    result = result + c + "\n";
+                    level++;
+                    result += get_level_str(level);
+                    break;
+                case ',':
+                    result = result + c + "\n";
+                    result += get_level_str(level);
+                    break;
+                case '}':
+                case ']':
+                    result += "\n";
+                    level--;
+                    result += get_level_str(level);
+                    result += c;
+                    break;
+                default:
+                    result += c;
+                    break;
+            }
+
+        }
+        return result;
+    }
+
+    std::string ShowHelper::get_level_str(int level) {
+        std::string levelStr = "";
+        for (int i = 0; i < level; i++) {
+            levelStr += "\t";
+        }
+        return levelStr;
+
+    }
+
 }  // namespace EA::cli
